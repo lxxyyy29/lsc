@@ -42,7 +42,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authException) -> writeFailure(response, objectMapper, HttpServletResponse.SC_UNAUTHORIZED, "AUTH_TOKEN_REQUIRED", "请提供认证令牌"))
                         .accessDeniedHandler((request, response, accessDeniedException) -> writeFailure(response, objectMapper, HttpServletResponse.SC_FORBIDDEN, "AUTH_PERMISSION_DENIED", "当前用户没有所需权限")))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/auth/login", "/h5/auth/login", "/auth/logout", "/h5/auth/logout", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/integrations/alarms/callback", "/media/files/**", "/api/media/files/**")
+                        .requestMatchers("/auth/login", "/h5/auth/login", "/auth/logout", "/h5/auth/logout", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/integrations/alarms/callback", "/media/files/**", "/api/media/files/**", "/community/export/**")
                         .permitAll()
                         .requestMatchers("/auth/me", "/h5/auth/me")
                         .authenticated()

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PatrolTaskService {
@@ -22,20 +23,21 @@ public class PatrolTaskService {
      */
     public int generateWeeklyTasks() {
         // 获取所有活跃的小网格
-        List<PatrolTaskEntity> grids = mapper.findActiveSmallGrids();
+        List<Map<String, Object>> grids = mapper.findActiveSmallGrids();
         LocalDate today = LocalDate.now();
         LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
         int count = 0;
 
-        for (PatrolTaskEntity grid : grids) {
+        for (Map<String, Object> grid : grids) {
+            Long gridId = ((Number) grid.get("grid_id")).longValue();
+            String gridName = (String) grid.get("grid_name");
             // 检查是否已生成本周任务
-            if (mapper.existsTaskForWeek(grid.getId(), startOfWeek)) {
+            if (mapper.existsTaskForWeek(gridId, startOfWeek)) {
                 continue;
             }
             PatrolTaskEntity task = new PatrolTaskEntity();
-            task.setGridId(grid.getId());
-            task.setUserId(grid.getResponsibleUserId());
-            task.setTaskName(grid.getGridName() + " - 周巡查任务");
+            task.setGridId(gridId);
+            task.setTaskName(gridName + " - 周巡查任务");
             task.setPlannedDate(startOfWeek.plusDays(count % 7));
             task.setStatus("PENDING");
             mapper.insert(task);

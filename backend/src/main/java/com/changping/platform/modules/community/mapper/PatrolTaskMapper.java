@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class PatrolTaskMapper {
@@ -36,15 +37,9 @@ public class PatrolTaskMapper {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<PatrolTaskEntity> findActiveSmallGrids() {
-        return jdbcTemplate.query(
-            "SELECT id AS grid_id, grid_name, NULL AS responsible_user_id FROM cmn_grid WHERE status = 'ACTIVE' AND grid_level = 3",
-            (rs, rowNum) -> {
-                PatrolTaskEntity e = new PatrolTaskEntity();
-                e.setGridId(rs.getLong("grid_id"));
-                e.setTaskName(rs.getString("grid_name"));
-                return e;
-            });
+    public List<Map<String, Object>> findActiveSmallGrids() {
+        return jdbcTemplate.queryForList(
+            "SELECT id AS grid_id, grid_name FROM cmn_grid WHERE status = 'ACTIVE' AND grid_level = 3");
     }
 
     public boolean existsTaskForWeek(Long gridId, LocalDate startOfWeek) {
