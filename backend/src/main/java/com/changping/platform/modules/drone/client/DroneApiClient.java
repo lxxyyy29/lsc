@@ -19,6 +19,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -32,6 +34,7 @@ import org.springframework.web.client.RestTemplate;
 @Component
 public class DroneApiClient {
 
+    private static final Logger log = LoggerFactory.getLogger(DroneApiClient.class);
     private static final String TOKEN_PATH = "/dj-prod-api/manage/api/v1/getToken";
     private static final String TOKEN_CACHE_KEY = "dgcp-oa:drone:api:access-token";
 
@@ -316,26 +319,31 @@ public class DroneApiClient {
      * @return DroneAccessToken 新获取的访问令牌对象
      */
     private DroneAccessToken requestAccessToken() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        DroneTokenRequest request = new DroneTokenRequest(
-                properties.getUsername(),
-                DroneSm4Utils.encrypt(properties.getPassword(), properties.getSm4SecretKey(), properties.getSm4Iv()));
-        ResponseEntity<DroneApiResponse<Map>> response = restTemplate.exchange(
-                TOKEN_PATH,
-                HttpMethod.POST,
-                new HttpEntity<>(request, headers),
-                ParameterizedTypeReferences.response(Map.class));
-        Map<?, ?> data = unwrap(response.getBody());
-        String token = stringValue(data.get("x-auth-token"));
-        if (token == null || token.isBlank()) {
-            throw new DroneApiException("无人机令牌响应缺少 x-auth-token");
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            DroneTokenRequest request = new DroneTokenRequest(
+                    properties.getUsername(),
+                    DroneSm4Utils.encrypt(properties.getPassword(), properties.getSm4SecretKey(), properties.getSm4Iv()));
+            ResponseEntity<DroneApiResponse<Map>> response = restTemplate.exchange(
+                    TOKEN_PATH,
+                    HttpMethod.POST,
+                    new HttpEntity<>(request, headers),
+                    ParameterizedTypeReferences.response(Map.class));
+            Map<?, ?> data = unwrap(response.getBody());
+            String token = stringValue(data.get("x-auth-token"));
+            if (token == null || token.isBlank()) {
+                throw new DroneApiException("无人机令牌响应缺少 x-auth-token");
+            }
+            String regionCode = stringValue(data.get("region_code"));
+            if (regionCode == null || regionCode.isBlank()) {
+                throw new DroneApiException("无人机令牌响应缺少 region_code");
+            }
+            return new DroneAccessToken(token, regionCode);
+        } catch (Exception e) {
+            log.warn("无人机平台连接失败，无人机功能暂不可用: {}", e.getMessage());
+            return new DroneAccessToken("UNAVAILABLE", "UNAVAILABLE");
         }
-        String regionCode = stringValue(data.get("region_code"));
-        if (regionCode == null || regionCode.isBlank()) {
-            throw new DroneApiException("无人机令牌响应缺少 region_code");
-        }
-        return new DroneAccessToken(token, regionCode);
     }
 
     /**

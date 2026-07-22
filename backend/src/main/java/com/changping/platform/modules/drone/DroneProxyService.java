@@ -71,12 +71,16 @@ public class DroneProxyService {
      * @return PageResult<Map<String, Object>> 工作空间分页结果
      */
     public PageResult<Map<String, Object>> listWorkspaces(int page, int pageSize) {
-        Map<String, Object> data = postForMap(WORKSPACE_LIST_PATH, Map.of(
-                "region_code", droneApiClient.getRegionCode(),
-                "page_num", page,
-                "page_size", pageSize));
-        List<Map<String, Object>> items = extractItems(data);
-        return pageResult(data, items, page, pageSize);
+        try {
+            Map<String, Object> data = postForMap(WORKSPACE_LIST_PATH, Map.of(
+                    "region_code", droneApiClient.getRegionCode(),
+                    "page_num", page,
+                    "page_size", pageSize));
+            List<Map<String, Object>> items = extractItems(data);
+            return pageResult(data, items, page, pageSize);
+        } catch (Exception e) {
+            return new PageResult<>(List.of(), 0, page, pageSize);
+        }
     }
 
     /**
@@ -87,13 +91,17 @@ public class DroneProxyService {
      * @return PageResult<Map<String, Object>> 设备分页结果
      */
     public PageResult<Map<String, Object>> listDevices(String workspaceId, int page, int pageSize) {
-        Map<String, Object> data = postForMap(DEVICE_LIST_PATH, Map.of(
-                "workspace_id", workspaceId,
-                "page_num", page,
-                "page_size", pageSize,
-                "device_type_list", List.of(2, 3)));
-        List<Map<String, Object>> items = extractItems(data);
-        return pageResult(data, items, page, pageSize);
+        try {
+            Map<String, Object> data = postForMap(DEVICE_LIST_PATH, Map.of(
+                    "workspace_id", workspaceId,
+                    "page_num", page,
+                    "page_size", pageSize,
+                    "device_type_list", List.of(2, 3)));
+            List<Map<String, Object>> items = extractItems(data);
+            return pageResult(data, items, page, pageSize);
+        } catch (Exception e) {
+            return new PageResult<>(List.of(), 0, page, pageSize);
+        }
     }
 
     /**
@@ -144,16 +152,20 @@ public class DroneProxyService {
      * @return PageResult<Map<String, Object>> 任务分页结果
      */
     public PageResult<Map<String, Object>> listJobs(String workspaceId, int page, int pageSize, Integer status) {
-        Map<String, Object> request = new LinkedHashMap<>();
-        request.put("workspace_id", workspaceId);
-        request.put("page_num", page);
-        request.put("page_size", pageSize);
-        if (status != null) {
-            request.put("status", status);
+        try {
+            Map<String, Object> request = new LinkedHashMap<>();
+            request.put("workspace_id", workspaceId);
+            request.put("page_num", page);
+            request.put("page_size", pageSize);
+            if (status != null) {
+                request.put("status", status);
+            }
+            Map<String, Object> data = postForMap(JOB_LIST_PATH, request);
+            List<Map<String, Object>> items = extractItems(data);
+            return pageResult(data, items, page, pageSize);
+        } catch (Exception e) {
+            return new PageResult<>(List.of(), 0, page, pageSize);
         }
-        Map<String, Object> data = postForMap(JOB_LIST_PATH, request);
-        List<Map<String, Object>> items = extractItems(data);
-        return pageResult(data, items, page, pageSize);
     }
 
     /**
@@ -203,14 +215,18 @@ public class DroneProxyService {
      * @return PageResult<Map<String, Object>> AI模型分页结果
      */
     public PageResult<Map<String, Object>> listAiModels(String workspaceId, int page, int pageSize) {
-        Map<String, Object> data = postForMap(AI_MODEL_LIST_PATH, Map.of(
-                "workspace_id", workspaceId,
-                "page_num", page,
-                "page_size", pageSize));
-        List<Map<String, Object>> items = extractItems(data).stream()
-                .map(this::mapAiModel)
-                .toList();
-        return pageResult(data, items, page, pageSize);
+        try {
+            Map<String, Object> data = postForMap(AI_MODEL_LIST_PATH, Map.of(
+                    "workspace_id", workspaceId,
+                    "page_num", page,
+                    "page_size", pageSize));
+            List<Map<String, Object>> items = extractItems(data).stream()
+                    .map(this::mapAiModel)
+                    .toList();
+            return pageResult(data, items, page, pageSize);
+        } catch (Exception e) {
+            return new PageResult<>(List.of(), 0, page, pageSize);
+        }
     }
 
     /**
