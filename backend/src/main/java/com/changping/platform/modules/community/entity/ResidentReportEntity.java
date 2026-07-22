@@ -43,6 +43,12 @@ public class ResidentReportEntity {
 
     private LocalDateTime handledAt;
 
+    @TableField(exist = false)
+    private String gridName;
+
+    @TableField(exist = false)
+    private String handlerUserName;
+
     @TableField(fill = com.baomidou.mybatisplus.annotation.FieldFill.INSERT)
     private LocalDateTime createdAt;
 

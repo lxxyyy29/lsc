@@ -18,6 +18,11 @@ public class PatrolRecordServiceImpl implements PatrolRecordService {
     }
 
     @Override
+    public List<PatrolRecordEntity> listAll() {
+        return mapper.findAll();
+    }
+
+    @Override
     public boolean create(PatrolRecordEntity entity) {
         mapper.insert(entity);
         return true;

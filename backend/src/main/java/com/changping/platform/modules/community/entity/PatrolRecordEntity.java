@@ -33,6 +33,12 @@ public class PatrolRecordEntity {
 
     private String status;
 
+    @TableField(exist = false)
+    private String gridName;
+
+    @TableField(exist = false)
+    private String userName;
+
     @TableField(fill = com.baomidou.mybatisplus.annotation.FieldFill.INSERT)
     private LocalDateTime createdAt;
 

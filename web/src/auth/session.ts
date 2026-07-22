@@ -150,6 +150,22 @@ const LEGACY_MENU_DEFINITIONS: LegacyMenuDefinition[] = [
     parentCode: 'catalog:community'
   },
   {
+    aliases: ['menu:community:patrol-record'],
+    permissionName: '巡查记录管理',
+    path: '/community/patrol-records',
+    component: 'community/PatrolRecordListView',
+    sortOrder: 50,
+    parentCode: 'catalog:community'
+  },
+  {
+    aliases: ['menu:community:resident-report'],
+    permissionName: '居民上报管理',
+    path: '/community/resident-reports',
+    component: 'community/ResidentReportListView',
+    sortOrder: 60,
+    parentCode: 'catalog:community'
+  },
+  {
     aliases: ['menu:big-screen:view'],
     permissionName: '综合监管大屏',
     path: '/big-screen',

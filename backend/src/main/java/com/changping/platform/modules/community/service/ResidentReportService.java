@@ -6,5 +6,7 @@ import java.util.List;
 public interface ResidentReportService {
     List<ResidentReportEntity> listAll();
     ResidentReportEntity findByCode(String queryCode);
+    ResidentReportEntity findById(Long id);
     boolean create(ResidentReportEntity entity);
+    boolean handleReport(Long id, Long handlerUserId, String handleResult);
 }

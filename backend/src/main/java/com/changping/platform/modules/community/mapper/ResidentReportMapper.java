@@ -28,6 +28,8 @@ public class ResidentReportMapper {
         e.setQueryCode(rs.getString("query_code"));
         e.setStatus(rs.getString("status"));
         e.setHandleResult(rs.getString("handle_result"));
+        e.setGridName(rs.getString("grid_name"));
+        e.setHandlerUserName(rs.getString("handler_user_name"));
         e.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
         java.sql.Timestamp handledAt = rs.getTimestamp("handled_at");
         e.setHandledAt(handledAt != null ? handledAt.toLocalDateTime() : null);
@@ -38,13 +40,35 @@ public class ResidentReportMapper {
     public ResidentReportMapper(JdbcTemplate jdbcTemplate) { this.jdbcTemplate = jdbcTemplate; }
 
     public List<ResidentReportEntity> findAll() {
-        return jdbcTemplate.query("SELECT * FROM cmn_resident_report ORDER BY created_at DESC", ROW_MAPPER);
+        return jdbcTemplate.query(
+            "SELECT r.*, g.grid_name, hu.user_name AS handler_user_name FROM cmn_resident_report r " +
+            "LEFT JOIN cmn_grid g ON r.grid_id = g.id " +
+            "LEFT JOIN sys_user hu ON r.handler_user_id = hu.id " +
+            "ORDER BY r.created_at DESC", ROW_MAPPER);
     }
 
     public ResidentReportEntity findByQueryCode(String queryCode) {
         List<ResidentReportEntity> results = jdbcTemplate.query(
-            "SELECT * FROM cmn_resident_report WHERE query_code = ?", ROW_MAPPER, queryCode);
+            "SELECT r.*, g.grid_name, hu.user_name AS handler_user_name FROM cmn_resident_report r " +
+            "LEFT JOIN cmn_grid g ON r.grid_id = g.id " +
+            "LEFT JOIN sys_user hu ON r.handler_user_id = hu.id " +
+            "WHERE r.query_code = ?", ROW_MAPPER, queryCode);
         return results.isEmpty() ? null : results.get(0);
+    }
+
+    public ResidentReportEntity findById(Long id) {
+        List<ResidentReportEntity> results = jdbcTemplate.query(
+            "SELECT r.*, g.grid_name, hu.user_name AS handler_user_name FROM cmn_resident_report r " +
+            "LEFT JOIN cmn_grid g ON r.grid_id = g.id " +
+            "LEFT JOIN sys_user hu ON r.handler_user_id = hu.id " +
+            "WHERE r.id = ?", ROW_MAPPER, id);
+        return results.isEmpty() ? null : results.get(0);
+    }
+
+    public void updateHandle(Long id, Long handlerUserId, String handleResult) {
+        jdbcTemplate.update(
+            "UPDATE cmn_resident_report SET handler_user_id = ?, handle_result = ?, status = 'HANDLED', handled_at = NOW(), updated_at = NOW() WHERE id = ?",
+            handlerUserId, handleResult, id);
     }
 
     public Long insert(ResidentReportEntity e) {

@@ -19,9 +19,18 @@ public class ResidentReportServiceImpl implements ResidentReportService {
     public ResidentReportEntity findByCode(String queryCode) { return mapper.findByQueryCode(queryCode); }
 
     @Override
+    public ResidentReportEntity findById(Long id) { return mapper.findById(id); }
+
+    @Override
     public boolean create(ResidentReportEntity entity) {
         if (entity.getStatus() == null) entity.setStatus("PENDING");
         mapper.insert(entity);
+        return true;
+    }
+
+    @Override
+    public boolean handleReport(Long id, Long handlerUserId, String handleResult) {
+        mapper.updateHandle(id, handlerUserId, handleResult);
         return true;
     }
 }

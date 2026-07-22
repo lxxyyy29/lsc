@@ -198,3 +198,56 @@ export function getDashboardOverview() {
 export function getGridStats() {
   return http.get<any, any>('/community/dashboard/grid-stats')
 }
+
+// 巡查记录
+export interface PatrolRecordEntity {
+  id?: number
+  gridId?: number
+  gridName?: string
+  userId?: number
+  userName?: string
+  patrolType?: string
+  longitude?: number
+  latitude?: number
+  address?: string
+  content?: string
+  photoUrls?: string
+  status?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export function listPatrolRecords() {
+  return http.get<PatrolRecordEntity[], PatrolRecordEntity[]>('/community/patrol-records')
+}
+
+// 居民上报
+export interface ResidentReportEntity {
+  id?: number
+  gridId?: number
+  gridName?: string
+  residentName?: string
+  residentPhone?: string
+  reportType?: string
+  title?: string
+  content?: string
+  photoUrls?: string
+  longitude?: number
+  latitude?: number
+  queryCode?: string
+  status?: string
+  handlerUserId?: number
+  handlerUserName?: string
+  handleResult?: string
+  handledAt?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export function listResidentReports() {
+  return http.get<ResidentReportEntity[], ResidentReportEntity[]>('/community/resident-reports')
+}
+
+export function handleResidentReport(id: number, handleResult: string) {
+  return http.put<boolean, boolean>(`/community/resident-reports/${id}/handle`, { handleResult })
+}

@@ -60,6 +60,22 @@ const dynamicMenuRoutes: RouteRecordRaw[] = [
       permission: 'menu:big-screen:view',
       fullscreen: true
     }
+  },
+  {
+    path: 'community/patrol-records',
+    name: 'dynamic-menu-community-patrol-records',
+    component: () => import('../views/community/PatrolRecordListView.vue'),
+    meta: {
+      permission: 'menu:community:patrol-record'
+    }
+  },
+  {
+    path: 'community/resident-reports',
+    name: 'dynamic-menu-community-resident-reports',
+    component: () => import('../views/community/ResidentReportListView.vue'),
+    meta: {
+      permission: 'menu:community:resident-report'
+    }
   }
 ]
 

@@ -5,7 +5,6 @@ import com.changping.platform.modules.auth.model.AuthenticatedUser;
 import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.community.entity.PatrolRecordEntity;
-import com.changping.platform.modules.community.mapper.PatrolRecordMapper;
 import com.changping.platform.modules.community.service.PatrolRecordService;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -22,10 +21,16 @@ public class PatrolRecordController {
         this.currentUserService = currentUserService;
     }
 
-    @GetMapping
-    public ApiResponse<List<PatrolRecordEntity>> list() {
+    @GetMapping("/h5")
+    public ApiResponse<List<PatrolRecordEntity>> listH5() {
         AuthenticatedUser user = currentUserService.requireClientType(AuthService.ClientType.H5);
         return ApiResponse.ok(service.listByUser(user.id()));
+    }
+
+    @GetMapping
+    public ApiResponse<List<PatrolRecordEntity>> listAll() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        return ApiResponse.ok(service.listAll());
     }
 
     @PostMapping

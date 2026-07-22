@@ -24,6 +24,8 @@ public class PatrolRecordMapper {
         e.setContent(rs.getString("content"));
         e.setPhotoUrls(rs.getString("photo_urls"));
         e.setStatus(rs.getString("status"));
+        e.setGridName(rs.getString("grid_name"));
+        e.setUserName(rs.getString("user_name"));
         e.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
         e.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
         return e;
@@ -32,7 +34,19 @@ public class PatrolRecordMapper {
     public PatrolRecordMapper(JdbcTemplate jdbcTemplate) { this.jdbcTemplate = jdbcTemplate; }
 
     public List<PatrolRecordEntity> findByUserId(Long userId) {
-        return jdbcTemplate.query("SELECT * FROM cmn_patrol_record WHERE user_id = ? ORDER BY created_at DESC", ROW_MAPPER, userId);
+        return jdbcTemplate.query(
+            "SELECT r.*, g.grid_name, u.user_name FROM cmn_patrol_record r " +
+            "LEFT JOIN cmn_grid g ON r.grid_id = g.id " +
+            "LEFT JOIN sys_user u ON r.user_id = u.id " +
+            "WHERE r.user_id = ? ORDER BY r.created_at DESC", ROW_MAPPER, userId);
+    }
+
+    public List<PatrolRecordEntity> findAll() {
+        return jdbcTemplate.query(
+            "SELECT r.*, g.grid_name, u.user_name FROM cmn_patrol_record r " +
+            "LEFT JOIN cmn_grid g ON r.grid_id = g.id " +
+            "LEFT JOIN sys_user u ON r.user_id = u.id " +
+            "ORDER BY r.created_at DESC", ROW_MAPPER);
     }
 
     public Long insert(PatrolRecordEntity e) {
