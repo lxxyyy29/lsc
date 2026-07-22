@@ -118,8 +118,9 @@ onMounted(async () => {
   await loadTree()
 
   try {
+    ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
     const AMap = await AMapLoader.load({
-      key: '20b36ae042a8e85e7c0cd815ac21aa1e',
+      key: '5e00e01d2d2b6ca9e1eed533a15572e4',
       version: '2.0',
       plugins: ['AMap.MouseTool', 'AMap.Polygon'],
     })
@@ -154,12 +155,12 @@ onUnmounted(() => {
 .grid-view__header h2 {
   margin: 0;
   font-size: 20px;
-  color: #eaf5ff;
+  color: var(--fg-text-primary);
 }
 
 .grid-view__subtitle {
   margin: 4px 0 0;
-  color: #7ea4c8;
+  color: var(--fg-text-secondary);
   font-size: 13px;
 }
 
@@ -179,16 +180,42 @@ onUnmounted(() => {
 }
 
 .panel {
-  background: rgba(7, 22, 38, 0.92);
-  border: 1px solid rgba(110, 194, 255, 0.14);
-  border-radius: 16px;
+  background: var(--fg-bg-card);
+  border: 1px solid var(--fg-border);
+  border-radius: var(--fg-radius-lg);
   padding: 16px;
 }
 
 .panel__title {
   margin: 0 0 12px;
   font-size: 14px;
-  color: #cfe5fb;
+  color: var(--fg-text-primary);
+}
+
+/* 覆盖 el-tree 默认白色背景，统一深色主题 */
+:deep(.el-tree) {
+  background: transparent;
+  color: var(--fg-text-primary);
+}
+
+:deep(.el-tree-node__content) {
+  background: transparent;
+}
+
+:deep(.el-tree-node__content:hover) {
+  background: rgba(94, 162, 255, 0.12);
+}
+
+:deep(.el-tree-node.is-current > .el-tree-node__content) {
+  background: rgba(94, 162, 255, 0.2);
+}
+
+:deep(.el-tree-node__label) {
+  color: var(--fg-text-primary);
+}
+
+:deep(.el-tree-node__expand-icon) {
+  color: var(--fg-text-secondary);
 }
 
 .grid-tree__node {
@@ -200,12 +227,16 @@ onUnmounted(() => {
 
 .grid-tree__name {
   flex: 1;
-  color: #eaf5ff;
+  color: var(--fg-text-primary);
 }
 
 .grid-tree__meta {
-  color: #7ea4c8;
+  color: var(--fg-text-secondary);
   font-size: 12px;
+}
+
+:deep(.el-tag) {
+  border: none;
 }
 
 .detail-list {

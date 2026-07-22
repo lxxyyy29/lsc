@@ -11,6 +11,14 @@ const dynamicMenuRoutes: RouteRecordRaw[] = [
     meta: {
       permission: 'menu:community:grid'
     }
+  },
+  {
+    path: 'community/population',
+    name: 'dynamic-menu-community-population',
+    component: () => import('../views/community/PopulationListView.vue'),
+    meta: {
+      permission: 'menu:community:population'
+    }
   }
 ]
 

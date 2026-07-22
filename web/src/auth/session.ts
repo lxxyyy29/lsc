@@ -110,6 +110,14 @@ const LEGACY_MENU_DEFINITIONS: LegacyMenuDefinition[] = [
     parentCode: 'catalog:community'
   },
   {
+    aliases: ['menu:community:population'],
+    permissionName: '实有人口管理',
+    path: '/community/population',
+    component: 'community/PopulationListView',
+    sortOrder: 20,
+    parentCode: 'catalog:community'
+  },
+  {
     aliases: ['menu:event:list'],
     permissionName: '事件中心',
     path: '/events',

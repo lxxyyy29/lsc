@@ -171,6 +171,8 @@ public final class PermissionCodes {
     public static final String CATALOG_COMMUNITY = "catalog:community";
     /** 网格治理-GIS网格可视化菜单权限 */
     public static final String MENU_COMMUNITY_GRID = "menu:community:grid";
+    /** 网格治理-实有人口管理菜单权限 */
+    public static final String MENU_COMMUNITY_POPULATION = "menu:community:population";
 
     /** 业务管理目录权限 */
     public static final String CATALOG_BIZ = "catalog:biz";

@@ -54,3 +54,43 @@ export function updateGrid(id: number, data: GridEntity) {
 export function deleteGrid(id: number) {
   return http.delete<boolean, boolean>(`/community/grids/${id}`)
 }
+
+// 实有人口
+export interface PopulationEntity {
+  id?: number
+  gridId?: number
+  name: string
+  idCard?: string
+  phone?: string
+  gender?: string
+  birthday?: string
+  householdType?: string
+  address?: string
+  buildingNo?: string
+  roomNo?: string
+  tags?: string
+  photoUrl?: string
+  status?: string
+  remark?: string
+}
+
+export function listPopulation(gridId?: number) {
+  return http.get<PopulationEntity[], PopulationEntity[]>('/community/population',
+    gridId ? { params: { gridId } } : {})
+}
+
+export function getPopulationDetail(id: number) {
+  return http.get<PopulationEntity, PopulationEntity>(`/community/population/${id}`)
+}
+
+export function createPopulation(data: PopulationEntity) {
+  return http.post<boolean, boolean>('/community/population', data)
+}
+
+export function updatePopulation(id: number, data: PopulationEntity) {
+  return http.put<boolean, boolean>(`/community/population/${id}`, data)
+}
+
+export function deletePopulation(id: number) {
+  return http.delete<boolean, boolean>(`/community/population/${id}`)
+}
