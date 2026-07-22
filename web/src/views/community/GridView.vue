@@ -92,7 +92,7 @@ function drawGridPolygon(grid: GridTreeVo) {
     if (!Array.isArray(coords) || coords.length < 3) return
 
     mapInstance.clearMap()
-    const polygon = new window.AMap.Polygon({
+    const polygon = new (window as any).AMap.Polygon({
       path: coords,
       fillColor: '#1e88e5',
       fillOpacity: 0.25,

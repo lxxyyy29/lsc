@@ -97,7 +97,7 @@ function takePhoto() {
     count: 3 - photos.value.length,
     sizeType: ['compressed'],
     sourceType: ['camera', 'album'],
-    success: (res) => { res.tempFilePaths.forEach(p => photos.value.push(p)) },
+    success: (res: any) => { res.tempFilePaths.forEach((p: string) => photos.value.push(p)) },
     fail: () => { uni.showToast({ title: '请选择图片', icon: 'none' }) }
   })
 }

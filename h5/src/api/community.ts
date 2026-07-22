@@ -24,8 +24,9 @@ export interface PatrolRecord {
   latitude?: number
   address?: string
   content?: string
-  photoUrls?: string[]
+  photoUrls?: string | string[]
   status?: string
+  createdAt?: string
 }
 
 export function getPatrolRecords() {
@@ -45,7 +46,7 @@ export interface ResidentReport {
   reportType: string
   title: string
   content?: string
-  photoUrls?: string[]
+  photoUrls?: string | string[]
   longitude?: number
   latitude?: number
   queryCode?: string
