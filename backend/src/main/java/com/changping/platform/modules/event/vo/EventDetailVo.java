@@ -33,7 +33,11 @@ public record EventDetailVo(
         String currentNodeStatus,
         Boolean dispatchable,
         Long areaId,
-        String areaName) {
+        String areaName,
+        Long gridId,
+        String gridName,
+        String urgencyLevel,
+        String reportSource) {
 
     public record LifecycleRecordVo(
             String action,

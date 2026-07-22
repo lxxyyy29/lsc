@@ -13,6 +13,7 @@ import com.changping.platform.modules.event.service.EventService;
 import com.changping.platform.modules.event.vo.EventDetailVo;
 import com.changping.platform.modules.integration.alarm.document.AlarmEventDocument;
 import com.changping.platform.modules.integration.alarm.service.AlarmEventMongoService;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -285,7 +286,11 @@ public class EventServiceImpl implements EventService {
                 workflowSnapshot.currentNodeStatus(),
                 workflowSnapshot.dispatchable(),
                 entity.getAreaId(),
-                entity.getAreaName());
+                entity.getAreaName(),
+                entity.getGridId(),
+                null,
+                entity.getUrgencyLevel(),
+                entity.getReportSource());
     }
 
     /**
@@ -325,7 +330,11 @@ public class EventServiceImpl implements EventService {
                 workflowSnapshot.currentNodeStatus(),
                 workflowSnapshot.dispatchable(),
                 entity == null ? null : entity.getAreaId(),
-                entity == null ? null : entity.getAreaName());
+                entity == null ? null : entity.getAreaName(),
+                entity == null ? null : entity.getGridId(),
+                null,
+                entity == null ? null : entity.getUrgencyLevel(),
+                entity == null ? null : entity.getReportSource());
     }
 
     /**
@@ -476,7 +485,11 @@ public class EventServiceImpl implements EventService {
                 workflowSnapshot.currentNodeStatus(),
                 workflowSnapshot.dispatchable(),
                 entity.getAreaId(),
-                entity.getAreaName());
+                entity.getAreaName(),
+                entity.getGridId(),
+                null,
+                entity.getUrgencyLevel(),
+                entity.getReportSource());
     }
 
     /**
@@ -670,6 +683,53 @@ public class EventServiceImpl implements EventService {
             return reference.substring(index + 1);
         }
         return reference;
+    }
+
+    @Override
+    public boolean updateUrgencyLevel(Long eventId, String urgencyLevel) {
+        String sql = "UPDATE biz_event SET urgency_level = ?, updated_at = NOW() WHERE id = ?";
+        int rows = jdbcTemplate.update(sql, urgencyLevel, eventId);
+        if (rows == 0) {
+            throw new BusinessException("EVENT_NOT_FOUND", "事件不存在");
+        }
+        return true;
+    }
+
+    @Override
+    public void autoEscalateUrgency() {
+        // 获取所有活跃事件（未关闭的）
+        List<EventEntity> activeEvents = jdbcTemplate.query(
+            "SELECT id, urgency_level, created_at FROM biz_event WHERE status NOT IN ('CLOSED', 'COMPLETED')",
+            (rs, rowNum) -> {
+                EventEntity e = new EventEntity();
+                e.setId(rs.getLong("id"));
+                e.setUrgencyLevel(rs.getString("urgency_level"));
+                e.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+                return e;
+            });
+
+        LocalDateTime now = LocalDateTime.now();
+        for (EventEntity event : activeEvents) {
+            String currentLevel = event.getUrgencyLevel();
+            if (currentLevel == null) currentLevel = "GREEN";
+
+            LocalDateTime createdAt = event.getCreatedAt();
+            if (createdAt == null) continue;
+
+            long hours = java.time.Duration.between(createdAt, now).toHours();
+            String newLevel = currentLevel;
+
+            if (hours >= 48 && !"RED".equals(currentLevel)) {
+                newLevel = "RED";
+            } else if (hours >= 24 && "GREEN".equals(currentLevel)) {
+                newLevel = "YELLOW";
+            }
+
+            if (!newLevel.equals(currentLevel)) {
+                jdbcTemplate.update("UPDATE biz_event SET urgency_level = ?, updated_at = NOW() WHERE id = ?",
+                    newLevel, event.getId());
+            }
+        }
     }
 
     private record WorkflowSnapshot(

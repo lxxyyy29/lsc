@@ -1,5 +1,6 @@
 package com.changping.platform.modules.event.controller;
 
+import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.common.response.PagedResult;
 import com.changping.platform.modules.auth.model.AuthenticatedUser;
@@ -21,12 +22,14 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Author tangxinglin
@@ -175,6 +178,29 @@ public class EventController {
         for (Long id : ids) {
             eventService.deleteEvent(id);
         }
+        return ApiResponse.ok(null);
+    }
+
+    /**
+     * 更新事件紧急程度（三色分级）
+     */
+    @PutMapping("/{id}/urgency")
+    public ApiResponse<Boolean> updateUrgency(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        permissionGuard.require(PermissionCodes.API_EVENT_CREATE);
+        String level = body.get("urgencyLevel");
+        if (level == null || !List.of("GREEN", "YELLOW", "RED").contains(level)) {
+            throw new BusinessException("VALIDATION_ERROR", "紧急程度必须是 GREEN/YELLOW/RED");
+        }
+        return ApiResponse.ok(eventService.updateUrgencyLevel(id, level));
+    }
+
+    /**
+     * 手动触发三色分级自动升级
+     */
+    @PostMapping("/auto-escalate")
+    public ApiResponse<Void> autoEscalate() {
+        permissionGuard.require(PermissionCodes.API_EVENT_CREATE);
+        eventService.autoEscalateUrgency();
         return ApiResponse.ok(null);
     }
 }

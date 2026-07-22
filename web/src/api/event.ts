@@ -33,6 +33,10 @@ export interface EventListItem {
   dispatchable?: boolean
   areaId?: number | null
   areaName?: string | null
+  gridId?: number | null
+  gridName?: string | null
+  urgencyLevel?: string
+  reportSource?: string
 }
 
 export interface EventLifecycleRecord {

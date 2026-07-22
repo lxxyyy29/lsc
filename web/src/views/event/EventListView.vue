@@ -57,6 +57,7 @@
                 <span>◫ 流程状态</span>
                 <div class="event-card__status-wrap">
                   <span class="event-status-chip" :class="`event-status-chip--${item.statusTone}`">{{ item.statusLabel }}</span>
+                  <span v-if="item.urgencyLevel" class="urgency-chip" :class="`urgency-chip--${item.urgencyLevel.toLowerCase()}`">{{ urgencyLabel(item.urgencyLevel) }}</span>
                 </div>
               </div>
 
@@ -203,6 +204,11 @@ interface EventCardItem extends EventListItem {
   processNodes: EventProcessTemplateNode[]
   coverImage?: string
   districtName: string
+  urgencyLevel?: string
+}
+
+function urgencyLabel(level?: string) {
+  return level === 'RED' ? '紧急' : level === 'YELLOW' ? '重点' : level === 'GREEN' ? '一般' : ''
 }
 
 interface DispatchFormState {
@@ -782,6 +788,39 @@ onMounted(() => {
 .event-status-chip--info {
   background: rgba(144, 147, 153, 0.16);
   color: #d0d2d6;
+}
+
+/* 三色分级紧急程度标签 */
+.urgency-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  white-space: nowrap;
+  margin-left: 4px;
+}
+
+.urgency-chip--green {
+  background: rgba(103, 194, 58, 0.18);
+  color: #8ce56d;
+}
+
+.urgency-chip--yellow {
+  background: rgba(230, 162, 60, 0.18);
+  color: #f0c060;
+}
+
+.urgency-chip--red {
+  background: rgba(245, 108, 108, 0.22);
+  color: #ff8080;
+  animation: urgency-pulse 2s ease-in-out infinite;
+}
+
+@keyframes urgency-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 .event-card__actions button,

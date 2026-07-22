@@ -46,4 +46,16 @@ public interface EventService {
      * @return void
      */
     void deleteEvent(Long eventId);
+
+    /**
+     * 更新事件紧急程度
+     */
+    boolean updateUrgencyLevel(Long eventId, String urgencyLevel);
+
+    /**
+     * 三色分级自动升级：超期未处置的事件自动升级紧急程度
+     * GREEN -> YELLOW (超过24小时)
+     * YELLOW -> RED (超过48小时)
+     */
+    void autoEscalateUrgency();
 }
