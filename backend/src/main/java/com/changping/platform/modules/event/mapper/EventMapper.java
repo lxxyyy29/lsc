@@ -40,6 +40,9 @@ public class EventMapper {
         entity.setLatitude(rs.getBigDecimal("latitude"));
         entity.setAreaId(rs.getObject("area_id", Long.class));
         entity.setAreaName(rs.getString("area_name"));
+        entity.setGridId(rs.getObject("grid_id", Long.class));
+        entity.setUrgencyLevel(rs.getString("urgency_level"));
+        entity.setReportSource(rs.getString("report_source"));
         Timestamp occurredAt = rs.getTimestamp("occurred_at");
         if (occurredAt != null) {
             entity.setOccurredAt(occurredAt.toLocalDateTime());
@@ -148,7 +151,7 @@ public class EventMapper {
         String placeholders = distinctIds.stream().map(id -> "?").collect(Collectors.joining(", "));
         List<EventEntity> events = jdbcTemplate.query(
                 "SELECT id, event_code, external_event_id, title, description, source_type, source_system, event_type, "
-                        + "status, incident_address, longitude, latitude, area_id, area_name, occurred_at, created_at, updated_at "
+                        + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at "
                         + "FROM biz_event WHERE external_event_id IN (" + placeholders + ")",
                 EVENT_ROW_MAPPER,
                 distinctIds.toArray());

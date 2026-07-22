@@ -791,7 +791,7 @@ onMounted(() => {
 }
 
 /* 三色分级紧急程度标签 */
-.urgency-chip {
+:deep(.urgency-chip) {
   display: inline-flex;
   align-items: center;
   min-height: 20px;
@@ -802,19 +802,22 @@ onMounted(() => {
   margin-left: 4px;
 }
 
-.urgency-chip--green {
-  background: rgba(103, 194, 58, 0.18);
+:deep(.urgency-chip--green) {
+  background: rgba(103, 194, 58, 0.25);
   color: #8ce56d;
+  border: 1px solid rgba(103, 194, 58, 0.4);
 }
 
-.urgency-chip--yellow {
-  background: rgba(230, 162, 60, 0.18);
+:deep(.urgency-chip--yellow) {
+  background: rgba(230, 162, 60, 0.25);
   color: #f0c060;
+  border: 1px solid rgba(230, 162, 60, 0.4);
 }
 
-.urgency-chip--red {
-  background: rgba(245, 108, 108, 0.22);
+:deep(.urgency-chip--red) {
+  background: rgba(245, 108, 108, 0.3);
   color: #ff8080;
+  border: 1px solid rgba(245, 108, 108, 0.5);
   animation: urgency-pulse 2s ease-in-out infinite;
 }
 

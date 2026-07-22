@@ -114,6 +114,10 @@ interface BackendEventDetail {
   dispatchable?: boolean | null
   areaId?: number | null
   areaName?: string | null
+  gridId?: number | null
+  gridName?: string | null
+  urgencyLevel?: string | null
+  reportSource?: string | null
 }
 
 interface BackendDispatchResponse {
@@ -388,7 +392,11 @@ function mapEventDetail(item: BackendEventDetail): EventDetail | null {
     currentNodeStatus: item.currentNodeStatus ? mapNodeStatus(item.currentNodeStatus) : undefined,
     dispatchable: item.dispatchable ?? ['PENDING_AUDIT', 'AUDITING', 'WAITING_DISPATCH', 'REJECTED'].includes(currentStatus),
     areaId: item.areaId ?? null,
-    areaName: item.areaName ?? null
+    areaName: item.areaName ?? null,
+    urgencyLevel: item.urgencyLevel ?? undefined,
+    reportSource: item.reportSource ?? undefined,
+    gridId: item.gridId ?? undefined,
+    gridName: item.gridName ?? undefined
   }
 }
 

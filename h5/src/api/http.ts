@@ -8,6 +8,7 @@ type HttpLikeClient = {
   post<T = unknown, R = T>(url: string, data?: unknown, config?: unknown): Promise<R>
   put<T = unknown, R = T>(url: string, data?: unknown, config?: unknown): Promise<R>
   delete<T = unknown, R = T>(url: string, config?: unknown): Promise<R>
+  upload<T = unknown>(url: string, filePath: string, formData?: Record<string, unknown>): Promise<T>
 }
 
 interface ApiResponse<T> {
@@ -125,9 +126,28 @@ export function createHttpClient(config?: AxiosRequestConfig) {
   return client as AxiosInstance
 }
 
-export const http: HttpLikeClient = createHttpClient({
+const axiosClient = createHttpClient({
   baseURL: resolveApiBaseUrl()
-}) as unknown as HttpLikeClient
+})
+
+export const http: HttpLikeClient = {
+  get: (url, config) => (axiosClient as any).get(url, config),
+  post: (url, data, config) => (axiosClient as any).post(url, data, config),
+  put: (url, data, config) => (axiosClient as any).put(url, data, config),
+  delete: (url, config) => (axiosClient as any).delete(url, config),
+  upload: (url, filePath, formData) => {
+    const form = new FormData()
+    form.append('file', filePath as any)
+    if (formData) {
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value != null) form.append(key, String(value))
+      })
+    }
+    return (axiosClient as any).post(url, form, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  }
+}
 // #endif
 
 // #ifdef MP-WEIXIN

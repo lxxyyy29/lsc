@@ -8,7 +8,7 @@
     <view class="form-card">
       <view class="form-item">
         <text class="label">所属网格</text>
-        <picker :range="gridNameList" range-key="label" @change="onGridChange">
+        <picker :range="gridNameList" @change="onGridChange">
           <view class="picker-text">{{ selectedGridName || '请选择网格' }}</view>
         </picker>
       </view>
@@ -46,6 +46,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { getGridTree, createPatrolRecord, GridTreeVo, PatrolRecord } from '../../src/api/community'
+import { getH5Session } from '../../src/api/auth'
 
 interface GridOption {
   label: string
@@ -62,10 +63,7 @@ const latitude = ref<number | null>(null)
 const photos = ref<string[]>([])
 const content = ref('')
 
-const gridNameList = computed(() => gridOptions.value.map(g => ({
-  label: g.label,
-  value: g.value
-})))
+const gridNameList = computed(() => gridOptions.value.map(g => g.label))
 
 function flattenGrids(nodes: GridTreeVo[], prefix: string = '') {
   nodes.forEach(n => {
@@ -105,7 +103,34 @@ function takePhoto() {
     sizeType: ['compressed'],
     sourceType: ['camera', 'album'],
     success: (res: any) => {
-      res.tempFilePaths.forEach((p: string) => photos.value.push(p))
+      const paths = res.tempFilePaths || []
+      paths.forEach((p: string) => {
+        // 上传文件
+        uni.uploadFile({
+          url: 'http://localhost:8080/api/media/upload',
+          filePath: p,
+          name: 'file',
+          formData: {
+            businessType: 'PATROL'
+          },
+          header: {
+            Authorization: `Bearer ${getH5Session()?.token || ''}`
+          },
+          success: (uploadRes: any) => {
+            try {
+              const data = JSON.parse(uploadRes.data)
+              if (data.success && data.data?.fileUrl) {
+                photos.value.push(data.data.fileUrl)
+              }
+            } catch (e) {
+              console.error('解析上传响应失败', e)
+            }
+          },
+          fail: () => {
+            uni.showToast({ title: '上传失败', icon: 'none' })
+          }
+        })
+      })
     },
     fail: () => {
       uni.showToast({ title: '请选择图片', icon: 'none' })
