@@ -2,7 +2,10 @@
   <section class="page-container">
     <header class="page-header">
       <h2>房屋/出租屋管理</h2>
-      <el-button type="primary" @click="handleAdd">新增房屋</el-button>
+      <div class="page-header__actions">
+        <el-button @click="handleExport">导出台账</el-button>
+        <el-button type="primary" @click="handleAdd">新增房屋</el-button>
+      </div>
     </header>
     <div class="page-filters">
       <el-form :inline="true" :model="filterForm">
@@ -103,6 +106,7 @@ async function loadData() {
 async function loadGridTree() { try { gridTree.value = await getGridTree() } catch (e) { console.error(e) } }
 function handleSearch() { loadData() }
 function handleReset() { filterForm.gridId = undefined; filterForm.keyword = ''; loadData() }
+function handleExport() { window.open('/api/community/export/buildings', '_blank') }
 function handleAdd() { Object.assign(form, defaultForm()); dialogMode.value = 'add'; dialogVisible.value = true }
 function handleEdit(row: BuildingEntity) { Object.assign(form, row); dialogMode.value = 'edit'; dialogVisible.value = true }
 
@@ -124,6 +128,7 @@ onMounted(() => { loadGridTree(); loadData() })
 <style scoped>
 .page-container { padding: 20px; height: 100%; display: flex; flex-direction: column; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.page-header__actions { display: flex; gap: 8px; }
 .page-header h2 { margin: 0; font-size: 18px; color: var(--fg-text-primary); }
 .page-filters { margin-bottom: 16px; padding: 16px; background: var(--fg-bg-card); border: 1px solid var(--fg-border); border-radius: var(--fg-radius-lg); }
 :deep(.el-form-item__label) { color: var(--fg-text-secondary); }

@@ -2,7 +2,10 @@
   <section class="page-container">
     <header class="page-header">
       <h2>实有人口管理</h2>
-      <el-button type="primary" @click="handleAdd">新增人口</el-button>
+      <div class="page-header__actions">
+        <el-button @click="handleExport">导出台账</el-button>
+        <el-button type="primary" @click="handleAdd">新增人口</el-button>
+      </div>
     </header>
 
     <div class="page-filters">
@@ -185,6 +188,11 @@ function handleReset() {
   loadData()
 }
 
+function handleExport() {
+  window.open('/api/community/export/population', '_blank')
+}
+}
+
 function handleAdd() {
   Object.assign(form, defaultForm())
   dialogMode.value = 'add'
@@ -239,6 +247,11 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.page-header__actions {
+  display: flex;
+  gap: 8px;
 }
 
 .page-header h2 {

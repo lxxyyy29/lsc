@@ -150,6 +150,13 @@ const LEGACY_MENU_DEFINITIONS: LegacyMenuDefinition[] = [
     parentCode: 'catalog:community'
   },
   {
+    aliases: ['menu:big-screen:view'],
+    permissionName: '综合监管大屏',
+    path: '/big-screen',
+    component: 'BigScreenView',
+    sortOrder: 45
+  },
+  {
     aliases: ['menu:event:list'],
     permissionName: '事件中心',
     path: '/events',

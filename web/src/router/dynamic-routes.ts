@@ -51,6 +51,15 @@ const dynamicMenuRoutes: RouteRecordRaw[] = [
     meta: {
       permission: 'menu:community:dashboard'
     }
+  },
+  {
+    path: 'big-screen',
+    name: 'dynamic-menu-big-screen',
+    component: () => import('../views/BigScreenView.vue'),
+    meta: {
+      permission: 'menu:big-screen:view',
+      fullscreen: true
+    }
   }
 ]
 
