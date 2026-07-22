@@ -129,9 +129,9 @@ async function chooseAndUpload(type: 'image' | 'video') {
           attachments.value = [
             ...attachments.value,
             {
-              id: `${uploaded.name}-${uploaded.url}`,
+              id: `${uploaded.name}-${(uploaded as any).url}`,
               fileName: uploaded.name,
-              fileUrl: uploaded.url,
+              fileUrl: (uploaded as any).url,
               fileType: 'IMAGE'
             }
           ]
@@ -143,7 +143,7 @@ async function chooseAndUpload(type: 'image' | 'video') {
 
   chooser?.({
     success: async (result) => {
-      const filePath = (result as UniApp.ChooseVideoSuccessCallbackResult).tempFilePath
+      const filePath = (result as any).tempFilePath
       if (!filePath) {
         return
       }
@@ -151,9 +151,9 @@ async function chooseAndUpload(type: 'image' | 'video') {
       attachments.value = [
         ...attachments.value,
         {
-          id: `${uploaded.name}-${uploaded.url}`,
+          id: `${uploaded.name}-${(uploaded as any).url}`,
           fileName: uploaded.name,
-          fileUrl: uploaded.url,
+          fileUrl: (uploaded as any).url,
           fileType: 'VIDEO'
         }
       ]

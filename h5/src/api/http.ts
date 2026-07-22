@@ -165,7 +165,7 @@ function createUniHttpClient(): HttpLikeClient {
       uni.request({
         url: `${resolveApiBaseUrl()}${url}`,
         method,
-        data,
+        data: data as any,
         header: headers,
         success: (response) => {
           const payload = response.data as ApiResponse<R>

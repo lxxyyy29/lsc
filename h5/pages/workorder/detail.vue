@@ -302,8 +302,8 @@ const mapMarkers = computed(() => {
 
 const hasMapCoords = computed(() => {
   if (!sourceEvent.value) return false
-  const lng = sourceEvent.value.longitude
-  const lat = sourceEvent.value.latitude
+  const lng = sourceEvent.value?.longitude
+  const lat = sourceEvent.value?.latitude
   return lng !== 0 && lat !== 0 && Number.isFinite(lng) && Number.isFinite(lat)
 })
 
@@ -460,8 +460,8 @@ async function initDetailMap() {
     plugins: []
   })
 
-  const lng = sourceEvent.value.longitude
-  const lat = sourceEvent.value.latitude
+  const lng = sourceEvent.value?.longitude
+  const lat = sourceEvent.value?.latitude
 
   const satelliteLayer = new AMapLib.TileLayer.Satellite()
   const roadNetLayer = new AMapLib.TileLayer.RoadNet()
@@ -517,7 +517,7 @@ async function chooseAndUpload(type: 'image' | 'video') {
   uni.chooseVideo?.({
     sourceType: ['album', 'camera'],
     success: async (res) => {
-      const filePath = (res as UniApp.ChooseVideoSuccessCallbackResult).tempFilePath
+      const filePath = (res as any).tempFilePath
       if (!filePath) return
       isUploading.value = true
       try {

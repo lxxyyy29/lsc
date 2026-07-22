@@ -460,8 +460,8 @@ async function initViewMap() {
     plugins: []
   })
 
-  const lng = detail.value.longitude
-  const lat = detail.value.latitude
+  const lng = detail.value?.longitude
+  const lat = detail.value?.latitude
 
   const satelliteLayer = new AMapLib.TileLayer.Satellite()
   const roadNetLayer = new AMapLib.TileLayer.RoadNet()
