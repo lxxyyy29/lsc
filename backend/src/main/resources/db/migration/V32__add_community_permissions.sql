@@ -8,8 +8,8 @@ SELECT 'catalog:community', '网格治理', 'CATALOG', 'WEB', NULL, '/community/
 WHERE NOT EXISTS (SELECT 1 FROM sys_permission WHERE permission_code = 'catalog:community');
 
 -- GIS网格可视化菜单
-INSERT INTO sys_permission (permission_code, permission_name, permission_type, client_type, parent_id, path, sort_order, status, remark, created_at, updated_at)
-SELECT 'menu:community:grid', 'GIS网格可视化', 'MENU', 'WEB', p.id, '/community/grid', 15, 'ACTIVE', '网格治理-GIS网格可视化', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+INSERT INTO sys_permission (permission_code, permission_name, permission_type, client_type, parent_id, path, component, sort_order, status, remark, created_at, updated_at)
+SELECT 'menu:community:grid', 'GIS网格可视化', 'MENU', 'WEB', p.id, '/community/grid', 'community/GridView', 15, 'ACTIVE', '网格治理-GIS网格可视化', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 FROM sys_permission p
 WHERE p.permission_code = 'catalog:community'
   AND NOT EXISTS (SELECT 1 FROM sys_permission WHERE permission_code = 'menu:community:grid');
