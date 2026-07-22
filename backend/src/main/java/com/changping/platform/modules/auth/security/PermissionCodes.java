@@ -179,6 +179,8 @@ public final class PermissionCodes {
     public static final String MENU_COMMUNITY_PLACE = "menu:community:place";
     /** 网格治理-组织力量管理菜单权限 */
     public static final String MENU_COMMUNITY_ORG_MEMBER = "menu:community:org-member";
+    /** 网格治理-BI态势看板菜单权限 */
+    public static final String MENU_COMMUNITY_DASHBOARD = "menu:community:dashboard";
 
     /** 业务管理目录权限 */
     public static final String CATALOG_BIZ = "catalog:biz";

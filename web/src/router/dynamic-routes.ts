@@ -43,6 +43,14 @@ const dynamicMenuRoutes: RouteRecordRaw[] = [
     meta: {
       permission: 'menu:community:org-member'
     }
+  },
+  {
+    path: 'community/dashboard',
+    name: 'dynamic-menu-community-dashboard',
+    component: () => import('../views/community/DashboardView.vue'),
+    meta: {
+      permission: 'menu:community:dashboard'
+    }
   }
 ]
 

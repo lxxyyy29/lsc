@@ -142,6 +142,14 @@ const LEGACY_MENU_DEFINITIONS: LegacyMenuDefinition[] = [
     parentCode: 'catalog:community'
   },
   {
+    aliases: ['menu:community:dashboard'],
+    permissionName: 'BI态势看板',
+    path: '/community/dashboard',
+    component: 'community/DashboardView',
+    sortOrder: 40,
+    parentCode: 'catalog:community'
+  },
+  {
     aliases: ['menu:event:list'],
     permissionName: '事件中心',
     path: '/events',

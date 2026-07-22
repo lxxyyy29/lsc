@@ -189,3 +189,12 @@ export function updateOrgMember(id: number, data: OrgMemberEntity) {
 export function deleteOrgMember(id: number) {
   return http.delete<boolean, boolean>(`/community/org-members/${id}`)
 }
+
+// BI 看板
+export function getDashboardOverview() {
+  return http.get<any, any>('/community/dashboard/overview')
+}
+
+export function getGridStats() {
+  return http.get<any, any>('/community/dashboard/grid-stats')
+}
