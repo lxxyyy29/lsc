@@ -130,7 +130,7 @@ const axiosClient = createHttpClient({
   baseURL: resolveApiBaseUrl()
 })
 
-export const http: HttpLikeClient = {
+const axiosHttp: HttpLikeClient = {
   get: (url, config) => (axiosClient as any).get(url, config),
   post: (url, data, config) => (axiosClient as any).post(url, data, config),
   put: (url, data, config) => (axiosClient as any).put(url, data, config),
@@ -204,9 +204,41 @@ function createUniHttpClient(): HttpLikeClient {
     },
     delete(url) {
       return request('DELETE', url)
+    },
+    upload(url, filePath, formData) {
+      return new Promise((resolve, reject) => {
+        const session = getH5Session()
+        const headers: Record<string, string> = {}
+        if (session?.token) {
+          headers.Authorization = `Bearer ${session.token}`
+        }
+        uni.uploadFile({
+          url: `${resolveApiBaseUrl()}${url}`,
+          filePath: filePath as string,
+          name: 'file',
+          formData: formData as Record<string, string>,
+          header: headers,
+          success: (response) => {
+            try {
+              const payload = JSON.parse(response.data)
+              if (payload && payload.success) {
+                resolve(payload.data)
+              } else {
+                reject(new HttpResponseError(payload?.message || '上传失败'))
+              }
+            } catch (e) {
+              reject(new HttpResponseError('上传失败'))
+            }
+          },
+          fail: () => reject(new HttpResponseError('上传失败'))
+        })
+      })
     }
   }
 }
 
-export const http: HttpLikeClient = createUniHttpClient()
 // #endif
+
+// 默认导出 axios 版本（非微信小程序环境）
+// 微信小程序环境需要在构建时替换
+export { axiosHttp as http }

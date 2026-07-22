@@ -24,7 +24,7 @@ export interface GridTreeVo {
 }
 
 export function getGridTree() {
-  return webApi.get<GridTreeVo[]>('/community/grids/tree').then(res => res.data.data)
+  return webApi.get<{ success: boolean; data: GridTreeVo[] }>('/community/grids/tree').then(res => res.data.data)
 }
 
 // ==================== 巡查记录 ====================
@@ -42,11 +42,11 @@ export interface PatrolRecord {
 }
 
 export function getPatrolRecords() {
-  return webApi.get<PatrolRecord[]>('/community/patrol-records').then(res => res.data.data)
+  return webApi.get<{ success: boolean; data: PatrolRecord[] }>('/community/patrol-records').then(res => res.data.data)
 }
 
 export function createPatrolRecord(data: PatrolRecord) {
-  return webApi.post<boolean>('/community/patrol-records', data).then(res => res.data.data)
+  return webApi.post<{ success: boolean; data: boolean }>('/community/patrol-records', data).then(res => res.data.data)
 }
 
 // ==================== 居民上报 ====================
@@ -66,15 +66,15 @@ export interface ResidentReport {
 }
 
 export function createResidentReport(data: ResidentReport) {
-  return webApi.post<boolean>('/community/resident-reports', data).then(res => res.data.data)
+  return webApi.post<{ success: boolean; data: boolean }>('/community/resident-reports', data).then(res => res.data.data)
 }
 
 export function getResidentReports() {
-  return webApi.get<ResidentReport[]>('/community/resident-reports').then(res => res.data.data)
+  return webApi.get<{ success: boolean; data: ResidentReport[] }>('/community/resident-reports').then(res => res.data.data)
 }
 
 export function getResidentReportByCode(queryCode: string) {
-  return webApi.get<ResidentReport>(`/community/resident-reports/code/${queryCode}`).then(res => res.data.data)
+  return webApi.get<{ success: boolean; data: ResidentReport }>(`/community/resident-reports/code/${queryCode}`).then(res => res.data.data)
 }
 
 // 媒体文件上传
@@ -84,5 +84,5 @@ export function uploadMedia(file: string, businessType?: string, businessId?: nu
   form.append('businessType', businessType || 'GENERAL')
   if (businessId) form.append('businessId', String(businessId))
   if (fileType) form.append('fileType', fileType)
-  return webApi.post<any>('/media/upload', form).then(res => res.data.data)
+  return webApi.post<{ success: boolean; data: any }>('/media/upload', form).then(res => res.data.data)
 }
