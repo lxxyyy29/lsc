@@ -173,6 +173,12 @@ public final class PermissionCodes {
     public static final String MENU_COMMUNITY_GRID = "menu:community:grid";
     /** 网格治理-实有人口管理菜单权限 */
     public static final String MENU_COMMUNITY_POPULATION = "menu:community:population";
+    /** 网格治理-房屋管理菜单权限 */
+    public static final String MENU_COMMUNITY_BUILDING = "menu:community:building";
+    /** 网格治理-场所管理菜单权限 */
+    public static final String MENU_COMMUNITY_PLACE = "menu:community:place";
+    /** 网格治理-组织力量管理菜单权限 */
+    public static final String MENU_COMMUNITY_ORG_MEMBER = "menu:community:org-member";
 
     /** 业务管理目录权限 */
     public static final String CATALOG_BIZ = "catalog:biz";

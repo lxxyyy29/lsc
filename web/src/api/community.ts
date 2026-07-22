@@ -94,3 +94,98 @@ export function updatePopulation(id: number, data: PopulationEntity) {
 export function deletePopulation(id: number) {
   return http.delete<boolean, boolean>(`/community/population/${id}`)
 }
+
+// 房屋
+export interface BuildingEntity {
+  id?: number
+  gridId?: number
+  buildingNo: string
+  address?: string
+  householdCount?: number
+  landlordName?: string
+  landlordPhone?: string
+  fireRiskLevel?: string
+  isGroupRental?: number
+  status?: string
+  remark?: string
+}
+
+export function listBuildings(gridId?: number) {
+  return http.get<BuildingEntity[], BuildingEntity[]>('/community/buildings',
+    gridId ? { params: { gridId } } : {})
+}
+export function getBuildingDetail(id: number) {
+  return http.get<BuildingEntity, BuildingEntity>(`/community/buildings/${id}`)
+}
+export function createBuilding(data: BuildingEntity) {
+  return http.post<boolean, boolean>('/community/buildings', data)
+}
+export function updateBuilding(id: number, data: BuildingEntity) {
+  return http.put<boolean, boolean>(`/community/buildings/${id}`, data)
+}
+export function deleteBuilding(id: number) {
+  return http.delete<boolean, boolean>(`/community/buildings/${id}`)
+}
+
+// 场所
+export interface PlaceEntity {
+  id?: number
+  gridId?: number
+  placeName: string
+  placeType?: string
+  address?: string
+  contactName?: string
+  contactPhone?: string
+  fireFacilities?: string
+  riskTags?: string
+  longitude?: number
+  latitude?: number
+  status?: string
+  remark?: string
+}
+
+export function listPlaces(gridId?: number) {
+  return http.get<PlaceEntity[], PlaceEntity[]>('/community/places',
+    gridId ? { params: { gridId } } : {})
+}
+export function getPlaceDetail(id: number) {
+  return http.get<PlaceEntity, PlaceEntity>(`/community/places/${id}`)
+}
+export function createPlace(data: PlaceEntity) {
+  return http.post<boolean, boolean>('/community/places', data)
+}
+export function updatePlace(id: number, data: PlaceEntity) {
+  return http.put<boolean, boolean>(`/community/places/${id}`, data)
+}
+export function deletePlace(id: number) {
+  return http.delete<boolean, boolean>(`/community/places/${id}`)
+}
+
+// 组织力量
+export interface OrgMemberEntity {
+  id?: number
+  gridId?: number
+  sysUserId?: number
+  memberType?: string
+  name: string
+  phone?: string
+  status?: string
+  remark?: string
+}
+
+export function listOrgMembers(gridId?: number) {
+  return http.get<OrgMemberEntity[], OrgMemberEntity[]>('/community/org-members',
+    gridId ? { params: { gridId } } : {})
+}
+export function getOrgMemberDetail(id: number) {
+  return http.get<OrgMemberEntity, OrgMemberEntity>(`/community/org-members/${id}`)
+}
+export function createOrgMember(data: OrgMemberEntity) {
+  return http.post<boolean, boolean>('/community/org-members', data)
+}
+export function updateOrgMember(id: number, data: OrgMemberEntity) {
+  return http.put<boolean, boolean>(`/community/org-members/${id}`, data)
+}
+export function deleteOrgMember(id: number) {
+  return http.delete<boolean, boolean>(`/community/org-members/${id}`)
+}

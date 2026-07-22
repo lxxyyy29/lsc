@@ -118,6 +118,30 @@ const LEGACY_MENU_DEFINITIONS: LegacyMenuDefinition[] = [
     parentCode: 'catalog:community'
   },
   {
+    aliases: ['menu:community:building'],
+    permissionName: '房屋/出租屋管理',
+    path: '/community/buildings',
+    component: 'community/BuildingListView',
+    sortOrder: 25,
+    parentCode: 'catalog:community'
+  },
+  {
+    aliases: ['menu:community:place'],
+    permissionName: '场所资源管理',
+    path: '/community/places',
+    component: 'community/PlaceListView',
+    sortOrder: 30,
+    parentCode: 'catalog:community'
+  },
+  {
+    aliases: ['menu:community:org-member'],
+    permissionName: '组织力量管理',
+    path: '/community/org-members',
+    component: 'community/OrgMemberListView',
+    sortOrder: 35,
+    parentCode: 'catalog:community'
+  },
+  {
     aliases: ['menu:event:list'],
     permissionName: '事件中心',
     path: '/events',

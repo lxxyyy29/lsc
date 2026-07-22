@@ -1,0 +1,31 @@
+package com.changping.platform.modules.community.service.impl;
+
+import com.changping.platform.modules.community.entity.OrgMemberEntity;
+import com.changping.platform.modules.community.mapper.OrgMemberMapper;
+import com.changping.platform.modules.community.service.OrgMemberService;
+import org.springframework.stereotype.Service;
+import java.util.List;
+
+@Service
+public class OrgMemberServiceImpl implements OrgMemberService {
+
+    private final OrgMemberMapper mapper;
+    public OrgMemberServiceImpl(OrgMemberMapper mapper) { this.mapper = mapper; }
+
+    @Override
+    public List<OrgMemberEntity> list(Long gridId) {
+        return gridId != null ? mapper.findByGridId(gridId) : mapper.findAllActive();
+    }
+    @Override
+    public OrgMemberEntity detail(Long id) { return mapper.findById(id); }
+    @Override
+    public boolean create(OrgMemberEntity e) {
+        if (e.getStatus() == null) e.setStatus("ACTIVE");
+        mapper.insert(e);
+        return true;
+    }
+    @Override
+    public boolean update(OrgMemberEntity e) { return mapper.update(e) > 0; }
+    @Override
+    public boolean delete(Long id) { return mapper.deleteById(id) > 0; }
+}

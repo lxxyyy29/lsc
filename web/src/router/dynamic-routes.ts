@@ -19,6 +19,30 @@ const dynamicMenuRoutes: RouteRecordRaw[] = [
     meta: {
       permission: 'menu:community:population'
     }
+  },
+  {
+    path: 'community/buildings',
+    name: 'dynamic-menu-community-buildings',
+    component: () => import('../views/community/BuildingListView.vue'),
+    meta: {
+      permission: 'menu:community:building'
+    }
+  },
+  {
+    path: 'community/places',
+    name: 'dynamic-menu-community-places',
+    component: () => import('../views/community/PlaceListView.vue'),
+    meta: {
+      permission: 'menu:community:place'
+    }
+  },
+  {
+    path: 'community/org-members',
+    name: 'dynamic-menu-community-org-members',
+    component: () => import('../views/community/OrgMemberListView.vue'),
+    meta: {
+      permission: 'menu:community:org-member'
+    }
   }
 ]
 
