@@ -1,7 +1,5 @@
 package com.changping.platform.modules.community.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.community.entity.GridEntity;
 import com.changping.platform.modules.community.mapper.GridMapper;
@@ -10,33 +8,33 @@ import com.changping.platform.modules.community.vo.GridTreeVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class GridServiceImpl extends ServiceImpl<GridMapper, GridEntity> implements GridService {
+public class GridServiceImpl implements GridService {
+
+    private final GridMapper gridMapper;
+
+    public GridServiceImpl(GridMapper gridMapper) {
+        this.gridMapper = gridMapper;
+    }
 
     @Override
     public List<GridTreeVo> tree() {
-        List<GridEntity> all = list(new LambdaQueryWrapper<GridEntity>()
-                .orderByAsc(GridEntity::getSortOrder)
-                .orderByAsc(GridEntity::getId));
-
+        List<GridEntity> all = gridMapper.findAllActive();
         return buildTree(all, null);
     }
 
     @Override
     public List<GridEntity> children(Long parentId) {
-        return list(new LambdaQueryWrapper<GridEntity>()
-                .eq(GridEntity::getParentId, parentId)
-                .orderByAsc(GridEntity::getSortOrder));
+        return gridMapper.findByParentId(parentId);
     }
 
     @Override
     public GridEntity detail(Long id) {
-        return getById(id);
+        return gridMapper.findById(id);
     }
 
     @Override
@@ -44,7 +42,7 @@ public class GridServiceImpl extends ServiceImpl<GridMapper, GridEntity> impleme
         if (entity.getParentId() == null && entity.getGridLevel() == null) {
             entity.setGridLevel(1);
         } else if (entity.getParentId() != null) {
-            GridEntity parent = getById(entity.getParentId());
+            GridEntity parent = gridMapper.findById(entity.getParentId());
             if (parent == null) {
                 throw new BusinessException("GRID_PARENT_NOT_FOUND", "父网格不存在");
             }
@@ -56,7 +54,8 @@ public class GridServiceImpl extends ServiceImpl<GridMapper, GridEntity> impleme
         if (entity.getSortOrder() == null) {
             entity.setSortOrder(0);
         }
-        return save(entity);
+        gridMapper.insert(entity);
+        return true;
     }
 
     @Override
@@ -64,16 +63,15 @@ public class GridServiceImpl extends ServiceImpl<GridMapper, GridEntity> impleme
         if (entity.getId() == null) {
             throw new BusinessException("GRID_ID_REQUIRED", "网格ID不能为空");
         }
-        return updateById(entity);
+        return gridMapper.update(entity) > 0;
     }
 
     @Override
     public boolean delete(Long id) {
-        long childCount = count(new LambdaQueryWrapper<GridEntity>().eq(GridEntity::getParentId, id));
-        if (childCount > 0) {
+        if (gridMapper.countChildren(id) > 0) {
             throw new BusinessException("GRID_HAS_CHILDREN", "该网格下存在子网格，无法删除");
         }
-        return removeById(id);
+        return gridMapper.deleteById(id) > 0;
     }
 
     private List<GridTreeVo> buildTree(List<GridEntity> all, Long parentId) {
