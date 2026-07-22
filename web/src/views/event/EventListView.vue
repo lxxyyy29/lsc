@@ -4,6 +4,7 @@
       <section class="event-filter-panel panel" aria-label="事件筛选面板">
         <header class="event-filter-panel__header">
           <h3 class="event-filter-panel__title">查询条件</h3>
+          <button type="button" class="ghost-button" @click="handleExport">导出台账</button>
         </header>
 
         <div class="event-filter-panel__form" data-testid="event-filter-form">
@@ -321,6 +322,10 @@ function resetFilters() {
   draftStartDate.value = ''
   draftEndDate.value = ''
   applyFilters()
+}
+
+function handleExport() {
+  window.open('/api/community/export/events', '_blank')
 }
 
 function resetDispatchForm() {
