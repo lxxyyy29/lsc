@@ -3,6 +3,17 @@ import type { SystemMenuNode } from '../auth/session'
 
 const viewModules = import.meta.glob(['../views/**/*.vue', '!../views/auth/LoginView.vue'])
 
+const dynamicMenuRoutes: RouteRecordRaw[] = [
+  {
+    path: 'community/grid',
+    name: 'dynamic-menu-community-grid',
+    component: () => import('../views/community/GridView.vue'),
+    meta: {
+      permission: 'menu:community:grid'
+    }
+  }
+]
+
 const dynamicDetailRoutes: RouteRecordRaw[] = [
   {
     path: 'events/:id',
@@ -143,6 +154,14 @@ export function registerDynamicRoutes(router: Router, menuTree: SystemMenuNode[]
 
     router.addRoute('admin-root', route)
     registeredNames.add(routeName)
+  }
+
+  for (const menuRoute of dynamicMenuRoutes) {
+    const routeName = typeof menuRoute.name === 'string' ? menuRoute.name : ''
+    if (!routeName || router.hasRoute(routeName)) {
+      continue
+    }
+    router.addRoute('admin-root', menuRoute)
   }
 
   for (const detailRoute of dynamicDetailRoutes) {

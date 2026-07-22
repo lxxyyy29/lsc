@@ -167,6 +167,11 @@ public final class PermissionCodes {
     /** 查看无人机媒体文件接口权限 */
     public static final String API_DRONE_MEDIA_FILES = "api:drone:media:files";
 
+    /** 网格治理目录权限 */
+    public static final String CATALOG_COMMUNITY = "catalog:community";
+    /** 网格治理-GIS网格可视化菜单权限 */
+    public static final String MENU_COMMUNITY_GRID = "menu:community:grid";
+
     /** 业务管理目录权限 */
     public static final String CATALOG_BIZ = "catalog:biz";
     /** 辖区管理菜单权限 */

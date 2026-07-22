@@ -71,6 +71,13 @@ interface LegacyMenuGroup {
 
 const LEGACY_MENU_GROUPS: LegacyMenuGroup[] = [
   {
+    permissionCode: 'catalog:community',
+    permissionName: '网格治理',
+    path: '/community/grid',
+    icon: 'Grid',
+    sortOrder: 40
+  },
+  {
     permissionCode: 'catalog:biz',
     permissionName: '业务管理',
     path: '/areas',
@@ -93,6 +100,14 @@ const LEGACY_MENU_DEFINITIONS: LegacyMenuDefinition[] = [
     path: '/dashboard',
     component: 'dashboard/DashboardView',
     sortOrder: 10
+  },
+  {
+    aliases: ['menu:community:grid'],
+    permissionName: 'GIS网格可视化',
+    path: '/community/grid',
+    component: 'community/GridView',
+    sortOrder: 15,
+    parentCode: 'catalog:community'
   },
   {
     aliases: ['menu:event:list'],
