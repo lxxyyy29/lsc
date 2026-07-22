@@ -78,6 +78,34 @@
         "navigationStyle": "default",
         "navigationBarTitleText": "摊贩详情"
       }
+    },
+    {
+      "path": "pages/patrol/checkin",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "巡查打卡"
+      }
+    },
+    {
+      "path": "pages/patrol/history",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "巡查记录"
+      }
+    },
+    {
+      "path": "pages/resident/report",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "居民上报"
+      }
+    },
+    {
+      "path": "pages/resident/history",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "上报记录"
+      }
     }
   ],
   "tabBar": {
@@ -97,8 +125,8 @@
         "selectedIconPath": "static/tab-home-active.png"
       },
       {
-        "pagePath": "pages/workorder/list",
-        "text": "任务",
+        "pagePath": "pages/patrol/checkin",
+        "text": "巡查",
         "iconPath": "static/tab-task.png",
         "selectedIconPath": "static/tab-task-active.png"
       },

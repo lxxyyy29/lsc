@@ -1,0 +1,45 @@
+package com.changping.platform.modules.community.mapper;
+
+import com.changping.platform.modules.community.entity.PatrolRecordEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Component;
+import java.sql.ResultSet;
+import java.util.List;
+
+@Component
+public class PatrolRecordMapper {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    private static final RowMapper<PatrolRecordEntity> ROW_MAPPER = (rs, rowNum) -> {
+        PatrolRecordEntity e = new PatrolRecordEntity();
+        e.setId(rs.getLong("id"));
+        e.setGridId(rs.getLong("grid_id"));
+        e.setUserId(rs.getLong("user_id"));
+        e.setPatrolType(rs.getString("patrol_type"));
+        e.setLongitude(rs.getBigDecimal("longitude"));
+        e.setLatitude(rs.getBigDecimal("latitude"));
+        e.setAddress(rs.getString("address"));
+        e.setContent(rs.getString("content"));
+        e.setPhotoUrls(rs.getString("photo_urls"));
+        e.setStatus(rs.getString("status"));
+        e.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+        e.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+        return e;
+    };
+
+    public PatrolRecordMapper(JdbcTemplate jdbcTemplate) { this.jdbcTemplate = jdbcTemplate; }
+
+    public List<PatrolRecordEntity> findByUserId(Long userId) {
+        return jdbcTemplate.query("SELECT * FROM cmn_patrol_record WHERE user_id = ? ORDER BY created_at DESC", ROW_MAPPER, userId);
+    }
+
+    public Long insert(PatrolRecordEntity e) {
+        String sql = "INSERT INTO cmn_patrol_record (grid_id, user_id, patrol_type, longitude, latitude, address, content, photo_urls, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,NOW(),NOW())";
+        jdbcTemplate.update(sql, e.getGridId(), e.getUserId(), e.getPatrolType(),
+                e.getLongitude(), e.getLatitude(), e.getAddress(), e.getContent(),
+                e.getPhotoUrls(), e.getStatus());
+        return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+    }
+}
