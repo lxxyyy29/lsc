@@ -107,10 +107,10 @@ function levelTagType(level?: number) {
 
 function levelColor(level?: number): { fill: string; stroke: string } {
   switch (level) {
-    case 1: return { fill: 'rgba(94,162,255,0.15)', stroke: '#5ea2ff' }
-    case 2: return { fill: 'rgba(82,196,26,0.20)', stroke: '#52c41a' }
-    case 3: return { fill: 'rgba(250,173,20,0.25)', stroke: '#faad14' }
-    default: return { fill: 'rgba(140,140,140,0.2)', stroke: '#8c8c8c' }
+    case 1: return { fill: 'rgba(94,162,255,0.06)', stroke: 'rgba(94,162,255,0.5)' }
+    case 2: return { fill: 'rgba(82,196,26,0.08)', stroke: 'rgba(82,196,26,0.5)' }
+    case 3: return { fill: 'rgba(250,173,20,0.10)', stroke: 'rgba(250,173,20,0.5)' }
+    default: return { fill: 'rgba(140,140,140,0.08)', stroke: 'rgba(140,140,140,0.4)' }
   }
 }
 
@@ -190,9 +190,9 @@ function drawAllGrids() {
             const polygon = new (window as any).AMap.Polygon({
               path: coords,
               fillColor: colors.fill,
-              fillOpacity: 0.6,
+              fillOpacity: 1,
               strokeColor: colors.stroke,
-              strokeWeight: grid.gridLevel === 1 ? 3 : 2,
+              strokeWeight: grid.gridLevel === 1 ? 2 : 1,
               strokeStyle: grid.gridLevel === 1 ? 'solid' : 'dashed',
               extData: grid,
             })
@@ -200,10 +200,10 @@ function drawAllGrids() {
               selectedGrid.value = grid
             })
             polygon.on('mouseover', () => {
-              polygon.setOptions({ fillOpacity: 0.8 })
+              polygon.setOptions({ fillColor: colors.stroke, fillOpacity: 0.3 })
             })
             polygon.on('mouseout', () => {
-              polygon.setOptions({ fillOpacity: 0.6 })
+              polygon.setOptions({ fillColor: colors.fill, fillOpacity: 1 })
             })
             mapInstance.add(polygon)
             polygons.push(polygon)
