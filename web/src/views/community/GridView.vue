@@ -107,10 +107,10 @@ function levelTagType(level?: number) {
 
 function levelColor(level?: number): { fill: string; stroke: string } {
   switch (level) {
-    case 1: return { fill: 'rgba(94,162,255,0.06)', stroke: 'rgba(94,162,255,0.5)' }
-    case 2: return { fill: 'rgba(82,196,26,0.08)', stroke: 'rgba(82,196,26,0.5)' }
-    case 3: return { fill: 'rgba(250,173,20,0.10)', stroke: 'rgba(250,173,20,0.5)' }
-    default: return { fill: 'rgba(140,140,140,0.08)', stroke: 'rgba(140,140,140,0.4)' }
+    case 1: return { fill: 'rgba(94,162,255,0.12)', stroke: '#5ea2ff' }
+    case 2: return { fill: 'rgba(82,196,26,0.15)', stroke: '#73d13d' }
+    case 3: return { fill: 'rgba(250,173,20,0.18)', stroke: '#ffc53d' }
+    default: return { fill: 'rgba(140,140,140,0.12)', stroke: '#8c8c8c' }
   }
 }
 
