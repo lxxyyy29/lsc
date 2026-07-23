@@ -106,12 +106,12 @@ function levelTagType(level?: number) {
   return level === 1 ? 'primary' : level === 2 ? 'success' : 'warning'
 }
 
-function levelColor(level?: number): { fill: string; stroke: string } {
+function levelColor(level?: number): { fill: string; stroke: string; opacity: number } {
   switch (level) {
-    case 1: return { fill: 'rgba(94,162,255,0.10)', stroke: 'rgba(94,162,255,0.55)' }
-    case 2: return { fill: 'rgba(255,145,0,0.38)', stroke: '#ffffff' }
-    case 3: return { fill: 'rgba(255,145,0,0.30)', stroke: '#ffffff' }
-    default: return { fill: 'rgba(140,140,140,0.08)', stroke: 'rgba(140,140,140,0.4)' }
+    case 1: return { fill: '#5ea2ff', stroke: '#5ea2ff', opacity: 0.10 }
+    case 2: return { fill: '#ff9100', stroke: '#ffffff', opacity: 0.38 }
+    case 3: return { fill: '#ff9100', stroke: '#ffffff', opacity: 0.30 }
+    default: return { fill: '#8c8c8c', stroke: '#8c8c8c', opacity: 0.10 }
   }
 }
 
@@ -192,21 +192,22 @@ function drawAllGrids() {
             const polygon = new (window as any).AMap.Polygon({
               path: coords,
               fillColor: colors.fill,
-              fillOpacity: 1,
+              fillOpacity: colors.opacity,
               strokeColor: colors.stroke,
               strokeWeight: grid.gridLevel === 1 ? 2 : 1.5,
               strokeStyle: 'solid',
               zIndex: 2,
+              bubble: true,
               extData: grid,
             })
             polygon.on('click', () => {
               selectedGrid.value = grid
             })
             polygon.on('mouseover', () => {
-              polygon.setOptions({ fillColor: 'rgba(255,145,0,0.55)', strokeWeight: 3 })
+              polygon.setOptions({ fillOpacity: Math.min(colors.opacity + 0.2, 0.8), strokeWeight: 3 })
             })
             polygon.on('mouseout', () => {
-              polygon.setOptions({ fillColor: colors.fill, strokeWeight: grid.gridLevel === 1 ? 2 : 1.5 })
+              polygon.setOptions({ fillOpacity: colors.opacity, strokeWeight: grid.gridLevel === 1 ? 2 : 1.5 })
             })
             mapInstance.add(polygon)
             polygons.push(polygon)
