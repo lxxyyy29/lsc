@@ -121,8 +121,11 @@ function handleNodeClick(data: GridTreeVo) {
     try {
       const coords = JSON.parse(data.roiJson)
       if (Array.isArray(coords) && coords.length >= 3) {
-        mapInstance.setFitView(null, false, [60, 60, 60, 60])
-        mapInstance.setCenter(coords[0])
+        // Calculate polygon center
+        const cx = coords.reduce((s: number, c: number[]) => s + c[0], 0) / coords.length
+        const cy = coords.reduce((s: number, c: number[]) => s + c[1], 0) / coords.length
+        mapInstance.setCenter([cx, cy])
+        mapInstance.setZoom(15)
       }
     } catch (e) { /* ignore */ }
   }
@@ -203,14 +206,18 @@ function drawAllGrids() {
             polygon.on('click', () => {
               selectedGrid.value = grid
             })
+            // Calculate polygon center
+            const cx = coords.reduce((s: number, c: number[]) => s + c[0], 0) / coords.length
+            const cy = coords.reduce((s: number, c: number[]) => s + c[1], 0) / coords.length
+            const polyCenter = [cx, cy]
+
             let hoverLabel: any = null
             polygon.on('mouseover', () => {
               polygon.setOptions({ fillOpacity: Math.min(colors.opacity + 0.08, 0.25), strokeWeight: 2 })
-              // Show label on hover
-              const center = coords[0]
+              // Show label on hover at center
               hoverLabel = new (window as any).AMap.Text({
                 text: grid.gridName,
-                position: center,
+                position: polyCenter,
                 zIndex: 10,
                 style: {
                   'background-color': 'rgba(14,35,58,0.60)',
