@@ -64,15 +64,26 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { getGridTree, GridTreeVo } from '../../api/community'
+import { http } from '../../api/http'
 import AMapLoader from '@amap/amap-jsapi-loader'
+
+interface EventItem {
+  id: number
+  title: string
+  longitude: number
+  latitude: number
+  urgencyLevel: string
+  status: string
+}
 
 const tree = ref<GridTreeVo[]>([])
 const selectedGrid = ref<GridTreeVo | null>(null)
 const mapRef = ref<HTMLDivElement | null>(null)
+const events = ref<EventItem[]>([])
 
 let mapInstance: any = null
 const polygons: any[] = []
-const markers: any[] = []
+const eventMarkers: any[] = []
 
 const gridCount = computed(() => {
   let count = 0
@@ -116,11 +127,58 @@ function handleNodeClick(data: GridTreeVo) {
   }
 }
 
+function urgencyColor(level?: string): string {
+  switch (level) {
+    case 'RED': return '#ff4d4f'
+    case 'YELLOW': return '#faad14'
+    case 'GREEN': return '#52c41a'
+    default: return '#8c8c8c'
+  }
+}
+
+function drawEventMarkers() {
+  if (!mapInstance) return
+  // Clear old event markers
+  for (const m of eventMarkers) {
+    mapInstance.remove(m)
+  }
+  eventMarkers.length = 0
+
+  for (const evt of events.value) {
+    if (!evt.longitude || !evt.latitude) continue
+    const color = urgencyColor(evt.urgencyLevel)
+    const marker = new (window as any).AMap.Marker({
+      position: [evt.longitude, evt.latitude],
+      content: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 6px ${color};"></div>`,
+      offset: new (window as any).AMap.Pixel(-7, -7),
+      extData: evt,
+    })
+    marker.on('click', () => {
+      const info = new (window as any).AMap.InfoWindow({
+        content: `<div style="padding:8px 12px;background:#132a45;color:#eef5ff;border:1px solid rgba(125,163,220,0.18);border-radius:8px;">
+          <strong>${evt.title}</strong><br/>
+          <span style="color:${color};">● ${evt.urgencyLevel === 'RED' ? '紧急' : evt.urgencyLevel === 'YELLOW' ? '重点' : '一般'}</span>
+        </div>`,
+        offset: new (window as any).AMap.Pixel(0, -10),
+      })
+      info.open(mapInstance, [evt.longitude, evt.latitude])
+    })
+    mapInstance.add(marker)
+    eventMarkers.push(marker)
+  }
+}
+
+function clearMapFeatures() {
+  // Remove old polygons and labels
+  for (const p of polygons) { mapInstance.remove(p) }
+  for (const m of eventMarkers) { mapInstance.remove(m) }
+  polygons.length = 0
+  eventMarkers.length = 0
+}
+
 function drawAllGrids() {
   if (!mapInstance) return
-  mapInstance.clearMap()
-  polygons.length = 0
-  markers.length = 0
+  clearMapFeatures()
 
   const walk = (nodes: GridTreeVo[]) => {
     for (const grid of nodes) {
@@ -191,15 +249,26 @@ async function loadTree() {
   }
 }
 
+async function loadEvents() {
+  try {
+    const result = await http.get<{ items: EventItem[] }, { items: EventItem[] }>(
+      '/events', { params: { page: 1, size: 500 } }
+    )
+    events.value = result.items.filter(e => e.longitude && e.latitude)
+  } catch (e) {
+    console.error('加载事件失败', e)
+  }
+}
+
 onMounted(async () => {
-  await loadTree()
+  await Promise.all([loadTree(), loadEvents()])
 
   try {
     ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
     const AMap = await AMapLoader.load({
       key: '5e00e01d2d2b6ca9e1eed533a15572e4',
       version: '2.0',
-      plugins: ['AMap.MouseTool', 'AMap.Polygon', 'AMap.Text'],
+      plugins: ['AMap.MouseTool', 'AMap.Polygon', 'AMap.Text', 'AMap.Marker', 'AMap.InfoWindow'],
     })
 
     if (mapRef.value) {
@@ -210,6 +279,7 @@ onMounted(async () => {
       })
 
       drawAllGrids()
+      drawEventMarkers()
     }
   } catch (e) {
     console.error('地图加载失败', e)
