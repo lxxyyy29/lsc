@@ -7,18 +7,37 @@
       </div>
     </header>
     <div class="page-filters">
-      <el-form :inline="true" :model="filters">
+      <el-form :inline="true">
         <el-form-item label="关键词">
-          <el-input v-model="filters.keyword" placeholder="场所名称/地址" clearable @change="onFilterChange" />
+          <el-input v-model="keyword" placeholder="场所名称/地址" clearable @change="onFilterChange" />
         </el-form-item>
         <el-form-item label="类别">
-          <el-select v-model="filters.category" placeholder="全部类别" clearable @change="onFilterChange">
-            <el-option label="三小场所" value="SMALL_SHOP" />
-            <el-option label="小作坊" value="SMALL_WORKSHOP" />
-            <el-option label="出租屋" value="RENTAL_HOUSE" />
-            <el-option label="工业园" value="INDUSTRIAL_PARK" />
-            <el-option label="住宅小区" value="RESIDENTIAL" />
-            <el-option label="其他" value="OTHER" />
+          <el-select
+            v-model="category"
+            placeholder="全部类别"
+            clearable
+            @change="onFilterChange"
+            class="category-select"
+          >
+            <el-option label="全部类别" value="" />
+            <el-option label="三小场所" value="SMALL_SHOP">
+              <el-tag size="small" type="primary">三小场所</el-tag>
+            </el-option>
+            <el-option label="小作坊" value="SMALL_WORKSHOP">
+              <el-tag size="small" type="warning">小作坊</el-tag>
+            </el-option>
+            <el-option label="出租屋" value="RENTAL_HOUSE">
+              <el-tag size="small" type="success">出租屋</el-tag>
+            </el-option>
+            <el-option label="工业园" value="INDUSTRIAL_PARK">
+              <el-tag size="small" type="danger">工业园</el-tag>
+            </el-option>
+            <el-option label="住宅小区" value="RESIDENTIAL">
+              <el-tag size="small" type="info">住宅小区</el-tag>
+            </el-option>
+            <el-option label="其他" value="OTHER">
+              <el-tag size="small">其他</el-tag>
+            </el-option>
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -26,41 +45,43 @@
         </el-form-item>
       </el-form>
     </div>
-    <el-table :data="displayItems" v-loading="loading" stripe>
+    <el-table :data="pagedItems" v-loading="loading" stripe>
       <el-table-column prop="merchantName" label="名称" width="180" />
       <el-table-column label="类别" width="100">
-        <template #default="{ row }"><el-tag size="small">{{ categoryLabel(row) }}</el-tag></template>
+        <template #default="{ row }"><el-tag size="small">{{ categoryOf(row) }}</el-tag></template>
       </el-table-column>
       <el-table-column prop="legalPersonName" label="负责人" width="100" />
       <el-table-column prop="legalPersonPhone" label="电话" width="130" />
       <el-table-column label="地址" show-overflow-tooltip>
-        <template #default="{ row }">{{ getRemarkValue(row, '地址') || '-' }}</template>
+        <template #default="{ row }">{{ row.__address || '-' }}</template>
       </el-table-column>
       <el-table-column label="面积" width="80">
-        <template #default="{ row }">{{ getRemarkValue(row, '面积') ? getRemarkValue(row, '面积') + '㎡' : '-' }}</template>
+        <template #default="{ row }">{{ row.__area ? row.__area + '㎡' : '-' }}</template>
       </el-table-column>
       <el-table-column label="两委干部" width="100">
-        <template #default="{ row }">{{ getRemarkValue(row, '两委') || '-' }}</template>
+        <template #default="{ row }">{{ row.__party || '-' }}</template>
       </el-table-column>
       <el-table-column label="消防巡查" width="100">
-        <template #default="{ row }">{{ getRemarkValue(row, '消防') || '-' }}</template>
+        <template #default="{ row }">{{ row.__fire || '-' }}</template>
       </el-table-column>
     </el-table>
     <div class="pagination-container">
       <el-pagination
         background
         layout="total, sizes, prev, pager, next, jumper"
-        :total="totalCount"
-        v-model:page-size="pageSize"
-        v-model:current-page="currentPage"
+        :total="filteredCount"
+        :current-page="page"
+        :page-size="size"
         :page-sizes="[10, 20, 50, 100]"
+        @current-change="onPageChange"
+        @size-change="onSizeChange"
       />
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 import { ElInput, ElSelect, ElOption, ElButton, ElTable, ElTableColumn, ElTag, ElPagination, ElForm, ElFormItem } from 'element-plus'
 import { http } from '../../api/http'
 
@@ -71,16 +92,21 @@ interface LedgerItem {
   legalPersonPhone: string
   remark: string
   status: string
+  __address?: string
+  __area?: string
+  __party?: string
+  __fire?: string
+  __category?: string
 }
 
 const loading = ref(false)
 const allItems = ref<LedgerItem[]>([])
-const totalCount = ref(0)
-const currentPage = ref(1)
-const pageSize = ref(10)
-const filters = ref({ keyword: '', category: '' })
+const keyword = ref('')
+const category = ref('')
+const page = ref(1)
+const size = ref(10)
 
-const categoryMap: Record<string, string> = {
+const categoryLabels: Record<string, string> = {
   SMALL_SHOP: '三小场所',
   SMALL_WORKSHOP: '小作坊',
   RENTAL_HOUSE: '出租屋',
@@ -90,53 +116,67 @@ const categoryMap: Record<string, string> = {
 }
 
 function parseRemark(remark: string): Record<string, string> {
-  const result: Record<string, string> = {}
-  if (!remark) return result
-  remark.split(' | ').forEach(part => {
-    const idx = part.indexOf(': ')
-    if (idx > 0) {
-      result[part.substring(0, idx).trim()] = part.substring(idx + 2).trim()
-    }
+  const r: Record<string, string> = {}
+  if (!remark) return r
+  remark.split(' | ').forEach(p => {
+    const i = p.indexOf(': ')
+    if (i > 0) r[p.substring(0, i).trim()] = p.substring(i + 2).trim()
   })
-  return result
+  return r
 }
 
-function getRemarkValue(item: LedgerItem, key: string): string {
-  return parseRemark(item.remark)[key] || ''
+function enrich(item: LedgerItem): LedgerItem {
+  const m = parseRemark(item.remark)
+  return {
+    ...item,
+    __address: m['地址'] || '',
+    __area: m['面积'] || '',
+    __party: m['两委'] || '',
+    __fire: m['消防'] || '',
+    __category: m['类别'] || ''
+  }
 }
 
-function categoryLabel(item: LedgerItem): string {
-  return categoryMap[getRemarkValue(item, '类别')] || '其他'
+function categoryOf(item: LedgerItem): string {
+  return categoryLabels[item.__category || ''] || '其他'
 }
 
-const filteredItems = computed(() => {
+const filteredItems = ref<LedgerItem[]>([])
+
+function applyFilters() {
   let result = allItems.value
-  if (filters.value.keyword) {
-    const kw = filters.value.keyword.toLowerCase()
+  const kw = (keyword.value || '').toString().trim().toLowerCase()
+  const cat = (category.value || '').toString().trim()
+  if (kw) {
     result = result.filter(i =>
       (i.merchantName && i.merchantName.toLowerCase().includes(kw)) ||
-      (getRemarkValue(i, '地址') && getRemarkValue(i, '地址').toLowerCase().includes(kw))
+      (i.__address && i.__address.toLowerCase().includes(kw))
     )
   }
-  if (filters.value.category) {
-    result = result.filter(i => getRemarkValue(i, '类别') === filters.value.category)
+  if (cat) {
+    result = result.filter(i => (i.__category || '') === cat)
   }
-  return result
-})
+  filteredItems.value = result
+}
 
-const displayItems = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return filteredItems.value.slice(start, start + pageSize.value)
-})
+const filteredCount = ref(0)
+const pagedItems = ref<LedgerItem[]>([])
+
+function updatePage() {
+  filteredCount.value = filteredItems.value.length
+  const start = (page.value - 1) * size.value
+  pagedItems.value = filteredItems.value.slice(start, start + size.value)
+}
 
 async function loadData() {
   loading.value = true
   try {
     const result = await http.get<{ items: LedgerItem[]; total: number }, { items: LedgerItem[]; total: number }>(
-      '/merchants/paged', { params: { page: 1, size: 1000 } }
+      '/merchants/paged', { params: { page: 1, pageSize: 2000 } }
     )
-    allItems.value = result.items
-    totalCount.value = result.total
+    allItems.value = result.items.map(enrich)
+    applyFilters()
+    updatePage()
   } catch (e) {
     console.error(e)
   } finally {
@@ -144,8 +184,21 @@ async function loadData() {
   }
 }
 
+function onPageChange(p: number) {
+  page.value = p
+  updatePage()
+}
+
+function onSizeChange(s: number) {
+  size.value = s
+  page.value = 1
+  updatePage()
+}
+
 function onFilterChange() {
-  currentPage.value = 1
+  page.value = 1
+  applyFilters()
+  updatePage()
 }
 
 function handleExport() {
@@ -153,8 +206,6 @@ function handleExport() {
 }
 
 onMounted(loadData)
-
-watch(pageSize, () => { currentPage.value = 1 })
 </script>
 
 <style scoped>
@@ -179,8 +230,13 @@ watch(pageSize, () => { currentPage.value = 1 })
 :deep(.el-pagination .btn-prev), :deep(.el-pagination .btn-next) { background: #0e233a !important; color: #eef5ff !important; }
 :deep(.el-pagination__total), :deep(.el-pagination__jump) { color: rgba(205, 222, 248, 0.78) !important; }
 :deep(.el-tag) { background: rgba(94, 162, 255, 0.15) !important; border-color: rgba(94, 162, 255, 0.3) !important; color: #5ea2ff !important; }
+:deep(.category-select) { width: 160px; }
+:deep(.category-select .el-select__wrapper) { background: #0e233a !important; border: 1px solid rgba(125, 163, 220, 0.18) !important; box-shadow: none !important; }
+:deep(.category-select .el-select__placeholder) { color: rgba(255, 255, 255, 0.4) !important; }
+:deep(.category-select .el-select__selected-item) { color: #eef5ff !important; }
 :deep(.el-select__popper) { background: #132a45 !important; border: 1px solid rgba(125, 163, 220, 0.18) !important; }
-:deep(.el-select__popper .el-select-dropdown__item) { color: #eef5ff !important; }
+:deep(.el-select__popper .el-select-dropdown__item) { color: #eef5ff !important; display: flex; align-items: center; gap: 8px; }
 :deep(.el-select__popper .el-select-dropdown__item:hover) { background: rgba(94, 162, 255, 0.15) !important; }
-:deep(.el-select__popper .el-select-dropdown__item.selected) { background: #23a0fa !important; color: #fff !important; }
+:deep(.el-select__popper .el-select-dropdown__item.selected) { background: rgba(94, 162, 255, 0.2) !important; color: #5ea2ff !important; font-weight: 600; }
+:deep(.el-select__popper .el-select-dropdown__item .el-tag) { font-size: 12px; }
 </style>

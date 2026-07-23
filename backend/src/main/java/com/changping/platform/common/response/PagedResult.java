@@ -34,7 +34,7 @@ public record PagedResult<T>(List<T> items, long total, int page, int pageSize) 
      * @Param [pageSize 原始每页大小]
      * @return int 安全的每页大小值
      */
-    public static int safePageSize(int pageSize) { return Math.max(1, Math.min(pageSize, 500)); }
+    public static int safePageSize(int pageSize) { return Math.max(1, Math.min(pageSize, 2000)); }
 
     /**
      * @Author tangxinglin

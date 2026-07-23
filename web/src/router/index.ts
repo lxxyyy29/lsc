@@ -8,9 +8,11 @@ import {
 import { h } from 'vue'
 import LoginView from '../views/auth/LoginView.vue'
 import AdminShellLayout from '../layouts/AdminShellLayout.vue'
+import AdminShellLayoutV2 from '../layouts/AdminShellLayoutV2.vue'
 import { hasMenuPermission } from '../auth/permissions'
 import { getWebSession } from '../auth/session'
 import { getFirstDynamicRoute, registerDynamicRoutes } from './dynamic-routes'
+import { getFirstV2DynamicRoute, registerV2Routes } from './v2-routes'
 
 function createPlaceholderView(title: string, description: string) {
   return {
@@ -25,6 +27,9 @@ function createPlaceholderView(title: string, description: string) {
 }
 
 function getDefaultAuthorizedRoute() {
+  // 优先使用 v2 路由，若 v2 视图未生成则回退到 v1
+  const v2Route = getFirstV2DynamicRoute(getWebSession()?.menuTree ?? [])
+  if (v2Route) return v2Route
   return getFirstDynamicRoute(getWebSession()?.menuTree ?? []) ?? '/dashboard'
 }
 
@@ -41,6 +46,17 @@ export const routes: RouteRecordRaw[] = [
     redirect: () => getDefaultAuthorizedRoute(),
     meta: {
       requiresAuth: true
+    },
+    children: []
+  },
+  {
+    path: '/v2',
+    name: 'v2-root',
+    component: AdminShellLayoutV2,
+    redirect: () => getDefaultAuthorizedRoute(),
+    meta: {
+      requiresAuth: true,
+      v2: true
     },
     children: []
   },
