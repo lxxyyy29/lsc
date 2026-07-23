@@ -203,34 +203,38 @@ function drawAllGrids() {
             polygon.on('click', () => {
               selectedGrid.value = grid
             })
+            let hoverLabel: any = null
             polygon.on('mouseover', () => {
               polygon.setOptions({ fillOpacity: Math.min(colors.opacity + 0.08, 0.25), strokeWeight: 2 })
+              // Show label on hover
+              const center = coords[0]
+              hoverLabel = new (window as any).AMap.Text({
+                text: grid.gridName,
+                position: center,
+                zIndex: 10,
+                style: {
+                  'background-color': 'rgba(14,35,58,0.60)',
+                  'border': '1px solid rgba(125,163,220,0.25)',
+                  'color': '#eef5ff',
+                  'font-size': '12px',
+                  'padding': '3px 10px',
+                  'border-radius': '12px',
+                  'font-weight': '500',
+                },
+                extData: grid,
+              })
+              mapInstance.add(hoverLabel)
             })
             polygon.on('mouseout', () => {
               polygon.setOptions({ fillOpacity: colors.opacity, strokeWeight: grid.gridLevel === 1 ? 1.5 : grid.gridLevel === 2 ? 1 : 0.8 })
+              // Remove hover label
+              if (hoverLabel) {
+                mapInstance.remove(hoverLabel)
+                hoverLabel = null
+              }
             })
             mapInstance.add(polygon)
             polygons.push(polygon)
-
-            // Add label at center (semi-transparent dark rounded)
-            const center = coords[0]
-            const label = new (window as any).AMap.Text({
-              text: grid.gridName,
-              position: center,
-              zIndex: 10,
-              style: {
-                'background-color': 'rgba(14,35,58,0.45)',
-                'border': '1px solid rgba(125,163,220,0.15)',
-                'color': 'rgba(238,245,255,0.85)',
-                'font-size': '11px',
-                'padding': '2px 8px',
-                'border-radius': '10px',
-                'font-weight': '400',
-              },
-              extData: grid,
-            })
-            label.on('click', () => { selectedGrid.value = grid })
-            mapInstance.add(label)
           }
         } catch (e) {
           console.warn('绘制网格失败:', grid.gridName, e)
