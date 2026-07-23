@@ -108,10 +108,10 @@ function levelTagType(level?: number) {
 
 function levelColor(level?: number): { fill: string; stroke: string; opacity: number } {
   switch (level) {
-    case 1: return { fill: '#5ea2ff', stroke: '#5ea2ff', opacity: 0.10 }
-    case 2: return { fill: '#ff9100', stroke: '#ffffff', opacity: 0.38 }
-    case 3: return { fill: '#ff9100', stroke: '#ffffff', opacity: 0.30 }
-    default: return { fill: '#8c8c8c', stroke: '#8c8c8c', opacity: 0.10 }
+    case 1: return { fill: '#5ea2ff', stroke: '#5ea2ff', opacity: 0.06 }
+    case 2: return { fill: '#ff9100', stroke: '#ffffff', opacity: 0.20 }
+    case 3: return { fill: '#ff9100', stroke: '#ffffff', opacity: 0.15 }
+    default: return { fill: '#8c8c8c', stroke: '#8c8c8c', opacity: 0.06 }
   }
 }
 
