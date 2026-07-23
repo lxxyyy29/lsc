@@ -120,15 +120,26 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, computed } from 'vue'
-import { getDashboardOverview, getGridStats } from '../api/community'
+import { getDashboardOverview, getGridStats, getGridTree, GridTreeVo } from '../api/community'
+import { http } from '../api/http'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
 const overview = ref<any>({})
 const gridStats = ref<any>({})
+const gridTree = ref<GridTreeVo[]>([])
+const events = ref<any[]>([])
 const currentTime = ref('')
 const mapRef = ref<HTMLDivElement | null>(null)
 let mapInstance: any = null
 let timer: any = null
+
+interface EventItem {
+  id: number
+  title: string
+  longitude: number
+  latitude: number
+  urgencyLevel: string
+}
 
 const maxPopulation = computed(() => {
   const list = gridStats.value.populationRanking || []
@@ -154,17 +165,76 @@ async function loadData() {
   }
 }
 
+async function loadMapData() {
+  try {
+    gridTree.value = await getGridTree()
+    const result = await http.get<{ items: EventItem[] }, { items: EventItem[] }>(
+      '/events', { params: { page: 1, size: 500 } }
+    )
+    events.value = result.items.filter((e: EventItem) => e.longitude && e.latitude)
+  } catch (e) {
+    console.error('加载地图数据失败', e)
+  }
+}
+
+function drawBigScreenGrids() {
+  if (!mapInstance) return
+  const colors: Record<number, { fill: string; stroke: string }> = {
+    1: { fill: 'rgba(94,162,255,0.06)', stroke: 'rgba(94,162,255,0.4)' },
+    2: { fill: 'rgba(255,145,0,0.12)', stroke: 'rgba(255,255,255,0.35)' },
+    3: { fill: 'rgba(255,145,0,0.08)', stroke: 'rgba(255,255,255,0.25)' },
+  }
+  const walk = (nodes: GridTreeVo[]) => {
+    for (const grid of nodes) {
+      if (grid.roiJson) {
+        try {
+          const coords = JSON.parse(grid.roiJson)
+          if (Array.isArray(coords) && coords.length >= 3) {
+            const c = colors[grid.gridLevel] || colors[3]
+            const polygon = new (window as any).AMap.Polygon({
+              path: coords,
+              fillColor: c.fill,
+              fillOpacity: 1,
+              strokeColor: c.stroke,
+              strokeWeight: grid.gridLevel === 1 ? 2 : 1,
+              strokeStyle: 'solid',
+              zIndex: 2,
+            })
+            mapInstance.add(polygon)
+          }
+        } catch (e) { /* ignore */ }
+      }
+      if (grid.children) walk(grid.children)
+    }
+  }
+  walk(gridTree.value)
+}
+
+function drawBigScreenEvents() {
+  if (!mapInstance) return
+  for (const evt of events.value) {
+    const color = evt.urgencyLevel === 'RED' ? '#ff4d4f' : evt.urgencyLevel === 'YELLOW' ? '#faad14' : '#52c41a'
+    const marker = new (window as any).AMap.Marker({
+      position: [evt.longitude, evt.latitude],
+      content: `<div style="width:12px;height:12px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,0.8);box-shadow:0 0 8px ${color};"></div>`,
+      offset: new (window as any).AMap.Pixel(-6, -6),
+      zIndex: 3,
+    })
+    mapInstance.add(marker)
+  }
+}
+
 onMounted(async () => {
   updateTime()
   timer = setInterval(updateTime, 1000)
-  await loadData()
+  await Promise.all([loadData(), loadMapData()])
 
   try {
     ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
     const AMap = await AMapLoader.load({
       key: '5e00e01d2d2b6ca9e1eed533a15572e4',
       version: '2.0',
-      plugins: ['AMap.DistrictSearch', 'AMap.HeatMap'],
+      plugins: ['AMap.DistrictSearch', 'AMap.HeatMap', 'AMap.Polygon', 'AMap.Marker'],
     })
 
     if (mapRef.value) {
@@ -173,6 +243,8 @@ onMounted(async () => {
         center: [113.939521, 22.971231],
         mapStyle: 'amap://styles/dark',
       })
+      drawBigScreenGrids()
+      drawBigScreenEvents()
     }
   } catch (e) {
     console.error('地图加载失败', e)
