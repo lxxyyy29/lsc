@@ -109,8 +109,8 @@ function levelTagType(level?: number) {
 function levelColor(level?: number): { fill: string; stroke: string; opacity: number } {
   switch (level) {
     case 1: return { fill: '#5ea2ff', stroke: '#5ea2ff', opacity: 0.06 }
-    case 2: return { fill: '#ff9100', stroke: '#ffffff', opacity: 0.20 }
-    case 3: return { fill: '#ff9100', stroke: '#ffffff', opacity: 0.15 }
+    case 2: return { fill: '#ff9100', stroke: 'rgba(255,255,255,0.6)', opacity: 0.20 }
+    case 3: return { fill: '#ff9100', stroke: 'rgba(255,255,255,0.4)', opacity: 0.15 }
     default: return { fill: '#8c8c8c', stroke: '#8c8c8c', opacity: 0.06 }
   }
 }
@@ -194,7 +194,7 @@ function drawAllGrids() {
               fillColor: colors.fill,
               fillOpacity: colors.opacity,
               strokeColor: colors.stroke,
-              strokeWeight: grid.gridLevel === 1 ? 2 : 1.5,
+              strokeWeight: grid.gridLevel === 1 ? 2 : grid.gridLevel === 2 ? 1.5 : 1,
               strokeStyle: 'solid',
               zIndex: 2,
               bubble: true,
