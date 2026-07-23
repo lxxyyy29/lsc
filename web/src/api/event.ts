@@ -511,6 +511,28 @@ export async function ignoreEvent(eventId: number, reason: string): Promise<void
   await http.post(`/events/${eventId}/ignore`, { reason })
 }
 
+export async function updateEventUrgency(eventId: number, urgencyLevel: string): Promise<boolean> {
+  return http.put<boolean, boolean>(`/events/${eventId}/urgency`, { urgencyLevel })
+}
+
+export function getUrgencyLabel(level?: string | null): string {
+  switch (level) {
+    case 'GREEN': return '一般'
+    case 'YELLOW': return '重点'
+    case 'RED': return '紧急'
+    default: return '未分级'
+  }
+}
+
+export function getUrgencyTone(level?: string | null): string {
+  switch (level) {
+    case 'GREEN': return 'green'
+    case 'YELLOW': return 'yellow'
+    case 'RED': return 'red'
+    default: return 'none'
+  }
+}
+
 export interface FalseAlarmRecord {
   id: number
   eventId: number

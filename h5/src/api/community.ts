@@ -42,7 +42,7 @@ export interface PatrolRecord {
 }
 
 export function getPatrolRecords() {
-  return webApi.get<{ success: boolean; data: PatrolRecord[] }>('/community/patrol-records').then(res => res.data.data)
+  return webApi.get<{ success: boolean; data: PatrolRecord[] }>('/community/patrol-records/h5').then(res => res.data.data)
 }
 
 export function createPatrolRecord(data: PatrolRecord) {

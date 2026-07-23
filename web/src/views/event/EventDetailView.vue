@@ -17,7 +17,9 @@
             <h3 class="detail-header__title">事件处置详情</h3>
           </div>
           <div class="detail-header__actions">
+            <span v-if="event?.urgencyLevel" class="urgency-badge" :class="`urgency-badge--${getUrgencyTone(event.urgencyLevel)}`">{{ getUrgencyLabel(event.urgencyLevel) }}</span>
             <span class="detail-status-chip" :class="`detail-status-chip--${statusTone}`">{{ statusLabel }}</span>
+            <button type="button" class="ghost-button" @click="openUrgencyDialog">调整分级</button>
             <button v-if="event?.dispatchable" type="button" class="ghost-button" @click="openIgnoreDialog">
               忽略
             </button>
@@ -88,6 +90,14 @@
             <span class="info-label">所属片区：</span>
             <span class="info-value">{{ event?.areaName || '—' }}</span>
           </div>
+          <div class="info-item">
+            <span class="info-label">所属网格：</span>
+            <span class="info-value">{{ event?.gridName || '—' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">上报来源：</span>
+            <span class="info-value">{{ getEventSourceLabel(event?.reportSource, event?.sourceType) }}</span>
+          </div>
           <div class="info-item info-item--span-2">
             <span class="info-label">告警地点：</span>
             <span class="info-value">{{ resolvedLocation || event?.location || '—' }}</span>
@@ -126,6 +136,29 @@
         @update:index="previewIndex = $event"
       />
     </section>
+
+    <SystemDialog :open="urgencyDialogOpen" title="调整紧急程度" subtitle="三色分级" @close="closeUrgencyDialog">
+      <div v-if="event" class="dispatch-dialog">
+        <div class="dispatch-summary panel-lite">
+          <p class="dispatch-summary__code">{{ event.eventCode }}</p>
+          <h4>{{ event.title }}</h4>
+        </div>
+        <label class="field-stack">
+          <span>紧急程度</span>
+          <select v-model="urgencyForm.urgencyLevel" aria-label="紧急程度">
+            <option value="GREEN">一般（绿色）</option>
+            <option value="YELLOW">重点（黄色）</option>
+            <option value="RED">紧急（红色）</option>
+          </select>
+        </label>
+      </div>
+      <template #footer>
+        <button type="button" class="ghost-button" @click="closeUrgencyDialog">取消</button>
+        <button type="button" class="primary-button" :disabled="urgencySubmitting" @click="submitUrgency">
+          {{ urgencySubmitting ? '提交中...' : '确认调整' }}
+        </button>
+      </template>
+    </SystemDialog>
 
     <SystemDialog :open="ignoreDialogOpen" title="忽略事件" subtitle="事件处置" @close="closeIgnoreDialog">
       <div v-if="event" class="dispatch-dialog">
@@ -204,9 +237,12 @@ import {
   getLifecycleRecordDesc,
   getLifecycleRecordTitle,
   getSourceSystemLabel,
+  getUrgencyLabel,
+  getUrgencyTone,
   getWorkflowNodeStatusLabel,
   ignoreEvent,
   listAvailableProcessTemplates,
+  updateEventUrgency,
   type EventDetail,
   type EventProcessTemplateNode,
   type EventProcessTemplateOption
@@ -289,10 +325,49 @@ const areaOverlays = computed(() =>
     .map((a) => ({ areaName: a.areaName, roiJson: a.roiJson! }))
 )
 
+const urgencyDialogOpen = ref(false)
+const urgencySubmitting = ref(false)
+const urgencyForm = reactive({ urgencyLevel: 'GREEN' as string })
+
 const ignoreDialogOpen = ref(false)
 const ignoreReason = ref('')
 const ignoreSubmitting = ref(false)
 const ignoreErrorMessage = ref('')
+
+function getEventSourceLabel(reportSource?: string | null, sourceType?: string | null): string {
+  if (reportSource) {
+    const map: Record<string, string> = { PATROL: '巡查上报', RESIDENT: '居民上报', DRONE: '无人机', MANUAL: '手动录入', SYSTEM: '系统生成' }
+    return map[reportSource] || reportSource
+  }
+  if (sourceType) {
+    const map: Record<string, string> = { DIRECT_REPORT: '直接上报', DRONE_ALARM: '无人机告警', PATROL: '巡查上报', RESIDENT: '居民上报' }
+    return map[sourceType] || sourceType
+  }
+  return '—'
+}
+
+function openUrgencyDialog() {
+  urgencyForm.urgencyLevel = event.value?.urgencyLevel || 'GREEN'
+  urgencyDialogOpen.value = true
+}
+
+function closeUrgencyDialog() {
+  urgencyDialogOpen.value = false
+}
+
+async function submitUrgency() {
+  if (!event.value) return
+  urgencySubmitting.value = true
+  try {
+    await updateEventUrgency(event.value.id, urgencyForm.urgencyLevel)
+    event.value = { ...event.value, urgencyLevel: urgencyForm.urgencyLevel }
+    closeUrgencyDialog()
+  } catch (error) {
+    console.error('调整紧急程度失败', error)
+  } finally {
+    urgencySubmitting.value = false
+  }
+}
 
 function openIgnoreDialog() {
   ignoreReason.value = ''
@@ -887,4 +962,19 @@ watch(
     align-items: flex-start;
   }
 }
+
+.urgency-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #fff;
+}
+.urgency-badge--green { background: #16a34a; }
+.urgency-badge--yellow { background: #ca8a04; }
+.urgency-badge--red { background: #dc2626; }
+.urgency-badge--none { background: #6b7280; }
 </style>

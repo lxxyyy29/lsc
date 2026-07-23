@@ -12,6 +12,15 @@
             <ElInput v-model="draftKeyword" aria-label="告警名称" placeholder="请输入告警名称" clearable />
           </label>
 
+          <label class="field-stack">
+            <select v-model="draftUrgencyLevel" aria-label="紧急程度">
+              <option value="">全部等级</option>
+              <option value="RED">紧急</option>
+              <option value="YELLOW">重点</option>
+              <option value="GREEN">一般</option>
+            </select>
+          </label>
+
           <label class="field-stack field-stack--date-range">
             <ZhDateRangePicker v-model:start="draftStartDate" v-model:end="draftEndDate" placeholder="选择发现时间范围" />
           </label>
@@ -222,7 +231,9 @@ const draftStartDate = ref('')
 const draftEndDate = ref('')
 
 // Applied filters (committed on query button click)
-const appliedFilters = ref({ keyword: '', startDate: '', endDate: '' })
+const appliedFilters = ref({ keyword: '', startDate: '', endDate: '', urgencyLevel: '' })
+
+const draftUrgencyLevel = ref('')
 
 const dialogOpen = ref(false)
 const selectedEvent = ref<EventCardItem>()
@@ -292,15 +303,19 @@ function patchEventCard(item: EventCardItem, patch: Partial<EventListItem>) {
   return toCardItem({ ...item, ...patch })
 }
 
-const pagination = usePagination<EventCardItem, { keyword: string; startDate: string; endDate: string }>({
+const pagination = usePagination<EventCardItem, { keyword: string; startDate: string; endDate: string; urgencyLevel: string }>({
   pageSize: 10,
   filters: appliedFilters,
   fetcher: async (page, pageSize, filters) => {
-    const apiFilters: { keyword?: string; startDate?: string; endDate?: string } = {}
-    if (filters.keyword) apiFilters.keyword = filters.keyword
-    if (filters.startDate) apiFilters.startDate = filters.startDate
-    if (filters.endDate) apiFilters.endDate = filters.endDate
-    const result = await listEventsPaged(page, pageSize, apiFilters)
+    let result = await listEventsPaged(page, pageSize, {
+      keyword: filters.keyword,
+      startDate: filters.startDate,
+      endDate: filters.endDate
+    })
+    if (filters.urgencyLevel) {
+      const filtered = result.items.filter(i => i.urgencyLevel === filters.urgencyLevel)
+      result = { ...result, items: filtered, total: filtered.length }
+    }
     const items = result.items.map(toCardItem)
     return { items, total: result.total, page: result.page, pageSize: result.pageSize }
   }
@@ -312,7 +327,8 @@ function applyFilters() {
   appliedFilters.value = {
     keyword: draftKeyword.value.trim(),
     startDate: draftStartDate.value,
-    endDate: draftEndDate.value
+    endDate: draftEndDate.value,
+    urgencyLevel: draftUrgencyLevel.value
   }
   pagination.resetAndReload()
 }
@@ -321,6 +337,7 @@ function resetFilters() {
   draftKeyword.value = ''
   draftStartDate.value = ''
   draftEndDate.value = ''
+  draftUrgencyLevel.value = ''
   applyFilters()
 }
 
