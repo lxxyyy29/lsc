@@ -15,31 +15,31 @@
         </div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon kpi-icon--green">👥</div>
+        <div class="kpi-icon kpi-icon--green">🏪</div>
         <div class="kpi-info">
-          <span class="kpi-value">{{ overview.populationTotal || 0 }}</span>
-          <span class="kpi-label">实有人口</span>
+          <span class="kpi-value">{{ overview.merchantCount || 0 }}</span>
+          <span class="kpi-label">场所台账</span>
         </div>
       </div>
       <div class="kpi-card">
         <div class="kpi-icon kpi-icon--orange">🏠</div>
         <div class="kpi-info">
-          <span class="kpi-value">{{ overview.buildingCount || 0 }}</span>
-          <span class="kpi-label">房屋/出租屋</span>
+          <span class="kpi-value">{{ overview.rentalHouseCount || 0 }}</span>
+          <span class="kpi-label">出租屋</span>
         </div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon kpi-icon--purple">🏪</div>
+        <div class="kpi-icon kpi-icon--purple">🏬</div>
         <div class="kpi-info">
-          <span class="kpi-value">{{ overview.placeCount || 0 }}</span>
-          <span class="kpi-label">场所资源</span>
+          <span class="kpi-value">{{ overview.smallShopCount || 0 }}</span>
+          <span class="kpi-label">三小场所</span>
         </div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon kpi-icon--cyan">👮</div>
+        <div class="kpi-icon kpi-icon--cyan">📋</div>
         <div class="kpi-info">
-          <span class="kpi-value">{{ overview.orgMemberCount || 0 }}</span>
-          <span class="kpi-label">组织力量</span>
+          <span class="kpi-value">{{ overview.otherPlaceCount || 0 }}</span>
+          <span class="kpi-label">其他场所</span>
         </div>
       </div>
       <div class="kpi-card">

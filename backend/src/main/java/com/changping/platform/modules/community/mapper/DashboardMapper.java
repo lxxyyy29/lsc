@@ -39,6 +39,18 @@ public class DashboardMapper {
         Long orgMemberCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM cmn_org_member WHERE status = 'ACTIVE'", Long.class);
         result.put("orgMemberCount", orgMemberCount != null ? orgMemberCount : 0);
 
+        // 商户统计（真实台账数据）
+        Long merchantCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_merchant", Long.class);
+        result.put("merchantCount", merchantCount != null ? merchantCount : 0);
+
+        // 场所台账分类统计
+        Long rentalHouseCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM cmn_place_ledger WHERE place_category = 'RENTAL_HOUSE'", Long.class);
+        Long smallShopCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM cmn_place_ledger WHERE place_category IN ('SMALL_SHOP','SMALL_WORKSHOP')", Long.class);
+        Long otherPlaceCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM cmn_place_ledger WHERE place_category NOT IN ('RENTAL_HOUSE','SMALL_SHOP','SMALL_WORKSHOP')", Long.class);
+        result.put("rentalHouseCount", rentalHouseCount != null ? rentalHouseCount : 0);
+        result.put("smallShopCount", smallShopCount != null ? smallShopCount : 0);
+        result.put("otherPlaceCount", otherPlaceCount != null ? otherPlaceCount : 0);
+
         // 事件统计
         Long eventTotal = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event", Long.class);
         result.put("eventTotal", eventTotal != null ? eventTotal : 0);
