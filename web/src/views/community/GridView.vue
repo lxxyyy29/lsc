@@ -108,10 +108,10 @@ function levelTagType(level?: number) {
 
 function levelColor(level?: number): { fill: string; stroke: string } {
   switch (level) {
-    case 1: return { fill: 'rgba(94,162,255,0.12)', stroke: 'rgba(94,162,255,0.6)' }
-    case 2: return { fill: 'rgba(255,160,0,0.40)', stroke: '#ffffff' }
-    case 3: return { fill: 'rgba(255,160,0,0.35)', stroke: '#ffffff' }
-    default: return { fill: 'rgba(140,140,140,0.10)', stroke: 'rgba(140,140,140,0.5)' }
+    case 1: return { fill: 'rgba(94,162,255,0.10)', stroke: 'rgba(94,162,255,0.55)' }
+    case 2: return { fill: 'rgba(255,145,0,0.38)', stroke: '#ffffff' }
+    case 3: return { fill: 'rgba(255,145,0,0.30)', stroke: '#ffffff' }
+    default: return { fill: 'rgba(140,140,140,0.08)', stroke: 'rgba(140,140,140,0.4)' }
   }
 }
 
@@ -203,10 +203,10 @@ function drawAllGrids() {
               selectedGrid.value = grid
             })
             polygon.on('mouseover', () => {
-              polygon.setOptions({ fillOpacity: 0.7, strokeWeight: 3 })
+              polygon.setOptions({ fillColor: 'rgba(255,145,0,0.55)', strokeWeight: 3 })
             })
             polygon.on('mouseout', () => {
-              polygon.setOptions({ fillOpacity: 1, strokeWeight: grid.gridLevel === 1 ? 2 : 1.5 })
+              polygon.setOptions({ fillColor: colors.fill, strokeWeight: grid.gridLevel === 1 ? 2 : 1.5 })
             })
             mapInstance.add(polygon)
             polygons.push(polygon)
@@ -216,15 +216,15 @@ function drawAllGrids() {
             const label = new (window as any).AMap.Text({
               text: grid.gridName,
               position: center,
-              zIndex: 3,
+              zIndex: 10,
               style: {
-                'background-color': 'rgba(14,35,58,0.65)',
-                'border': '1px solid rgba(125,163,220,0.25)',
+                'background-color': 'rgba(14,35,58,0.55)',
+                'border': '1px solid rgba(125,163,220,0.20)',
                 'color': '#eef5ff',
                 'font-size': '12px',
                 'padding': '3px 10px',
                 'border-radius': '12px',
-                'backdrop-filter': 'blur(2px)',
+                'font-weight': '500',
               },
               extData: grid,
             })
