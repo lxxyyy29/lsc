@@ -187,6 +187,8 @@ public final class PermissionCodes {
     public static final String MENU_COMMUNITY_PATROL_RECORD = "menu:community:patrol-record";
     /** 网格治理-居民上报管理菜单权限 */
     public static final String MENU_COMMUNITY_RESIDENT_REPORT = "menu:community:resident-report";
+    /** 业务管理-场所台账菜单权限 */
+    public static final String MENU_BIZ_LEDGER = "menu:biz:ledger";
 
     /** 业务管理目录权限 */
     public static final String CATALOG_BIZ = "catalog:biz";

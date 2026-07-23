@@ -226,6 +226,14 @@ const LEGACY_MENU_DEFINITIONS: LegacyMenuDefinition[] = [
     parentCode: 'catalog:biz'
   },
   {
+    aliases: ['menu:biz:ledger'],
+    permissionName: '场所台账',
+    path: '/biz/ledger',
+    component: 'biz/MerchantLedgerView',
+    sortOrder: 50,
+    parentCode: 'catalog:biz'
+  },
+  {
     aliases: ['menu:report:district'],
     permissionName: '数据报表',
     path: '/reports/district',

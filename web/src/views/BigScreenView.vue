@@ -120,7 +120,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, computed } from 'vue'
-import { getDashboardOverview, getGridStats } from './api/community'
+import { getDashboardOverview, getGridStats } from '../api/community'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
 const overview = ref<any>({})

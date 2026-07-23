@@ -45,4 +45,11 @@ public class ExportMapper {
                 "ORDER BY pr.created_at DESC";
         return jdbcTemplate.queryForList(sql);
     }
+
+    public List<Map<String, Object>> getMerchantLedger() {
+        String sql = "SELECT m.merchant_name, m.legal_person_name, m.legal_person_phone, " +
+                "m.remark, m.created_at " +
+                "FROM biz_merchant m ORDER BY m.id ASC";
+        return jdbcTemplate.queryForList(sql);
+    }
 }

@@ -1,5 +1,6 @@
 package com.changping.platform.modules.community.controller;
 
+import com.changping.platform.modules.community.mapper.ExportMapper;
 import com.changping.platform.modules.community.service.ExportService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -9,15 +10,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/community/export")
 public class ExportController {
 
     private final ExportService exportService;
+    private final ExportMapper exportMapper;
 
-    public ExportController(ExportService exportService) {
+    public ExportController(ExportService exportService, ExportMapper exportMapper) {
         this.exportService = exportService;
+        this.exportMapper = exportMapper;
     }
 
     @GetMapping("/events")
@@ -27,6 +31,18 @@ public class ExportController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=event_ledger.xlsx")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(data);
+    }
+
+    @GetMapping("/merchants")
+    public ResponseEntity<byte[]> exportMerchants() throws Exception {
+        List<Map<String, Object>> data = exportMapper.getMerchantLedger();
+        List<String> columns = List.of("merchant_name", "legal_person_name", "legal_person_phone", "remark", "created_at");
+        String[] headers = {"场所名称", "负责人", "电话", "备注(地址/类别)", "导入时间"};
+        byte[] excel = exportService.exportLedger("场所台账", columns, data);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=merchant_ledger.xlsx")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(excel);
     }
 
     @GetMapping("/population")

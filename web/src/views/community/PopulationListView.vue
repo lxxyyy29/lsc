@@ -191,7 +191,6 @@ function handleReset() {
 function handleExport() {
   window.open('/api/community/export/population', '_blank')
 }
-}
 
 function handleAdd() {
   Object.assign(form, defaultForm())

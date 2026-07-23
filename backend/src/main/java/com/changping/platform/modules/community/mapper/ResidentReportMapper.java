@@ -29,7 +29,7 @@ public class ResidentReportMapper {
         e.setStatus(rs.getString("status"));
         e.setHandleResult(rs.getString("handle_result"));
         e.setGridName(rs.getString("grid_name"));
-        e.setHandlerUserName(rs.getString("handler_user_name"));
+        e.setHandlerUserName(rs.getString("real_name"));
         e.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
         java.sql.Timestamp handledAt = rs.getTimestamp("handled_at");
         e.setHandledAt(handledAt != null ? handledAt.toLocalDateTime() : null);
@@ -41,7 +41,7 @@ public class ResidentReportMapper {
 
     public List<ResidentReportEntity> findAll() {
         return jdbcTemplate.query(
-            "SELECT r.*, g.grid_name, hu.user_name AS handler_user_name FROM cmn_resident_report r " +
+            "SELECT r.*, g.grid_name, hu.real_name FROM cmn_resident_report r " +
             "LEFT JOIN cmn_grid g ON r.grid_id = g.id " +
             "LEFT JOIN sys_user hu ON r.handler_user_id = hu.id " +
             "ORDER BY r.created_at DESC", ROW_MAPPER);
@@ -49,7 +49,7 @@ public class ResidentReportMapper {
 
     public ResidentReportEntity findByQueryCode(String queryCode) {
         List<ResidentReportEntity> results = jdbcTemplate.query(
-            "SELECT r.*, g.grid_name, hu.user_name AS handler_user_name FROM cmn_resident_report r " +
+            "SELECT r.*, g.grid_name, hu.real_name FROM cmn_resident_report r " +
             "LEFT JOIN cmn_grid g ON r.grid_id = g.id " +
             "LEFT JOIN sys_user hu ON r.handler_user_id = hu.id " +
             "WHERE r.query_code = ?", ROW_MAPPER, queryCode);
@@ -58,7 +58,7 @@ public class ResidentReportMapper {
 
     public ResidentReportEntity findById(Long id) {
         List<ResidentReportEntity> results = jdbcTemplate.query(
-            "SELECT r.*, g.grid_name, hu.user_name AS handler_user_name FROM cmn_resident_report r " +
+            "SELECT r.*, g.grid_name, hu.real_name FROM cmn_resident_report r " +
             "LEFT JOIN cmn_grid g ON r.grid_id = g.id " +
             "LEFT JOIN sys_user hu ON r.handler_user_id = hu.id " +
             "WHERE r.id = ?", ROW_MAPPER, id);

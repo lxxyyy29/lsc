@@ -76,6 +76,14 @@ const dynamicMenuRoutes: RouteRecordRaw[] = [
     meta: {
       permission: 'menu:community:resident-report'
     }
+  },
+  {
+    path: 'biz/ledger',
+    name: 'dynamic-menu-biz-ledger',
+    component: () => import('../views/biz/MerchantLedgerView.vue'),
+    meta: {
+      permission: 'menu:biz:ledger'
+    }
   }
 ]
 
