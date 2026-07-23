@@ -108,10 +108,10 @@ function levelTagType(level?: number) {
 
 function levelColor(level?: number): { fill: string; stroke: string; opacity: number } {
   switch (level) {
-    case 1: return { fill: '#5ea2ff', stroke: '#5ea2ff', opacity: 0.06 }
-    case 2: return { fill: '#ff9100', stroke: 'rgba(255,255,255,0.6)', opacity: 0.20 }
-    case 3: return { fill: '#ff9100', stroke: 'rgba(255,255,255,0.4)', opacity: 0.15 }
-    default: return { fill: '#8c8c8c', stroke: '#8c8c8c', opacity: 0.06 }
+    case 1: return { fill: '#5ea2ff', stroke: 'rgba(94,162,255,0.4)', opacity: 0.04 }
+    case 2: return { fill: '#e6a000', stroke: 'rgba(255,255,255,0.35)', opacity: 0.12 }
+    case 3: return { fill: '#e6a000', stroke: 'rgba(255,255,255,0.25)', opacity: 0.08 }
+    default: return { fill: '#8c8c8c', stroke: 'rgba(140,140,140,0.3)', opacity: 0.04 }
   }
 }
 
@@ -194,7 +194,7 @@ function drawAllGrids() {
               fillColor: colors.fill,
               fillOpacity: colors.opacity,
               strokeColor: colors.stroke,
-              strokeWeight: grid.gridLevel === 1 ? 2 : grid.gridLevel === 2 ? 1.5 : 1,
+              strokeWeight: grid.gridLevel === 1 ? 1.5 : grid.gridLevel === 2 ? 1 : 0.8,
               strokeStyle: 'solid',
               zIndex: 2,
               bubble: true,
@@ -204,10 +204,10 @@ function drawAllGrids() {
               selectedGrid.value = grid
             })
             polygon.on('mouseover', () => {
-              polygon.setOptions({ fillOpacity: Math.min(colors.opacity + 0.2, 0.8), strokeWeight: 3 })
+              polygon.setOptions({ fillOpacity: Math.min(colors.opacity + 0.08, 0.25), strokeWeight: 2 })
             })
             polygon.on('mouseout', () => {
-              polygon.setOptions({ fillOpacity: colors.opacity, strokeWeight: grid.gridLevel === 1 ? 2 : 1.5 })
+              polygon.setOptions({ fillOpacity: colors.opacity, strokeWeight: grid.gridLevel === 1 ? 1.5 : grid.gridLevel === 2 ? 1 : 0.8 })
             })
             mapInstance.add(polygon)
             polygons.push(polygon)
@@ -219,13 +219,13 @@ function drawAllGrids() {
               position: center,
               zIndex: 10,
               style: {
-                'background-color': 'rgba(14,35,58,0.55)',
-                'border': '1px solid rgba(125,163,220,0.20)',
-                'color': '#eef5ff',
-                'font-size': '12px',
-                'padding': '3px 10px',
-                'border-radius': '12px',
-                'font-weight': '500',
+                'background-color': 'rgba(14,35,58,0.45)',
+                'border': '1px solid rgba(125,163,220,0.15)',
+                'color': 'rgba(238,245,255,0.85)',
+                'font-size': '11px',
+                'padding': '2px 8px',
+                'border-radius': '10px',
+                'font-weight': '400',
               },
               extData: grid,
             })
