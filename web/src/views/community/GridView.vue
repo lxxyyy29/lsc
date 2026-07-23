@@ -107,10 +107,10 @@ function levelTagType(level?: number) {
 
 function levelColor(level?: number): { fill: string; stroke: string } {
   switch (level) {
-    case 1: return { fill: 'rgba(94,162,255,0.12)', stroke: '#5ea2ff' }
-    case 2: return { fill: 'rgba(82,196,26,0.15)', stroke: '#73d13d' }
-    case 3: return { fill: 'rgba(250,173,20,0.18)', stroke: '#ffc53d' }
-    default: return { fill: 'rgba(140,140,140,0.12)', stroke: '#8c8c8c' }
+    case 1: return { fill: 'rgba(94,162,255,0.03)', stroke: 'rgba(94,162,255,0.6)' }
+    case 2: return { fill: 'rgba(82,196,26,0.04)', stroke: 'rgba(115,209,61,0.6)' }
+    case 3: return { fill: 'rgba(250,173,20,0.05)', stroke: 'rgba(255,197,61,0.6)' }
+    default: return { fill: 'rgba(140,140,140,0.03)', stroke: 'rgba(140,140,140,0.4)' }
   }
 }
 
@@ -193,7 +193,7 @@ function drawAllGrids() {
               fillOpacity: 1,
               strokeColor: colors.stroke,
               strokeWeight: grid.gridLevel === 1 ? 2 : 1,
-              strokeStyle: grid.gridLevel === 1 ? 'solid' : 'dashed',
+              strokeStyle: 'solid',
               extData: grid,
             })
             polygon.on('click', () => {
