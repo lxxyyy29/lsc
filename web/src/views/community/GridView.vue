@@ -34,10 +34,11 @@
         <div class="panel">
           <h3 class="panel__title">图例</h3>
           <div class="legend">
-            <div class="legend__item"><span class="legend__dot legend__dot--1"></span>社区</div>
-            <div class="legend__item"><span class="legend__dot legend__dot--2"></span>大网格</div>
-            <div class="legend__item"><span class="legend__dot legend__dot--3"></span>小网格</div>
-            <div class="legend__item"><span class="legend__dot legend__dot--event"></span>事件</div>
+            <div class="legend__item"><span class="legend__dot legend__dot--community"></span>社区边界</div>
+            <div class="legend__item"><span class="legend__dot legend__dot--grid"></span>网格分区</div>
+            <div class="legend__item"><span class="legend__dot legend__dot--event-red"></span>紧急事件</div>
+            <div class="legend__item"><span class="legend__dot legend__dot--event-yellow"></span>重点事件</div>
+            <div class="legend__item"><span class="legend__dot legend__dot--event-green"></span>一般事件</div>
           </div>
         </div>
 
@@ -107,10 +108,10 @@ function levelTagType(level?: number) {
 
 function levelColor(level?: number): { fill: string; stroke: string } {
   switch (level) {
-    case 1: return { fill: 'rgba(94,162,255,0.08)', stroke: 'rgba(94,162,255,0.7)' }
-    case 2: return { fill: 'rgba(82,196,26,0.10)', stroke: 'rgba(115,209,61,0.7)' }
-    case 3: return { fill: 'rgba(250,173,20,0.12)', stroke: 'rgba(255,197,61,0.7)' }
-    default: return { fill: 'rgba(140,140,140,0.08)', stroke: 'rgba(140,140,140,0.5)' }
+    case 1: return { fill: 'rgba(94,162,255,0.12)', stroke: 'rgba(94,162,255,0.6)' }
+    case 2: return { fill: 'rgba(255,160,0,0.40)', stroke: '#ffffff' }
+    case 3: return { fill: 'rgba(255,160,0,0.35)', stroke: '#ffffff' }
+    default: return { fill: 'rgba(140,140,140,0.10)', stroke: 'rgba(140,140,140,0.5)' }
   }
 }
 
@@ -151,6 +152,7 @@ function drawEventMarkers() {
       position: [evt.longitude, evt.latitude],
       content: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 6px ${color};"></div>`,
       offset: new (window as any).AMap.Pixel(-7, -7),
+      zIndex: 3,
       extData: evt,
     })
     marker.on('click', () => {
@@ -192,34 +194,37 @@ function drawAllGrids() {
               fillColor: colors.fill,
               fillOpacity: 1,
               strokeColor: colors.stroke,
-              strokeWeight: grid.gridLevel === 1 ? 2 : 1,
+              strokeWeight: grid.gridLevel === 1 ? 2 : 1.5,
               strokeStyle: 'solid',
+              zIndex: 2,
               extData: grid,
             })
             polygon.on('click', () => {
               selectedGrid.value = grid
             })
             polygon.on('mouseover', () => {
-              polygon.setOptions({ fillColor: colors.stroke, fillOpacity: 0.3 })
+              polygon.setOptions({ fillOpacity: 0.7, strokeWeight: 3 })
             })
             polygon.on('mouseout', () => {
-              polygon.setOptions({ fillColor: colors.fill, fillOpacity: 1 })
+              polygon.setOptions({ fillOpacity: 1, strokeWeight: grid.gridLevel === 1 ? 2 : 1.5 })
             })
             mapInstance.add(polygon)
             polygons.push(polygon)
 
-            // Add label at center
+            // Add label at center (semi-transparent dark rounded)
             const center = coords[0]
             const label = new (window as any).AMap.Text({
               text: grid.gridName,
               position: center,
+              zIndex: 3,
               style: {
-                'background-color': 'rgba(14,35,58,0.85)',
-                'border': '1px solid rgba(125,163,220,0.3)',
+                'background-color': 'rgba(14,35,58,0.65)',
+                'border': '1px solid rgba(125,163,220,0.25)',
                 'color': '#eef5ff',
                 'font-size': '12px',
-                'padding': '2px 8px',
-                'border-radius': '4px',
+                'padding': '3px 10px',
+                'border-radius': '12px',
+                'backdrop-filter': 'blur(2px)',
               },
               extData: grid,
             })
@@ -314,11 +319,12 @@ onUnmounted(() => {
 :deep(.el-tag) { border: none; }
 .legend { display: flex; flex-direction: column; gap: 8px; }
 .legend__item { display: flex; align-items: center; gap: 8px; color: var(--fg-text-secondary); font-size: 13px; }
-.legend__dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
-.legend__dot--1 { background: rgba(94,162,255,0.3); border: 2px solid #5ea2ff; }
-.legend__dot--2 { background: rgba(82,196,26,0.3); border: 2px dashed #52c41a; }
-.legend__dot--3 { background: rgba(250,173,20,0.3); border: 2px dashed #faad14; }
-.legend__dot--event { background: #ff4d4f; border-radius: 50%; }
+.legend__dot { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+.legend__dot--community { background: rgba(94,162,255,0.12); border: 2px solid rgba(94,162,255,0.6); }
+.legend__dot--grid { background: rgba(255,160,0,0.40); border: 2px solid #ffffff; }
+.legend__dot--event-red { background: #ff4d4f; border-radius: 50%; }
+.legend__dot--event-yellow { background: #faad14; border-radius: 50%; }
+.legend__dot--event-green { background: #52c41a; border-radius: 50%; }
 .detail-list { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0; }
 .detail-list dt { color: #7ea4c8; font-size: 13px; }
 .detail-list dd { margin: 0; color: #eaf5ff; font-size: 13px; }
