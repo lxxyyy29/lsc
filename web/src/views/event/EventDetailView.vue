@@ -30,6 +30,21 @@
         </div>
       </header>
 
+      <!-- 闭环流程步骤 -->
+      <div class="detail-section">
+        <h4 class="section-title">闭环处置流程</h4>
+        <div class="workflow-steps">
+          <div v-for="(step, idx) in workflowSteps" :key="idx" class="workflow-step" :class="`workflow-step--${step.status}`">
+            <div class="workflow-step__icon">{{ step.icon }}</div>
+            <div class="workflow-step__info">
+              <span class="workflow-step__name">{{ step.name }}</span>
+              <span class="workflow-step__time">{{ step.time || '—' }}</span>
+            </div>
+            <div v-if="idx < workflowSteps.length - 1" class="workflow-step__line"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="detail-section">
         <h4 class="section-title">流程与处置信息</h4>
         <div class="detail-info-grid">
@@ -293,6 +308,43 @@ const INTERNAL_RECORD_TITLES = new Set(['EVENT_INTAKE', 'WORKFLOW_SYNC'])
 const workflowRecords = computed(() =>
   (event.value?.lifecycleRecords || []).filter((r) => !INTERNAL_RECORD_TITLES.has(r.title))
 )
+
+const workflowSteps = computed(() => {
+  const status = event.value?.currentStatus || 'PENDING_AUDIT'
+  const steps = [
+    { key: 'intake', name: '发现上报', icon: '📝', status: 'done', time: (event.value as any)?.createdAt },
+    { key: 'dispatch', name: '智能派单', icon: '📤', status: 'pending', time: '' },
+    { key: 'accept', name: '接单确认', icon: '✅', status: 'pending', time: '' },
+    { key: 'arrive', name: '到场处置', icon: '🚶', status: 'pending', time: '' },
+    { key: 'handle', name: '处理完成', icon: '🔧', status: 'pending', time: '' },
+    { key: 'verify', name: '复核核查', icon: '🔍', status: 'pending', time: '' },
+    { key: 'archive', name: '归档', icon: '📁', status: 'pending', time: '' },
+  ]
+
+  const statusIndex: Record<string, number> = {
+    'PENDING_AUDIT': 0,
+    'WAITING_DISPATCH': 1,
+    'DISPATCHED_TO_WORK_ORDER': 2,
+    'PROCESSING': 3,
+    'WAITING_VERIFY': 4,
+    'WAITING_CLOSE_CONFIRM': 5,
+    'CLOSED': 6,
+    'COMPLETED': 6,
+  }
+
+  const currentIdx = statusIndex[status] ?? 0
+  steps.forEach((step, idx) => {
+    if (idx < currentIdx) {
+      step.status = 'done'
+    } else if (idx === currentIdx) {
+      step.status = 'active'
+    } else {
+      step.status = 'pending'
+    }
+  })
+
+  return steps
+})
 const latestWorkflowRecord = computed(() => {
   const records = event.value?.lifecycleRecords || []
   return records.length ? records[records.length - 1] : undefined
@@ -977,4 +1029,17 @@ watch(
 .urgency-badge--yellow { background: #ca8a04; }
 .urgency-badge--red { background: #dc2626; }
 .urgency-badge--none { background: #6b7280; }
+
+/* 闭环流程步骤 */
+.workflow-steps { display: flex; align-items: flex-start; gap: 0; padding: 16px 0; overflow-x: auto; }
+.workflow-step { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 70px; position: relative; }
+.workflow-step__icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; background: rgba(94,162,255,0.12); border: 2px solid rgba(94,162,255,0.3); z-index: 1; }
+.workflow-step--done .workflow-step__icon { background: #52c41a; border-color: #52c41a; color: #fff; }
+.workflow-step--active .workflow-step__icon { background: #23a0fa; border-color: #23a0fa; color: #fff; box-shadow: 0 0 0 4px rgba(35,160,250,0.2); }
+.workflow-step--pending .workflow-step__icon { background: rgba(140,140,140,0.15); border-color: rgba(140,140,140,0.3); opacity: 0.5; }
+.workflow-step__info { display: flex; flex-direction: column; align-items: center; margin-top: 6px; text-align: center; }
+.workflow-step__name { font-size: 11px; color: var(--fg-text-primary); white-space: nowrap; }
+.workflow-step__time { font-size: 10px; color: var(--fg-text-secondary); margin-top: 2px; }
+.workflow-step__line { position: absolute; top: 16px; left: calc(50% + 16px); width: calc(100% - 32px); height: 2px; background: rgba(140,140,140,0.2); z-index: 0; }
+.workflow-step--done .workflow-step__line { background: #52c41a; }
 </style>
