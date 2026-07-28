@@ -86,8 +86,6 @@ const menuGroups = [
       { path: '/events', name: '事件闭环处置' },
       { path: '/events/create', name: '创建事件' },
       { path: '/work-orders', name: '工单中心' },
-      { path: '/audits', name: '审核中心' },
-      { path: '/processes', name: '流程中心' },
     ]
   },
   {

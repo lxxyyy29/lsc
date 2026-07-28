@@ -5,9 +5,14 @@
         <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">事件闭环处置</h2>
         <p style="font-size:13px;color:#6b7280;">发现上报→智能派单→现场处置→复核核查→归档</p>
       </div>
-      <button @click="$router.push('/events/create')" style="padding:8px 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">
-        <i class="fas fa-plus" style="margin-right:4px;"></i>创建事件
-      </button>
+      <div style="display:flex;gap:8px;">
+        <button @click="$router.push('/processes')" style="padding:8px 16px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">
+          <i class="fas fa-project-diagram" style="margin-right:4px;"></i>流程模板
+        </button>
+        <button @click="$router.push('/events/create')" style="padding:8px 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">
+          <i class="fas fa-plus" style="margin-right:4px;"></i>创建事件
+        </button>
+      </div>
     </div>
 
     <div class="card">
