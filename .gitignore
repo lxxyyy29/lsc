@@ -10,6 +10,7 @@ backend/.flattened-pom.xml
 !.env.example
 !.env.*.example
 backend/src/main/resources/application-local.yml
+.env.local
 backend/src/main/resources/application.yml
 
 # Node

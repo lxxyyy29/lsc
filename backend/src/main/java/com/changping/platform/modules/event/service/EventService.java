@@ -4,6 +4,8 @@ import com.changping.platform.common.response.PagedResult;
 import com.changping.platform.modules.event.dto.CreateEventRequest;
 import com.changping.platform.modules.event.vo.EventDetailVo;
 
+import java.util.List;
+
 /**
  * @Author tangxinglin
  * @Description //事件业务服务接口，提供事件的创建、查询、分页列表及删除功能
@@ -28,6 +30,11 @@ public interface EventService {
      * @return EventDetailVo 事件详情
      */
     EventDetailVo getEventDetail(Long id);
+
+    /**
+     * 通过外部事件ID获取事件详情
+     */
+    EventDetailVo getEventDetailByExternalEventId(String externalEventId);
 
     /**
      * @Author tangxinglin
@@ -58,4 +65,51 @@ public interface EventService {
      * YELLOW -> RED (超过48小时)
      */
     void autoEscalateUrgency();
+
+    /**
+     * 审核事件
+     * @param id 事件ID
+     * @param passed 是否通过
+     * @param remark 备注
+     */
+    boolean auditEvent(Long id, boolean passed, String remark);
+
+    /**
+     * 关闭事件
+     */
+    void closeEvent(Long eventId, String reason);
+
+    /**
+     * 重新打开已关闭事件
+     */
+    void reopenEvent(Long eventId);
+
+    /**
+     * 获取事件生命周期时间轴
+     */
+    List<EventDetailVo.LifecycleRecordVo> getTimeline(Long eventId);
+
+    /**
+     * 事件统计数据
+     */
+    EventStatistics getStatistics();
+
+    /**
+     * 群众对事件处置结果进行评价
+     */
+    boolean rateEvent(Long id, int rating, String comment);
+
+    /**
+     * 事件统计VO
+     */
+    record EventStatistics(
+            long total,
+            long waitingDispatch,
+            long dispatched,
+            long closed,
+            long ignored,
+            long greenCount,
+            long yellowCount,
+            long redCount) {
+    }
 }

@@ -89,6 +89,9 @@ public class GlobalExceptionHandler {
      * @return HttpStatus 对应的 HTTP 状态码
      */
     private HttpStatus resolveBusinessStatus(String code) {
+        if (code == null) {
+            return HttpStatus.BAD_REQUEST;
+        }
         return switch (code) {
             case "AUTH_TOKEN_REQUIRED", "AUTH_TOKEN_INVALID" -> HttpStatus.UNAUTHORIZED;
             case "AUTH_PERMISSION_DENIED", "AUTH_CLIENT_TYPE_FORBIDDEN" -> HttpStatus.FORBIDDEN;

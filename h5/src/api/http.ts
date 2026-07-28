@@ -97,11 +97,33 @@ export function createHttpClient(config?: AxiosRequestConfig) {
     return requestConfig
   })
 
+  // 后端错误信息 → 用户友好提示
+  const ERROR_MAP: Record<string, string> = {
+    '外部事件 ID 不能为空': '请填写事件相关信息',
+    '地点不能为空': '请填写问题发生地点',
+    '发生时间不能为空': '请填写问题发生时间',
+    '来源类型不能为空': '请选择来源类型',
+    '事件类型不能为空': '请选择问题类型',
+    '来源系统不能为空': '请选择来源系统',
+    '标题不能为空': '请填写问题标题',
+    '描述不能为空': '请填写问题描述',
+    '账号和密码不能为空': '请填写账号和密码',
+    '账号已存在': '该账号已被注册',
+    '账号或密码错误': '账号或密码错误',
+  }
+  const translateError = (msg: string): string => {
+    if (!msg) return '操作失败，请稍后重试'
+    for (const [key, value] of Object.entries(ERROR_MAP)) {
+      if (msg.includes(key)) return value
+    }
+    return msg
+  }
+
   client.interceptors.response.use(
     (response: any): any => {
       const payload = response.data as ApiResponse<unknown>
       if (!payload || typeof payload !== 'object' || payload.success !== true) {
-        const msg = payload?.message || '请求失败，请稍后重试'
+        const msg = translateError(payload?.message || '请求失败，请稍后重试')
         showErrorToast(msg)
         throw new HttpResponseError(msg, response.status)
       }
@@ -115,7 +137,8 @@ export function createHttpClient(config?: AxiosRequestConfig) {
         handle401(responseCode)
       }
 
-      const message = error.response?.data?.message || getErrorMessage(error)
+      const rawMsg = error.response?.data?.message || getErrorMessage(error)
+      const message = translateError(rawMsg)
       if (status !== 401) {
         showErrorToast(message)
       }

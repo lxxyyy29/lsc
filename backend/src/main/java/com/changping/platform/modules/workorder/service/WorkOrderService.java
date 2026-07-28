@@ -2,6 +2,7 @@ package com.changping.platform.modules.workorder.service;
 
 import com.changping.platform.modules.workorder.entity.WorkOrderEntity;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Author tangxinglin
@@ -18,6 +19,21 @@ public interface WorkOrderService {
      * @return WorkOrderEntity 新建的工单实体
      */
     WorkOrderEntity dispatch(Long eventId, DispatchRequest request);
+
+    /**
+     * 获取工单附件列表
+     */
+    List<Map<String, Object>> getAttachments(Long workOrderId);
+
+    /**
+     * 确认关闭工单（Web端）
+     */
+    WorkOrderEntity confirmClose(Long workOrderId, String remark);
+
+    /**
+     * 驳回关闭（Web端）→ 工单退回处理中
+     */
+    WorkOrderEntity rejectClose(Long workOrderId, String remark);
 
     /**
      * @Author tangxinglin

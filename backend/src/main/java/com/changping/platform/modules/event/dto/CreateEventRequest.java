@@ -30,6 +30,5 @@ public record CreateEventRequest(
         String location,
         BigDecimal longitude,
         BigDecimal latitude,
-        @NotEmpty(message = "至少需要一个证据引用")
-        List<@NotBlank(message = "证据引用不能为空") String> evidenceReferences) {
+        List<String> evidenceReferences) {
 }

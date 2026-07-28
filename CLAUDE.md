@@ -4,11 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository layout
 
-This workspace contains three sibling applications that implement one event-governance platform:
+This workspace contains four sibling applications that implement one event-governance platform:
 
 - `backend/` — Spring Boot 3.3 / Java 17 API service on port `8080`, served under `/api`
-- `web/` — Vue 3 + TypeScript + Vite admin application on port `5173`
-- `h5/` — Vue 3 + TypeScript + Vite mobile field application on port `5174`
+- `web-v2/` — Vue 3 + TypeScript + Vite admin application on port `5175`（管理人员使用）
+- `h5/` — Vue 3 + uni-app mobile field application on port `5174`（网格员使用）
+- `mp_mysql_test/` — Vue 3 + TypeScript + Vite mini-program on port `5176`（居民随手拍）
 - `docs/architecture/` — delivery contract and manual verification docs for the current phase
 
 Start with `docs/architecture/phase1-endpoints.md` when you need the current backend/frontend contract.
@@ -39,6 +40,11 @@ Run commands from each app directory.
 - Run a single test file: `npx pnpm test -- src/tests/h5-closed-loop-pages.spec.ts`
 - Build production bundle: `npx pnpm build`
 
+### Mini-program (`mp_mysql_test/`)
+
+- Start dev server: `npx pnpm dev --host 0.0.0.0 --port 5176`
+- Build production bundle: `npx pnpm build`
+
 Notes:
 
 - Both frontend apps run tests through `node ./scripts/run-vitest.mjs`, which forwards extra CLI args to `vitest run`.
@@ -48,7 +54,7 @@ Notes:
 
 ### Core business flow
 
-The main product flow spans all three apps:
+The main product flow spans all four apps:
 
 1. event intake
 2. audit start and process-node approval
@@ -123,12 +129,33 @@ Key patterns:
 
 Main H5 domains include workbench, work-order list/detail, verification, history, and mine/profile.
 
+### Mini-program (居民小程序) structure
+
+Mini-program app bootstrap:
+
+- `mp_mysql_test/src/main.ts`
+
+Routing and access control:
+
+- `mp_mysql_test/src/router/index.ts`
+
+Key patterns:
+
+- Bottom tab bar navigation (report/history/mine)
+- Session stored in localStorage as `grid-mp-session`
+- Uses same JWT bearer token flow as Web
+- Proxy `/api` → `http://localhost:8080` via Vite config
+
+Main mini-program features: resident report (随手拍), report history with status tracking, event rating (1-5 stars), user profile.
+
 ## Auth and permission model
 
 The current steady-state auth model is bearer-token based:
 
 - Web login: `POST /api/auth/login`
 - H5 login: `POST /api/h5/auth/login`
+- Mini-program login: `POST /api/auth/login` (with clientType: web)
+- Public report (免认证): `POST /api/events/public-report`
 - protected requests send `Authorization: Bearer <token>`
 
 Important conventions:
@@ -162,9 +189,9 @@ Important existing tests called out by the docs:
 
 ## UI and styling conventions
 
-Both frontend apps import shared Figma-oriented tokens:
+All frontend apps import shared Figma-oriented tokens:
 
-- `web/src/styles/figma-tokens.css`
+- `web-v2/src/styles/figma-tokens.css`
 - `h5/src/styles/figma-tokens.css`
 
 There are also Figma/design-derived templates and planning artifacts under `docs/superpowers/`, but those are supporting design/history materials rather than the runtime source of truth.

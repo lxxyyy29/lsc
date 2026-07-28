@@ -5,6 +5,7 @@ import com.changping.platform.modules.auth.model.AuthenticatedUser;
 import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.community.entity.PatrolTaskEntity;
+import com.changping.platform.modules.community.mapper.PatrolTaskMapper;
 import com.changping.platform.modules.community.service.PatrolTaskService;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,10 +23,22 @@ public class PatrolTaskController {
         this.currentUserService = currentUserService;
     }
 
-    @GetMapping
-    public ApiResponse<List<PatrolTaskEntity>> list() {
+    @GetMapping("/h5")
+    public ApiResponse<List<PatrolTaskEntity>> listH5() {
         AuthenticatedUser user = currentUserService.requireClientType(AuthService.ClientType.H5);
         return ApiResponse.ok(service.listByUser(user.id()));
+    }
+
+    @GetMapping
+    public ApiResponse<List<PatrolTaskEntity>> listAll() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        return ApiResponse.ok(service.listAll());
+    }
+
+    @GetMapping("/statistics")
+    public ApiResponse<PatrolTaskMapper.PatrolTaskStatistics> getStatistics() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        return ApiResponse.ok(service.getStatistics());
     }
 
     @PostMapping("/generate")

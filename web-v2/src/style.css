@@ -1,0 +1,41 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f7fa; color: #1f2937; }
+
+.card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 20px; }
+.card-border-blue { border-left: 4px solid #1890FF; }
+.card-border-green { border-left: 4px solid #52C41A; }
+.card-border-orange { border-left: 4px solid #FAAD14; }
+.card-border-red { border-left: 4px solid #FF4D4F; }
+.card-border-purple { border-left: 4px solid #7c3aed; }
+
+.stat-value { font-size: 28px; font-weight: 700; margin-top: 8px; }
+.stat-label { font-size: 13px; color: #6b7280; }
+
+.sidebar { width: 240px; position: fixed; left: 0; top: 56px; bottom: 0; background: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.06); overflow-y: auto; z-index: 40; }
+.sidebar-link { display: flex; align-items: center; padding: 12px 16px; color: #4b5563; text-decoration: none; border-radius: 8px; margin: 2px 8px; transition: all 0.2s; }
+.sidebar-link:hover { background: #e6f4ff; color: #1890FF; }
+.sidebar-link.active { background: #e6f4ff; color: #1890FF; font-weight: 500; }
+.sidebar-link i { width: 20px; margin-right: 12px; text-align: center; }
+
+.main-content { margin-left: 240px; padding: 24px; padding-top: 80px; }
+
+.top-nav { height: 56px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.06); position: fixed; top: 0; left: 0; right: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+
+.btn { display: inline-flex; align-items: center; padding: 6px 16px; border-radius: 6px; font-size: 13px; border: none; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: #1890FF; color: #fff; }
+.btn-primary:hover { background: #40a9ff; }
+.btn-default { background: #f3f4f6; color: #4b5563; }
+.btn-default:hover { background: #e5e7eb; }
+
+.grid-map { width: 100%; height: 420px; border-radius: 12px; overflow: hidden; }
+
+.tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.tag-blue { background: #e6f4ff; color: #1890FF; }
+.tag-green { background: #f6ffed; color: #52C41A; }
+.tag-orange { background: #fff7e6; color: #FAAD14; }
+.tag-red { background: #fff1f0; color: #FF4D4F; }
+
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; padding: 10px 12px; font-size: 13px; color: #6b7280; font-weight: 500; border-bottom: 1px solid #e5e7eb; }
+.table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #f3f4f6; }
+.table tr:hover td { background: #f9fafb; }

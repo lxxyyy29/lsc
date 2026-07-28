@@ -37,15 +37,49 @@ public class SecurityConfig {
             ObjectMapper objectMapper) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(request -> {
+                    org.springframework.web.cors.CorsConfiguration cfg = new org.springframework.web.cors.CorsConfiguration();
+                    // 明确指定允许的源，不使用通配符
+                    cfg.addAllowedOrigin("http://localhost:5173");
+                    cfg.addAllowedOrigin("http://localhost:5174");
+                    cfg.addAllowedOrigin("http://localhost:5175");
+                    cfg.addAllowedOrigin("http://localhost:5176");
+                    cfg.addAllowedOrigin("http://127.0.0.1:5173");
+                    cfg.addAllowedOrigin("http://127.0.0.1:5174");
+                    cfg.addAllowedOrigin("http://127.0.0.1:5175");
+                    cfg.addAllowedOrigin("http://127.0.0.1:5176");
+                    cfg.addAllowedMethod("*");
+                    cfg.addAllowedHeader("*");
+                    cfg.setAllowCredentials(true);
+                    return cfg;
+                }))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) -> writeFailure(response, objectMapper, HttpServletResponse.SC_UNAUTHORIZED, "AUTH_TOKEN_REQUIRED", "请提供认证令牌"))
                         .accessDeniedHandler((request, response, accessDeniedException) -> writeFailure(response, objectMapper, HttpServletResponse.SC_FORBIDDEN, "AUTH_PERMISSION_DENIED", "当前用户没有所需权限")))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/auth/login", "/h5/auth/login", "/auth/logout", "/h5/auth/logout", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/integrations/alarms/callback", "/media/files/**", "/api/media/files/**", "/community/export/**")
+                        // 登录接口公开（注意：Spring Security 自动去掉 context-path /api 前缀）
+                        .requestMatchers("/auth/login", "/h5/auth/login", "/auth/logout")
                         .permitAll()
-                        .requestMatchers("/auth/me", "/h5/auth/me")
+                        // 媒体文件访问公开（用于前端展示）
+                        .requestMatchers("/media/files/**")
+                        .permitAll()
+                        // 视频流代理公开（hls.js 无法发送认证头，playlist + ts 分片都需要）
+                        .requestMatchers("/drone/stream/**")
+                        .permitAll()
+                        // 群众上报接口公开
+                        .requestMatchers("/events/public-report")
+                        .permitAll()
+                        // WebSocket 端点公开（浏览器无法发送认证头）
+                        .requestMatchers("/ws/**")
+                        .permitAll()
+                        // 告警回调需要签名验证（在 Controller 层校验）
+                        .requestMatchers("/integration/alarm/callback")
+                        .permitAll()
+                        // 测试接口需要认证（配合 @ConditionalOnProperty 控制是否启用）
+                        .requestMatchers("/test/**")
                         .authenticated()
+                        // 其他所有接口都需要认证
                         .anyRequest()
                         .authenticated())
                 .addFilterBefore(bearerTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

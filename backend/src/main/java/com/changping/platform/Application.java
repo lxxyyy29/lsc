@@ -4,12 +4,17 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+
 
 /**
  * @Author tangxinglin
  * @Description //Spring Boot 应用程序入口，负责启动整个事件治理平台服务
  * @Date 2026/04/18 09:00
  */
+@EnableScheduling
+@EnableAspectJAutoProxy
 @SpringBootApplication(exclude = {
         RedisAutoConfiguration.class,
         RedisRepositoriesAutoConfiguration.class

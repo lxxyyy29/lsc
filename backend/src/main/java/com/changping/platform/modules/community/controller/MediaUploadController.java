@@ -15,13 +15,35 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 @RequestMapping("/media")
 public class MediaUploadController {
+
+    /**
+     * 允许上传的文件扩展名白名单
+     */
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
+            // 图片
+            ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg",
+            // 文档
+            ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv",
+            // 视频
+            ".mp4", ".avi", ".mov", ".wmv", ".flv", ".mkv", ".webm",
+            // 音频
+            ".mp3", ".wav", ".ogg", ".aac", ".flac",
+            // 压缩包
+            ".zip", ".rar", ".7z", ".tar", ".gz"
+    );
+
+    /**
+     * 禁止上传的危险扩展名（双重检查）
+     */
+    private static final Set<String> BLOCKED_EXTENSIONS = Set.of(
+            ".jsp", ".jspx", ".php", ".asp", ".aspx", ".exe", ".sh", ".bat", ".cmd",
+            ".jar", ".war", ".class", ".py", ".rb", ".pl", ".cgi", ".htaccess", ".shtml"
+    );
 
     private final CurrentUserService currentUserService;
     private final MediaUploadMapper mediaUploadMapper;
@@ -48,6 +70,38 @@ public class MediaUploadController {
             throw new IllegalArgumentException("文件不能为空");
         }
 
+        // 校验文件扩展名
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+        }
+
+        if (extension.isEmpty()) {
+            throw new IllegalArgumentException("文件必须有扩展名");
+        }
+
+        if (BLOCKED_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("禁止上传该类型的文件: " + extension);
+        }
+
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("不支持的文件类型: " + extension + "，允许的类型: " + ALLOWED_EXTENSIONS);
+        }
+
+        // 校验 Content-Type 与扩展名是否匹配（基础检查）
+        String contentType = file.getContentType();
+        if (contentType != null && !contentType.startsWith("image/") && !contentType.startsWith("video/")
+                && !contentType.startsWith("audio/") && !contentType.equals("application/pdf")
+                && !contentType.startsWith("application/vnd.")
+                && !contentType.equals("text/plain")
+                && !contentType.equals("text/csv")
+                && !contentType.equals("application/zip")
+                && !contentType.equals("application/x-rar-compressed")
+                && !contentType.equals("application/x-7z-compressed")) {
+            throw new IllegalArgumentException("文件类型与内容不匹配");
+        }
+
         try {
             AuthenticatedUser user = currentUserService.requireClientType(AuthService.ClientType.WEB);
 
@@ -56,12 +110,7 @@ public class MediaUploadController {
             Path storageDir = Paths.get(uploadDir, dateDir);
             Files.createDirectories(storageDir);
 
-            // 生成文件名
-            String originalFilename = file.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
+            // 生成文件名（UUID + 白名单内的扩展名）
             String storedFilename = UUID.randomUUID().toString().replace("-", "") + extension;
 
             // 保存文件
@@ -74,9 +123,10 @@ public class MediaUploadController {
 
             // 确定文件类型
             if (fileType == null) {
-                String contentType = file.getContentType();
                 if (contentType != null && contentType.startsWith("video/")) {
                     fileType = "VIDEO";
+                } else if (contentType != null && contentType.startsWith("audio/")) {
+                    fileType = "AUDIO";
                 } else {
                     fileType = "IMAGE";
                 }
@@ -89,7 +139,7 @@ public class MediaUploadController {
             record.put("fileName", originalFilename);
             record.put("fileUrl", fileUrl);
             record.put("fileType", fileType);
-            record.put("mimeType", file.getContentType());
+            record.put("mimeType", contentType);
             record.put("status", "ACTIVE");
             record.put("uploaderUserId", user.id());
             record.put("uploaderName", user.userName());
@@ -103,7 +153,7 @@ public class MediaUploadController {
             response.put("fileName", originalFilename);
             response.put("fileUrl", fullUrl);
             response.put("fileType", fileType);
-            response.put("mimeType", file.getContentType());
+            response.put("mimeType", contentType);
             response.put("status", "ACTIVE");
 
             return ApiResponse.ok(response);
@@ -114,7 +164,7 @@ public class MediaUploadController {
     }
 
     @GetMapping
-    public ApiResponse<java.util.List<Map<String, Object>>> list(
+    public ApiResponse<List<Map<String, Object>>> list(
             @RequestParam(required = false) String businessType,
             @RequestParam(required = false) Long businessId) {
         return ApiResponse.ok(mediaUploadMapper.findByBusiness(businessType, businessId));

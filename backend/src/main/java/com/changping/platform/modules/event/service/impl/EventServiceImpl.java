@@ -71,9 +71,6 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public EventDetailVo createEvent(CreateEventRequest request) {
-        if (request.evidenceReferences() == null || request.evidenceReferences().isEmpty()) {
-            throw new BusinessException("VALIDATION_ERROR", "至少需要一个证据引用");
-        }
         if (eventMapper.selectByExternalEventId(request.externalEventId()) != null) {
             throw new BusinessException("EVENT_EXTERNAL_ID_DUPLICATE", "外部事件 ID 已存在");
         }
@@ -125,13 +122,39 @@ public class EventServiceImpl implements EventService {
      */
     @Override
     public EventDetailVo getEventDetail(Long id) {
-        EventEntity entity = eventMapper.selectDetailById(id);
+        EventEntity entity = null;
+        if (id != null) {
+            entity = eventMapper.selectDetailById(id);
+        }
         if (entity == null) {
             throw new BusinessException("EVENT_NOT_FOUND", "事件未找到");
         }
-        Optional<AlarmEventDocument> document = alarmEventMongoService.findBySqlEventId(id)
-                .or(() -> alarmEventMongoService.findByExternalEventId(entity.getExternalEventId()));
-        return document.map(value -> toDetailVo(entity, value)).orElseGet(() -> toDetailVo(entity));
+        Optional<AlarmEventDocument> document = alarmEventMongoService.findBySqlEventId(id);
+        if (document.isEmpty()) {
+            document = alarmEventMongoService.findByExternalEventId(entity.getExternalEventId());
+        }
+        AlarmEventDocument doc = document.orElse(null);
+        if (doc != null) {
+            return toDetailVo(entity, doc);
+        }
+        return toDetailVo(entity);
+    }
+
+    @Override
+    public EventDetailVo getEventDetailByExternalEventId(String externalEventId) {
+        // 先尝试从MySQL查询
+        EventEntity entity = eventMapper.selectByExternalEventId(externalEventId);
+        // 从MongoDB获取文档
+        Optional<AlarmEventDocument> document = alarmEventMongoService.findByExternalEventId(externalEventId);
+        if (entity == null && document.isEmpty()) {
+            throw new BusinessException("EVENT_NOT_FOUND", "事件未找到");
+        }
+        if (entity != null) {
+            return document.map(value -> toDetailVo(entity, value)).orElseGet(() -> toDetailVo(entity));
+        }
+        // 仅有MongoDB数据的情况
+        AlarmEventDocument doc = document.get();
+        return toListVo(doc, null, java.util.Collections.emptyMap());
     }
 
     /**
@@ -730,6 +753,122 @@ public class EventServiceImpl implements EventService {
                     newLevel, event.getId());
             }
         }
+    }
+
+    @Override
+    @Transactional
+    public boolean auditEvent(Long id, boolean passed, String remark) {
+        EventEntity entity = eventMapper.selectDetailById(id);
+        if (entity == null) {
+            throw new BusinessException("EVENT_NOT_FOUND", "事件不存在");
+        }
+        String newStatus = passed ? EventStatus.WAITING_DISPATCH.name() : EventStatus.IGNORED.name();
+        String actionType = passed ? "AUDIT_PASS" : "AUDIT_REJECT";
+        jdbcTemplate.update("UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ?", newStatus, id);
+        // 记录审核操作
+        jdbcTemplate.update(
+                "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, ?, '系统', ?, NOW())",
+                id, entity.getStatus(), newStatus, actionType, remark != null ? remark : (passed ? "审核通过" : "驳回"));
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public void closeEvent(Long eventId, String reason) {
+        EventEntity entity = eventMapper.selectDetailById(eventId);
+        if (entity == null) {
+            throw new BusinessException("EVENT_NOT_FOUND", "事件不存在");
+        }
+        if (EventStatus.CLOSED.name().equals(entity.getStatus())) {
+            throw new BusinessException("EVENT_ALREADY_CLOSED", "事件已关闭");
+        }
+        jdbcTemplate.update("UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ?",
+                EventStatus.CLOSED.name(), eventId);
+        // 记录关闭操作到事件记录表
+        jdbcTemplate.update(
+                "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'CLOSE', '系统', ?, NOW())",
+                entity.getId(), entity.getStatus(), EventStatus.CLOSED.name(), reason != null ? reason : "手动关闭");
+    }
+
+    @Override
+    @Transactional
+    public void reopenEvent(Long eventId) {
+        EventEntity entity = eventMapper.selectDetailById(eventId);
+        if (entity == null) {
+            throw new BusinessException("EVENT_NOT_FOUND", "事件不存在");
+        }
+        if (!EventStatus.CLOSED.name().equals(entity.getStatus())) {
+            throw new BusinessException("EVENT_NOT_CLOSED", "事件未关闭，无法重新打开");
+        }
+        jdbcTemplate.update("UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ?",
+                EventStatus.WAITING_DISPATCH.name(), eventId);
+        jdbcTemplate.update(
+                "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'REOPEN', '系统', '重新打开事件', NOW())",
+                entity.getId(), EventStatus.CLOSED.name(), EventStatus.WAITING_DISPATCH.name());
+    }
+
+    @Override
+    public List<EventDetailVo.LifecycleRecordVo> getTimeline(Long eventId) {
+        List<EventDetailVo.LifecycleRecordVo> timeline = new ArrayList<>();
+        // 从事件记录表获取操作历史
+        List<Map<String, Object>> records = jdbcTemplate.queryForList(
+                "SELECT action_type, from_status, to_status, operator_name, remark, created_at FROM biz_event_record WHERE event_id = ? ORDER BY created_at ASC, id ASC",
+                eventId);
+        for (Map<String, Object> record : records) {
+            String action = mapActionName((String) record.get("action_type"));
+            String status = (String) record.get("to_status");
+            String operator = (String) record.get("operator_name");
+            String remark = (String) record.get("remark");
+            java.sql.Timestamp ts = (java.sql.Timestamp) record.get("created_at");
+            timeline.add(new EventDetailVo.LifecycleRecordVo(
+                    action, status != null ? status : "",
+                    (operator != null ? operator : "") + (remark != null ? " — " + remark : ""),
+                    ts != null ? ts.toLocalDateTime() : LocalDateTime.now()));
+        }
+        return timeline;
+    }
+
+    @Override
+    public EventStatistics getStatistics() {
+        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event", Long.class);
+        Long waiting = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status = 'WAITING_DISPATCH'", Long.class);
+        Long dispatched = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status = 'DISPATCHED_TO_WORK_ORDER'", Long.class);
+        Long closed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status = 'CLOSED'", Long.class);
+        Long ignored = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status = 'IGNORED'", Long.class);
+        Long green = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE urgency_level = 'GREEN' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
+        Long yellow = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE urgency_level = 'YELLOW' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
+        Long red = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE urgency_level = 'RED' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
+        return new EventStatistics(
+                total != null ? total : 0,
+                waiting != null ? waiting : 0,
+                dispatched != null ? dispatched : 0,
+                closed != null ? closed : 0,
+                ignored != null ? ignored : 0,
+                green != null ? green : 0,
+                yellow != null ? yellow : 0,
+                red != null ? red : 0);
+    }
+
+    @Override
+    public boolean rateEvent(Long id, int rating, String comment) {
+        // 更新事件的评价信息
+        jdbcTemplate.update(
+            "UPDATE biz_event SET rating = ?, rating_comment = ?, rated_at = NOW() WHERE id = ? AND status = 'CLOSED'",
+            rating, comment, id);
+        return true;
+    }
+
+    private String mapActionName(String actionType) {
+        if (actionType == null) return "操作";
+        return switch (actionType) {
+            case "CREATE" -> "创建事件";
+            case "DISPATCH" -> "派发工单";
+            case "CLOSE" -> "关闭事件";
+            case "REOPEN" -> "重新打开";
+            case "IGNORE" -> "忽略事件";
+            case "URGENCY_UPDATE" -> "更新紧急程度";
+            default -> actionType;
+        };
     }
 
     private record WorkflowSnapshot(

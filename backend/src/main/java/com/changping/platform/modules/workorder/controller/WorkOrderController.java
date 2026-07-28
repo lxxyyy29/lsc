@@ -8,6 +8,7 @@ import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.workorder.entity.WorkOrderEntity;
 import com.changping.platform.modules.workorder.service.WorkOrderService;
 import java.util.List;
+import java.util.Map;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -123,6 +124,43 @@ public class WorkOrderController {
         currentUserService.requireClientType(AuthService.ClientType.WEB);
         permissionGuard.require(PermissionCodes.API_WORKORDER_DISPATCH);
         return ApiResponse.ok(workOrderService.dispatch(eventId, request));
+    }
+
+    /**
+     * 获取工单附件列表
+     */
+    @GetMapping("/{id}/attachments")
+    public ApiResponse<List<Map<String, Object>>> getAttachments(@PathVariable Long id) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_WORKORDER_DISPATCH);
+        List<Map<String, Object>> attachments = workOrderService.getAttachments(id);
+        return ApiResponse.ok(attachments);
+    }
+
+    /**
+     * 确认关闭工单（Web端）— 工单 COMPLETED，事件 CLOSED
+     */
+    @PostMapping("/{id}/confirm-close")
+    public ApiResponse<WorkOrderEntity> confirmClose(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_WORKORDER_CONFIRM_CLOSE);
+        String remark = body != null ? body.getOrDefault("remark", "") : "";
+        return ApiResponse.ok(workOrderService.confirmClose(id, remark));
+    }
+
+    /**
+     * 驳回关闭（Web端）— 工单退回 PROCESSING
+     */
+    @PostMapping("/{id}/reject-close")
+    public ApiResponse<WorkOrderEntity> rejectClose(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_WORKORDER_CONFIRM_CLOSE);
+        String remark = body != null ? body.getOrDefault("remark", "") : "";
+        return ApiResponse.ok(workOrderService.rejectClose(id, remark));
     }
 
     /**

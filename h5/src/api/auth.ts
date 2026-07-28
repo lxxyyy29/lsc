@@ -227,6 +227,17 @@ export async function loginH5(payload: H5LoginPayload): Promise<H5Session> {
   return session
 }
 
+export interface H5RegisterPayload {
+  account: string
+  password: string
+  realName: string
+  phone?: string
+}
+
+export async function registerH5(payload: H5RegisterPayload): Promise<void> {
+  await http.post<void, void>('/auth/register', payload)
+}
+
 export async function logoutH5() {
   try {
     await http.post<void, void>('/auth/logout')

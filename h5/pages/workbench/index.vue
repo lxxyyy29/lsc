@@ -7,28 +7,61 @@
         <view class="hero-copy">
           <text class="hero-greeting">{{ timeGreeting }}，{{ userName }}</text>
           <view class="hero-sub">
-            <text class="hero-sub-label">今日有</text>
+            <text class="hero-sub-label">{{ isAdmin ? '今日有' : '您有' }}</text>
             <text class="hero-sub-count" :class="{ 'hero-sub-count--urgent': pendingTotal > 0 }">{{ pendingTotal }}</text>
-            <text class="hero-sub-label">条待办工单</text>
+            <text class="hero-sub-label">{{ isAdmin ? '条待办工单' : '条待处理' }}</text>
           </view>
         </view>
         <view class="avatar-chip"><text>{{ userInitial }}</text></view>
       </view>
     </view>
 
+    <!-- 群众随手拍入口 -->
+    <view v-if="isPublic" class="action-section">
+      <text class="section-title">随手拍</text>
+      <scroll-view scroll-x class="action-scroll" :show-scrollbar="false">
+        <view class="action-row">
+          <view class="action-capsule" @click="openPath('/pages/resident/report')">
+            <view class="action-icon"><AppIcon name="camera" size="30rpx" /></view>
+            <text class="action-label">拍照上报</text>
+          </view>
+          <view class="action-capsule" @click="openPath('/pages/resident/history')">
+            <view class="action-icon"><AppIcon name="history" size="30rpx" /></view>
+            <text class="action-label">我的上报</text>
+          </view>
+          <view class="action-capsule" @click="openPath('/pages/history/index')">
+            <view class="action-icon"><AppIcon name="list" size="30rpx" /></view>
+            <text class="action-label">处理进度</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
     <!-- Stats strip: 3 equal cards -->
     <view class="stats-strip">
-      <view class="stat-card stat-card--accent" @click="openWorkOrders('myPending')">
+      <view v-if="isAdmin" class="stat-card stat-card--accent" @click="openWorkOrders('myPending')">
         <text class="stat-label">待处理工单</text>
         <text class="stat-value stat-value--accent">{{ waitingAcceptText }}</text>
       </view>
-      <view class="stat-card" @click="openWorkOrders('processing')">
+      <view v-if="isAdmin" class="stat-card" @click="openWorkOrders('processing')">
         <text class="stat-label">已处理工单</text>
         <text class="stat-value">{{ pendingCloseText }}</text>
       </view>
-      <view class="stat-card" @click="openWorkOrders('completed')">
+      <view v-if="isAdmin" class="stat-card" @click="openWorkOrders('completed')">
         <text class="stat-label">已办结工单</text>
         <text class="stat-value">{{ closedText }}</text>
+      </view>
+      <view v-if="isPublic" class="stat-card stat-card--accent" @click="openPath('/pages/resident/report')">
+        <text class="stat-label">随手拍</text>
+        <text class="stat-value stat-value--accent">去上报</text>
+      </view>
+      <view v-if="isPublic" class="stat-card" @click="openPath('/pages/resident/history')">
+        <text class="stat-label">我的上报</text>
+        <text class="stat-value">{{ myReportCount }}</text>
+      </view>
+      <view v-if="isPublic" class="stat-card" @click="openPath('/pages/history/index')">
+        <text class="stat-label">处理进度</text>
+        <text class="stat-value">查看</text>
       </view>
     </view>
 
@@ -97,12 +130,16 @@ const pendingCounts = ref<PendingCountItem[]>([])
 const shortcuts = ref<ShortcutItem[]>([])
 const latestOrders = ref<WorkOrderItem[]>([])
 const loadError = ref(false)
+const myReportCount = ref(0)
 
 const filteredShortcuts = computed(() =>
   shortcuts.value.filter((item: ShortcutItem) => (item.to === '/history' ? hasMenuPermission('menu:h5:history:view') : true))
 )
 const userName = computed(() => getH5Session()?.userName || '用户')
 const userInitial = computed(() => userName.value.slice(0, 1))
+const userRoles = computed(() => getH5Session()?.roleCodes || [])
+const isAdmin = computed(() => userRoles.value.includes('SUPER_ADMIN') || userRoles.value.includes('DISPATCHER') || userRoles.value.includes('AUDITOR') || userRoles.value.includes('H5_WORKER'))
+const isPublic = computed(() => !isAdmin.value)
 const shortcutCards = computed(() =>
   filteredShortcuts.value.map((item) => ({
     ...item,

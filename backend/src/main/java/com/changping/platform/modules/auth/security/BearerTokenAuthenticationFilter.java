@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,6 +30,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 @Component
 public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(BearerTokenAuthenticationFilter.class);
 
     private final JwtTokenService jwtTokenService;
     private final AuthService authService;
@@ -61,8 +65,16 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         try {
             String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            // 支持从 query parameter 获取 token（hls.js 等无法发送 header 的场景）
+            if (authorizationHeader == null || authorizationHeader.isBlank()) {
+                String tokenParam = request.getParameter("token");
+                if (tokenParam != null && !tokenParam.isBlank()) {
+                    authorizationHeader = "Bearer " + tokenParam;
+                }
+            }
             if (authorizationHeader != null && !authorizationHeader.isBlank()) {
                 if (!authorizationHeader.startsWith("Bearer ")) {
+                    // 有 token 但格式不对，返回 401
                     writeFailure(response, HttpServletResponse.SC_UNAUTHORIZED, "AUTH_TOKEN_INVALID", "认证令牌无效");
                     return;
                 }
@@ -74,6 +86,10 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
                 }
 
                 AuthenticatedUser tokenUser = jwtTokenService.parseAuthenticatedUser(token);
+                if (tokenUser == null) {
+                    writeFailure(response, HttpServletResponse.SC_UNAUTHORIZED, "AUTH_TOKEN_INVALID", "认证令牌无效");
+                    return;
+                }
                 var currentUser = authService.loadAuthenticatedUser(tokenUser.id(), tokenUser.clientType());
                 if (tokenUser.passwordVersion() != currentUser.passwordVersion()) {
                     throw new BusinessException("AUTH_PASSWORD_CHANGED", "密码已被修改，请重新登录");
@@ -84,10 +100,12 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
                         toAuthorities(currentUser));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 AuthenticatedUserContextHolder.set(currentUser);
+                log.debug("Token auth OK for {} {}, user={}", request.getMethod(), request.getRequestURI(), currentUser.userName());
             }
 
             filterChain.doFilter(request, response);
         } catch (BusinessException exception) {
+            log.warn("Auth business exception for {} {}: {}", request.getMethod(), request.getRequestURI(), exception.getCode());
             int status = resolveStatus(exception.getCode());
             writeFailure(response, status, exception.getCode(), exception.getMessage());
         } finally {

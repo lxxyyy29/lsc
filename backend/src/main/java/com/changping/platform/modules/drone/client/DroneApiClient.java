@@ -293,10 +293,35 @@ public class DroneApiClient {
                 evictAccessToken();
                 return null;
             }
+            // 检查 JWT token 是否过期
+            if (isTokenExpired(token.token())) {
+                log.info("Redis 缓存的无人机令牌已过期，将刷新");
+                evictAccessToken();
+                return null;
+            }
             return token;
         } catch (Exception exception) {
             evictAccessToken();
             return null;
+        }
+    }
+
+    /**
+     * 检查 JWT token 是否过期
+     */
+    private boolean isTokenExpired(String jwt) {
+        try {
+            String[] parts = jwt.split("\\.");
+            if (parts.length < 2) return true;
+            String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]), java.nio.charset.StandardCharsets.UTF_8);
+            com.fasterxml.jackson.databind.JsonNode node = objectMapper.readTree(payload);
+            JsonNode expNode = node.get("exp");
+            if (expNode == null || expNode.isNull()) return true;
+            long exp = expNode.asLong();
+            // 如果过期时间距现在不足 60 秒，视为已过期
+            return exp < (System.currentTimeMillis() / 1000 + 60);
+        } catch (Exception e) {
+            return true;
         }
     }
 

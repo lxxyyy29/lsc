@@ -64,4 +64,18 @@ public class PatrolTaskService {
     public boolean completeTask(Long taskId) {
         return mapper.completeTask(taskId, LocalDate.now()) > 0;
     }
+
+    /**
+     * 获取所有巡查任务（Web端管理用）
+     */
+    public List<PatrolTaskEntity> listAll() {
+        return mapper.findAll();
+    }
+
+    /**
+     * 巡查任务统计
+     */
+    public PatrolTaskMapper.PatrolTaskStatistics getStatistics() {
+        return mapper.getStatistics();
+    }
 }

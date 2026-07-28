@@ -117,13 +117,16 @@ public class DroneWebSocketBridgeService {
         connection.setConnecting(true);
         String token = droneApiClient.getAccessTokenValue();
         String uri = connection.buildUri(token);
+        log.info("连接无人机平台 WebSocket: deviceSn={}, uri={}", connection.deviceSn(),
+                uri.substring(0, Math.min(uri.length(), 120)) + "...");
         webSocketClient.execute(new UpstreamHandler(connection), uri)
                 .whenComplete((session, throwable) -> {
                     connection.setConnecting(false);
                     if (throwable != null) {
-                        log.warn("Failed to connect upstream drone websocket for device {}", connection.deviceSn(), throwable);
+                        log.warn("连接无人机平台 WebSocket 失败: deviceSn={}, error={}", connection.deviceSn(), throwable.getMessage());
                         scheduleReconnect(connection.deviceSn());
                     } else {
+                        log.info("无人机平台 WebSocket 连接成功: deviceSn={}", connection.deviceSn());
                         connection.setUpstreamSession(session);
                     }
                 });

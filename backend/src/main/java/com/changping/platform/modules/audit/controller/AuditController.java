@@ -66,4 +66,5 @@ public class AuditController {
         permissionGuard.require(PermissionCodes.API_AUDIT_DETAIL);
         return ApiResponse.ok(processInstanceService.getAuditDetail(eventId));
     }
+
 }

@@ -7,6 +7,12 @@
       }
     },
     {
+      "path": "pages/register/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/workbench/index",
       "style": {
         "navigationStyle": "default"

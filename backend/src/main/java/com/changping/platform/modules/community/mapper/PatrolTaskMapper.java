@@ -72,4 +72,28 @@ public class PatrolTaskMapper {
         return jdbcTemplate.update(
             "UPDATE cmn_patrol_task SET status = 'COMPLETED', completed_at = NOW(), updated_at = NOW() WHERE id = ?", taskId);
     }
+
+    public List<PatrolTaskEntity> findAll() {
+        return jdbcTemplate.query(
+            "SELECT t.*, g.grid_name FROM cmn_patrol_task t LEFT JOIN cmn_grid g ON g.id = t.grid_id ORDER BY t.planned_date DESC, t.id DESC",
+            (rs, rowNum) -> {
+                PatrolTaskEntity e = ROW_MAPPER.mapRow(rs, rowNum);
+                try { e.setTaskName(rs.getString("grid_name") != null ? rs.getString("grid_name") + " - " + e.getTaskName() : e.getTaskName()); } catch (Exception ignored) {}
+                return e;
+            });
+    }
+
+    public PatrolTaskStatistics getStatistics() {
+        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM cmn_patrol_task", Long.class);
+        Long pending = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM cmn_patrol_task WHERE status = 'PENDING'", Long.class);
+        Long completed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM cmn_patrol_task WHERE status = 'COMPLETED'", Long.class);
+        Long overdue = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM cmn_patrol_task WHERE status = 'OVERDUE'", Long.class);
+        return new PatrolTaskStatistics(
+                total != null ? total : 0,
+                pending != null ? pending : 0,
+                completed != null ? completed : 0,
+                overdue != null ? overdue : 0);
+    }
+
+    public record PatrolTaskStatistics(long total, long pending, long completed, long overdue) {}
 }

@@ -54,6 +54,12 @@ public final class PermissionCodes {
     public static final String API_WORKORDER_DISPATCH = "api:workorder:dispatch";
     /** 处理工单接口权限 */
     public static final String API_WORKORDER_HANDLE = "api:workorder:handle";
+    /** 确认关闭工单接口权限 */
+    public static final String API_WORKORDER_CONFIRM_CLOSE = "api:workorder:confirm-close";
+    /** 信息互通查看权限 */
+    public static final String API_INTEGRATION_VIEW = "api:integration:view";
+    /** 信息互通管理权限 */
+    public static final String API_INTEGRATION_MANAGE = "api:integration:manage";
     /** H5端工作台查看接口权限 */
     public static final String API_H5_WORKBENCH_VIEW = "api:h5:workbench:view";
     /** H5端工单列表接口权限 */

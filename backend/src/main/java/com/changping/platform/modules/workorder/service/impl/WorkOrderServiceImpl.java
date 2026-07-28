@@ -2,6 +2,8 @@ package com.changping.platform.modules.workorder.service.impl;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.security.FoundationActorResolver;
+import com.changping.platform.modules.auth.model.AuthenticatedUser;
+import com.changping.platform.modules.auth.security.AuthenticatedUserContextHolder;
 import com.changping.platform.modules.event.entity.EventEntity;
 import com.changping.platform.modules.event.service.AlarmWorkflowStatusSyncService;
 import com.changping.platform.modules.process.entity.ProcessTemplateEntity;
@@ -25,6 +27,8 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 /**
@@ -34,6 +38,8 @@ import org.springframework.util.StringUtils;
  */
 @Service
 public class WorkOrderServiceImpl implements WorkOrderService {
+
+    private static final Logger log = LoggerFactory.getLogger(WorkOrderServiceImpl.class);
 
     private static final String WORK_ORDER_BUSINESS_TYPE = "EVENT_WORK_ORDER";
     private static final String WORK_ORDER_MEDIA_TYPE = "WORK_ORDER";
@@ -134,7 +140,46 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         ProcessNodeState currentNode = getCurrentPendingNode(workOrder.getProcessInstanceId());
         requireCurrentNodeAssignee(currentNode, actor);
 
-        String result = request.result().trim();
+        String result = request.result().trim().toUpperCase();
+
+        // 不属实 → 工单和事件同时关闭
+        if ("NOT_TRUE".equals(result)) {
+            completeProcessNode(currentNode.id(), NODE_STATUS_REJECTED);
+            jdbcTemplate.update(
+                    "UPDATE biz_process_instance SET status = 'REJECTED', finished_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    workOrder.getProcessInstanceId());
+            updateWorkOrder(workOrderId, "CLOSED", currentNode.assigneeUserId(), currentNode.assigneeName(), null, LocalDateTime.now(), request.remark());
+            updateEventStatus(workOrder.getSourceEventId(), "CLOSED", "DISPATCHED_TO_WORK_ORDER", "EVENT_CLOSE_STATUS_INVALID", "事件必须处于已派发状态才能关闭");
+            insertEventRecord(workOrder.getSourceEventId(), "DISPATCHED_TO_WORK_ORDER", "CLOSED", "WORK_ORDER_NOT_TRUE", actor, request.remark());
+            Long actionRecordId = insertProcessActionRecord(workOrder.getProcessInstanceId(), currentNode.id(), "WORK_ORDER_HANDLE", "NOT_TRUE", request.remark(), actor, request.subjectType(), request.subjectId());
+            saveAttachments(actionRecordId, request.attachments(), actor);
+            return getWorkOrder(workOrderId);
+        }
+
+        // 需补充证据 → 工单进入待核实
+        if ("NEEDS_MORE_EVIDENCE".equals(result)) {
+            completeProcessNode(currentNode.id(), NODE_STATUS_APPROVED);
+            Long actionRecordId = insertProcessActionRecord(workOrder.getProcessInstanceId(), currentNode.id(), "WORK_ORDER_HANDLE", "NEEDS_MORE_EVIDENCE", request.remark(), actor, request.subjectType(), request.subjectId());
+            saveAttachments(actionRecordId, request.attachments(), actor);
+            updateWorkOrder(workOrderId, "WAITING_VERIFY", currentNode.assigneeUserId(), currentNode.assigneeName(), null, null, request.remark());
+            insertEventRecord(workOrder.getSourceEventId(), "DISPATCHED_TO_WORK_ORDER", "DISPATCHED_TO_WORK_ORDER", "WORK_ORDER_NEEDS_EVIDENCE", actor, request.remark());
+            return getWorkOrder(workOrderId);
+        }
+
+        // 属实但需继续处理 → 工单保持处理中
+        if ("CONTINUE_PROCESSING".equals(result)) {
+            completeProcessNode(currentNode.id(), NODE_STATUS_APPROVED);
+            // 重新激活当前节点（保持处理状态）
+            jdbcTemplate.update(
+                    "UPDATE biz_process_instance_node SET status = 'PENDING', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    currentNode.id());
+            Long actionRecordId = insertProcessActionRecord(workOrder.getProcessInstanceId(), currentNode.id(), "WORK_ORDER_HANDLE", "CONTINUE_PROCESSING", request.remark(), actor, request.subjectType(), request.subjectId());
+            saveAttachments(actionRecordId, request.attachments(), actor);
+            insertEventRecord(workOrder.getSourceEventId(), "DISPATCHED_TO_WORK_ORDER", "DISPATCHED_TO_WORK_ORDER", "WORK_ORDER_CONTINUE", actor, request.remark());
+            return getWorkOrder(workOrderId);
+        }
+
+        // 拒绝/退回 → 工单关闭
         if ("REJECTED".equalsIgnoreCase(result) || "RETURNED".equalsIgnoreCase(result)) {
             completeProcessNode(currentNode.id(), NODE_STATUS_REJECTED);
             jdbcTemplate.update(
@@ -148,19 +193,22 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             return getWorkOrder(workOrderId);
         }
 
+        // APPROVED 或 RESOLVED（属实并已处理）
         completeProcessNode(currentNode.id(), NODE_STATUS_APPROVED);
         Long actionRecordId = insertProcessActionRecord(workOrder.getProcessInstanceId(), currentNode.id(), "WORK_ORDER_HANDLE", NODE_STATUS_APPROVED, request.remark(), actor, request.subjectType(), request.subjectId());
         saveAttachments(actionRecordId, request.attachments(), actor);
 
         ProcessNodeState nextNode = activateNextNode(workOrder.getProcessInstanceId(), currentNode.nodeOrder());
         if (nextNode == null) {
+            // 最后一个节点通过 → 进入待关闭确认状态
+            log.info("最后一个节点通过，工单{}进入待关闭确认状态", workOrderId);
             jdbcTemplate.update(
                     "UPDATE biz_process_instance SET status = 'APPROVED', finished_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                     workOrder.getProcessInstanceId());
-            updateWorkOrder(workOrderId, "COMPLETED", null, null, LocalDateTime.now(), null, null);
-            updateEventStatus(workOrder.getSourceEventId(), "CLOSED", "DISPATCHED_TO_WORK_ORDER", "EVENT_CLOSE_STATUS_INVALID", "事件必须处于已派发状态才能关闭");
-            insertEventRecord(workOrder.getSourceEventId(), "DISPATCHED_TO_WORK_ORDER", "CLOSED", "WORK_ORDER_COMPLETE", actor, request.remark());
-            insertProcessActionRecord(workOrder.getProcessInstanceId(), null, "WORK_ORDER_COMPLETE", PROCESS_STATUS_APPROVED, request.remark(), actor, null, null);
+            updateWorkOrder(workOrderId, "WAITING_CLOSE_CONFIRM", null, null, null, null, request.remark());
+            log.info("工单{}状态已更新为WAITING_CLOSE_CONFIRM", workOrderId);
+            insertEventRecord(workOrder.getSourceEventId(), "DISPATCHED_TO_WORK_ORDER", "DISPATCHED_TO_WORK_ORDER", "WORK_ORDER_WAITING_CLOSE", actor, request.remark());
+            insertProcessActionRecord(workOrder.getProcessInstanceId(), null, "WORK_ORDER_RESOLVED", PROCESS_STATUS_APPROVED, request.remark(), actor, null, null);
             return getWorkOrder(workOrderId);
         }
 
@@ -424,35 +472,25 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     public H5WorkbenchSummary getH5Workbench() {
         FoundationActorResolver.Actor actor = requireH5Actor();
         Long uid = actor.userId();
-        // totalCount: all work orders where user is any node participant
-        int totalCount = countWorkOrders(
-                "SELECT COUNT(*) FROM biz_work_order wo WHERE EXISTS "
-                        + "(SELECT 1 FROM biz_process_instance_node node "
-                        + " WHERE node.process_instance_id = wo.process_instance_id AND node.assignee_user_id = ?)",
-                uid);
-        // waitingAcceptCount: PROCESSING orders where user is the current PENDING node assignee (needs action now)
-        int waitingAcceptCount = countWorkOrders(
-                "SELECT COUNT(*) FROM biz_work_order wo WHERE wo.status = 'PROCESSING' AND EXISTS "
-                        + "(SELECT 1 FROM biz_process_instance_node node "
-                        + " WHERE node.process_instance_id = wo.process_instance_id "
-                        + "   AND node.is_current = 1 AND node.status = 'PENDING' AND node.assignee_user_id = ?)",
-                uid);
-        // pendingCloseCount: user is a participant but NOT the current pending assignee, flow still open (PROCESSING/COMPLETED)
-        // meaning: user has already acted on their node but the work order is not yet fully closed
-        int pendingCloseCount = countWorkOrders(
-                "SELECT COUNT(*) FROM biz_work_order wo WHERE wo.status IN ('PROCESSING', 'COMPLETED') "
-                        + "AND EXISTS (SELECT 1 FROM biz_process_instance_node node "
-                        + " WHERE node.process_instance_id = wo.process_instance_id AND node.assignee_user_id = ?) "
-                        + "AND NOT EXISTS (SELECT 1 FROM biz_process_instance_node node "
-                        + " WHERE node.process_instance_id = wo.process_instance_id "
-                        + "   AND node.is_current = 1 AND node.status = 'PENDING' AND node.assignee_user_id = ?)",
-                uid, uid);
-        // closedCount: fully closed (CLOSED or TIMEOUT) orders where user participated
-        int closedCount = countWorkOrders(
-                "SELECT COUNT(*) FROM biz_work_order wo WHERE wo.status IN ('CLOSED', 'TIMEOUT') AND EXISTS "
-                        + "(SELECT 1 FROM biz_process_instance_node node "
-                        + " WHERE node.process_instance_id = wo.process_instance_id AND node.assignee_user_id = ?)",
-                uid);
+        // 合并为单次查询，使用条件聚合减少数据库往返
+        String sql = "SELECT "
+                + "COUNT(DISTINCT CASE WHEN node.assignee_user_id = ? THEN wo.id END) AS total_count, "
+                + "COUNT(DISTINCT CASE WHEN wo.status = 'PROCESSING' AND cur.is_current = 1 "
+                + "  AND cur.status = 'PENDING' AND cur.assignee_user_id = ? THEN wo.id END) AS waiting_accept_count, "
+                + "COUNT(DISTINCT CASE WHEN wo.status IN ('PROCESSING', 'COMPLETED') AND node.assignee_user_id = ? "
+                + "  AND (cur.is_current IS NULL OR cur.is_current = 0 OR cur.status != 'PENDING' OR cur.assignee_user_id != ?) "
+                + "  THEN wo.id END) AS pending_close_count, "
+                + "COUNT(DISTINCT CASE WHEN wo.status IN ('CLOSED', 'TIMEOUT') AND node.assignee_user_id = ? "
+                + "  THEN wo.id END) AS closed_count "
+                + "FROM biz_work_order wo "
+                + "INNER JOIN biz_process_instance_node node ON node.process_instance_id = wo.process_instance_id AND node.assignee_user_id = ? "
+                + "LEFT JOIN biz_process_instance_node cur ON cur.process_instance_id = wo.process_instance_id "
+                + "  AND cur.is_current = 1 AND cur.status = 'PENDING' ";
+        Map<String, Object> result = jdbcTemplate.queryForMap(sql, uid, uid, uid, uid, uid, uid);
+        int totalCount = ((Number) result.get("total_count")).intValue();
+        int waitingAcceptCount = ((Number) result.get("waiting_accept_count")).intValue();
+        int pendingCloseCount = ((Number) result.get("pending_close_count")).intValue();
+        int closedCount = ((Number) result.get("closed_count")).intValue();
         return new H5WorkbenchSummary(totalCount, waitingAcceptCount, pendingCloseCount, closedCount);
     }
 
@@ -521,12 +559,16 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                         + "  WHEN record.subject_type = 'MERCHANT' THEN m.merchant_name "
                         + "  WHEN record.subject_type = 'VENDOR' THEN v.vendor_name "
                         + "END AS subject_name, "
-                        + "(SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('fileName', mf.file_name, 'fileUrl', mf.file_url, 'fileType', mf.file_type)), ']') "
-                        + " FROM biz_media_file mf WHERE mf.business_type = 'ACTION_RECORD' AND mf.business_id = record.id AND mf.status = 'ACTIVE') AS attachments "
+                        + "mf.attachments "
                         + "FROM biz_process_action_record record "
                         + "LEFT JOIN biz_process_instance_node node ON node.id = record.process_instance_node_id "
                         + "LEFT JOIN biz_merchant m ON m.id = record.subject_id AND record.subject_type = 'MERCHANT' "
                         + "LEFT JOIN biz_mobile_vendor v ON v.id = record.subject_id AND record.subject_type = 'VENDOR' "
+                        + "LEFT JOIN ("
+                        + "  SELECT business_id, "
+                        + "    CONCAT('[', GROUP_CONCAT(JSON_OBJECT('fileName', file_name, 'fileUrl', file_url, 'fileType', file_type)), ']') AS attachments "
+                        + "  FROM biz_media_file WHERE business_type = 'ACTION_RECORD' AND status = 'ACTIVE' GROUP BY business_id"
+                        + ") mf ON mf.business_id = record.id "
                         + "WHERE record.process_instance_id = ? "
                         + "ORDER BY record.created_at ASC, record.id ASC",
                 (rs, rowNum) -> new WebWorkOrderFlowRecord(
@@ -824,6 +866,20 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
+     * 要求 Web 端认证用户
+     */
+    private FoundationActorResolver.Actor requireWebActor() {
+        FoundationActorResolver.Actor actor = requireAuthenticatedActor();
+        String clientType = AuthenticatedUserContextHolder.getOptional()
+                .map(AuthenticatedUser::clientType)
+                .orElse(null);
+        if (!"WEB".equals(clientType)) {
+            throw new BusinessException("AUTH_CLIENT_TYPE_FORBIDDEN", "仅 Web 端可执行此操作");
+        }
+        return actor;
+    }
+
+    /**
      * @Author tangxinglin
      * @Description //更新工单的状态、处理人及完成/关闭时间等字段
      * @Date 2026/04/18 09:30
@@ -1022,12 +1078,16 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                         + "  WHEN r.subject_type = 'MERCHANT' THEN m.merchant_name "
                         + "  WHEN r.subject_type = 'VENDOR' THEN v.vendor_name "
                         + "END AS subject_name, "
-                        + "(SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('fileName', mf.file_name, 'fileUrl', mf.file_url, 'fileType', mf.file_type)), ']') "
-                        + " FROM biz_media_file mf WHERE mf.business_type = 'ACTION_RECORD' AND mf.business_id = r.id AND mf.status = 'ACTIVE') AS attachments "
+                        + "mf.attachments "
                         + "FROM biz_process_action_record r "
                         + "LEFT JOIN biz_process_instance_node n ON n.id = r.process_instance_node_id "
                         + "LEFT JOIN biz_merchant m ON m.id = r.subject_id AND r.subject_type = 'MERCHANT' "
                         + "LEFT JOIN biz_mobile_vendor v ON v.id = r.subject_id AND r.subject_type = 'VENDOR' "
+                        + "LEFT JOIN ("
+                        + "  SELECT business_id, "
+                        + "    CONCAT('[', GROUP_CONCAT(JSON_OBJECT('fileName', file_name, 'fileUrl', file_url, 'fileType', file_type)), ']') AS attachments "
+                        + "  FROM biz_media_file WHERE business_type = 'ACTION_RECORD' AND status = 'ACTIVE' GROUP BY business_id"
+                        + ") mf ON mf.business_id = r.id "
                         + "WHERE r.process_instance_id = ? "
                         + "ORDER BY r.created_at ASC, r.id ASC",
                 (rs, rowNum) -> new H5ActionRecordVo(
@@ -1042,6 +1102,100 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                         rs.getString("subject_name"),
                         rs.getString("attachments")),
                 processInstanceId);
+    }
+
+    @Override
+    public List<Map<String, Object>> getAttachments(Long workOrderId) {
+        return jdbcTemplate.query(
+            "SELECT mf.id, mf.file_name, mf.file_url, mf.file_type, mf.mime_type, mf.uploader_name, mf.created_at " +
+            "FROM biz_media_file mf " +
+            "JOIN biz_process_action_record ar ON ar.id = mf.business_id AND mf.business_type = 'ACTION_RECORD' " +
+            "JOIN biz_process_instance pi ON pi.id = ar.process_instance_id " +
+            "JOIN biz_work_order wo ON wo.process_instance_id = pi.id " +
+            "WHERE wo.id = ? AND mf.status = 'ACTIVE' " +
+            "ORDER BY mf.id DESC",
+            (rs, rowNum) -> {
+                Map<String, Object> map = new java.util.LinkedHashMap<>();
+                map.put("id", rs.getLong("id"));
+                map.put("fileName", rs.getString("file_name"));
+                map.put("fileUrl", rs.getString("file_url"));
+                map.put("fileType", rs.getString("file_type"));
+                map.put("mimeType", rs.getString("mime_type"));
+                map.put("uploaderName", rs.getString("uploader_name"));
+                map.put("createdAt", rs.getTimestamp("created_at"));
+                return map;
+            },
+            workOrderId);
+    }
+
+    /**
+     * 确认关闭工单（Web端）— 工单已完成，事件关闭
+     */
+    @Override
+    @Transactional
+    public WorkOrderEntity confirmClose(Long workOrderId, String remark) {
+        FoundationActorResolver.Actor actor = requireWebActor();
+        WorkOrderEntity workOrder = getWorkOrder(workOrderId);
+
+        if (!"WAITING_CLOSE_CONFIRM".equalsIgnoreCase(workOrder.getStatus())) {
+            throw new BusinessException("VALIDATION_ERROR", "工单不处于待关闭确认状态");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        jdbcTemplate.update(
+                "UPDATE biz_work_order SET status = 'COMPLETED', completed_at = ?, closed_at = ?, close_reason = ?, updated_at = ? WHERE id = ?",
+                Timestamp.valueOf(now), Timestamp.valueOf(now), remark, Timestamp.valueOf(now), workOrderId);
+
+        // 直接更新事件状态（不检查当前状态，因为确认关闭是最终操作）
+        jdbcTemplate.update(
+                "UPDATE biz_event SET status = 'CLOSED', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                workOrder.getSourceEventId());
+        alarmWorkflowStatusSyncService.syncWorkflowStatus(workOrder.getSourceEventId(), "CLOSED");
+        insertEventRecord(workOrder.getSourceEventId(), null, "CLOSED", "CONFIRM_CLOSE", actor, remark);
+        insertProcessActionRecord(workOrder.getProcessInstanceId(), null, "CONFIRM_CLOSE", "APPROVED", remark, actor, null, null);
+
+        return getWorkOrder(workOrderId);
+    }
+
+    /**
+     * 驳回关闭（Web端）— 工单退回处理中状态
+     */
+    @Override
+    @Transactional
+    public WorkOrderEntity rejectClose(Long workOrderId, String remark) {
+        FoundationActorResolver.Actor actor = requireWebActor();
+        WorkOrderEntity workOrder = getWorkOrder(workOrderId);
+
+        if (!"WAITING_CLOSE_CONFIRM".equalsIgnoreCase(workOrder.getStatus())) {
+            throw new BusinessException("VALIDATION_ERROR", "工单不处于待关闭确认状态");
+        }
+
+        // 找到最后一个已通过的节点，重新激活
+        List<Map<String, Object>> nodes = jdbcTemplate.queryForList(
+                "SELECT id, node_order, assignee_user_id, assignee_name FROM biz_process_instance_node " +
+                "WHERE process_instance_id = ? AND status = 'APPROVED' ORDER BY node_order DESC LIMIT 1",
+                workOrder.getProcessInstanceId());
+
+        if (!nodes.isEmpty()) {
+            Map<String, Object> lastNode = nodes.get(0);
+            jdbcTemplate.update(
+                    "UPDATE biz_process_instance_node SET status = 'PENDING', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    lastNode.get("id"));
+            Long assigneeId = ((Number) lastNode.get("assignee_user_id")).longValue();
+            String assigneeName = (String) lastNode.get("assignee_name");
+            jdbcTemplate.update(
+                    "UPDATE biz_work_order SET status = 'PROCESSING', assignee_user_id = ?, assignee_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    assigneeId, assigneeName, workOrderId);
+        } else {
+            jdbcTemplate.update(
+                    "UPDATE biz_work_order SET status = 'PROCESSING', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    workOrderId);
+        }
+
+        insertEventRecord(workOrder.getSourceEventId(), null, "DISPATCHED_TO_WORK_ORDER", "REJECT_CLOSE", actor, remark);
+        insertProcessActionRecord(workOrder.getProcessInstanceId(), null, "REJECT_CLOSE", "REJECTED", remark, actor, null, null);
+
+        return getWorkOrder(workOrderId);
     }
 
     private record ProcessNodeState(Long id, Integer nodeOrder, Long assigneeUserId, String assigneeName) {

@@ -50,7 +50,7 @@
             <checkbox :checked="rememberAccount" color="#49b8ff" style="transform:scale(0.68)" @click="rememberAccount = !rememberAccount" />
             <text>记住账号</text>
           </label>
-          <text class="fingerprint-text">指纹登录</text>
+          <text class="register-link" @click="goRegister">注册账号</text>
         </view>
       </view>
 
@@ -95,6 +95,10 @@ const fallbackRedirect = computed(() =>
 const hexOverlayStyle = computed(() => ({
   backgroundImage: `url(${loginHexUrl})`
 }))
+
+function goRegister() {
+  uni.navigateTo({ url: '/pages/register/index' })
+}
 
 async function handleSubmit() {
   errorMessage.value = ''

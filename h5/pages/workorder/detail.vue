@@ -346,11 +346,14 @@ const canHandle = computed(
 )
 
 const operationOptions = [
-  { label: '通过', value: 'APPROVED' },
+  { label: '属实并已处理', value: 'RESOLVED' },
+  { label: '属实但需继续处理', value: 'CONTINUE_PROCESSING' },
+  { label: '不属实', value: 'NOT_TRUE' },
+  { label: '需补充证据', value: 'NEEDS_MORE_EVIDENCE' },
   { label: '驳回', value: 'REJECTED' }
 ]
 
-const remarkRequired = computed(() => ['REJECTED', 'RETURNED'].includes(selectedOp.value))
+const remarkRequired = computed(() => ['REJECTED', 'RETURNED', 'NOT_TRUE', 'NEEDS_MORE_EVIDENCE'].includes(selectedOp.value))
 
 const sortedRecords = computed<ActionRecordVo[]>(() => {
   if (!detail.value) return []
@@ -401,15 +404,27 @@ function nodeStatusText(status: string): string {
 }
 
 function recordDotClass(result: string) {
-  if (result === 'APPROVED') return 'record-dot--success'
-  if (result === 'REJECTED' || result === 'RETURNED') return 'record-dot--danger'
+  if (result === 'APPROVED' || result === 'RESOLVED') return 'record-dot--success'
+  if (result === 'REJECTED' || result === 'RETURNED' || result === 'NOT_TRUE') return 'record-dot--danger'
+  if (result === 'NEEDS_MORE_EVIDENCE' || result === 'CONTINUE_PROCESSING') return 'record-dot--warning'
   return 'record-dot--primary'
 }
 
 function recordTagClass(result: string) {
-  if (result === 'APPROVED') return 'tag--success'
-  if (result === 'REJECTED' || result === 'RETURNED') return 'tag--danger'
+  if (result === 'APPROVED' || result === 'RESOLVED') return 'tag--success'
+  if (result === 'REJECTED' || result === 'RETURNED' || result === 'NOT_TRUE') return 'tag--danger'
+  if (result === 'NEEDS_MORE_EVIDENCE' || result === 'CONTINUE_PROCESSING') return 'tag--warning'
   return 'tag--primary'
+}
+
+function resultLabel(result: string): string {
+  switch (result) {
+    case 'RESOLVED': return '属实并已处理'
+    case 'CONTINUE_PROCESSING': return '属实但需继续处理'
+    case 'NOT_TRUE': return '不属实'
+    case 'NEEDS_MORE_EVIDENCE': return '需补充证据'
+    default: return actionLabel(result)
+  }
 }
 
 function actionLabel(action: string): string {
@@ -417,6 +432,10 @@ function actionLabel(action: string): string {
     case 'APPROVED': return '通过'
     case 'REJECTED': return '驳回'
     case 'RETURNED': return '退回'
+    case 'RESOLVED': return '已处理'
+    case 'NOT_TRUE': return '不属实'
+    case 'NEEDS_MORE_EVIDENCE': return '需补充'
+    case 'CONTINUE_PROCESSING': return '继续处理'
     case 'ACCEPT': return '接单'
     case 'HANDLE': return '处理'
     case 'DISPATCH': return '派发'
@@ -424,6 +443,11 @@ function actionLabel(action: string): string {
     case 'WORK_ORDER_DISPATCH': return '工单派发'
     case 'WORK_ORDER_HANDLE': return '节点处理'
     case 'WORK_ORDER_COMPLETE': return '工单完成'
+    case 'WORK_ORDER_RESOLVED': return '处置完成'
+    case 'WORK_ORDER_NEEDS_EVIDENCE': return '待补充证据'
+    case 'WORK_ORDER_NOT_TRUE': return '不属实关闭'
+    case 'CONFIRM_CLOSE': return '确认关闭'
+    case 'REJECT_CLOSE': return '驳回关闭'
     default: return action
   }
 }
