@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "网格社区治理平台 API",
-    "description": "网格社区治理平台后端接口文档 v1.2.0 — 完整覆盖所有控制器",
-    "version": "1.2.0"
+    "description": "网格社区治理平台后端接口文档 v1.3.0 — 完整覆盖所有控制器",
+    "version": "1.3.0"
   },
   "servers": [
     {
@@ -29,8 +29,8 @@
       "description": "H5端工单"
     },
     {
-      "name": "H5认证扩展",
-      "description": "H5认证额外接口"
+      "name": "H5认证",
+      "description": "H5认证扩展"
     },
     {
       "name": "审核流程",
@@ -143,7 +143,7 @@
         "tags": [
           "认证"
         ],
-        "summary": "登录",
+        "summary": "登录（Web/小程序）",
         "security": [],
         "responses": {
           "200": {
@@ -1050,7 +1050,7 @@
     "/h5/auth/me": {
       "get": {
         "tags": [
-          "H5认证扩展"
+          "H5认证"
         ],
         "summary": "获取当前H5用户信息",
         "security": [
@@ -1068,7 +1068,7 @@
     "/h5/auth/logout": {
       "post": {
         "tags": [
-          "H5认证扩展"
+          "H5认证"
         ],
         "summary": "H5登出",
         "security": [
@@ -3213,6 +3213,24 @@
           "信息互通"
         ],
         "summary": "同步统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/integration/systems/health-check": {
+      "get": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "健康检查所有外部系统",
         "security": [
           {
             "BearerAuth": []
@@ -6169,248 +6187,6 @@
         "bearerFormat": "JWT"
       }
     },
-    "schemas": {
-      "LoginRequest": {
-        "type": "object",
-        "required": [
-          "account",
-          "password"
-        ],
-        "properties": {
-          "account": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
-          },
-          "clientType": {
-            "type": "string"
-          }
-        }
-      },
-      "CreateEventRequest": {
-        "type": "object",
-        "required": [
-          "title"
-        ],
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "eventType": {
-            "type": "string"
-          },
-          "urgencyLevel": {
-            "type": "string",
-            "enum": [
-              "GREEN",
-              "YELLOW",
-              "RED"
-            ]
-          },
-          "gridId": {
-            "type": "integer"
-          }
-        }
-      },
-      "DispatchRequest": {
-        "type": "object",
-        "properties": {
-          "assigneeUserId": {
-            "type": "integer"
-          },
-          "templateId": {
-            "type": "integer"
-          },
-          "remark": {
-            "type": "string"
-          }
-        }
-      },
-      "HandleWorkOrderRequest": {
-        "type": "object",
-        "required": [
-          "result"
-        ],
-        "properties": {
-          "result": {
-            "type": "string",
-            "enum": [
-              "RESOLVED",
-              "NOT_TRUE",
-              "NEEDS_MORE_EVIDENCE",
-              "CONTINUE_PROCESSING",
-              "APPROVED",
-              "REJECTED"
-            ]
-          },
-          "remark": {
-            "type": "string"
-          }
-        }
-      },
-      "GridEntity": {
-        "type": "object",
-        "properties": {
-          "gridCode": {
-            "type": "string"
-          },
-          "gridName": {
-            "type": "string"
-          },
-          "gridLevel": {
-            "type": "integer"
-          },
-          "parentId": {
-            "type": "integer"
-          },
-          "area": {
-            "type": "number"
-          },
-          "population": {
-            "type": "integer"
-          }
-        }
-      },
-      "PopulationEntity": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "idCard": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "gridId": {
-            "type": "integer"
-          }
-        }
-      },
-      "BuildingEntity": {
-        "type": "object",
-        "properties": {
-          "buildingNo": {
-            "type": "string"
-          },
-          "address": {
-            "type": "string"
-          },
-          "landlordName": {
-            "type": "string"
-          },
-          "gridId": {
-            "type": "integer"
-          }
-        }
-      },
-      "PlaceEntity": {
-        "type": "object",
-        "properties": {
-          "placeName": {
-            "type": "string"
-          },
-          "placeCategory": {
-            "type": "string"
-          },
-          "legalPersonName": {
-            "type": "string"
-          },
-          "gridId": {
-            "type": "integer"
-          }
-        }
-      },
-      "OrgMemberEntity": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "position": {
-            "type": "string"
-          },
-          "gridId": {
-            "type": "integer"
-          }
-        }
-      },
-      "ResidentReport": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "queryCode": {
-            "type": "string"
-          }
-        }
-      },
-      "SafetyInspectionEntity": {
-        "type": "object",
-        "properties": {
-          "merchantId": {
-            "type": "integer"
-          },
-          "content": {
-            "type": "string"
-          },
-          "issues": {
-            "type": "string"
-          },
-          "rectificationStatus": {
-            "type": "string"
-          }
-        }
-      },
-      "ProcessTemplate": {
-        "type": "object",
-        "properties": {
-          "templateName": {
-            "type": "string"
-          },
-          "templateCode": {
-            "type": "string"
-          },
-          "nodes": {
-            "type": "string"
-          }
-        }
-      },
-      "ThirdPartyAlarmCallback": {
-        "type": "object",
-        "properties": {
-          "sourceSystem": {
-            "type": "string"
-          },
-          "eventType": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "level": {
-            "type": "string"
-          }
-        }
-      }
-    }
+    "schemas": {}
   }
 }
