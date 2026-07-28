@@ -218,6 +218,14 @@ export async function markOverduePatrolTasks() {
   return http.post('/community/patrol-tasks/mark-overdue')
 }
 
+export async function getResidentReports(params?: { page?: number; pageSize?: number; status?: string }) {
+  return http.get('/community/resident-reports', { params })
+}
+
+export async function handleResidentReport(id: number, handleResult: string) {
+  return http.put(`/community/resident-reports/${id}/handle`, { handleResult })
+}
+
 export async function completePatrolTask(id: number) {
   return http.post(`/community/patrol-tasks/${id}/complete`)
 }

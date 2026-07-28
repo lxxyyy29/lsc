@@ -34,14 +34,27 @@
                 <span :class="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
               </td>
               <td>
-                <button v-if="item.status === 'CLOSED' && !item.rating" disabled
-                  style="padding:4px 12px;border:1px solid #e5e7eb;border-radius:4px;background:#f9fafb;color:#9ca3af;font-size:12px;cursor:default;">
-                  待评价
-                </button>
-                <span v-else-if="item.rating" style="color:#faad14;font-size:12px;">
-                  {{ '★'.repeat(item.rating) }}
-                </span>
-                <span v-else style="font-size:12px;color:#9ca3af;">-</span>
+                <div style="display:flex;gap:6px;">
+                  <button @click="viewDetail(item)"
+                    style="padding:4px 12px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#374151;">
+                    详情
+                  </button>
+                  <button v-if="item.status === 'WAITING_DISPATCH'" @click="handleProcess(item)"
+                    style="padding:4px 12px;border:none;border-radius:4px;background:#0284c7;color:#fff;font-size:12px;cursor:pointer;">
+                    处理
+                  </button>
+                  <button v-if="item.status === 'WAITING_DISPATCH'" @click="handleIgnore(item)"
+                    style="padding:4px 12px;border:1px solid #ff4d4f;border-radius:4px;background:#fff;color:#ff4d4f;font-size:12px;cursor:pointer;">
+                    忽略
+                  </button>
+                  <button v-if="item.status === 'CLOSED' && !item.rating" disabled
+                    style="padding:4px 12px;border:1px solid #e5e7eb;border-radius:4px;background:#f9fafb;color:#9ca3af;font-size:12px;cursor:default;">
+                    待评价
+                  </button>
+                  <span v-else-if="item.rating" style="color:#faad14;font-size:12px;line-height:24px;">
+                    {{ '★'.repeat(item.rating) }}
+                  </span>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -103,6 +116,33 @@ async function fetchData() {
     error.value = e?.message || '加载失败，请稍后重试'
   } finally {
     loading.value = false
+  }
+}
+
+function viewDetail(item: any) {
+  alert(`标题：${item.title}\n描述：${item.description || '-'}\n类型：${eventTypeLabel(item.eventType)}\n状态：${statusLabel(item.status)}\n上报时间：${formatTime(item.createdAt || item.occurredAt)}`)
+}
+
+async function handleProcess(item: any) {
+  const remark = prompt('请输入处理备注：', '已处理')
+  if (remark === null) return
+  try {
+    await http.put(`/community/resident-reports/${item.id}/handle`, { handleResult: remark || '已处理' })
+    alert('处理成功')
+    fetchData()
+  } catch(e: any) {
+    alert(e?.message || '处理失败')
+  }
+}
+
+async function handleIgnore(item: any) {
+  if (!confirm(`确定要忽略上报「${item.title}」吗？`)) return
+  try {
+    await http.put(`/community/resident-reports/${item.id}/handle`, { handleResult: '已忽略' })
+    alert('已忽略')
+    fetchData()
+  } catch(e: any) {
+    alert(e?.message || '操作失败')
   }
 }
 
