@@ -1,24 +1,24 @@
 <template>
   <div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
       <div>
-        <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">事件闭环处置</h2>
-        <p style="font-size:13px;color:#6b7280;">发现上报→智能派单→现场处置→复核核查→归档</p>
+        <h1 class="page-title">事件闭环处置</h1>
+        <p class="page-desc">发现上报→智能派单→现场处置→复核核查→归档</p>
       </div>
       <div style="display:flex;gap:8px;">
-        <button @click="$router.push('/processes')" style="padding:8px 16px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">
-          <i class="fas fa-project-diagram" style="margin-right:4px;"></i>流程模板
+        <button @click="$router.push('/processes')" class="btn btn-default">
+          <i class="fas fa-project-diagram"></i>流程模板
         </button>
-        <button @click="$router.push('/events/create')" style="padding:8px 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">
-          <i class="fas fa-plus" style="margin-right:4px;"></i>创建事件
+        <button @click="$router.push('/events/create')" class="btn btn-primary">
+          <i class="fas fa-plus"></i>创建事件
         </button>
       </div>
     </div>
 
     <div class="card">
       <!-- 筛选栏 -->
-      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-        <select v-model="filters.status" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+      <div class="filter-bar">
+        <select v-model="filters.status" class="form-select" style="width:auto;">
           <option value="">全部状态</option>
           <option value="PENDING_AUDIT">待审核</option>
           <option value="IN_AUDIT">审核中</option>
@@ -27,15 +27,15 @@
           <option value="CLOSED">已关闭</option>
           <option value="IGNORED">已忽略</option>
         </select>
-        <select v-model="filters.urgencyLevel" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+        <select v-model="filters.urgencyLevel" class="form-select" style="width:auto;">
           <option value="">全部紧急程度</option>
           <option value="GREEN">一般（绿）</option>
           <option value="YELLOW">重点（黄）</option>
           <option value="RED">紧急（红）</option>
         </select>
-        <input v-model="filters.startDate" type="date" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-        <input v-model="filters.endDate" type="date" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-        <button @click="loadData" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">查询</button>
+        <input v-model="filters.startDate" type="date" class="form-input" style="width:auto;" />
+        <input v-model="filters.endDate" type="date" class="form-input" style="width:auto;" />
+        <button @click="loadData" class="btn btn-primary">查询</button>
       </div>
 
       <!-- 加载中 -->
@@ -88,7 +88,10 @@
             </tr>
           </tbody>
         </table>
-        <p v-if="!list.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无事件</p>
+        <div v-if="!list.length" class="empty-state">
+          <i class="fas fa-inbox"></i>
+          <p>暂无事件数据</p>
+        </div>
 
         <!-- 分页 -->
         <div v-if="totalPages > 1" style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">

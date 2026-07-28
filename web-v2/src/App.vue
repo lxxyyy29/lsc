@@ -1,15 +1,11 @@
 <template>
-  <div v-if="session?.token">
+  <div v-if="session?.token" style="height:100vh;display:flex;flex-direction:column;">
     <!-- 顶部导航 -->
     <nav class="top-nav">
-      <div style="display:flex;align-items:center;">
-        <i class="fas fa-building" style="color:#1890FF;font-size:20px;margin-right:10px;"></i>
-        <h1 style="font-size:16px;font-weight:600;">拔蛟窝社区小网格综合治理系统</h1>
-      </div>
+      <h1><i class="fas fa-building"></i>网格社区治理平台</h1>
       <div style="display:flex;align-items:center;gap:16px;">
-        <span style="font-size:12px;color:#9ca3af;">端口: 8080</span>
         <span style="font-size:12px;color:#9ca3af;">{{ session?.userName || '管理员' }}</span>
-        <div style="width:32px;height:32px;background:#1890FF;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;">{{ session?.userName?.slice(0,1) || '管' }}</div>
+        <div style="width:32px;height:32px;background:#0284c7;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;">{{ session?.userName?.slice(0,1) || '管' }}</div>
         <div class="user-menu-wrapper" @click.stop="showUserMenu = !showUserMenu">
           <i class="fas fa-chevron-down" style="font-size:10px;color:#9ca3af;cursor:pointer;"></i>
           <div v-if="showUserMenu" class="user-dropdown" @click.stop>
@@ -31,32 +27,33 @@
     </nav>
 
     <!-- 侧边栏 -->
-    <aside class="sidebar">
-      <div style="padding:16px 0;">
-        <div style="padding:0 16px 12px;margin-bottom:8px;border-bottom:1px solid #f3f4f6;">
-          <span style="font-size:11px;color:#9ca3af;">治理功能</span>
-        </div>
-        <!-- 分组菜单 -->
-        <div v-for="group in menuGroups" :key="group.name" class="menu-group">
-          <div class="group-header" @click="toggleGroup(group.name)">
-            <i :class="group.icon" style="color:#0284c7;font-size:14px;width:20px;text-align:center;"></i>
-            <span style="flex:1;font-size:13px;font-weight:600;color:#374151;">{{ group.name }}</span>
-            <i class="fas fa-chevron-down" style="font-size:10px;color:#9ca3af;transition:transform 0.2s;" :style="{ transform: openGroups.includes(group.name) ? 'rotate(0deg)' : 'rotate(-90deg)' }"></i>
+    <div style="display:flex;flex:1;overflow:hidden;">
+      <aside class="sidebar">
+        <div style="padding:16px 0;">
+          <div style="padding:0 16px 12px;margin-bottom:8px;border-bottom:1px solid #f3f4f6;">
+            <span style="font-size:11px;color:#9ca3af;font-weight:600;">功能导航</span>
           </div>
-          <div v-show="openGroups.includes(group.name)" class="group-items">
-            <router-link v-for="item in group.items" :key="item.path" :to="item.path" class="sidebar-link sub-item" :class="{ active: currentPath === item.path }">
-              <span style="width:12px;height:12px;border-radius:3px;background:#e5e7eb;margin-right:8px;flex-shrink:0;" :style="currentPath === item.path ? { background: '#0284c7' } : {}"></span>
-              <span>{{ item.name }}</span>
-            </router-link>
+          <div v-for="group in menuGroups" :key="group.name" class="menu-group">
+            <div class="group-header" @click="toggleGroup(group.name)">
+              <i :class="group.icon" style="color:#0284c7;font-size:14px;width:20px;text-align:center;"></i>
+              <span style="flex:1;">{{ group.name }}</span>
+              <i class="fas fa-chevron-down" style="font-size:10px;color:#9ca3af;transition:transform 0.2s;" :style="{ transform: openGroups.includes(group.name) ? 'rotate(0deg)' : 'rotate(-90deg)' }"></i>
+            </div>
+            <div v-show="openGroups.includes(group.name)" class="group-items">
+              <router-link v-for="item in group.items" :key="item.path" :to="item.path" class="sidebar-link sub-item" :class="{ active: currentPath === item.path }">
+                <span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;flex-shrink:0;" :style="currentPath === item.path ? { background: '#0284c7' } : {}"></span>
+                <span>{{ item.name }}</span>
+              </router-link>
+            </div>
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
 
-    <!-- 主内容 -->
-    <main class="main-content">
-      <router-view />
-    </main>
+      <!-- 主内容 -->
+      <main class="main-content">
+        <router-view />
+      </main>
+    </div>
   </div>
   <LoginView v-else @success="onLogin" />
 </template>
