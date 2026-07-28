@@ -160,7 +160,11 @@ async function loadTasks() {
 async function generateTasks() {
   try {
     const count = await generatePatrolTasks()
-    alert(`成功生成 ${count} 个巡查任务`)
+    if (count > 0) {
+      alert(`成功生成 ${count} 个巡查任务`)
+    } else {
+      alert('本周巡查任务已存在，无需重复生成')
+    }
     loadTasks()
   } catch (e: any) {
     alert(e?.message || '生成失败')

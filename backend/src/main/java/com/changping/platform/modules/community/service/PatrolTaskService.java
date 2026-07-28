@@ -19,11 +19,16 @@ public class PatrolTaskService {
     }
 
     /**
-     * 为所有小网格生成本周巡查任务
+     * 为所有活跃网格生成本周巡查任务
+     * 优先小网格（level=3），如果没有则使用大网格（level=2）
      */
     public int generateWeeklyTasks() {
         // 获取所有活跃的小网格
         List<Map<String, Object>> grids = mapper.findActiveSmallGrids();
+        // 如果没有小网格，使用大网格
+        if (grids.isEmpty()) {
+            grids = mapper.findActiveLargeGrids();
+        }
         LocalDate today = LocalDate.now();
         LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
         int count = 0;

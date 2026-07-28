@@ -42,6 +42,11 @@ public class PatrolTaskMapper {
             "SELECT id AS grid_id, grid_name FROM cmn_grid WHERE status = 'ACTIVE' AND grid_level = 3");
     }
 
+    public List<Map<String, Object>> findActiveLargeGrids() {
+        return jdbcTemplate.queryForList(
+            "SELECT id AS grid_id, grid_name FROM cmn_grid WHERE status = 'ACTIVE' AND grid_level = 2");
+    }
+
     public boolean existsTaskForWeek(Long gridId, LocalDate startOfWeek) {
         Long count = jdbcTemplate.queryForObject(
             "SELECT COUNT(*) FROM cmn_patrol_task WHERE grid_id = ? AND planned_date >= ? AND planned_date < ?",
