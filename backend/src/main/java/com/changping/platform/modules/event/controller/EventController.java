@@ -12,6 +12,7 @@ import com.changping.platform.modules.event.dto.CreateEventRequest;
 import com.changping.platform.modules.event.dto.IgnoreEventRequest;
 import com.changping.platform.modules.event.service.EventIgnoreService;
 import com.changping.platform.modules.event.service.EventService;
+import com.changping.platform.modules.integration.alarm.service.AlarmEventMongoService;
 import com.changping.platform.modules.event.vo.EventDetailVo;
 import com.changping.platform.modules.event.vo.EventIgnoreRecordVo;
 import com.changping.platform.modules.workorder.entity.WorkOrderEntity;
@@ -54,6 +55,7 @@ public class EventController {
     private final PermissionGuard permissionGuard;
     private final CurrentUserService currentUserService;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private final AlarmEventMongoService alarmEventMongoService;
 
     /**
      * @Author tangxinglin
@@ -68,13 +70,15 @@ public class EventController {
             WorkOrderService workOrderService,
             PermissionGuard permissionGuard,
             CurrentUserService currentUserService,
-            org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
+            org.springframework.jdbc.core.JdbcTemplate jdbcTemplate,
+            AlarmEventMongoService alarmEventMongoService) {
         this.eventService = eventService;
         this.eventIgnoreService = eventIgnoreService;
         this.workOrderService = workOrderService;
         this.permissionGuard = permissionGuard;
         this.currentUserService = currentUserService;
         this.jdbcTemplate = jdbcTemplate;
+        this.alarmEventMongoService = alarmEventMongoService;
     }
 
     /**
@@ -340,6 +344,18 @@ public class EventController {
                 eventCode, externalId, type != null ? type : "OTHER", title, description);
 
             Long eventId = jdbcTemplate.queryForObject("SELECT id FROM biz_event WHERE event_code = ?", Long.class, eventCode);
+
+            // 同时写入 MongoDB，使事件能在列表中显示
+            try {
+                com.changping.platform.modules.event.dto.CreateEventRequest mongoRequest = new com.changping.platform.modules.event.dto.CreateEventRequest(
+                    externalId, "PUBLIC", "PUBLIC_REPORT",
+                    type != null ? type : "OTHER", title, description,
+                    java.time.LocalDateTime.now(), "拔蛟窝社区", null, null,
+                    new java.util.ArrayList<>());
+                alarmEventMongoService.upsertManualEvent(mongoRequest, eventId, eventCode, "WAITING_DISPATCH");
+            } catch (Exception mongoEx) {
+                log.warn("公众上报事件写入MongoDB失败（不影响主流程）: {}", mongoEx.getMessage());
+            }
 
             Map<String, Object> result = new HashMap<>();
             result.put("id", eventId);
