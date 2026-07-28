@@ -218,7 +218,7 @@ public class ExternalSystemSyncService {
     }
 
     /**
-     * 定时同步任务 - 每30分钟执行一次
+     * 定时同步任务 - 每30分钟执行一次（带重试）
      */
     @Scheduled(cron = "0 0/30 * * * ?")
     public void scheduledSync() {
@@ -229,14 +229,38 @@ public class ExternalSystemSyncService {
 
         for (Map<String, Object> system : enabledSystems) {
             String systemCode = (String) system.get("system_code");
-            try {
-                syncSystem(systemCode);
-            } catch (Exception e) {
-                log.error("定时同步 {} 失败: {}", systemCode, e.getMessage());
+            // 重试机制：最多重试3次
+            int maxRetries = 3;
+            for (int attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    syncSystem(systemCode);
+                    break; // 成功则跳出重试循环
+                } catch (Exception e) {
+                    if (attempt == maxRetries) {
+                        log.error("定时同步 {} 失败，已重试{}次: {}", systemCode, maxRetries, e.getMessage());
+                    } else {
+                        log.warn("定时同步 {} 第{}次失败，{}ms后重试: {}", systemCode, attempt, attempt * 5000, e.getMessage());
+                        try { Thread.sleep(attempt * 5000L); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                    }
+                }
             }
         }
 
         log.info("定时同步任务执行完成，共同步 {} 个系统", enabledSystems.size());
+    }
+
+    /**
+     * 每天凌晨3:00 清理30天前的同步日志
+     */
+    @Scheduled(cron = "0 0 3 * * ?")
+    public void cleanupOldSyncLogs() {
+        try {
+            int deleted = jdbcTemplate.update(
+                "DELETE FROM biz_sync_log WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)");
+            log.info("清理同步日志完成，删除 {} 条记录", deleted);
+        } catch (Exception e) {
+            log.error("清理同步日志异常: {}", e.getMessage(), e);
+        }
     }
 
     private static class SyncResult {

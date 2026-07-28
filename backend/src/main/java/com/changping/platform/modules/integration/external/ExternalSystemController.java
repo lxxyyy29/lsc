@@ -251,6 +251,56 @@ public class ExternalSystemController {
         return ApiResponse.ok(stats);
     }
 
+    /**
+     * 健康检查 - 检查所有外部系统连接状态
+     */
+    @GetMapping("/health-check")
+    public ApiResponse<Map<String, Object>> healthCheck() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_INTEGRATION_VIEW);
+
+        List<Map<String, Object>> systems = jdbcTemplate.queryForList(
+            "SELECT id, system_code, system_name, api_base_url, status FROM biz_external_system WHERE status = 'ACTIVE'");
+
+        int healthy = 0, unhealthy = 0;
+        List<Map<String, Object>> details = new java.util.ArrayList<>();
+
+        for (Map<String, Object> sys : systems) {
+            String apiUrl = (String) sys.get("api_base_url");
+            Map<String, Object> detail = new java.util.LinkedHashMap<>();
+            detail.put("systemCode", sys.get("system_code"));
+            detail.put("systemName", sys.get("system_name"));
+
+            if (apiUrl != null && !apiUrl.isBlank()) {
+                try {
+                    java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(apiUrl).openConnection();
+                    conn.setRequestMethod("HEAD");
+                    conn.setConnectTimeout(5000);
+                    conn.setReadTimeout(5000);
+                    int code = conn.getResponseCode();
+                    detail.put("reachable", code < 500);
+                    detail.put("statusCode", code);
+                    if (code < 500) healthy++; else unhealthy++;
+                } catch (Exception e) {
+                    detail.put("reachable", false);
+                    detail.put("error", e.getMessage());
+                    unhealthy++;
+                }
+            } else {
+                detail.put("reachable", null);
+                detail.put("error", "未配置API地址");
+            }
+            details.add(detail);
+        }
+
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("total", systems.size());
+        result.put("healthy", healthy);
+        result.put("unhealthy", unhealthy);
+        result.put("details", details);
+        return ApiResponse.ok(result);
+    }
+
     private Map<String, Object> getSystemById(Long id) {
         List<Map<String, Object>> list = jdbcTemplate.queryForList(
             "SELECT * FROM biz_external_system WHERE id = ?", id);
