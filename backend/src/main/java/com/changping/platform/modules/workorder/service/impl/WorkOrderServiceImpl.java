@@ -135,6 +135,12 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         validateHandleRequest(request);
         FoundationActorResolver.Actor actor = requireAuthenticatedActor();
         WorkOrderEntity workOrder = getWorkOrder(workOrderId);
+
+        // 检查工单状态，已关闭/已完成的工单不允许操作
+        if ("CLOSED".equals(workOrder.getStatus()) || "COMPLETED".equals(workOrder.getStatus())) {
+            throw new BusinessException("WORK_ORDER_STATUS_INVALID", "工单已关闭或已完成，无法操作");
+        }
+
         requireH5Participant(workOrder, actor);
 
         ProcessNodeState currentNode = getCurrentPendingNode(workOrder.getProcessInstanceId());
@@ -166,13 +172,9 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             return getWorkOrder(workOrderId);
         }
 
-        // 属实但需继续处理 → 工单保持处理中
+        // 属实但需继续处理 → 记录操作但节点保持已完成，工单保持处理中
         if ("CONTINUE_PROCESSING".equals(result)) {
             completeProcessNode(currentNode.id(), NODE_STATUS_APPROVED);
-            // 重新激活当前节点（保持处理状态）
-            jdbcTemplate.update(
-                    "UPDATE biz_process_instance_node SET status = 'PENDING', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                    currentNode.id());
             Long actionRecordId = insertProcessActionRecord(workOrder.getProcessInstanceId(), currentNode.id(), "WORK_ORDER_HANDLE", "CONTINUE_PROCESSING", request.remark(), actor, request.subjectType(), request.subjectId());
             saveAttachments(actionRecordId, request.attachments(), actor);
             insertEventRecord(workOrder.getSourceEventId(), "DISPATCHED_TO_WORK_ORDER", "DISPATCHED_TO_WORK_ORDER", "WORK_ORDER_CONTINUE", actor, request.remark());
@@ -1146,10 +1148,13 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 "UPDATE biz_work_order SET status = 'COMPLETED', completed_at = ?, closed_at = ?, close_reason = ?, updated_at = ? WHERE id = ?",
                 Timestamp.valueOf(now), Timestamp.valueOf(now), remark, Timestamp.valueOf(now), workOrderId);
 
-        // 直接更新事件状态（不检查当前状态，因为确认关闭是最终操作）
-        jdbcTemplate.update(
-                "UPDATE biz_event SET status = 'CLOSED', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        // 更新事件状态（带状态检查，确保不会覆盖已关闭的事件）
+        int updated = jdbcTemplate.update(
+                "UPDATE biz_event SET status = 'CLOSED', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status != 'CLOSED'",
                 workOrder.getSourceEventId());
+        if (updated == 0) {
+            log.warn("事件{}已处于CLOSED状态，跳过更新", workOrder.getSourceEventId());
+        }
         alarmWorkflowStatusSyncService.syncWorkflowStatus(workOrder.getSourceEventId(), "CLOSED");
         insertEventRecord(workOrder.getSourceEventId(), null, "CLOSED", "CONFIRM_CLOSE", actor, remark);
         insertProcessActionRecord(workOrder.getProcessInstanceId(), null, "CONFIRM_CLOSE", "APPROVED", remark, actor, null, null);
@@ -1181,16 +1186,28 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             jdbcTemplate.update(
                     "UPDATE biz_process_instance_node SET status = 'PENDING', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                     lastNode.get("id"));
-            Long assigneeId = ((Number) lastNode.get("assignee_user_id")).longValue();
+            Object assigneeIdObj = lastNode.get("assignee_user_id");
+            Long assigneeId = assigneeIdObj != null ? ((Number) assigneeIdObj).longValue() : null;
             String assigneeName = (String) lastNode.get("assignee_name");
-            jdbcTemplate.update(
-                    "UPDATE biz_work_order SET status = 'PROCESSING', assignee_user_id = ?, assignee_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                    assigneeId, assigneeName, workOrderId);
+            if (assigneeId != null) {
+                jdbcTemplate.update(
+                        "UPDATE biz_work_order SET status = 'PROCESSING', assignee_user_id = ?, assignee_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                        assigneeId, assigneeName, workOrderId);
+            } else {
+                jdbcTemplate.update(
+                        "UPDATE biz_work_order SET status = 'PROCESSING', assignee_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                        assigneeName, workOrderId);
+            }
         } else {
             jdbcTemplate.update(
                     "UPDATE biz_work_order SET status = 'PROCESSING', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                     workOrderId);
         }
+
+        // 重置流程实例状态为运行中
+        jdbcTemplate.update(
+                "UPDATE biz_process_instance SET status = 'RUNNING', finished_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                workOrder.getProcessInstanceId());
 
         insertEventRecord(workOrder.getSourceEventId(), null, "DISPATCHED_TO_WORK_ORDER", "REJECT_CLOSE", actor, remark);
         insertProcessActionRecord(workOrder.getProcessInstanceId(), null, "REJECT_CLOSE", "REJECTED", remark, actor, null, null);

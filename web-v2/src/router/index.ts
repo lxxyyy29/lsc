@@ -25,6 +25,10 @@ const routes = [
   { path: '/assessment', component: () => import('../views/AssessmentView.vue') },
   { path: '/audit-logs', component: () => import('../views/AuditLogView.vue') },
   { path: '/integration', component: () => import('../views/IntegrationView.vue') },
+  { path: '/org-members', component: () => import('../views/OrgMemberView.vue') },
+  { path: '/biz-areas', component: () => import('../views/BizAreaView.vue') },
+  { path: '/resident-reports', component: () => import('../views/ResidentReportView.vue') },
+  { path: '/qwen-models', component: () => import('../views/QwenModelView.vue') },
 ]
 
 const router = createRouter({
