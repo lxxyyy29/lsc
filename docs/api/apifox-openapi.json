@@ -2,8 +2,11 @@
   "openapi": "3.0.3",
   "info": {
     "title": "网格社区治理平台 API",
-    "description": "网格社区治理平台后端接口文档 v1.3.0 — 完整覆盖所有控制器",
-    "version": "1.3.0"
+    "description": "网格社区治理平台后端接口文档 v1.4.0 — 按模块分组，共 246 个接口",
+    "version": "1.4.0",
+    "contact": {
+      "name": "Changping Dev"
+    }
   },
   "servers": [
     {
@@ -14,115 +17,83 @@
   "tags": [
     {
       "name": "认证",
-      "description": "登录、登出"
+      "description": "登录、登出、用户信息"
     },
     {
-      "name": "事件",
-      "description": "事件管理"
+      "name": "事件中心",
+      "description": "事件上报、查询、派单、关闭、审核"
     },
     {
-      "name": "工单-Web",
-      "description": "Web端工单"
-    },
-    {
-      "name": "工单-H5",
-      "description": "H5端工单"
-    },
-    {
-      "name": "H5认证",
-      "description": "H5认证扩展"
+      "name": "工单中心",
+      "description": "工单查询、处理、关闭"
     },
     {
       "name": "审核流程",
-      "description": "审核与流程模板"
+      "description": "审核发起、审批、流程模板"
     },
     {
-      "name": "网格管理",
-      "description": "网格CRUD"
-    },
-    {
-      "name": "人口管理",
-      "description": "实有人口"
-    },
-    {
-      "name": "楼栋管理",
-      "description": "楼栋/房屋"
-    },
-    {
-      "name": "场所管理",
-      "description": "场所/商户"
-    },
-    {
-      "name": "组织人员",
-      "description": "网格员"
+      "name": "网格治理",
+      "description": "网格、人口、楼栋、场所、组织人员"
     },
     {
       "name": "居民上报",
-      "description": "居民上报"
+      "description": "居民上报管理"
     },
     {
       "name": "巡查管理",
-      "description": "巡查任务与记录"
+      "description": "巡查任务、巡查记录"
     },
     {
       "name": "安全检查",
-      "description": "安全检查"
+      "description": "安全检查记录、整改"
     },
     {
       "name": "停车管理",
-      "description": "车位与违停"
+      "description": "车位、违停记录"
     },
     {
       "name": "智慧党建",
-      "description": "党建模块"
-    },
-    {
-      "name": "电子台账",
-      "description": "台账管理"
-    },
-    {
-      "name": "考核研判",
-      "description": "考核统计"
+      "description": "党员、联户、志愿活动、会议、考核"
     },
     {
       "name": "信息互通",
-      "description": "外部系统对接"
+      "description": "外部系统管理、同步"
     },
     {
       "name": "无人机",
-      "description": "无人机设备与视频流"
+      "description": "设备、任务、航线、媒体、视频流"
     },
     {
       "name": "视频监控",
-      "description": "视频监控"
+      "description": "监控点位、视频流"
     },
     {
       "name": "通义模型",
-      "description": "通义AI模型"
+      "description": "AI模型配置管理"
     },
     {
       "name": "媒体上传",
-      "description": "媒体文件"
+      "description": "媒体文件管理"
     },
     {
       "name": "系统管理",
-      "description": "用户/角色/权限/菜单"
+      "description": "用户、角色、权限、菜单"
     },
     {
       "name": "审计日志",
-      "description": "审计与回滚"
+      "description": "数据变更审计、回滚"
     },
     {
       "name": "文件上传",
-      "description": "文件操作"
+      "description": "文件上传、下载、删除"
     },
     {
       "name": "导出",
-      "description": "Excel导出"
+      "description": "各模块Excel导出"
     },
     {
       "name": "报表",
-      "description": "看板报表"
+      "description": "看板、区域报表"
     },
     {
       "name": "Web业务管理",
@@ -133,8 +104,12 @@
       "description": "H5商户/摊贩/辖区"
     },
     {
+      "name": "考核研判",
+      "description": "效能考核、时效统计、评价统计"
+    },
+    {
       "name": "测试工具",
-      "description": "仅dev环境"
+      "description": "开发测试接口（仅dev环境）"
     }
   ],
   "paths": {
@@ -202,10 +177,46 @@
         }
       }
     },
+    "/h5/auth/me": {
+      "get": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "获取H5用户信息",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/auth/logout": {
+      "post": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "H5登出",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
     "/events": {
       "post": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "创建事件",
         "security": [
@@ -221,58 +232,12 @@
       },
       "get": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "分页查询事件列表",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "startDate",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "endDate",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "areaId",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -285,22 +250,12 @@
     "/events/{id}": {
       "get": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "事件详情",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -313,22 +268,12 @@
     "/events/by-external/{externalEventId}": {
       "get": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
-        "summary": "通过外部事件ID获取详情",
+        "summary": "通过外部ID查详情",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "externalEventId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -341,22 +286,12 @@
     "/events/{id}/dispatch": {
       "post": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "派单",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -369,22 +304,12 @@
     "/events/{id}/ignore": {
       "post": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "标记误报",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -397,30 +322,12 @@
     "/events/false-alarms": {
       "get": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "误报记录列表",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
           }
         ],
         "responses": {
@@ -433,7 +340,7 @@
     "/events/batch-delete": {
       "post": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "批量删除事件",
         "security": [
@@ -451,22 +358,12 @@
     "/events/{id}/urgency": {
       "put": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "更新紧急程度",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -479,7 +376,7 @@
     "/events/auto-escalate": {
       "post": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "手动触发自动升级",
         "security": [
@@ -497,22 +394,12 @@
     "/events/{id}/close": {
       "put": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "关闭事件",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -525,22 +412,12 @@
     "/events/{id}/reopen": {
       "put": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "重新打开事件",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -553,22 +430,12 @@
     "/events/{id}/attachments": {
       "get": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "获取事件附件",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -581,22 +448,12 @@
     "/events/{id}/timeline": {
       "get": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
-        "summary": "获取事件生命周期时间轴",
+        "summary": "获取事件时间轴",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -609,7 +466,7 @@
     "/events/statistics": {
       "get": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "事件统计数据",
         "security": [
@@ -627,22 +484,12 @@
     "/events/{id}/audit": {
       "post": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "审核事件",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -655,7 +502,7 @@
     "/events/public-report": {
       "post": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "群众随手拍上报（免认证）",
         "security": [],
@@ -669,22 +516,12 @@
     "/events/{id}/rate": {
       "post": {
         "tags": [
-          "事件"
+          "事件中心"
         ],
         "summary": "群众评价",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -697,51 +534,12 @@
     "/work-orders": {
       "get": {
         "tags": [
-          "工单-Web"
+          "工单中心"
         ],
         "summary": "分页查询工单列表",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 10
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "assignee",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "areaId",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -754,7 +552,7 @@
     "/work-orders/export": {
       "get": {
         "tags": [
-          "工单-Web"
+          "工单中心"
         ],
         "summary": "导出全量工单",
         "security": [
@@ -772,22 +570,12 @@
     "/work-orders/{id}": {
       "get": {
         "tags": [
-          "工单-Web"
+          "工单中心"
         ],
         "summary": "工单详情",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -800,22 +588,12 @@
     "/work-orders/{id}/handle": {
       "post": {
         "tags": [
-          "工单-Web"
+          "工单中心"
         ],
         "summary": "处理工单节点",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -828,22 +606,12 @@
     "/work-orders/{eventId}/dispatch": {
       "post": {
         "tags": [
-          "工单-Web"
+          "工单中心"
         ],
         "summary": "派发工单",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "eventId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -856,22 +624,12 @@
     "/work-orders/{id}/attachments": {
       "get": {
         "tags": [
-          "工单-Web"
+          "工单中心"
         ],
         "summary": "工单附件列表",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -884,22 +642,12 @@
     "/work-orders/{id}/confirm-close": {
       "post": {
         "tags": [
-          "工单-Web"
+          "工单中心"
         ],
         "summary": "确认关闭工单",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -912,22 +660,12 @@
     "/work-orders/{id}/reject-close": {
       "post": {
         "tags": [
-          "工单-Web"
+          "工单中心"
         ],
         "summary": "驳回关闭",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -940,137 +678,9 @@
     "/work-orders/batch-delete": {
       "post": {
         "tags": [
-          "工单-Web"
+          "工单中心"
         ],
         "summary": "批量删除工单",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/h5/workbench": {
-      "get": {
-        "tags": [
-          "工单-H5"
-        ],
-        "summary": "工作台概览",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/h5/work-orders": {
-      "get": {
-        "tags": [
-          "工单-H5"
-        ],
-        "summary": "当前用户工单列表",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/h5/work-orders/{id}": {
-      "get": {
-        "tags": [
-          "工单-H5"
-        ],
-        "summary": "工单详情",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/h5/work-orders/{id}/handle": {
-      "post": {
-        "tags": [
-          "工单-H5"
-        ],
-        "summary": "处理工单",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/h5/auth/me": {
-      "get": {
-        "tags": [
-          "H5认证"
-        ],
-        "summary": "获取当前H5用户信息",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/h5/auth/logout": {
-      "post": {
-        "tags": [
-          "H5认证"
-        ],
-        "summary": "H5登出",
         "security": [
           {
             "BearerAuth": []
@@ -1094,16 +704,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "eventId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -1120,16 +720,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "eventId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1150,16 +740,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -1176,16 +756,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1240,24 +810,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -1276,16 +828,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -1300,16 +842,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1328,16 +860,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -1348,7 +870,7 @@
     "/community/grids/tree": {
       "get": {
         "tags": [
-          "网格管理"
+          "网格治理"
         ],
         "summary": "网格树形结构",
         "security": [
@@ -1366,22 +888,12 @@
     "/community/grids/{id}": {
       "get": {
         "tags": [
-          "网格管理"
+          "网格治理"
         ],
         "summary": "网格详情",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1392,22 +904,12 @@
       },
       "put": {
         "tags": [
-          "网格管理"
+          "网格治理"
         ],
         "summary": "更新网格",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1418,50 +920,12 @@
       },
       "delete": {
         "tags": [
-          "网格管理"
+          "网格治理"
         ],
         "summary": "删除网格",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/community/grids/{id}/children": {
-      "get": {
-        "tags": [
-          "网格管理"
-        ],
-        "summary": "子网格列表",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1474,9 +938,27 @@
     "/community/grids": {
       "post": {
         "tags": [
-          "网格管理"
+          "网格治理"
         ],
         "summary": "创建网格",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/grids/{id}/children": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "子网格列表",
         "security": [
           {
             "BearerAuth": []
@@ -1492,21 +974,12 @@
     "/community/population": {
       "get": {
         "tags": [
-          "人口管理"
+          "网格治理"
         ],
         "summary": "人口列表",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "gridId",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1517,7 +990,7 @@
       },
       "post": {
         "tags": [
-          "人口管理"
+          "网格治理"
         ],
         "summary": "新增人口",
         "security": [
@@ -1535,22 +1008,12 @@
     "/community/population/{id}": {
       "get": {
         "tags": [
-          "人口管理"
+          "网格治理"
         ],
         "summary": "人口详情",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1561,22 +1024,12 @@
       },
       "put": {
         "tags": [
-          "人口管理"
+          "网格治理"
         ],
         "summary": "更新人口",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1587,22 +1040,12 @@
       },
       "delete": {
         "tags": [
-          "人口管理"
+          "网格治理"
         ],
         "summary": "删除人口",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1615,21 +1058,12 @@
     "/community/buildings": {
       "get": {
         "tags": [
-          "楼栋管理"
+          "网格治理"
         ],
         "summary": "楼栋列表",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "gridId",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1640,7 +1074,7 @@
       },
       "post": {
         "tags": [
-          "楼栋管理"
+          "网格治理"
         ],
         "summary": "新增楼栋",
         "security": [
@@ -1658,22 +1092,12 @@
     "/community/buildings/{id}": {
       "get": {
         "tags": [
-          "楼栋管理"
+          "网格治理"
         ],
         "summary": "楼栋详情",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1684,22 +1108,12 @@
       },
       "put": {
         "tags": [
-          "楼栋管理"
+          "网格治理"
         ],
         "summary": "更新楼栋",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1710,22 +1124,12 @@
       },
       "delete": {
         "tags": [
-          "楼栋管理"
+          "网格治理"
         ],
         "summary": "删除楼栋",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1738,21 +1142,12 @@
     "/community/places": {
       "get": {
         "tags": [
-          "场所管理"
+          "网格治理"
         ],
         "summary": "场所列表",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "gridId",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1763,7 +1158,7 @@
       },
       "post": {
         "tags": [
-          "场所管理"
+          "网格治理"
         ],
         "summary": "新增场所",
         "security": [
@@ -1781,22 +1176,12 @@
     "/community/places/{id}": {
       "get": {
         "tags": [
-          "场所管理"
+          "网格治理"
         ],
         "summary": "场所详情",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1807,22 +1192,12 @@
       },
       "put": {
         "tags": [
-          "场所管理"
+          "网格治理"
         ],
         "summary": "更新场所",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1833,22 +1208,12 @@
       },
       "delete": {
         "tags": [
-          "场所管理"
+          "网格治理"
         ],
         "summary": "删除场所",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1861,21 +1226,12 @@
     "/community/org-members": {
       "get": {
         "tags": [
-          "组织人员"
+          "网格治理"
         ],
         "summary": "网格员列表",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "gridId",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1886,7 +1242,7 @@
       },
       "post": {
         "tags": [
-          "组织人员"
+          "网格治理"
         ],
         "summary": "新增网格员",
         "security": [
@@ -1904,22 +1260,12 @@
     "/community/org-members/{id}": {
       "get": {
         "tags": [
-          "组织人员"
+          "网格治理"
         ],
         "summary": "网格员详情",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1930,22 +1276,12 @@
       },
       "put": {
         "tags": [
-          "组织人员"
+          "网格治理"
         ],
         "summary": "更新网格员",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -1956,22 +1292,12 @@
       },
       "delete": {
         "tags": [
-          "组织人员"
+          "网格治理"
         ],
         "summary": "删除网格员",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -2026,22 +1352,14 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
           }
         }
-      },
+      }
+    },
+    "/community/resident-reports/{id}/handle": {
       "put": {
         "tags": [
           "居民上报"
@@ -2050,16 +1368,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -2080,16 +1388,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "queryCode",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -2103,22 +1401,6 @@
           "巡查管理"
         ],
         "summary": "巡查任务列表（Web）",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "巡查管理"
-        ],
-        "summary": "手动生成本周巡查任务",
         "security": [
           {
             "BearerAuth": []
@@ -2167,6 +1449,24 @@
         }
       }
     },
+    "/community/patrol-tasks/generate": {
+      "post": {
+        "tags": [
+          "巡查管理"
+        ],
+        "summary": "手动生成本周巡查任务",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
     "/community/patrol-tasks/mark-overdue": {
       "post": {
         "tags": [
@@ -2194,16 +1494,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -2276,15 +1566,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "merchantId",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -2335,16 +1616,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -2435,16 +1706,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -2515,16 +1776,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -2541,16 +1792,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -2623,16 +1864,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -2683,16 +1914,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -2772,265 +1993,15 @@
         }
       }
     },
-    "/ledger/templates": {
-      "get": {
-        "tags": [
-          "电子台账"
-        ],
-        "summary": "台账模板列表",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "电子台账"
-        ],
-        "summary": "保存模板",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/ledger/templates/{type}": {
-      "get": {
-        "tags": [
-          "电子台账"
-        ],
-        "summary": "按类型查模板",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/ledger/templates/{id}": {
-      "delete": {
-        "tags": [
-          "电子台账"
-        ],
-        "summary": "删除模板",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/ledger/data/{type}": {
-      "get": {
-        "tags": [
-          "电子台账"
-        ],
-        "summary": "台账数据查询",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "gridId",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/ledger/export/{type}": {
-      "get": {
-        "tags": [
-          "电子台账"
-        ],
-        "summary": "导出台账Excel",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功（Excel二进制）"
-          }
-        }
-      }
-    },
-    "/assessment/overview": {
-      "get": {
-        "tags": [
-          "考核研判"
-        ],
-        "summary": "总览统计",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/assessment/worker-performance": {
-      "get": {
-        "tags": [
-          "考核研判"
-        ],
-        "summary": "网格员效能考核",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/assessment/response-time": {
-      "get": {
-        "tags": [
-          "考核研判"
-        ],
-        "summary": "事件处置时效统计",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
-    "/assessment/rating-stats": {
-      "get": {
-        "tags": [
-          "考核研判"
-        ],
-        "summary": "群众评价统计",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功"
-          }
-        }
-      }
-    },
     "/integration/systems": {
       "get": {
         "tags": [
           "信息互通"
         ],
-        "summary": "外部系统列表（分页/搜索）",
+        "summary": "外部系统列表",
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          },
-          {
-            "name": "keyword",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -3067,16 +2038,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -3093,16 +2054,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -3117,16 +2068,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -3147,16 +2088,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -3173,31 +2104,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          },
-          {
-            "name": "systemCode",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -3230,7 +2136,7 @@
         "tags": [
           "信息互通"
         ],
-        "summary": "健康检查所有外部系统",
+        "summary": "健康检查",
         "security": [
           {
             "BearerAuth": []
@@ -3250,7 +2156,6 @@
         ],
         "summary": "第三方告警回调",
         "security": [],
-        "description": "外部系统推送告警入口",
         "responses": {
           "200": {
             "description": "成功"
@@ -3411,16 +2316,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "jobId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -3475,16 +2370,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "jobId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -3501,16 +2386,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "jobId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -3549,16 +2424,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -3575,16 +2440,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "deviceSn",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -3605,16 +2460,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "deviceSn",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -3631,16 +2476,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "deviceSn",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -3695,16 +2530,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -3721,16 +2546,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "deviceSn",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -3751,16 +2566,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "deviceSn",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -3777,16 +2582,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "deviceSn",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -3825,19 +2620,9 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "deviceSn",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
-            "description": "成功（m3u8播放列表）"
+            "description": "成功"
           }
         }
       }
@@ -3853,27 +2638,9 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "deviceSn",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "u",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
-            "description": "成功（视频流）"
+            "description": "成功"
           }
         }
       }
@@ -3887,16 +2654,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "deviceSn",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -3935,16 +2692,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "flyLineId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -3961,16 +2708,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "flyLineId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -4007,16 +2744,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -4107,16 +2834,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4133,16 +2850,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4157,16 +2864,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -4257,38 +2954,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 10
-            }
-          },
-          {
-            "name": "keyword",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4307,16 +2972,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4333,16 +2988,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4357,16 +3002,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -4387,16 +3022,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4415,16 +3040,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4441,16 +3056,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -4505,24 +3110,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 10
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4541,16 +3128,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4565,16 +3142,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -4595,16 +3162,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4621,15 +3178,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "permissionType",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -4686,16 +3234,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4710,16 +3248,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -4740,38 +3268,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          },
-          {
-            "name": "tableName",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "recordId",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4788,24 +3284,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "tableName",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "recordId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -4844,16 +3322,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -4886,16 +3354,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "url",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -4934,26 +3392,9 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "url",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "fileName",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
-            "description": "成功（文件流）"
+            "description": "成功"
           }
         }
       }
@@ -4971,7 +3412,7 @@
         ],
         "responses": {
           "200": {
-            "description": "成功（Excel二进制）"
+            "description": "成功"
           }
         }
       }
@@ -5057,29 +3498,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "startDate",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "endDate",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "areaId",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -5188,24 +3606,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5242,16 +3642,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5268,16 +3658,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5292,16 +3672,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -5356,24 +3726,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5392,16 +3744,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5418,16 +3760,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5442,16 +3774,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -5506,24 +3828,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5542,16 +3846,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5568,16 +3862,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5592,16 +3876,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -5656,24 +3930,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5692,16 +3948,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5718,16 +3964,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5742,16 +3978,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -5824,16 +4050,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5850,16 +4066,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5874,16 +4080,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -5938,16 +4134,6 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "成功"
@@ -5962,16 +4148,6 @@
         "security": [
           {
             "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
@@ -5990,14 +4166,76 @@
             "BearerAuth": []
           }
         ],
-        "parameters": [
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/assessment/overview": {
+      "get": {
+        "tags": [
+          "考核研判"
+        ],
+        "summary": "总览统计",
+        "security": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/assessment/worker-performance": {
+      "get": {
+        "tags": [
+          "考核研判"
+        ],
+        "summary": "网格员效能考核",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/assessment/response-time": {
+      "get": {
+        "tags": [
+          "考核研判"
+        ],
+        "summary": "事件处置时效统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/assessment/rating-stats": {
+      "get": {
+        "tags": [
+          "考核研判"
+        ],
+        "summary": "群众评价统计",
+        "security": [
+          {
+            "BearerAuth": []
           }
         ],
         "responses": {
@@ -6018,7 +4256,7 @@
             "BearerAuth": []
           }
         ],
-        "description": "仅开发环境可用（app.test-enabled=true）",
+        "description": "仅开发环境可用",
         "responses": {
           "200": {
             "description": "成功"
@@ -6037,7 +4275,7 @@
             "BearerAuth": []
           }
         ],
-        "description": "仅开发环境可用（app.test-enabled=true）",
+        "description": "仅开发环境可用",
         "responses": {
           "200": {
             "description": "成功"
@@ -6056,7 +4294,7 @@
             "BearerAuth": []
           }
         ],
-        "description": "仅开发环境可用（app.test-enabled=true）",
+        "description": "仅开发环境可用",
         "responses": {
           "200": {
             "description": "成功"
@@ -6075,7 +4313,7 @@
             "BearerAuth": []
           }
         ],
-        "description": "仅开发环境可用（app.test-enabled=true）",
+        "description": "仅开发环境可用",
         "responses": {
           "200": {
             "description": "成功"
@@ -6094,7 +4332,7 @@
             "BearerAuth": []
           }
         ],
-        "description": "仅开发环境可用（app.test-enabled=true）",
+        "description": "仅开发环境可用",
         "responses": {
           "200": {
             "description": "成功"
@@ -6113,7 +4351,7 @@
             "BearerAuth": []
           }
         ],
-        "description": "仅开发环境可用（app.test-enabled=true）",
+        "description": "仅开发环境可用",
         "responses": {
           "200": {
             "description": "成功"
@@ -6132,7 +4370,7 @@
             "BearerAuth": []
           }
         ],
-        "description": "仅开发环境可用（app.test-enabled=true）",
+        "description": "仅开发环境可用",
         "responses": {
           "200": {
             "description": "成功"
@@ -6151,7 +4389,7 @@
             "BearerAuth": []
           }
         ],
-        "description": "仅开发环境可用（app.test-enabled=true）",
+        "description": "仅开发环境可用",
         "responses": {
           "200": {
             "description": "成功"
@@ -6170,7 +4408,7 @@
             "BearerAuth": []
           }
         ],
-        "description": "仅开发环境可用（app.test-enabled=true）",
+        "description": "仅开发环境可用",
         "responses": {
           "200": {
             "description": "成功"
