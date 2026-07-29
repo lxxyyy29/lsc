@@ -292,10 +292,22 @@ async function loadAssessments() {
 }
 
 async function recordVisit(id: number) {
-  try { await http.post(`/party/households/${id}/visit`, {}); loadHouseholds() } catch (e: any) { alert(e?.message) }
+  try {
+    await http.post(`/party/households/${id}/visit`, {})
+    alert('走访记录成功！')
+    await loadHouseholds()
+  } catch (e: any) {
+    alert('走访失败：' + (e?.message || '未知错误'))
+  }
 }
 async function signupActivity(id: number) {
-  try { await http.post(`/party/activities/${id}/signup`, { userId: 1 }); loadActivities() } catch (e: any) { alert(e?.message) }
+  try {
+    await http.post(`/party/activities/${id}/signup`, { userId: 1 })
+    alert('报名成功！')
+    await loadActivities()
+  } catch (e: any) {
+    alert('报名失败：' + (e?.message || '未知错误'))
+  }
 }
 async function submitHousehold() {
   try { await http.post('/party/households', householdForm.value); showAddHousehold.value = false; loadHouseholds() } catch (e: any) { alert(e?.message) }
