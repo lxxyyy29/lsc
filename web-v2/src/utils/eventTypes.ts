@@ -37,6 +37,24 @@ export function getEventTypeName(type: string): string {
   return EVENT_TYPES[type] || EVENT_TYPES[type.toUpperCase()] || type;
 }
 
+// 户籍类型中英文映射
+export const HOUSEHOLD_TYPES: Record<string, string> = {
+  LOCAL: '本地户籍',
+  NON_LOCAL: '外地户籍',
+  FLOATING: '流动人口',
+  LOW_INCOME: '低保户',
+  SPECIAL_CARE: '优抚对象',
+  OTHER: '其他',
+};
+
+/**
+ * 获取户籍类型的中文标签
+ */
+export function getHouseholdTypeName(type: string): string {
+  if (!type) return '-';
+  return HOUSEHOLD_TYPES[type] || HOUSEHOLD_TYPES[type.toUpperCase()] || type;
+}
+
 /**
  * 获取所有事件类型选项（用于下拉选择）
  */

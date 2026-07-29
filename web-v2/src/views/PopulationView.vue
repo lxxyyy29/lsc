@@ -22,7 +22,7 @@
             <tr v-for="p in list" :key="p.id">
               <td>{{ p.name }}</td>
               <td>{{ p.phone || '-' }}</td>
-              <td><span class="tag tag-blue">{{ p.householdType || '-' }}</span></td>
+              <td><span class="tag tag-blue">{{ getHouseholdTypeName(p.householdType) }}</span></td>
               <td>{{ p.address || '-' }}</td>
               <td>{{ p.gridName || '-' }}</td>
             </tr>
@@ -37,6 +37,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import http from '../api'
+import { getHouseholdTypeName } from '../utils/eventTypes'
 const list = ref<any[]>([])
 const loading = ref(true)
 const error = ref('')
