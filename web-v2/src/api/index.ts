@@ -222,6 +222,10 @@ export async function getResidentReports(params?: { page?: number; pageSize?: nu
   return http.get('/community/resident-reports', { params })
 }
 
+export async function getSystemUsers() {
+  return http.get('/system/users')
+}
+
 export async function handleResidentReport(id: number, handleResult: string) {
   return http.put(`/community/resident-reports/${id}/handle`, { handleResult })
 }

@@ -65,7 +65,7 @@
             <label class="form-label">选择受派人 <span class="required">*</span></label>
             <select v-model="dispatchForm.assigneeUserId" class="form-select">
               <option :value="null">请选择网格员</option>
-              <option v-for="u in workers" :key="u.id" :value="u.id">{{ u.name || u.realName || u.account }}</option>
+              <option v-for="u in workers" :key="u.id" :value="u.id">{{ u.realName || u.username }}</option>
             </select>
             <p v-if="!workers.length" style="font-size:12px;color:#dc2626;margin-top:6px;">
               ⚠️ 暂无网格员，请先在"网格治理 → 组织人员"中添加
@@ -109,7 +109,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getOrgMembers } from '../api'
+import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getSystemUsers } from '../api'
 import { getEventTypeName } from '../utils/eventTypes'
 
 const route = useRoute()
@@ -142,9 +142,9 @@ async function loadData() {
     const id = Number(route.params.id)
     event.value = await getEventDetail(id)
     timeline.value = await getEventTimeline(id) || []
-    // 加载网格员列表
+    // 网格员列表（从系统用户加载）
     try {
-      const res = await getOrgMembers()
+      const res = await getSystemUsers()
       workers.value = Array.isArray(res) ? res : []
     } catch (e) {
       console.error('加载网格员失败:', e)
