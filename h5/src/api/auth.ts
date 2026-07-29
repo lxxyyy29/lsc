@@ -235,7 +235,7 @@ export interface H5RegisterPayload {
 }
 
 export async function registerH5(payload: H5RegisterPayload): Promise<void> {
-  await http.post<void, void>('/registration/submit', payload)
+  await http.post<void, void>('/api/registration/submit', payload)
 }
 
 export async function logoutH5() {

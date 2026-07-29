@@ -70,6 +70,9 @@ public class SecurityConfig {
                         // 群众上报接口公开
                         .requestMatchers("/events/public-report")
                         .permitAll()
+                        // 网格员注册申请提交公开（未登录用户可提交）
+                        .requestMatchers("/registration/submit")
+                        .permitAll()
                         // WebSocket 端点公开（浏览器无法发送认证头）
                         .requestMatchers("/ws/**")
                         .permitAll()

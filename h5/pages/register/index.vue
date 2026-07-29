@@ -121,20 +121,22 @@ async function handleSubmit() {
   submitting.value = true
   errorMessage.value = ''
   try {
-    await registerH5({
+    const result = await registerH5({
       account: form.account,
       password: form.password,
       realName: form.realName,
       phone: form.phone
     })
-    uni.showToast({ title: '提交成功，等待审批', icon: 'success' })
-    setTimeout(() => goLogin(), 2000)
+    uni.showToast({ title: '提交成功，等待审批', icon: 'success', duration: 3000 })
+    setTimeout(() => goLogin(), 2500)
   } catch (e: any) {
+    console.error('注册失败:', e)
     if (e instanceof HttpResponseError) {
       errorMessage.value = e.message || '注册失败'
     } else {
       errorMessage.value = '注册失败，请稍后重试'
     }
+    uni.showToast({ title: errorMessage.value, icon: 'error', duration: 3000 })
   } finally {
     submitting.value = false
   }
