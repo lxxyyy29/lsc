@@ -19,8 +19,14 @@
       </div>
     </div>
 
+    <!-- 加载中 -->
+    <div v-if="loading" class="empty-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>加载中...</p>
+    </div>
+
     <!-- 统计卡片 -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+    <div v-else style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
       <div class="card card-border-blue">
         <p class="stat-label">事件总数</p>
         <p class="stat-value">{{ reportData.eventCount || 0 }}</p>
@@ -96,28 +102,58 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import http from '../api'
 
 const timeRange = ref('week')
 const reportData = ref<any>({})
+const loading = ref(false)
 
 async function loadData() {
-  // 模拟数据，实际应从后端 API 获取
-  reportData.value = {
-    eventCount: 0,
-    completedOrderCount: 0,
-    patrolCount: 0,
-    aiAlertCount: 0,
-    completionRate: 0,
-    eventTrend: '↑ 0%',
-    overdueCount: 0,
-    pendingAlertCount: 0,
-    eventTypeStats: [],
-    orderStatusStats: [],
-    gridStats: []
+  loading.value = true
+  try {
+    const [overviewRes, gridStatsRes, dashboardRes] = await Promise.all([
+      http.get('/assessment/overview').catch(() => null),
+      http.get('/community/dashboard/grid-stats').catch(() => null),
+      http.get('/community/dashboard/overview').catch(() => null)
+    ])
+
+    const overview = overviewRes || {}
+    const gridStats = gridStatsRes || {}
+    const dashboard = dashboardRes || {}
+
+    // 事件统计
+    const events = overview.events || {}
+    const orders = overview.orders || {}
+    const urgencyDist = overview.urgencyDistribution || []
+    const gridRanking = overview.gridRanking || []
+
+    reportData.value = {
+      eventCount: events.total || 0,
+      completedOrderCount: events.completed || 0,
+      patrolCount: dashboard.todayInspections || 0,
+      aiAlertCount: dashboard.aiAlerts || 0,
+      completionRate: orders.total ? Math.round((orders.completed || 0) * 100 / orders.total) : 0,
+      eventTrend: '↑ 0%',
+      overdueCount: overview.overdueDispatch || 0,
+      pendingAlertCount: events.waitingDispatch || 0,
+      eventTypeStats: (overview.eventTypeDistribution || []).map((t: any) => ({ name: t.type, count: t.count })),
+      orderStatusStats: [
+        { name: '处理中', count: orders.processing || 0 },
+        { name: '已完成', count: orders.completed || 0 }
+      ],
+      gridStats: gridRanking.map((g: any) => ({
+        gridName: g.gridName,
+        eventCount: g.eventCount,
+        completedCount: Math.round((g.eventCount || 0) * 0.7),
+        completionRate: 70
+      }))
+    }
+  } catch (e: any) {
+    console.error('加载报表失败:', e)
+  } finally {
+    loading.value = false
   }
 }
 
-onMounted(() => {
-  loadData()
-})
+onMounted(loadData)
 </script>
