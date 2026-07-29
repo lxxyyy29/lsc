@@ -44,9 +44,9 @@
     </div>
 
     <!-- 标签页 -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px;">
+    <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:2px solid #e5e7eb;padding-bottom:12px;">
       <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
-              :style="{padding:'6px 16px',border:'none',borderRadius:'6px',fontSize:'13px',cursor:'pointer',background: activeTab === tab.key ? '#1890ff' : '#f3f4f6',color: activeTab === tab.key ? '#fff' : '#374151'}">
+              :class="['filter-btn', activeTab === tab.key ? 'active' : '']">
         {{ tab.label }}
       </button>
     </div>
@@ -55,7 +55,7 @@
     <div v-if="activeTab === 'household'" class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <h3 style="font-size:14px;font-weight:600;">党员联户台账</h3>
-        <button @click="showAddHousehold = true" style="padding:6px 14px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">添加联户</button>
+        <button @click="showAddHousehold = true" class="btn btn-primary">添加联户</button>
       </div>
       <table class="table">
         <thead><tr><th>党员</th><th>户主</th><th>地址</th><th>网格</th><th>走访次数</th><th>最近走访</th><th>操作</th></tr></thead>
@@ -67,18 +67,18 @@
             <td style="font-size:12px;">{{ h.gridName || '-' }}</td>
             <td>{{ h.visitCount }}</td>
             <td style="font-size:12px;">{{ h.lastVisitDate || '-' }}</td>
-            <td><button @click="recordVisit(h.id)" style="padding:4px 10px;border:none;border-radius:4px;background:#52c41a;color:#fff;font-size:12px;cursor:pointer;">走访</button></td>
+            <td><button @click="recordVisit(h.id)" class="btn btn-success" style="padding:4px 10px;font-size:12px;">走访</button></td>
           </tr>
         </tbody>
       </table>
-      <p v-if="!households.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无联户记录</p>
+      <p v-if="!households.length" class="empty-state">暂无联户记录</p>
     </div>
 
     <!-- 志愿服务 -->
     <div v-if="activeTab === 'activity'" class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <h3 style="font-size:14px;font-weight:600;">志愿服务活动</h3>
-        <button @click="showAddActivity = true" style="padding:6px 14px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">创建活动</button>
+        <button @click="showAddActivity = true" class="btn btn-primary">创建活动</button>
       </div>
       <table class="table">
         <thead><tr><th>活动标题</th><th>日期</th><th>状态</th><th>已报名</th><th>操作</th></tr></thead>
@@ -88,18 +88,18 @@
             <td style="font-size:12px;">{{ a.activityDate }}</td>
             <td><span class="tag" :class="a.status === 'COMPLETED' ? 'tag-green' : a.status === 'ONGOING' ? 'tag-blue' : 'tag-orange'">{{ activityStatus(a.status) }}</span></td>
             <td>{{ a.attendedCount || 0 }}/{{ a.maxParticipants || '∞' }}</td>
-            <td><button v-if="a.status === 'PLANNED'" @click="signupActivity(a.id)" style="padding:4px 10px;border:none;border-radius:4px;background:#52c41a;color:#fff;font-size:12px;cursor:pointer;">报名</button></td>
+            <td><button v-if="a.status === 'PLANNED'" @click="signupActivity(a.id)" class="btn btn-success" style="padding:4px 10px;font-size:12px;">报名</button></td>
           </tr>
         </tbody>
       </table>
-      <p v-if="!activities.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无活动</p>
+      <p v-if="!activities.length" class="empty-state">暂无活动</p>
     </div>
 
     <!-- 三会一课 -->
     <div v-if="activeTab === 'meeting'" class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <h3 style="font-size:14px;font-weight:600;">三会一课</h3>
-        <button @click="showAddMeeting = true" style="padding:6px 14px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">添加记录</button>
+        <button @click="showAddMeeting = true" class="btn btn-primary">添加记录</button>
       </div>
       <table class="table">
         <thead><tr><th>类型</th><th>主题</th><th>日期</th><th>党支部</th><th>参会人数</th><th>状态</th></tr></thead>
@@ -114,7 +114,7 @@
           </tr>
         </tbody>
       </table>
-      <p v-if="!meetings.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无记录</p>
+      <p v-if="!meetings.length" class="empty-state">暂无记录</p>
     </div>
 
     <!-- 量化考核 -->
@@ -122,7 +122,7 @@
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <h3 style="font-size:14px;font-weight:600;">党员量化考核</h3>
         <div style="display:flex;gap:8px;">
-          <input v-model="assessmentMonth" type="month" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;" />
+          <input v-model="assessmentMonth" type="month" class="form-input" style="width:auto;" />
           <button @click="generateAssessment" style="padding:6px 14px;border:none;border-radius:6px;background:#52c41a;color:#fff;font-size:13px;cursor:pointer;">生成考核</button>
         </div>
       </div>
@@ -140,106 +140,109 @@
           </tr>
         </tbody>
       </table>
-      <p v-if="!assessments.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无考核数据</p>
+      <p v-if="!assessments.length" class="empty-state">暂无考核数据</p>
     </div>
 
-    <!-- 添加联户弹窗 -->
-    <div v-if="showAddHousehold" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:1000;">
-      <div style="background:#fff;border-radius:12px;padding:24px;width:420px;max-width:90vw;">
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">添加联户</h3>
-        <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">党员ID</label>
-          <input v-model.number="householdForm.partyMemberId" type="number" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-        </div>
-        <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">户主姓名</label>
-          <input v-model="householdForm.householdName" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-        </div>
-        <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">地址</label>
-          <input v-model="householdForm.householdAddress" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-        </div>
-        <div style="margin-bottom:16px;">
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">网格ID</label>
-          <input v-model.number="householdForm.gridId" type="number" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-        </div>
-        <div style="display:flex;gap:12px;justify-content:flex-end;">
-          <button @click="showAddHousehold = false" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">取消</button>
-          <button @click="submitHousehold" style="padding:8px 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">提交</button>
-        </div>
-      </div>
-    </div>
+  </div>
 
-    <!-- 添加活动弹窗 -->
-    <div v-if="showAddActivity" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:1000;">
-      <div style="background:#fff;border-radius:12px;padding:24px;width:420px;max-width:90vw;">
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">创建志愿活动</h3>
-        <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">活动标题</label>
-          <input v-model="activityForm.title" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-        </div>
-        <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">描述</label>
-          <textarea v-model="activityForm.description" rows="2" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;"></textarea>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-          <div>
-            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">活动日期</label>
-            <input v-model="activityForm.activityDate" type="date" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-          </div>
-          <div>
-            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">最大人数</label>
-            <input v-model.number="activityForm.maxParticipants" type="number" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-          </div>
-        </div>
-        <div style="margin-bottom:16px;">
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">网格ID</label>
-          <input v-model.number="activityForm.gridId" type="number" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-        </div>
-        <div style="display:flex;gap:12px;justify-content:flex-end;">
-          <button @click="showAddActivity = false" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">取消</button>
-          <button @click="submitActivity" style="padding:8px 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">提交</button>
-        </div>
+  <!-- 弹窗放在组件根级别，避免被 overflow 裁剪 -->
+  <!-- 添加联户弹窗 -->
+  <div v-if="showAddHousehold" class="modal-overlay" @click.self="showAddHousehold = false">
+    <div class="modal-box">
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">添加联户</h3>
+      <div class="form-group">
+        <label class="form-label">党员ID</label>
+        <input v-model.number="householdForm.partyMemberId" type="number" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">户主姓名</label>
+        <input v-model="householdForm.householdName" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">地址</label>
+        <input v-model="householdForm.householdAddress" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">网格ID</label>
+        <input v-model.number="householdForm.gridId" type="number" class="form-input" />
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+        <button @click="showAddHousehold = false" class="btn btn-default">取消</button>
+        <button @click="submitHousehold" class="btn btn-primary">提交</button>
       </div>
     </div>
+  </div>
 
-    <!-- 添加会议弹窗 -->
-    <div v-if="showAddMeeting" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:1000;">
-      <div style="background:#fff;border-radius:12px;padding:24px;width:420px;max-width:90vw;">
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">添加会议记录</h3>
-        <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">会议类型</label>
-          <select v-model="meetingForm.meetingType" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
-            <option value="支部党员大会">支部党员大会</option>
-            <option value="支委会">支委会</option>
-            <option value="党小组会">党小组会</option>
-            <option value="党课">党课</option>
-          </select>
+  <!-- 添加活动弹窗 -->
+  <div v-if="showAddActivity" class="modal-overlay" @click.self="showAddActivity = false">
+    <div class="modal-box">
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">创建志愿活动</h3>
+      <div class="form-group">
+        <label class="form-label">活动标题</label>
+        <input v-model="activityForm.title" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">描述</label>
+        <textarea v-model="activityForm.description" rows="2" class="form-textarea"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">活动日期</label>
+          <input v-model="activityForm.activityDate" type="date" class="form-input" />
         </div>
-        <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">主题</label>
-          <input v-model="meetingForm.title" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-          <div>
-            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">日期</label>
-            <input v-model="meetingForm.meetingDate" type="date" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-          </div>
-          <div>
-            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">参会人数</label>
-            <input v-model.number="meetingForm.participantCount" type="number" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-          </div>
-        </div>
-        <div style="margin-bottom:16px;">
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">党支部</label>
-          <input v-model="meetingForm.partyBranch" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-        </div>
-        <div style="display:flex;gap:12px;justify-content:flex-end;">
-          <button @click="showAddMeeting = false" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">取消</button>
-          <button @click="submitMeeting" style="padding:8px 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">提交</button>
+        <div class="form-group">
+          <label class="form-label">最大人数</label>
+          <input v-model.number="activityForm.maxParticipants" type="number" class="form-input" />
         </div>
       </div>
+      <div class="form-group">
+        <label class="form-label">网格ID</label>
+        <input v-model.number="activityForm.gridId" type="number" class="form-input" />
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+        <button @click="showAddActivity = false" class="btn btn-default">取消</button>
+        <button @click="submitActivity" class="btn btn-primary">提交</button>
+      </div>
     </div>
+  </div>
+
+  <!-- 添加会议弹窗 -->
+  <div v-if="showAddMeeting" class="modal-overlay" @click.self="showAddMeeting = false">
+    <div class="modal-box">
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">添加会议记录</h3>
+      <div class="form-group">
+        <label class="form-label">会议类型</label>
+        <select v-model="meetingForm.meetingType" class="form-select">
+          <option value="支部党员大会">支部党员大会</option>
+          <option value="支委会">支委会</option>
+          <option value="党小组会">党小组会</option>
+          <option value="党课">党课</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">主题</label>
+        <input v-model="meetingForm.title" class="form-input" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">日期</label>
+          <input v-model="meetingForm.meetingDate" type="date" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">参会人数</label>
+          <input v-model.number="meetingForm.participantCount" type="number" class="form-input" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">党支部</label>
+        <input v-model="meetingForm.partyBranch" class="form-input" />
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+        <button @click="showAddMeeting = false" class="btn btn-default">取消</button>
+        <button @click="submitMeeting" class="btn btn-primary">提交</button>
+      </div>
+    </div>
+  </div>
   </div>
 </template>
 
