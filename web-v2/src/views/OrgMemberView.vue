@@ -22,12 +22,13 @@
       </div>
       <template v-else>
         <table class="table">
-          <thead><tr><th>姓名</th><th>电话</th><th>职务</th><th>所属网格</th><th>状态</th><th>操作</th></tr></thead>
+          <thead><tr><th>姓名</th><th>电话</th><th>类型</th><th>职务</th><th>所属网格</th><th>状态</th><th>操作</th></tr></thead>
           <tbody>
             <tr v-for="p in list" :key="p.id">
               <td>{{ p.name }}</td>
               <td>{{ p.phone || '-' }}</td>
-              <td><span class="tag tag-blue">{{ p.position || '-' }}</span></td>
+              <td><span class="tag tag-blue">{{ memberTypeLabel(p.memberType) }}</span></td>
+              <td>{{ p.position || '-' }}</td>
               <td>{{ p.gridName || '-' }}</td>
               <td>
                 <span :class="p.status === 'ACTIVE' ? 'tag tag-green' : 'tag tag-red'">
@@ -63,6 +64,12 @@
           <input v-model="form.phone" class="form-input" placeholder="请输入电话" />
         </div>
         <div class="form-group">
+          <label class="form-label">人员类型 <span class="required">*</span></label>
+          <select v-model="form.memberType" class="form-select">
+            <option v-for="t in memberTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label class="form-label">职务</label>
           <input v-model="form.position" class="form-input" placeholder="如：网格员、网格长" />
         </div>
@@ -70,7 +77,7 @@
           <label class="form-label">所属社区</label>
           <input :value="'拔蛟窝社区'" class="form-input" disabled style="background:#f9fafb;" />
         </div>
-        <div class="form-group">
+        <div v-if="form.memberType === 'GRID_WORKER'" class="form-group">
           <label class="form-label">所属小网格 <span class="required">*</span></label>
           <select v-model="form.gridId" class="form-select">
             <option :value="null">请选择小网格</option>
@@ -112,9 +119,21 @@ const form = ref({
   name: '',
   phone: '',
   position: '',
+  memberType: 'GRID_WORKER', // GRID_WORKER=网格员, STAFF=社区工作人员
   gridId: null as number | null,
   status: 'ACTIVE',
 })
+
+const memberTypes = [
+  { value: 'GRID_WORKER', label: '网格员' },
+  { value: 'STAFF', label: '社区工作人员' },
+  { value: 'LEADER', label: '社区领导' },
+  { value: 'VOLUNTEER', label: '志愿者' },
+]
+
+const memberTypeMap: Record<string, string> = {}
+memberTypes.forEach(t => memberTypeMap[t.value] = t.label)
+function memberTypeLabel(type: string) { return memberTypeMap[type] || type || '-' }
 
 async function fetchData() {
   loading.value = true
@@ -147,7 +166,7 @@ async function fetchGrids() {
 function closeModal() {
   showAdd.value = false
   showEdit.value = false
-  form.value = { id: null, name: '', phone: '', position: '', gridId: null, status: 'ACTIVE' }
+  form.value = { id: null, name: '', phone: '', position: '', memberType: 'GRID_WORKER', gridId: null, status: 'ACTIVE' }
 }
 
 function handleEdit(item: any) {
@@ -168,6 +187,7 @@ async function handleDelete(item: any) {
 
 async function handleSubmit() {
   if (!form.value.name) { alert('请输入姓名'); return }
+  if (form.value.memberType === 'GRID_WORKER' && !form.value.gridId) { alert('请选择所属小网格'); return }
   try {
     if (showEdit.value && form.value.id) {
       await http.put(`/community/org-members/${form.value.id}`, form.value)
@@ -177,7 +197,7 @@ async function handleSubmit() {
       alert('添加成功')
     }
     closeModal()
-    fetchData()
+    await fetchData()
   } catch(e: any) {
     alert(e?.message || '操作失败')
   }

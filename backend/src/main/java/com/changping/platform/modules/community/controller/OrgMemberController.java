@@ -32,8 +32,10 @@ public class OrgMemberController {
     public ApiResponse<Boolean> create(@RequestBody OrgMemberEntity entity) {
         // 1. 创建组织人员
         service.create(entity);
-        // 2. 同步创建系统用户（用于考核研判和派单）
-        syncToSysUser(entity);
+        // 2. 如果是网格员，同步创建系统用户（用于考核研判和派单）
+        if ("GRID_WORKER".equals(entity.getMemberType())) {
+            syncToSysUser(entity);
+        }
         return ApiResponse.ok(true);
     }
     @PutMapping("/{id}")
