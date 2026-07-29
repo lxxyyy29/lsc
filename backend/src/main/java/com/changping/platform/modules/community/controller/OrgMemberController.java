@@ -69,18 +69,19 @@ public class OrgMemberController {
 
             for (Map<String, Object> user : gridUsers) {
                 String name = (String) user.get("real_name");
-                // 检查是否已存在
+                Long userId = ((Number) user.get("id")).longValue();
+                // 检查是否已存在（按 sys_user_id 或 name）
                 Integer exists = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM cmn_org_member WHERE name = ? AND status = 'ACTIVE'", Integer.class, name);
+                    "SELECT COUNT(*) FROM cmn_org_member WHERE sys_user_id = ? OR name = ?", Integer.class, userId, name);
                 if (exists != null && exists > 0) {
                     skipped++;
                     continue;
                 }
                 // 创建组织人员
                 jdbcTemplate.update(
-                    "INSERT INTO cmn_org_member (name, phone, member_type, position, status, created_at, updated_at) " +
-                    "VALUES (?, ?, 'GRID_WORKER', '网格员', 'ACTIVE', NOW(), NOW())",
-                    name, user.get("phone"));
+                    "INSERT INTO cmn_org_member (grid_id, sys_user_id, member_type, name, phone, status, remark, created_at, updated_at) " +
+                    "VALUES (?, ?, 'GRID_WORKER', ?, ?, 'ACTIVE', '从系统用户同步', NOW(), NOW())",
+                    null, user.get("id"), name, user.get("phone"));
                 synced++;
             }
         } catch (Exception e) {
