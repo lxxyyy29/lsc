@@ -67,11 +67,18 @@
           <input v-model="form.position" class="form-input" placeholder="如：网格员、网格长" />
         </div>
         <div class="form-group">
-          <label class="form-label">所属网格</label>
+          <label class="form-label">所属社区</label>
+          <input :value="'拔蛟窝社区'" class="form-input" disabled style="background:#f9fafb;" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">所属小网格 <span class="required">*</span></label>
           <select v-model="form.gridId" class="form-select">
-            <option :value="null">请选择网格</option>
+            <option :value="null">请选择小网格</option>
             <option v-for="g in grids" :key="g.id" :value="g.id">{{ g.gridName }}</option>
           </select>
+          <p v-if="!grids.length" style="font-size:12px;color:#d97706;margin-top:4px;">
+            ⚠️ 暂无小网格，请先添加网格数据
+          </p>
         </div>
         <div class="form-group">
           <label class="form-label">状态</label>
@@ -123,7 +130,17 @@ async function fetchData() {
 
 async function fetchGrids() {
   try {
-    grids.value = await http.get('/community/grids/tree') || []
+    const tree = await http.get('/community/grids/tree') || []
+    // 只提取小网格（level=3）
+    const smallGrids: any[] = []
+    const extractSmall = (nodes: any[]) => {
+      for (const n of nodes) {
+        if (n.gridLevel === 3) smallGrids.push(n)
+        if (n.children) extractSmall(n.children)
+      }
+    }
+    extractSmall(tree)
+    grids.value = smallGrids
   } catch(e) {}
 }
 

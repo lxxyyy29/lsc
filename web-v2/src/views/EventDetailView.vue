@@ -68,7 +68,7 @@
               <option v-for="u in workers" :key="u.id" :value="u.id">{{ u.realName || u.username }}</option>
             </select>
             <p v-if="!workers.length" style="font-size:12px;color:#dc2626;margin-top:6px;">
-              ⚠️ 暂无网格员，请先在"网格治理 → 组织人员"中添加
+              ⚠️ 暂无网格员，请先添加系统用户并分配 GRID_WORKER 角色
             </p>
           </div>
           <div class="form-group">
