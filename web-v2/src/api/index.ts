@@ -226,6 +226,10 @@ export async function getSystemUsers() {
   return http.get('/system/users')
 }
 
+export async function syncGridWorkersToOrgMembers() {
+  return http.post('/community/org-members/sync-from-users')
+}
+
 export async function handleResidentReport(id: number, handleResult: string) {
   return http.put(`/community/resident-reports/${id}/handle`, { handleResult })
 }

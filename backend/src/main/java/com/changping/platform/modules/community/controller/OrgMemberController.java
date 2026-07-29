@@ -7,6 +7,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/community/org-members")
@@ -46,6 +48,52 @@ public class OrgMemberController {
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
         return ApiResponse.ok(service.delete(id));
+    }
+
+    /**
+     * 将现有网格员（sys_user）同步到组织人员表
+     */
+    @PostMapping("/sync-from-users")
+    public ApiResponse<Map<String, Object>> syncFromUsers() {
+        Map<String, Object> result = new java.util.HashMap<>();
+        int synced = 0;
+        int skipped = 0;
+
+        try {
+            // 获取所有 GRID_WORKER 角色的用户
+            List<Map<String, Object>> gridUsers = jdbcTemplate.queryForList(
+                "SELECT u.id, u.real_name, u.phone FROM sys_user u " +
+                "JOIN sys_user_role ur ON ur.user_id = u.id " +
+                "JOIN sys_role r ON r.id = ur.role_id " +
+                "WHERE r.role_code = 'GRID_WORKER' AND u.deleted = 0");
+
+            for (Map<String, Object> user : gridUsers) {
+                String name = (String) user.get("real_name");
+                // 检查是否已存在
+                Integer exists = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM cmn_org_member WHERE name = ? AND status = 'ACTIVE'", Integer.class, name);
+                if (exists != null && exists > 0) {
+                    skipped++;
+                    continue;
+                }
+                // 创建组织人员
+                jdbcTemplate.update(
+                    "INSERT INTO cmn_org_member (name, phone, member_type, position, status, created_at, updated_at) " +
+                    "VALUES (?, ?, 'GRID_WORKER', '网格员', 'ACTIVE', NOW(), NOW())",
+                    name, user.get("phone"));
+                synced++;
+            }
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "同步失败: " + e.getMessage());
+            return ApiResponse.ok(result);
+        }
+
+        result.put("success", true);
+        result.put("synced", synced);
+        result.put("skipped", skipped);
+        result.put("message", String.format("同步完成：新增 %d 条，跳过 %d 条（已存在）", synced, skipped));
+        return ApiResponse.ok(result);
     }
 
     /**

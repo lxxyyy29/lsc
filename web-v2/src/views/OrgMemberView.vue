@@ -5,9 +5,14 @@
         <h1 class="page-title">组织人员管理</h1>
         <p class="page-desc">网格员、社区工作人员、志愿者等信息维护</p>
       </div>
-      <button @click="showAdd = true" class="btn btn-primary">
-        <i class="fas fa-plus"></i>添加组织人员
-      </button>
+      <div style="display:flex;gap:8px;">
+        <button @click="handleSync" class="btn btn-default">
+          <i class="fas fa-sync"></i>同步网格员
+        </button>
+        <button @click="showAdd = true" class="btn btn-primary">
+          <i class="fas fa-plus"></i>添加组织人员
+        </button>
+      </div>
     </div>
 
     <div class="card">
@@ -105,7 +110,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import http from '../api'
+import http, { syncGridWorkersToOrgMembers } from '../api'
 
 const list = ref<any[]>([])
 const grids = ref<any[]>([])
@@ -134,6 +139,17 @@ const memberTypes = [
 const memberTypeMap: Record<string, string> = {}
 memberTypes.forEach(t => memberTypeMap[t.value] = t.label)
 function memberTypeLabel(type: string) { return memberTypeMap[type] || type || '-' }
+
+async function handleSync() {
+  if (!confirm('将系统用户中的网格员同步到组织人员表，继续吗？')) return
+  try {
+    const res: any = await syncGridWorkersToOrgMembers()
+    alert(res?.message || '同步完成')
+    await fetchData()
+  } catch(e: any) {
+    alert('同步失败：' + (e?.message || '未知错误'))
+  }
+}
 
 async function fetchData() {
   loading.value = true
