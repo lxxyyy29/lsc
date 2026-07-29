@@ -3,10 +3,10 @@
     <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
       <div>
         <h1 class="page-title">组织人员管理</h1>
-        <p class="page-desc">网格员、社区工作人员信息维护</p>
+        <p class="page-desc">网格员、社区工作人员、志愿者等信息维护</p>
       </div>
       <button @click="showAdd = true" class="btn btn-primary">
-        <i class="fas fa-plus"></i>添加网格员
+        <i class="fas fa-plus"></i>添加组织人员
       </button>
     </div>
 
@@ -54,7 +54,7 @@
     <!-- 添加/编辑弹窗 -->
     <div v-if="showAdd || showEdit" class="modal-overlay" @click.self="closeModal">
       <div class="modal-box">
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ showEdit ? '编辑网格员' : '添加网格员' }}</h3>
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ showEdit ? '编辑组织人员' : '添加组织人员' }}</h3>
         <div class="form-group">
           <label class="form-label">姓名 <span class="required">*</span></label>
           <input v-model="form.name" class="form-input" placeholder="请输入姓名" />
