@@ -58,27 +58,30 @@
       </div>
 
       <!-- 派单弹窗 -->
-      <div v-if="showDispatch" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:1000;">
-        <div style="background:#fff;border-radius:12px;padding:24px;width:420px;max-width:90vw;">
+      <div v-if="showDispatch" class="modal-overlay" @click.self="showDispatch = false">
+        <div class="modal-box">
           <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">派发工单</h3>
-          <div style="margin-bottom:12px;">
-            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">选择受派人 <span style="color:#ff4d4f;">*</span></label>
-            <select v-model="dispatchForm.assigneeUserId" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+          <div class="form-group">
+            <label class="form-label">选择受派人 <span class="required">*</span></label>
+            <select v-model="dispatchForm.assigneeUserId" class="form-select">
               <option :value="null">请选择网格员</option>
-              <option v-for="u in workers" :key="u.id" :value="u.id">{{ u.realName }} ({{ u.account }})</option>
+              <option v-for="u in workers" :key="u.id" :value="u.id">{{ u.name || u.realName || u.account }}</option>
             </select>
+            <p v-if="!workers.length" style="font-size:12px;color:#dc2626;margin-top:6px;">
+              ⚠️ 暂无网格员，请先在"网格治理 → 组织人员"中添加
+            </p>
           </div>
-          <div style="margin-bottom:12px;">
-            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">处理时限</label>
-            <input v-model="dispatchForm.deadline" type="datetime-local" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
+          <div class="form-group">
+            <label class="form-label">处理时限</label>
+            <input v-model="dispatchForm.deadline" type="datetime-local" class="form-input" />
           </div>
-          <div style="margin-bottom:16px;">
-            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">备注</label>
-            <textarea v-model="dispatchForm.remark" rows="2" placeholder="派单备注..." style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;"></textarea>
+          <div class="form-group">
+            <label class="form-label">备注</label>
+            <textarea v-model="dispatchForm.remark" rows="2" placeholder="派单备注..." class="form-textarea"></textarea>
           </div>
-          <div style="display:flex;gap:12px;justify-content:flex-end;">
-            <button @click="showDispatch = false" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">取消</button>
-            <button @click="handleDispatch" style="padding:8px 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">确认派单</button>
+          <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+            <button @click="showDispatch = false" class="btn btn-default">取消</button>
+            <button @click="handleDispatch" class="btn btn-primary">确认派单</button>
           </div>
         </div>
       </div>
@@ -106,7 +109,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent } from '../api'
+import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getOrgMembers } from '../api'
 import { getEventTypeName } from '../utils/eventTypes'
 
 const route = useRoute()
@@ -140,8 +143,13 @@ async function loadData() {
     event.value = await getEventDetail(id)
     timeline.value = await getEventTimeline(id) || []
     // 加载网格员列表
-    const { getOrgMembers } = await import('../api')
-    try { workers.value = await getOrgMembers() || [] } catch (e) {}
+    try {
+      const res = await getOrgMembers()
+      workers.value = Array.isArray(res) ? res : []
+    } catch (e) {
+      console.error('加载网格员失败:', e)
+      workers.value = []
+    }
   } catch (e) {
     console.error(e)
   } finally {
