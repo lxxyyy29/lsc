@@ -28,7 +28,7 @@
           <tbody>
             <tr v-for="item in list" :key="item.id">
               <td>{{ item.title }}</td>
-              <td><span class="tag tag-blue">{{ eventTypeLabel(item.eventType) }}</span></td>
+              <td><span class="tag tag-blue">{{ getEventTypeName(item.eventType) }}</span></td>
               <td>{{ formatTime(item.createdAt || item.occurredAt) }}</td>
               <td>
                 <span :class="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
@@ -68,6 +68,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import http from '../api'
+import { getEventTypeName } from '../utils/eventTypes'
 
 const statusTabs = [
   { key: '', label: '全部' },
@@ -81,11 +82,6 @@ const list = ref<any[]>([])
 const loading = ref(true)
 const error = ref('')
 
-const eventTypes: Record<string, string> = {
-  ROAD: '道路损坏', LIGHT: '路灯故障', PIPE: '管道破损',
-  ENV: '环境卫生', SAFE: '安全隐患', NOISE: '噪音扰民', OTHER: '其他'
-}
-
 function statusLabel(s: string) {
   return { WAITING_DISPATCH: '待派单', DISPATCHED_TO_WORK_ORDER: '处理中', CLOSED: '已办结', IGNORED: '已忽略' }[s] || s || '未知'
 }
@@ -96,8 +92,6 @@ function statusClass(s: string) {
   if (s === 'IGNORED') return 'tag tag-red'
   return 'tag tag-orange'
 }
-
-function eventTypeLabel(t: string) { return eventTypes[t] || t || '其他' }
 
 function formatTime(t: string) {
   if (!t) return '-'
@@ -120,7 +114,7 @@ async function fetchData() {
 }
 
 function viewDetail(item: any) {
-  alert(`标题：${item.title}\n描述：${item.description || '-'}\n类型：${eventTypeLabel(item.eventType)}\n状态：${statusLabel(item.status)}\n上报时间：${formatTime(item.createdAt || item.occurredAt)}`)
+  alert(`标题：${item.title}\n描述：${item.description || '-'}\n类型：${getEventTypeName(item.eventType)}\n状态：${statusLabel(item.status)}\n上报时间：${formatTime(item.createdAt || item.occurredAt)}`)
 }
 
 async function handleProcess(item: any) {

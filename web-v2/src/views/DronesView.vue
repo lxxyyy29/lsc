@@ -268,7 +268,7 @@
           <tr v-for="a in aiAlerts" :key="a.event_code">
             <td style="font-size:12px;">{{ a.event_code }}</td>
             <td>{{ a.title }}</td>
-            <td><span class="tag tag-blue">{{ a.event_type }}</span></td>
+            <td><span class="tag tag-blue">{{ getEventTypeName(a.event_type) }}</span></td>
             <td><span :class="['tag', a.urgency_level === 'RED' ? 'tag-red' : a.urgency_level === 'YELLOW' ? 'tag-orange' : 'tag-green']">{{ a.urgency_level }}</span></td>
             <td><span :class="['tag', a.status === 'CLOSED' ? 'tag-green' : 'tag-orange']">{{ a.status }}</span></td>
             <td style="font-size:12px;">{{ a.occurred_at }}</td>
@@ -398,6 +398,7 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import http, { getJobs, createJob, pauseResumeJob, returnHome, getSpeakerFiles, playSpeaker as playSpeakerAction, stopSpeaker, setSpeakerVolume as setSpeakerVolumeAction, switchCameraMode as switchCameraModeAction, startRecording, stopRecording } from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
+import { getEventTypeName } from '../utils/eventTypes'
 
 const tabs = [
   { key: 'devices', label: '无人机设备' },

@@ -31,7 +31,7 @@
         <div class="card">
           <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">基本信息</h3>
           <div style="font-size:13px;color:#374151;line-height:2;">
-            <div><span style="color:#9ca3af;">事件类型：</span>{{ event.eventType || '-' }}</div>
+            <div><span style="color:#9ca3af;">事件类型：</span>{{ getEventTypeName(event.eventType) }}</div>
             <div><span style="color:#9ca3af;">发生时间：</span>{{ event.occurredAt || '-' }}</div>
             <div><span style="color:#9ca3af;">事发地点：</span>{{ event.location || '-' }}</div>
             <div><span style="color:#9ca3af;">所属网格：</span>{{ event.gridName || '-' }}</div>
@@ -107,6 +107,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent } from '../api'
+import { getEventTypeName } from '../utils/eventTypes'
 
 const route = useRoute()
 const router = useRouter()

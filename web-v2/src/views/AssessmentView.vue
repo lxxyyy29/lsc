@@ -115,7 +115,7 @@
           <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">事件类型TOP10</h3>
           <div v-for="(item, idx) in overview.eventTypeDistribution" :key="idx" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
             <span style="font-size:11px;color:#9ca3af;width:20px;">{{ idx + 1 }}</span>
-            <span style="flex:1;font-size:12px;">{{ item.type }}</span>
+            <span style="flex:1;font-size:12px;">{{ getEventTypeName(item.type) }}</span>
             <span style="font-size:12px;font-weight:600;color:#1890ff;">{{ item.count }}</span>
           </div>
           <p v-if="!overview.eventTypeDistribution?.length" style="font-size:12px;color:#9ca3af;text-align:center;">暂无数据</p>
@@ -188,6 +188,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import http from '../api'
+import { getEventTypeName } from '../utils/eventTypes'
 
 const loading = ref(true)
 const overview = ref<any>({})

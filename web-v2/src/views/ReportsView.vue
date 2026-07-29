@@ -103,6 +103,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import http from '../api'
+import { getEventTypeName } from '../utils/eventTypes'
 
 const timeRange = ref('week')
 const reportData = ref<any>({})
@@ -136,7 +137,7 @@ async function loadData() {
       eventTrend: '↑ 0%',
       overdueCount: overview.overdueDispatch || 0,
       pendingAlertCount: events.waitingDispatch || 0,
-      eventTypeStats: (overview.eventTypeDistribution || []).map((t: any) => ({ name: t.type, count: t.count })),
+      eventTypeStats: (overview.eventTypeDistribution || []).map((t: any) => ({ name: getEventTypeName(t.type), count: t.count })),
       orderStatusStats: [
         { name: '处理中', count: orders.processing || 0 },
         { name: '已完成', count: orders.completed || 0 }
