@@ -29,6 +29,7 @@ const routes = [
   { path: '/biz-areas', component: () => import('../views/BizAreaView.vue') },
   { path: '/resident-reports', component: () => import('../views/ResidentReportView.vue') },
   { path: '/qwen-models', component: () => import('../views/QwenModelView.vue') },
+  { path: '/registrations', component: () => import('../views/RegistrationView.vue') },
 ]
 
 const router = createRouter({

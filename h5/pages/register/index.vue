@@ -127,8 +127,8 @@ async function handleSubmit() {
       realName: form.realName,
       phone: form.phone
     })
-    uni.showToast({ title: '注册成功', icon: 'success' })
-    setTimeout(() => goLogin(), 1500)
+    uni.showToast({ title: '提交成功，等待审批', icon: 'success' })
+    setTimeout(() => goLogin(), 2000)
   } catch (e: any) {
     if (e instanceof HttpResponseError) {
       errorMessage.value = e.message || '注册失败'

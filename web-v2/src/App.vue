@@ -134,6 +134,12 @@ const menuGroups = [
       { path: '/audit-logs', name: '审计日志' },
     ]
   },
+  {
+    name: '注册审批', icon: 'fas fa-user-check',
+    items: [
+      { path: '/registrations', name: '网格员注册审批' },
+    ]
+  },
 ]
 
 // 展开的菜单组（默认全部展开）

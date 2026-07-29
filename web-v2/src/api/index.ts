@@ -230,6 +230,22 @@ export async function syncGridWorkersToOrgMembers() {
   return http.post('/community/org-members/sync-from-users')
 }
 
+export async function getPendingRegistrations() {
+  return http.get('/registration/pending')
+}
+
+export async function getAllRegistrations() {
+  return http.get('/registration/list')
+}
+
+export async function approveRegistration(id: number, remark?: string) {
+  return http.post(`/registration/${id}/approve`, { remark: remark || '审批通过' })
+}
+
+export async function rejectRegistration(id: number, remark: string) {
+  return http.post(`/registration/${id}/reject`, { remark })
+}
+
 export async function handleResidentReport(id: number, handleResult: string) {
   return http.put(`/community/resident-reports/${id}/handle`, { handleResult })
 }
