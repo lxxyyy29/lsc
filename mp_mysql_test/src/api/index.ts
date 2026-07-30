@@ -83,4 +83,34 @@ export async function rateEvent(eventId: number | string, data: { rating: number
   return http.post(`/events/${eventId}/rate`, data)
 }
 
+// ==================== 居民互动 ====================
+
+export async function getResidentActivities() {
+  return http.get('/resident/activities')
+}
+export async function signupActivity(activityId: number) {
+  return http.post(`/resident/activities/${activityId}/signup`, {})
+}
+export async function cancelActivitySignup(activityId: number) {
+  return http.delete(`/resident/activities/${activityId}/signup`)
+}
+
+export async function getResidentPolicies() {
+  return http.get('/resident/policy-resources')
+}
+
+export async function getMyPoints() {
+  return http.get('/resident/points')
+}
+
+export async function submitRepair(data: any) {
+  return http.post('/resident/repairs', data)
+}
+export async function getMyRepairs() {
+  return http.get('/resident/repairs')
+}
+export async function getRepairDetail(id: number) {
+  return http.get(`/resident/repairs/${id}`)
+}
+
 export default http

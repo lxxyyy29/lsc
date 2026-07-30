@@ -5,6 +5,7 @@ import com.changping.platform.modules.event.dto.CreateEventRequest;
 import com.changping.platform.modules.event.vo.EventDetailVo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Author tangxinglin
@@ -131,6 +132,11 @@ public interface EventService {
      * 群众对事件处置结果进行评价
      */
     boolean rateEvent(Long id, int rating, String comment);
+
+    /**
+     * 热力图数据：有坐标的事件列表
+     */
+    List<Map<String, Object>> getHeatmapData(String startDate, String endDate, String eventType);
 
     /**
      * 事件统计VO

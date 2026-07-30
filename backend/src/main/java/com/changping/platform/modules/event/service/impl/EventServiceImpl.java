@@ -929,6 +929,21 @@ public class EventServiceImpl implements EventService {
         return true;
     }
 
+    @Override
+    public List<Map<String, Object>> getHeatmapData(String startDate, String endDate, String eventType) {
+        StringBuilder sql = new StringBuilder(
+            "SELECT id, title, event_type, urgency_level, status, " +
+            "CAST(longitude AS DECIMAL(10,6)) as lng, CAST(latitude AS DECIMAL(10,6)) as lat, " +
+            "created_at FROM biz_event " +
+            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0");
+        List<Object> params = new ArrayList<>();
+        if (startDate != null && !startDate.isEmpty()) { sql.append(" AND created_at >= ?"); params.add(startDate); }
+        if (endDate != null && !endDate.isEmpty()) { sql.append(" AND created_at <= ?"); params.add(endDate); }
+        if (eventType != null && !eventType.isEmpty()) { sql.append(" AND event_type = ?"); params.add(eventType); }
+        sql.append(" ORDER BY created_at DESC LIMIT 1000");
+        return jdbcTemplate.queryForList(sql.toString(), params.toArray());
+    }
+
     private String mapActionName(String actionType) {
         if (actionType == null) return "操作";
         return switch (actionType) {

@@ -47,12 +47,25 @@
           </button>
         </div>
 
+        <!-- 图层切换 -->
+        <div class="layer-control">
+          <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">图层控制</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#374151;">
+              <input type="checkbox" v-model="showHeatmap" style="accent-color:#ff4d4f;" />
+              <span style="width:12px;height:12px;border-radius:50%;background:#ff4d4f;opacity:0.7;"></span>
+              事件热力图
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#374151;">
+              <input type="checkbox" v-model="showTrajectories" style="accent-color:#0284c7;" />
+              <span style="width:12px;height:12px;border-radius:50%;background:#0284c7;opacity:0.7;"></span>
+              巡查轨迹
+            </label>
+          </div>
+        </div>
+
         <!-- 图例 -->
-        <div :style="{
-          position: 'absolute', bottom: '16px', left: '16px', background: 'rgba(255,255,255,0.95)',
-          borderRadius: '10px', padding: '12px 16px', zIndex: 100,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.12)', backdropFilter: 'blur(8px)'
-        }">
+        <div class="gis-legend">
           <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">网格层级</div>
           <div style="display:flex;flex-direction:column;gap:6px;">
             <div style="display:flex;align-items:center;gap:8px;">
@@ -145,8 +158,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { getGridTree, getEvents } from '../api'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { getGridTree, getEvents, getEventHeatmap, getPatrolTrajectories } from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
 interface GridInfo {
@@ -168,6 +181,13 @@ let hoverId = 0
 let mapInstance: any = null
 let AMapLib: any = null
 const gridTree = ref<GridInfo[]>([])
+
+// 图层控制
+const showHeatmap = ref(false)
+const showTrajectories = ref(false)
+let heatmapInstance: any = null
+let trajectoryPolylines: any[] = []
+let trajectoryMarkers: any[] = []
 
 const allGrids = computed(() => {
   const result: GridInfo[] = []
@@ -234,7 +254,7 @@ onMounted(async () => {
   AMapLib = await AMapLoader.load({
     key: '5e00e01d2d2b6ca9e1eed533a15572e4',
     version: '2.0',
-    plugins: ['AMap.Polygon', 'AMap.Marker']
+    plugins: ['AMap.Polygon', 'AMap.Marker', 'AMap.Polyline', 'AMap.HeatMap', 'AMap.Circle']
   })
   mapInstance = new AMapLib.Map('gisMapLarge', { zoom: 14, center: [113.939521, 22.971231], mapStyle: 'amap://styles/normal' })
   const map = mapInstance
@@ -283,6 +303,179 @@ onMounted(async () => {
     }
   }
   drawSmallGrids(tree)
+
+  // ==================== 热力图 ====================
+  const loadHeatmap = async () => {
+    try {
+      const data: any = await getEventHeatmap({})
+      if (!data || !data.length) return
+      const heatPoints = data.map((d: any) => ({
+        lng: Number(d.lng),
+        lat: Number(d.lat),
+        count: d.urgency_level === 'RED' ? 3 : d.urgency_level === 'YELLOW' ? 2 : 1
+      }))
+      if (AMapLib.HeatMap) {
+        heatmapInstance = new AMapLib.HeatMap(map, {
+          radius: 25,
+          opacity: [0, 0.6],
+          gradient: { 0.3: '#2764d6', 0.5: '#12b312', 0.7: '#ffff00', 0.9: '#ff8800', 1.0: '#ff0000' }
+        })
+        heatmapInstance.setDataSet({ data: heatPoints, max: 5 })
+        if (!showHeatmap.value) heatmapInstance.hide()
+      } else {
+        // 降级：用圆形标记表示热力
+        for (const p of heatPoints) {
+          const weight = p.count
+          const marker = new AMapLib.Circle({
+            center: [p.lng, p.lat],
+            radius: 30 + weight * 20,
+            fillColor: weight >= 3 ? '#ff4d4f' : weight === 2 ? '#faad14' : '#1890ff',
+            fillOpacity: 0.35,
+            strokeColor: weight >= 3 ? '#ff4d4f' : weight === 2 ? '#faad14' : '#1890ff',
+            strokeWeight: 1,
+            strokeOpacity: 0.5,
+            bubble: true,
+            map
+          })
+          marker._isHeatmapMarker = true
+          // 初始隐藏（showHeatmap 默认 false）
+          if (!showHeatmap.value) marker.hide()
+          trajectoryMarkers.push(marker)
+        }
+      }
+    } catch (e) {
+      console.warn('热力图数据加载失败:', e)
+    }
+  }
+
+  // ==================== 巡查轨迹 ====================
+  const loadTrajectories = async () => {
+    try {
+      const data: any = await getPatrolTrajectories({})
+      if (!data || !data.length) return
+      const colors = ['#0284c7', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
+      let colorIdx = 0
+      for (const track of data) {
+        const coords = track.coords
+        if (!coords || coords.length < 2) continue
+        const color = colors[colorIdx % colors.length]
+        colorIdx++
+
+        // 绘制轨迹线（更细更美观：带白色描边 + 半透明彩色线）
+        // 底层白色描边（加粗）
+        const outline = new AMapLib.Polyline({
+          path: coords,
+          strokeColor: '#ffffff',
+          strokeWeight: 5,
+          strokeOpacity: 0.9,
+          strokeStyle: 'solid',
+          bubble: true,
+          zIndex: 10,
+          map
+        })
+        trajectoryPolylines.push(outline)
+        // 上层彩色细线
+        const polyline = new AMapLib.Polyline({
+          path: coords,
+          strokeColor: color,
+          strokeWeight: 2.5,
+          strokeOpacity: 0.85,
+          strokeStyle: 'solid',
+          bubble: true,
+          zIndex: 11,
+          map
+        })
+        trajectoryPolylines.push(polyline)
+
+        // 起点标记（绿色圆点）
+        const startMarker = new AMapLib.CircleMarker({
+          center: coords[0],
+          radius: 5,
+          fillColor: '#ffffff',
+          fillOpacity: 1,
+          strokeColor: '#52c41a',
+          strokeWeight: 2,
+          zIndex: 20,
+          bubble: true,
+          map
+        })
+        trajectoryMarkers.push(startMarker)
+
+        // 终点标记（红色圆点）
+        const endMarker = new AMapLib.CircleMarker({
+          center: coords[coords.length - 1],
+          radius: 5,
+          fillColor: '#ffffff',
+          fillOpacity: 1,
+          strokeColor: '#ff4d4f',
+          strokeWeight: 2,
+          zIndex: 20,
+          bubble: true,
+          map
+        })
+        trajectoryMarkers.push(endMarker)
+
+        // 轨迹中点标签（显示网格员姓名）
+        const midIdx = Math.floor(coords.length / 2)
+        const midPoint = coords[midIdx]
+        const textLabel = new AMapLib.Text({
+          text: track.userName,
+          position: midPoint,
+          offset: [0, -12],
+          style: {
+            'background-color': color,
+            'color': '#ffffff',
+            'font-size': '11px',
+            'padding': '2px 6px',
+            'border-radius': '10px',
+            'border-width': 0,
+            'white-space': 'nowrap',
+            'opacity': 0.85
+          },
+          zIndex: 25,
+          map
+        })
+        trajectoryMarkers.push(textLabel)
+      }
+      if (!showTrajectories.value) {
+        for (const p of trajectoryPolylines) p.hide()
+        for (const m of trajectoryMarkers) m.hide()
+      }
+    } catch (e) {
+      console.warn('轨迹数据加载失败:', e)
+    }
+  }
+
+  // 初始加载数据（页面打开时即加载，此时已登录）
+  await loadHeatmap()
+  await loadTrajectories()
+
+  // 图层开关监听（数据已加载，只需控制显隐）
+  showHeatmap.value = false  // 确保初始隐藏
+  showTrajectories.value = false
+
+  // 用 watch 监听复选框变化
+  watch(showHeatmap, (visible) => {
+    if (heatmapInstance) {
+      visible ? heatmapInstance.show() : heatmapInstance.hide()
+    }
+    for (const m of trajectoryMarkers) {
+      if (m._isHeatmapMarker) {
+        visible ? m.show() : m.hide()
+      }
+    }
+  })
+
+  watch(showTrajectories, (visible) => {
+    for (const p of trajectoryPolylines) {
+      visible ? p.show() : p.hide()
+    }
+    for (const m of trajectoryMarkers) {
+      if (!m._isHeatmapMarker) {
+        visible ? m.show() : m.hide()
+      }
+    }
+  })
 })
 
 function drawGridPolygon(map: any, grid: any, fillColor: string, strokeColor: string, strokeWeight: number, fillOpacity: number) {
@@ -325,3 +518,28 @@ function drawGridPolygon(map: any, grid: any, fillColor: string, strokeColor: st
   } catch (e) {}
 }
 </script>
+
+<style scoped>
+.layer-control {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  padding: 12px 16px;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+}
+.gis-legend {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  padding: 12px 16px;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+}
+</style>

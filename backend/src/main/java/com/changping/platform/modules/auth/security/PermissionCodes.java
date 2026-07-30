@@ -223,6 +223,10 @@ public final class PermissionCodes {
     public static final String API_PARTY_DELIBER_VIEW = "api:party:deliber:view";
     /** 政策推送接口权限 */
     public static final String API_PARTY_POLICY_PUSH = "api:party:policy:push";
+    /** 便民报修查看接口权限 */
+    public static final String API_REPAIR_VIEW = "api:repair:view";
+    /** 便民报修管理接口权限 */
+    public static final String API_REPAIR_MANAGE = "api:repair:manage";
 
     /** 业务管理目录权限 */
     public static final String CATALOG_BIZ = "catalog:biz";

@@ -376,4 +376,33 @@ export async function getRatingStats() {
   return http.get('/assessment/rating-stats')
 }
 
+// GIS 热力图与轨迹
+export async function getEventHeatmap(params?: { startDate?: string; endDate?: string; eventType?: string }) {
+  return http.get('/events/heatmap', { params })
+}
+export async function getEventMapPoints(params?: { startDate?: string; endDate?: string; status?: string }) {
+  return http.get('/events/map-points', { params })
+}
+export async function getPatrolTrajectories(params?: { startDate?: string; endDate?: string; userId?: number }) {
+  return http.get('/community/patrol-records/trajectories', { params })
+}
+
+// 审计日志增强
+export async function getAuditLogs(params?: {
+  tableName?: string; recordId?: string; operationType?: string;
+  operatorId?: number; startTime?: string; endTime?: string;
+  page?: number; pageSize?: number;
+}) {
+  return http.get('/audit-logs', { params: { page: 1, pageSize: 20, ...params } })
+}
+export async function getAuditLogDiff(id: number | string) {
+  return http.get(`/audit-logs/${id}/diff`)
+}
+export async function previewAuditLogRollback(id: number | string) {
+  return http.get(`/audit-logs/${id}/preview-rollback`)
+}
+export async function rollbackAuditLog(id: number | string) {
+  return http.post(`/audit-logs/rollback/${id}`)
+}
+
 export default http

@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * 审计日志切面 - 自动记录关键业务表的变更
- * 注意：这是一个简化版本，实际项目中可以根据需要精确配置切点
+ * 记录所有 POST/PUT/DELETE 请求的操作日志，包含请求参数作为 newValues
  */
 @Aspect
 @Component
@@ -30,7 +30,7 @@ public class AuditLogAspect {
     }
 
     /**
-     * 记录所有 POST/PUT/DELETE 请求的操作日志（简化版）
+     * 记录所有 POST/PUT/DELETE 请求的操作日志
      */
     @AfterReturning(pointcut = "execution(* com.changping.platform.modules..controller..*(..)) && " +
             "(@annotation(org.springframework.web.bind.annotation.PostMapping) || " +
@@ -44,6 +44,9 @@ public class AuditLogAspect {
 
             String method = request.getMethod();
             String uri = request.getRequestURI();
+
+            // 跳过审计日志自身的操作（避免无限递归）
+            if (uri.contains("/audit-logs")) return;
 
             // 提取路径中的ID
             String[] parts = uri.split("/");
@@ -64,11 +67,23 @@ public class AuditLogAspect {
 
             if (tableName.isEmpty()) return;
 
+            // 映射 HTTP 方法到操作类型
+            String operationType = mapOperationType(method, uri);
+            if (operationType == null) return;
+
             AuditLogEntity log = new AuditLogEntity();
             log.setTableName(tableName);
             log.setRecordId(recordId);
-            log.setOperationType(method);
+            log.setOperationType(operationType);
             log.setRemark(uri);
+
+            // 记录请求体作为 newValues（如果有）
+            try {
+                Object requestBody = request.getAttribute("requestBody");
+                if (requestBody != null) {
+                    log.setNewValues(objectMapper.writeValueAsString(requestBody));
+                }
+            } catch (Exception ignored) {}
 
             // 尝试获取当前用户
             try {
@@ -91,6 +106,21 @@ public class AuditLogAspect {
         } catch (Exception e) {
             // 审计日志记录失败不应影响主业务
         }
+    }
+
+    /**
+     * 映射 HTTP 方法到操作类型
+     */
+    private String mapOperationType(String method, String uri) {
+        if ("POST".equals(method)) {
+            // 特殊路径判断
+            if (uri.contains("/approve") || uri.contains("/accept") || uri.contains("/arrive")) return "APPROVE";
+            if (uri.contains("/reject") || uri.contains("/rollback")) return "ROLLBACK";
+            return "CREATE";
+        }
+        if ("PUT".equals(method)) return "UPDATE";
+        if ("DELETE".equals(method)) return "DELETE";
+        return null;
     }
 
     private boolean isNumeric(String str) {

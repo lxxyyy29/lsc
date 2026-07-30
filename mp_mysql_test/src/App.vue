@@ -11,6 +11,10 @@
         <i class="fas fa-list"></i>
         <span>我的上报</span>
       </router-link>
+      <router-link to="/services" class="tab-item" :class="{ active: $route.path.startsWith('/services') }">
+        <i class="fas fa-th-large"></i>
+        <span>服务</span>
+      </router-link>
       <router-link to="/mine" class="tab-item" :class="{ active: $route.path === '/mine' }">
         <i class="fas fa-user"></i>
         <span>我的</span>
@@ -25,7 +29,7 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const showTabBar = computed(() => {
-  return ['/report', '/history', '/mine'].includes(route.path)
+  return ['/report', '/history', '/mine'].includes(route.path) || route.path.startsWith('/services')
 })
 </script>
 

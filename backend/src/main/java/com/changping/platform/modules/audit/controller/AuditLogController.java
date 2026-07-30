@@ -30,10 +30,14 @@ public class AuditLogController {
     public ApiResponse<Map<String, Object>> query(
             @RequestParam(required = false) String tableName,
             @RequestParam(required = false) String recordId,
+            @RequestParam(required = false) String operationType,
+            @RequestParam(required = false) Long operatorId,
+            @RequestParam(required = false) String startTime,
+            @RequestParam(required = false) String endTime,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         requireViewPermission();
-        return ApiResponse.ok(service.queryPaged(tableName, recordId, page, size));
+        return ApiResponse.ok(service.queryPaged(tableName, recordId, operationType, operatorId, startTime, endTime, page, size));
     }
 
     @GetMapping("/history")
@@ -58,6 +62,28 @@ public class AuditLogController {
             return ApiResponse.ok(result);
         } catch (Exception e) {
             return ApiResponse.fail("ROLLBACK_FAILED", "回滚失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取字段级变更详情（Diff 展示）
+     */
+    @GetMapping("/{id}/diff")
+    public ApiResponse<Map<String, Object>> diff(@PathVariable Long id) {
+        requireViewPermission();
+        return ApiResponse.ok(service.getDiffDetail(id));
+    }
+
+    /**
+     * 预览回滚结果（返回将被修改的字段，不实际执行）
+     */
+    @GetMapping("/{id}/preview-rollback")
+    public ApiResponse<Map<String, Object>> previewRollback(@PathVariable Long id) {
+        requireRollbackPermission();
+        try {
+            return ApiResponse.ok(service.previewRollback(id));
+        } catch (Exception e) {
+            return ApiResponse.fail("PREVIEW_FAILED", "预览失败: " + e.getMessage());
         }
     }
 

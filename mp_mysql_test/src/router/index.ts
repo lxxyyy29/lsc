@@ -7,6 +7,14 @@ const routes = [
   { path: '/report', component: () => import('../views/ReportView.vue') },
   { path: '/history', component: () => import('../views/HistoryView.vue') },
   { path: '/mine', component: () => import('../views/MineView.vue') },
+  { path: '/services', component: () => import('../views/ServicesView.vue'),
+    children: [
+      { path: 'activities', component: () => import('../views/ActivitiesView.vue') },
+      { path: 'repairs', component: () => import('../views/RepairsView.vue') },
+      { path: 'policies', component: () => import('../views/PoliciesView.vue') },
+      { path: 'points', component: () => import('../views/PointsView.vue') },
+    ]
+  },
   { path: '/', redirect: '/report' }
 ]
 
