@@ -64,9 +64,6 @@ public class SecurityConfig {
                         // 媒体文件访问公开（用于前端展示）
                         .requestMatchers("/media/files/**")
                         .permitAll()
-                        // 视频流代理公开（hls.js 无法发送认证头，playlist + ts 分片都需要）
-                        .requestMatchers("/drone/stream/**")
-                        .permitAll()
                         // 群众上报接口公开
                         .requestMatchers("/events/public-report")
                         .permitAll()
@@ -77,7 +74,7 @@ public class SecurityConfig {
                         .requestMatchers("/ws/**")
                         .permitAll()
                         // 告警回调需要签名验证（在 Controller 层校验）
-                        .requestMatchers("/integration/alarm/callback")
+                        .requestMatchers("/integrations/alarms/callback")
                         .permitAll()
                         // 测试接口需要认证（配合 @ConditionalOnProperty 控制是否启用）
                         .requestMatchers("/test/**")

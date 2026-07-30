@@ -1,5 +1,6 @@
 package com.changping.platform.modules.audit.service;
 
+import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.audit.entity.AuditLogEntity;
 import com.changping.platform.modules.audit.mapper.AuditLogMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -11,6 +12,21 @@ import java.util.*;
 
 @Service
 public class AuditLogService {
+
+    private static final Set<String> ROLLBACK_TABLE_ALLOWLIST = Set.of(
+            "cmn_grid",
+            "cmn_population",
+            "cmn_building",
+            "cmn_place",
+            "cmn_place_ledger",
+            "cmn_org_member",
+            "cmn_patrol_record",
+            "cmn_patrol_task",
+            "cmn_resident_report",
+            "biz_event",
+            "biz_work_order",
+            "biz_parking_space",
+            "biz_parking_violation");
 
     private final AuditLogMapper mapper;
     private final ObjectMapper objectMapper;
@@ -101,6 +117,7 @@ public class AuditLogService {
         }
         String tableName = log.getTableName();
         String recordId = log.getRecordId();
+        validateRollbackTable(tableName);
         Map<String, Object> oldValues = objectMapper.readValue(log.getOldValues(),
                 objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
 
@@ -111,8 +128,10 @@ public class AuditLogService {
         List<Object> params = new ArrayList<>();
         List<String> setClauses = new ArrayList<>();
         for (Map.Entry<String, Object> entry : oldValues.entrySet()) {
-            if ("id".equals(entry.getKey())) continue;
-            setClauses.add("`" + entry.getKey() + "` = ?");
+            String columnName = entry.getKey();
+            if ("id".equals(columnName)) continue;
+            validateIdentifier(columnName, "审计字段不允许回滚");
+            setClauses.add("`" + columnName + "` = ?");
             params.add(entry.getValue());
         }
         if (setClauses.isEmpty()) return false;
@@ -134,5 +153,18 @@ public class AuditLogService {
         mapper.insert(rollbackLog);
 
         return true;
+    }
+
+    private void validateRollbackTable(String tableName) {
+        validateIdentifier(tableName, "审计表不允许回滚");
+        if (!ROLLBACK_TABLE_ALLOWLIST.contains(tableName)) {
+            throw new BusinessException("AUDIT_ROLLBACK_TABLE_FORBIDDEN", "该表不允许通过审计日志回滚");
+        }
+    }
+
+    private void validateIdentifier(String identifier, String message) {
+        if (identifier == null || !identifier.matches("[A-Za-z0-9_]+")) {
+            throw new BusinessException("AUDIT_ROLLBACK_IDENTIFIER_INVALID", message);
+        }
     }
 }

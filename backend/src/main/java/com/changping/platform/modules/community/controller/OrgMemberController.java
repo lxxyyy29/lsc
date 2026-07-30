@@ -1,6 +1,10 @@
 package com.changping.platform.modules.community.controller;
 
 import com.changping.platform.common.response.ApiResponse;
+import com.changping.platform.modules.auth.security.PermissionCodes;
+import com.changping.platform.modules.auth.security.PermissionGuard;
+import com.changping.platform.modules.auth.service.AuthService;
+import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.community.entity.OrgMemberEntity;
 import com.changping.platform.modules.community.service.OrgMemberService;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -8,7 +12,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 @RestController
 @RequestMapping("/community/org-members")
@@ -16,22 +19,33 @@ public class OrgMemberController {
 
     private final OrgMemberService service;
     private final JdbcTemplate jdbcTemplate;
+    private final CurrentUserService currentUserService;
+    private final PermissionGuard permissionGuard;
 
-    public OrgMemberController(OrgMemberService service, JdbcTemplate jdbcTemplate) {
+    public OrgMemberController(
+            OrgMemberService service,
+            JdbcTemplate jdbcTemplate,
+            CurrentUserService currentUserService,
+            PermissionGuard permissionGuard) {
         this.service = service;
         this.jdbcTemplate = jdbcTemplate;
+        this.currentUserService = currentUserService;
+        this.permissionGuard = permissionGuard;
     }
 
     @GetMapping
     public ApiResponse<List<OrgMemberEntity>> list(@RequestParam(required = false) Long gridId) {
+        requireOrgMemberPermission();
         return ApiResponse.ok(service.list(gridId));
     }
     @GetMapping("/{id}")
     public ApiResponse<OrgMemberEntity> detail(@PathVariable Long id) {
+        requireOrgMemberPermission();
         return ApiResponse.ok(service.detail(id));
     }
     @PostMapping
     public ApiResponse<Boolean> create(@RequestBody OrgMemberEntity entity) {
+        requireOrgMemberPermission();
         // 1. 创建组织人员
         service.create(entity);
         // 2. 如果是网格员，同步创建系统用户（用于考核研判和派单）
@@ -42,11 +56,13 @@ public class OrgMemberController {
     }
     @PutMapping("/{id}")
     public ApiResponse<Boolean> update(@PathVariable Long id, @RequestBody OrgMemberEntity entity) {
+        requireOrgMemberPermission();
         entity.setId(id);
         return ApiResponse.ok(service.update(entity));
     }
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
+        requireOrgMemberPermission();
         return ApiResponse.ok(service.delete(id));
     }
 
@@ -55,6 +71,7 @@ public class OrgMemberController {
      */
     @PostMapping("/sync-from-users")
     public ApiResponse<Map<String, Object>> syncFromUsers() {
+        requireOrgMemberPermission();
         Map<String, Object> result = new java.util.HashMap<>();
         int synced = 0;
         int skipped = 0;
@@ -79,8 +96,8 @@ public class OrgMemberController {
                 }
                 // 创建组织人员
                 jdbcTemplate.update(
-                    "INSERT INTO cmn_org_member (grid_id, sys_user_id, member_type, name, phone, status, remark, created_at, updated_at) " +
-                    "VALUES (?, ?, 'GRID_WORKER', ?, ?, 'ACTIVE', '从系统用户同步', NOW(), NOW())",
+                    "INSERT INTO cmn_org_member (grid_id, sys_user_id, member_type, name, phone, position, status, remark, created_at, updated_at) " +
+                    "VALUES (?, ?, 'GRID_WORKER', ?, ?, '网格员', 'ACTIVE', '从系统用户同步', NOW(), NOW())",
                     null, user.get("id"), name, user.get("phone"));
                 synced++;
             }
@@ -130,5 +147,10 @@ public class OrgMemberController {
             // 同步失败不影响主流程
             org.slf4j.LoggerFactory.getLogger(OrgMemberController.class).warn("同步网格员到系统用户失败: {}", e.getMessage());
         }
+    }
+
+    private void requireOrgMemberPermission() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.MENU_COMMUNITY_ORG_MEMBER);
     }
 }

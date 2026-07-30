@@ -1,17 +1,25 @@
 package com.changping.platform.modules.drone.controller;
 
+import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.ApiResponse;
+import com.changping.platform.modules.auth.security.PermissionCodes;
+import com.changping.platform.modules.auth.security.PermissionGuard;
+import com.changping.platform.modules.auth.service.AuthService;
+import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.drone.DroneProxyService;
 import com.changping.platform.modules.drone.config.DroneApiProperties;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.URI;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -30,13 +38,21 @@ public class DroneStreamController {
 
     private final DroneProxyService droneProxyService;
     private final DroneApiProperties droneApiProperties;
+    private final CurrentUserService currentUserService;
+    private final PermissionGuard permissionGuard;
 
     // 缓存每个设备的最新签名URL
     private final ConcurrentHashMap<String, StreamCache> streamCache = new ConcurrentHashMap<>();
 
-    public DroneStreamController(DroneProxyService droneProxyService, DroneApiProperties droneApiProperties) {
+    public DroneStreamController(
+            DroneProxyService droneProxyService,
+            DroneApiProperties droneApiProperties,
+            CurrentUserService currentUserService,
+            PermissionGuard permissionGuard) {
         this.droneProxyService = droneProxyService;
         this.droneApiProperties = droneApiProperties;
+        this.currentUserService = currentUserService;
+        this.permissionGuard = permissionGuard;
     }
 
     /**
@@ -44,10 +60,12 @@ public class DroneStreamController {
      * 每次请求都获取最新签名的 playlist，并将 .ts 替换为代理地址
      */
     @GetMapping("/proxy/{deviceSn}/hls.m3u8")
-    public void proxyHlsPlaylist(@PathVariable String deviceSn, HttpServletResponse response) throws IOException {
+    public void proxyHlsPlaylist(
+            @PathVariable String deviceSn,
+            HttpServletResponse response) throws IOException {
+        requireDroneStreamPermission();
         response.setContentType("application/vnd.apple.mpegurl");
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        response.setHeader("Access-Control-Allow-Origin", "*");
 
         try {
             String latestUrl = getLatestHlsUrl(deviceSn);
@@ -55,6 +73,7 @@ public class DroneStreamController {
                 response.sendError(404, "Stream not available");
                 return;
             }
+            validateProxyUrl(latestUrl);
 
             // 从平台获取 playlist
             String playlist = httpGetString(latestUrl);
@@ -63,19 +82,7 @@ public class DroneStreamController {
                 return;
             }
 
-            // 替换 .ts URL 为代理地址
-            String proxyBase = "/api/drone/stream/proxy/" + deviceSn;
-            String modified = playlist.replaceAll(
-                "https?://[^\\s\\n]+\\.ts[^\\s\\n]*",
-                proxyBase + "/seg?u=$0"
-            );
-            // 处理相对路径
-            modified = modified.replaceAll(
-                "(?<!tp://)(?<!ps://)([^\\s\\n]+\\.ts)",
-                proxyBase + "/seg?u=" + getBaseUrl(latestUrl) + "$1"
-            );
-
-            response.getWriter().write(modified);
+            response.getWriter().write(rewritePlaylist(playlist, latestUrl, deviceSn));
         } catch (Exception e) {
             log.warn("代理playlist失败: {}", e.getMessage());
             response.sendError(502, "Proxy error");
@@ -88,9 +95,9 @@ public class DroneStreamController {
     @GetMapping("/proxy/{deviceSn}/seg")
     public void proxySegment(@PathVariable String deviceSn, @RequestParam("u") String tsUrl,
                               HttpServletResponse response) throws IOException {
+        requireDroneStreamPermission();
         response.setContentType("video/mp2t");
         response.setHeader("Cache-Control", "public, max-age=3600");
-        response.setHeader("Access-Control-Allow-Origin", "*");
 
         try {
             // URL 可能是编码过的
@@ -108,6 +115,7 @@ public class DroneStreamController {
                 String freshUrl = refreshSignature(decodedUrl, deviceSn);
                 if (freshUrl != null) decodedUrl = freshUrl;
             }
+            validateProxyUrl(decodedUrl);
 
             // 转发
             HttpURLConnection conn = (HttpURLConnection) new URL(decodedUrl).openConnection();
@@ -189,6 +197,7 @@ public class DroneStreamController {
 
     private String httpGetString(String urlStr) {
         try {
+            validateProxyUrl(urlStr);
             URL url = new URL(urlStr);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
@@ -289,6 +298,7 @@ public class DroneStreamController {
      */
     @GetMapping("/flv/{deviceSn}")
     public ApiResponse<Map<String, Object>> getFlvUrl(@PathVariable String deviceSn) {
+        requireDroneStreamPermission();
         try {
             DroneProxyService.PageResult<Map<String, Object>> devices =
                 droneProxyService.listDevices(droneApiProperties.getFixedWorkspaceId(), 1, 100);
@@ -311,6 +321,66 @@ public class DroneStreamController {
             log.warn("获取FLV流地址失败: {}", e.getMessage());
         }
         return ApiResponse.fail("NOT_FOUND", "未找到设备流地址");
+    }
+
+    private String rewritePlaylist(String playlist, String latestUrl, String deviceSn) {
+        String proxyBase = "/api/drone/stream/proxy/" + deviceSn;
+        StringBuilder modified = new StringBuilder();
+        for (String line : playlist.split("\\R", -1)) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty() && !trimmed.startsWith("#") && trimmed.contains(".ts")) {
+                String segmentUrl = trimmed.startsWith("http://") || trimmed.startsWith("https://")
+                        ? trimmed
+                        : getBaseUrl(latestUrl) + trimmed;
+                modified.append(proxyBase)
+                        .append("/seg?u=").append(URLEncoder.encode(segmentUrl, StandardCharsets.UTF_8))
+                        .append("\n");
+            } else {
+                modified.append(line).append("\n");
+            }
+        }
+        return modified.toString();
+    }
+
+    private void validateProxyUrl(String url) {
+        try {
+            URI uri = URI.create(url);
+            String scheme = uri.getScheme();
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                throw new BusinessException("DRONE_STREAM_URL_FORBIDDEN", "视频流地址协议不允许");
+            }
+            String host = uri.getHost();
+            if (host == null || !allowedDroneHost(host)) {
+                throw new BusinessException("DRONE_STREAM_URL_FORBIDDEN", "视频流地址域名不允许");
+            }
+            InetAddress address = InetAddress.getByName(host);
+            if (address.isAnyLocalAddress() || address.isLoopbackAddress() || address.isLinkLocalAddress()
+                    || address.isSiteLocalAddress() || address.isMulticastAddress()) {
+                throw new BusinessException("DRONE_STREAM_URL_FORBIDDEN", "视频流地址不允许访问内网地址");
+            }
+        } catch (BusinessException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new BusinessException("DRONE_STREAM_URL_INVALID", "视频流地址无效");
+        }
+    }
+
+    private boolean allowedDroneHost(String host) {
+        return host.equalsIgnoreCase(hostOf(droneApiProperties.getServerAddr()))
+                || host.equalsIgnoreCase(hostOf(droneApiProperties.getWsAddr()));
+    }
+
+    private String hostOf(String url) {
+        try {
+            return URI.create(url).getHost();
+        } catch (Exception exception) {
+            return "";
+        }
+    }
+
+    private void requireDroneStreamPermission() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_DRONE_WS_CONNECT);
     }
 
     private record StreamCache(String hlsUrl, String wsUrl, long timestamp) {}

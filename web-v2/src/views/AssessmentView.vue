@@ -148,6 +148,98 @@
         </div>
       </div>
 
+      <!-- 月度治理月报 -->
+      <div class="card" style="margin-bottom:20px;">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">本月治理月报</h3>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px;">
+          <div style="text-align:center;">
+            <p style="font-size:24px;font-weight:800;color:#1890ff;">{{ monthlyReport.monthTotal || 0 }}</p>
+            <p style="font-size:12px;color:#6b7280;">本月事件</p>
+          </div>
+          <div style="text-align:center;">
+            <p style="font-size:24px;font-weight:800;color:#52c41a;">{{ monthlyReport.monthClosed || 0 }}</p>
+            <p style="font-size:12px;color:#6b7280;">本月办结</p>
+          </div>
+          <div style="text-align:center;">
+            <p style="font-size:24px;font-weight:800;color:#faad14;">{{ monthlyReport.monthCompletionRate || '0%' }}</p>
+            <p style="font-size:12px;color:#6b7280;">办结率</p>
+          </div>
+          <div style="text-align:center;">
+            <p style="font-size:24px;font-weight:800;color:#ff4d4f;">{{ monthlyReport.monthAvgRating || 0 }}</p>
+            <p style="font-size:12px;color:#6b7280;">平均评分</p>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <p style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">高频问题 TOP5</p>
+            <div v-for="(item, idx) in monthlyReport.topIssues" :key="idx" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="font-size:11px;color:#9ca3af;width:16px;">{{ idx + 1 }}</span>
+              <span style="flex:1;font-size:12px;">{{ getEventTypeName(item.type) }}</span>
+              <span style="font-size:12px;font-weight:600;color:#ff4d4f;">{{ item.count }}</span>
+            </div>
+            <p v-if="!monthlyReport.topIssues?.length" style="font-size:12px;color:#9ca3af;">暂无</p>
+          </div>
+          <div>
+            <p style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">高发网格 TOP5</p>
+            <div v-for="(item, idx) in monthlyReport.topGrids" :key="idx" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="font-size:11px;color:#9ca3af;width:16px;">{{ idx + 1 }}</span>
+              <span style="flex:1;font-size:12px;">{{ item.gridName || '未分配' }}</span>
+              <span style="font-size:12px;font-weight:600;color:#faad14;">{{ item.count }}</span>
+            </div>
+            <p v-if="!monthlyReport.topGrids?.length" style="font-size:12px;color:#9ca3af;">暂无</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 趋势预判预警 -->
+      <div class="card" style="margin-bottom:20px;">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">
+          趋势预判预警
+          <span v-if="trendAlerts.length" style="font-size:12px;font-weight:400;color:#ff4d4f;">（近7天反复出现）</span>
+        </h3>
+        <div v-if="trendAlerts.length">
+          <div v-for="(alert, idx) in trendAlerts" :key="idx" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+            <span style="font-size:18px;">⚠️</span>
+            <div style="flex:1;">
+              <p style="font-size:13px;font-weight:600;color:#374151;">
+                {{ getEventTypeName(alert.type) }} · {{ alert.gridName || '未知网格' }}
+                <span style="color:#ff4d4f;">×{{ alert.count }}</span>
+              </p>
+              <p style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ alert.sampleTitles }}</p>
+            </div>
+            <span style="font-size:11px;color:#9ca3af;">{{ alert.latestTime }}</span>
+          </div>
+        </div>
+        <p v-else style="text-align:center;padding:30px;color:#9ca3af;font-size:13px;">暂无预警，治理态势良好 ✓</p>
+      </div>
+
+      <!-- 巡查覆盖率 + 隐患整改率 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div class="card">
+          <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">巡查覆盖率</h3>
+          <div style="text-align:center;margin-bottom:12px;">
+            <p style="font-size:32px;font-weight:800;color:#1890ff;">{{ patrolCoverage.coverageRate || '0%' }}</p>
+            <p style="font-size:12px;color:#6b7280;">{{ patrolCoverage.patrolledGrids || 0 }} / {{ patrolCoverage.totalGrids || 0 }} 网格</p>
+          </div>
+          <div style="height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;">
+            <div :style="{width: patrolCoverage.coverageRate || '0%', height:'100%', background:'#1890ff', borderRadius:'4px'}"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">隐患整改率</h3>
+          <div style="text-align:center;margin-bottom:12px;">
+            <p style="font-size:32px;font-weight:800;color:#52c41a;">{{ rectificationRate.rectificationRate || '0%' }}</p>
+            <p style="font-size:12px;color:#6b7280;">已整改 {{ rectificationRate.rectified || 0 }} / {{ rectificationRate.totalInspections || 0 }}</p>
+          </div>
+          <div style="height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;">
+            <div :style="{width: rectificationRate.rectificationRate || '0%', height:'100%', background:'#52c41a', borderRadius:'4px'}"></div>
+          </div>
+          <p style="font-size:11px;color:#ff4d4f;margin-top:8px;text-align:center;" v-if="rectificationRate.pending">
+            待整改：{{ rectificationRate.pending }}
+          </p>
+        </div>
+      </div>
+
       <!-- 网格员效能考核表 -->
       <div class="card">
         <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">网格员效能考核</h3>
@@ -195,6 +287,10 @@ const overview = ref<any>({})
 const responseTime = ref<any>({})
 const workers = ref<any[]>([])
 const ratingStats = ref<any>({})
+const monthlyReport = ref<any>({})
+const trendAlerts = ref<any[]>([])
+const patrolCoverage = ref<any>({})
+const rectificationRate = ref<any>({})
 
 function getPct(val: number, total: number) {
   if (!total) return 0
@@ -208,16 +304,24 @@ function getMonthPct(val: number) {
 
 onMounted(async () => {
   try {
-    const [overviewRes, timeRes, workersRes, ratingRes] = await Promise.all([
+    const [overviewRes, timeRes, workersRes, ratingRes, monthlyRes, alertRes, patrolRes, rectRes] = await Promise.all([
       http.get('/assessment/overview'),
       http.get('/assessment/response-time'),
       http.get('/assessment/worker-performance'),
-      http.get('/assessment/rating-stats').catch(() => ({}))
+      http.get('/assessment/rating-stats').catch(() => ({})),
+      http.get('/assessment/monthly-report').catch(() => ({})),
+      http.get('/assessment/trend-alert').catch(() => ([])),
+      http.get('/assessment/patrol-coverage').catch(() => ({})),
+      http.get('/assessment/rectification-rate').catch(() => ({}))
     ])
     overview.value = overviewRes || {}
     responseTime.value = timeRes || {}
     workers.value = workersRes || []
     ratingStats.value = ratingRes || {}
+    monthlyReport.value = monthlyRes || {}
+    trendAlerts.value = alertRes || []
+    patrolCoverage.value = patrolRes || {}
+    rectificationRate.value = rectRes || {}
   } catch (e) {
     console.error(e)
   } finally {

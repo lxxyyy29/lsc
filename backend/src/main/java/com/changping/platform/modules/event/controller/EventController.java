@@ -4,6 +4,7 @@ import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.common.response.PagedResult;
 import com.changping.platform.modules.auth.model.AuthenticatedUser;
+import com.changping.platform.modules.auth.security.AuthenticatedUserContextHolder;
 import com.changping.platform.modules.auth.security.PermissionCodes;
 import com.changping.platform.modules.auth.security.PermissionGuard;
 import com.changping.platform.modules.auth.service.AuthService;
@@ -92,6 +93,42 @@ public class EventController {
     public ApiResponse<EventDetailVo> createEvent(@Valid @RequestBody CreateEventRequest request) {
         permissionGuard.require(PermissionCodes.API_EVENT_CREATE);
         return ApiResponse.ok(eventService.createEvent(request));
+    }
+
+    /**
+     * 居民小程序查询当前登录用户自己的上报记录。
+     */
+    @GetMapping("/my-reports")
+    public ApiResponse<PagedResult<Map<String, Object>>> getMyReports(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int pageSize) {
+        AuthenticatedUser user = currentUserService.requireClientType(AuthService.ClientType.WEB);
+        int safePage = Math.max(page, 1);
+        int safePageSize = Math.min(Math.max(pageSize, 1), 100);
+        int offset = (safePage - 1) * safePageSize;
+
+        Long total = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM biz_event WHERE report_user_id = ?",
+                Long.class,
+                user.id());
+        List<Map<String, Object>> items = jdbcTemplate.query(
+                "SELECT id, event_code, title, description, status, created_at " +
+                        "FROM biz_event WHERE report_user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
+                (rs, rowNum) -> {
+                    Map<String, Object> item = new java.util.LinkedHashMap<>();
+                    item.put("id", rs.getLong("id"));
+                    item.put("eventCode", rs.getString("event_code"));
+                    item.put("title", rs.getString("title"));
+                    item.put("description", rs.getString("description"));
+                    item.put("status", rs.getString("status"));
+                    item.put("createdAt", rs.getTimestamp("created_at"));
+                    return item;
+                },
+                user.id(),
+                safePageSize,
+                offset);
+
+        return ApiResponse.ok(PagedResult.of(items, total == null ? 0 : total, safePage, safePageSize));
     }
 
     /**
@@ -228,6 +265,55 @@ public class EventController {
     }
 
     /**
+     * 归档事件：关闭/忽略后的案件标记为已归档留存
+     */
+    @PostMapping("/{id}/archive")
+    public ApiResponse<Void> archiveEvent(@PathVariable Long id) {
+        permissionGuard.require(PermissionCodes.API_EVENT_CREATE);
+        eventService.archiveEvent(id);
+        return ApiResponse.ok(null);
+    }
+
+    /**
+     * 12345 政务热线转办导入
+     */
+    @PostMapping("/12345-import")
+    public ApiResponse<EventDetailVo> importFrom12345(@RequestBody Map<String, String> body) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_EVENT_CREATE);
+        String title = body.get("title");
+        String description = body.get("description");
+        String eventType = body.get("eventType");
+        String location = body.get("location");
+        String reporterName = body.get("reporterName");
+        String reporterPhone = body.get("reporterPhone");
+        String externalNo = body.get("externalNo");
+        if (title == null || title.isBlank()) {
+            throw new BusinessException("VALIDATION_ERROR", "请填写标题");
+        }
+        return ApiResponse.ok(eventService.importFrom12345(title, description, eventType, location, reporterName, reporterPhone, externalNo));
+    }
+
+    /**
+     * 物业上报导入
+     */
+    @PostMapping("/property-report")
+    public ApiResponse<EventDetailVo> reportFromProperty(@RequestBody Map<String, String> body) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_EVENT_CREATE);
+        String title = body.get("title");
+        String description = body.get("description");
+        String eventType = body.get("eventType");
+        String location = body.get("location");
+        String reporterName = body.get("reporterName");
+        String propertyName = body.get("propertyName");
+        if (title == null || title.isBlank()) {
+            throw new BusinessException("VALIDATION_ERROR", "请填写标题");
+        }
+        return ApiResponse.ok(eventService.reportFromProperty(title, description, eventType, location, reporterName, propertyName));
+    }
+
+    /**
      * 关闭事件
      */
     @PutMapping("/{id}/close")
@@ -329,6 +415,14 @@ public class EventController {
             String title = (String) body.get("title");
             String description = (String) body.get("description");
             String type = (String) body.get("type");
+            String contactName = body.get("contactName") == null ? null : String.valueOf(body.get("contactName"));
+            String contactPhone = body.get("contactPhone") == null ? null : String.valueOf(body.get("contactPhone"));
+            AuthenticatedUser reporter = AuthenticatedUserContextHolder.getOptional().orElse(null);
+            Long reporterUserId = reporter == null ? null : reporter.id();
+            String reporterName = contactName != null && !contactName.isBlank()
+                    ? contactName.trim()
+                    : reporter == null ? null : reporter.userName();
+            String reporterPhone = contactPhone != null && !contactPhone.isBlank() ? contactPhone.trim() : null;
 
             if (title == null || title.isBlank()) {
                 return ResponseEntity.badRequest().body(ApiResponse.fail("VALIDATION_ERROR", "请填写问题标题"));
@@ -339,9 +433,9 @@ public class EventController {
             String externalId = "PUBLIC-" + System.currentTimeMillis();
 
             jdbcTemplate.update(
-                "INSERT INTO biz_event (event_code, external_event_id, source_type, source_system, event_type, title, description, incident_address, status, occurred_at, created_at, updated_at) " +
-                "VALUES (?, ?, 'PUBLIC', 'PUBLIC_REPORT', ?, ?, ?, '拔蛟窝社区', 'WAITING_DISPATCH', NOW(), NOW(), NOW())",
-                eventCode, externalId, type != null ? type : "OTHER", title, description);
+                "INSERT INTO biz_event (event_code, external_event_id, source_type, source_system, event_type, title, description, report_user_id, report_user_name, report_phone, incident_address, status, occurred_at, created_at, updated_at) " +
+                "VALUES (?, ?, 'PUBLIC', 'PUBLIC_REPORT', ?, ?, ?, ?, ?, ?, '拔蛟窝社区', 'WAITING_DISPATCH', NOW(), NOW(), NOW())",
+                eventCode, externalId, type != null ? type : "OTHER", title, description, reporterUserId, reporterName, reporterPhone);
 
             Long eventId = jdbcTemplate.queryForObject("SELECT id FROM biz_event WHERE event_code = ?", Long.class, eventCode);
 

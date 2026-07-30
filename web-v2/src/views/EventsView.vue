@@ -6,12 +6,109 @@
         <p class="page-desc">发现上报→智能派单→现场处置→复核核查→归档</p>
       </div>
       <div style="display:flex;gap:8px;">
-        <button @click="$router.push('/processes')" class="btn btn-default">
-          <i class="fas fa-project-diagram"></i>流程模板
+        <button @click="show12345Dialog = true" class="btn btn-default">
+          <i class="fas fa-phone-alt"></i>12345 登记
+        </button>
+        <button @click="showPropertyDialog = true" class="btn btn-default">
+          <i class="fas fa-building"></i>物业上报
         </button>
         <button @click="$router.push('/events/create')" class="btn btn-primary">
           <i class="fas fa-plus"></i>创建事件
         </button>
+      </div>
+    </div>
+
+    <!-- 12345 热线转办登记弹窗 -->
+    <div v-if="show12345Dialog" class="modal-overlay" @click.self="show12345Dialog = false">
+      <div class="modal-box">
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">12345 热线转办登记</h3>
+        <div class="form-group">
+          <label class="form-label">标题 <span class="required">*</span></label>
+          <input v-model="form12345.title" class="form-input" placeholder="请输入标题" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">描述</label>
+          <textarea v-model="form12345.description" class="form-textarea" rows="2" placeholder="请输入描述..."></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">事件类型</label>
+            <select v-model="form12345.eventType" class="form-select">
+              <option value="COMPLAINT">市民投诉</option>
+              <option value="FIRE">消防安全</option>
+              <option value="ILLEGAL_BUILDING">违章建筑</option>
+              <option value="PUBLIC_SAFETY">公共安全</option>
+              <option value="SAFETY">安全生产</option>
+              <option value="ENVIRONMENT">市容环境</option>
+              <option value="OTHER">其他</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">地点</label>
+            <input v-model="form12345.location" class="form-input" placeholder="请输入地点" />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">来电人</label>
+            <input v-model="form12345.reporterName" class="form-input" placeholder="请输入来电人" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">来电电话</label>
+            <input v-model="form12345.reporterPhone" class="form-input" placeholder="请输入电话" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">转办单号</label>
+          <input v-model="form12345.externalNo" class="form-input" placeholder="请输入 12345 转办单号" />
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
+          <button @click="show12345Dialog = false" class="btn btn-default">取消</button>
+          <button @click="submit12345" class="btn btn-primary">提交登记</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 物业上报登记弹窗 -->
+    <div v-if="showPropertyDialog" class="modal-overlay" @click.self="showPropertyDialog = false">
+      <div class="modal-box">
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">物业上报登记</h3>
+        <div class="form-group">
+          <label class="form-label">标题 <span class="required">*</span></label>
+          <input v-model="formProperty.title" class="form-input" placeholder="请输入标题" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">描述</label>
+          <textarea v-model="formProperty.description" class="form-textarea" rows="2" placeholder="请输入描述..."></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">事件类型</label>
+            <select v-model="formProperty.eventType" class="form-select">
+              <option value="COMPLAINT">市民投诉</option>
+              <option value="FIRE">消防安全</option>
+              <option value="ENVIRONMENT">市容环境</option>
+              <option value="REPAIR">物业报修</option>
+              <option value="OTHER">其他</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">物业/小区</label>
+            <input v-model="formProperty.propertyName" class="form-input" placeholder="请输入物业或小区名称" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">地点</label>
+          <input v-model="formProperty.location" class="form-input" placeholder="请输入具体地点" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">上报人</label>
+          <input v-model="formProperty.reporterName" class="form-input" placeholder="请输入上报人" />
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
+          <button @click="showPropertyDialog = false" class="btn btn-default">取消</button>
+          <button @click="submitProperty" class="btn btn-primary">提交登记</button>
+        </div>
       </div>
     </div>
 
@@ -36,6 +133,9 @@
         <input v-model="filters.startDate" type="date" class="form-input" style="width:auto;" />
         <input v-model="filters.endDate" type="date" class="form-input" style="width:auto;" />
         <button @click="loadData" class="btn btn-primary">查询</button>
+        <label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#6b7280;margin-left:8px;white-space:nowrap;">
+          <input type="checkbox" v-model="showArchived" @change="loadData" /> 显示已归档
+        </label>
       </div>
 
       <!-- 加载中 -->
@@ -65,9 +165,14 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="e in list" :key="e.id">
+            <tr v-for="e in displayList" :key="e.id">
               <td style="font-size:12px;color:#6b7280;">{{ e.eventCode }}</td>
-              <td>{{ e.title }}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span>{{ e.title }}</span>
+                  <span v-if="e.archived" class="tag" style="background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;font-size:11px;">已归档</span>
+                </div>
+              </td>
               <td>
                 <span :class="['tag', e.currentStatus === 'CLOSED' ? 'tag-green' : e.currentStatus === 'DISPATCHED_TO_WORK_ORDER' ? 'tag-blue' : 'tag-orange']">
                   {{ statusLabel(e.currentStatus) }}
@@ -88,7 +193,7 @@
             </tr>
           </tbody>
         </table>
-        <div v-if="!list.length" class="empty-state">
+        <div v-if="!displayList.length" class="empty-state">
           <i class="fas fa-inbox"></i>
           <p>暂无事件数据</p>
         </div>
@@ -110,9 +215,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { getEvents, auditEvent } from '../api'
+import { getEvents, auditEvent, importFrom12345, reportFromProperty } from '../api'
 
 const router = useRouter()
 
@@ -129,6 +234,68 @@ const filters = reactive({
   urgencyLevel: '',
   startDate: '',
   endDate: '',
+})
+const showArchived = ref(false)
+
+// 多渠道登记弹窗
+const show12345Dialog = ref(false)
+const showPropertyDialog = ref(false)
+const submitting12345 = ref(false)
+const submittingProperty = ref(false)
+
+const form12345 = reactive({
+  title: '',
+  description: '',
+  eventType: 'COMPLAINT',
+  location: '',
+  reporterName: '',
+  reporterPhone: '',
+  externalNo: ''
+})
+
+const formProperty = reactive({
+  title: '',
+  description: '',
+  eventType: 'COMPLAINT',
+  location: '',
+  propertyName: '',
+  reporterName: ''
+})
+
+async function submit12345() {
+  if (!form12345.title.trim()) { alert('请填写标题'); return }
+  submitting12345.value = true
+  try {
+    await importFrom12345(form12345)
+    show12345Dialog.value = false
+    Object.assign(form12345, { title: '', description: '', eventType: 'COMPLAINT', location: '', reporterName: '', reporterPhone: '', externalNo: '' })
+    loadData()
+  } catch (e: any) {
+    alert(e?.message || '登记失败')
+  } finally {
+    submitting12345.value = false
+  }
+}
+
+async function submitProperty() {
+  if (!formProperty.title.trim()) { alert('请填写标题'); return }
+  submittingProperty.value = true
+  try {
+    await reportFromProperty(formProperty)
+    showPropertyDialog.value = false
+    Object.assign(formProperty, { title: '', description: '', eventType: 'COMPLAINT', location: '', propertyName: '', reporterName: '' })
+    loadData()
+  } catch (e: any) {
+    alert(e?.message || '登记失败')
+  } finally {
+    submittingProperty.value = false
+  }
+}
+
+// 前端过滤：默认隐藏已归档事件，保持办理界面清爽
+const displayList = computed(() => {
+  if (showArchived.value) return list.value
+  return list.value.filter((e: any) => !e.archived)
 })
 
 function goDetail(e: any) {

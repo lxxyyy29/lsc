@@ -39,24 +39,6 @@ export function toPageUrl(path: string) {
     return '/pages/workorder/detail'
   }
 
-  if (path === '/merchants/create') {
-    return '/pages/merchant/detail?mode=create'
-  }
-
-  if (path.startsWith('/merchants/')) {
-    const id = path.slice('/merchants/'.length)
-    return `/pages/merchant/detail?id=${id}&mode=view`
-  }
-
-  if (path === '/vendors/create') {
-    return '/pages/vendor/detail?mode=create'
-  }
-
-  if (path.startsWith('/vendors/')) {
-    const id = path.slice('/vendors/'.length)
-    return `/pages/vendor/detail?id=${id}&mode=view`
-  }
-
   switch (path) {
     case '/login':
       return '/pages/login/index'
@@ -70,10 +52,6 @@ export function toPageUrl(path: string) {
       return '/pages/history/index'
     case '/mine':
       return '/pages/mine/index'
-    case '/merchants':
-      return '/pages/merchant/list'
-    case '/vendors':
-      return '/pages/vendor/list'
     default:
       return '/pages/workbench/index'
   }

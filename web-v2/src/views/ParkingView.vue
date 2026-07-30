@@ -43,6 +43,14 @@
       </div>
     </div>
 
+    <!-- 违停预警横幅 -->
+    <div v-if="alertCount > 0" style="margin-bottom:16px;padding:12px 16px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:20px;">🚨</span>
+      <div style="flex:1;">
+        <p style="font-size:13px;font-weight:600;color:#dc2626;">违停预警：有 <strong>{{ alertCount }}</strong> 条需紧急处置（消防通道占用/特殊车位占用）</p>
+      </div>
+    </div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
       <!-- 车位列表 -->
       <div class="card">
@@ -118,8 +126,9 @@
             <td style="font-size:12px;">{{ v.vehicle_plate || '-' }}</td>
             <td><span class="tag" :class="statusClass(v.status)">{{ statusLabel(v.status) }}</span></td>
             <td>
-              <button v-if="v.status === 'PENDING'" @click="handleDispatch(v)" style="padding:4px 10px;font-size:12px;border:none;border-radius:4px;background:#1890ff;color:#fff;cursor:pointer;">派单</button>
-              <button v-if="v.status === 'DISPATCHED'" @click="handleClose(v.id)" style="padding:4px 10px;font-size:12px;border:none;border-radius:4px;background:#52c41a;color:#fff;cursor:pointer;">结案</button>
+              <button v-if="v.status === 'PENDING'" @click="handleDispatch(v)" style="padding:4px 10px;font-size:12px;border:none;border-radius:4px;background:#1890ff;color:#fff;cursor:pointer;margin-right:4px;">派单</button>
+              <button v-if="v.status === 'PENDING' || v.status === 'DISPATCHED'" @click="handleLinkWorkOrder(v)" style="padding:4px 10px;font-size:12px;border:1px solid #52c41a;border-radius:4px;background:#fff;color:#52c41a;cursor:pointer;margin-right:4px;">联动工单</button>
+              <button v-if="v.status === 'DISPATCHED' || v.status === 'PROCESSING'" @click="handleClose(v.id)" style="padding:4px 10px;font-size:12px;border:none;border-radius:4px;background:#52c41a;color:#fff;cursor:pointer;">结案</button>
             </td>
           </tr>
         </tbody>
@@ -152,19 +161,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import http from '../api'
 
 const stats = ref<any>({})
 const spaces = ref<any[]>([])
 const violations = ref<any[]>([])
 const violationStats = ref<any>({})
+const violationAlerts = ref<any[]>([])
 const workers = ref<any[]>([])
 const spaceFilter = ref('')
 const violationFilter = ref('')
 const showDispatch = ref(false)
 const currentViolation = ref<any>(null)
 const dispatchForm = ref({ dispatcherId: null as number | null, remark: '' })
+
+const alertCount = computed(() => violationAlerts.value.length)
 
 function spaceTypeLabel(type: string) {
   const map: Record<string, string> = { NORMAL: '普通', DISABLED: '无障碍', CHARGING: '充电', FIRE_LANE: '消防通道' }
@@ -221,6 +233,9 @@ async function loadViolations() {
 async function loadViolationStats() {
   try { violationStats.value = await http.get('/parking/violation-stats') || {} } catch (e) {}
 }
+async function loadViolationAlerts() {
+  try { violationAlerts.value = await http.get('/parking/violation-alerts') || [] } catch (e) {}
+}
 async function loadWorkers() {
   try { workers.value = await http.get('/community/org-members') || [] } catch (e) {}
 }
@@ -245,7 +260,25 @@ async function handleClose(id: number) {
     await http.put(`/parking/violations/${id}/status`, { status: 'CLOSED' })
     loadViolations()
     loadViolationStats()
+    loadViolationAlerts()
   } catch (e: any) { alert(e?.message || '操作失败') }
+}
+
+async function handleLinkWorkOrder(v: any) {
+  if (!confirm(`确认将违停"${v.violation_type} - ${v.address}"联动生成工单？`)) return
+  if (!dispatchForm.value.dispatcherId) {
+    currentViolation.value = v
+    showDispatch.value = true
+    alert('请先选择派单网格员')
+    return
+  }
+  try {
+    const res: any = await http.post(`/parking/violations/${v.id}/link-workorder`, dispatchForm.value)
+    alert(res?.message || '已联动工单')
+    loadViolations()
+    loadViolationStats()
+    loadViolationAlerts()
+  } catch (e: any) { alert(e?.message || '联动失败') }
 }
 
 onMounted(() => {
@@ -253,6 +286,7 @@ onMounted(() => {
   loadSpaces()
   loadViolations()
   loadViolationStats()
+  loadViolationAlerts()
   loadWorkers()
 })
 </script>

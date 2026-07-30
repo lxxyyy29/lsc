@@ -23,6 +23,33 @@ public interface EventService {
     EventDetailVo createEvent(CreateEventRequest request);
 
     /**
+     * 12345 政务热线转办导入：创建事件并标记来源为 12345
+     * @param title 标题
+     * @param description 描述
+     * @param eventType 事件类型
+     * @param location 地点
+     * @param reporterName 来电人姓名
+     * @param reporterPhone 来电人电话
+     * @param externalNo 12345 转办单号
+     * @return 新建的事件详情
+     */
+    EventDetailVo importFrom12345(String title, String description, String eventType, String location,
+                                  String reporterName, String reporterPhone, String externalNo);
+
+    /**
+     * 物业上报：创建事件并标记来源为 PROPERTY
+     * @param title 标题
+     * @param description 描述
+     * @param eventType 事件类型
+     * @param location 地点
+     * @param reporterName 上报人
+     * @param propertyName 物业名称/小区名
+     * @return 新建的事件详情
+     */
+    EventDetailVo reportFromProperty(String title, String description, String eventType, String location,
+                                    String reporterName, String propertyName);
+
+    /**
      * @Author tangxinglin
      * @Description //根据主键ID获取事件详情
      * @Date 2026/04/18 10:00
@@ -65,6 +92,12 @@ public interface EventService {
      * YELLOW -> RED (超过48小时)
      */
     void autoEscalateUrgency();
+
+    /**
+     * 归档事件：关闭/忽略后的案件标记为已归档留存，从活跃视图过滤
+     * @param id 事件ID
+     */
+    void archiveEvent(Long id);
 
     /**
      * 审核事件

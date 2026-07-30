@@ -21,11 +21,24 @@ public class OrgMemberServiceImpl implements OrgMemberService {
     @Override
     public boolean create(OrgMemberEntity e) {
         if (e.getStatus() == null) e.setStatus("ACTIVE");
+        fillDefaultPosition(e);
         mapper.insert(e);
         return true;
     }
     @Override
-    public boolean update(OrgMemberEntity e) { return mapper.update(e) > 0; }
+    public boolean update(OrgMemberEntity e) {
+        fillDefaultPosition(e);
+        return mapper.update(e) > 0;
+    }
     @Override
     public boolean delete(Long id) { return mapper.deleteById(id) > 0; }
+
+    private void fillDefaultPosition(OrgMemberEntity e) {
+        if (e.getPosition() != null && !e.getPosition().isBlank()) {
+            return;
+        }
+        if ("GRID_WORKER".equals(e.getMemberType())) {
+            e.setPosition("网格员");
+        }
+    }
 }

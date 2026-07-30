@@ -3,6 +3,7 @@ package com.changping.platform.modules.auth.service;
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.auth.model.AuthenticatedUser;
 import com.changping.platform.modules.auth.security.JwtTokenService;
+import com.changping.platform.modules.auth.security.LoginAttemptService;
 import com.changping.platform.modules.auth.security.PermissionCodes;
 import com.changping.platform.modules.auth.vo.CurrentUserVo;
 import com.changping.platform.modules.auth.vo.LoginResponse;
@@ -33,6 +34,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
     private final SystemPermissionService systemPermissionService;
+    private final LoginAttemptService loginAttemptService;
 
     /**
      * @Author tangxinglin
@@ -45,11 +47,13 @@ public class AuthService {
             JdbcTemplate jdbcTemplate,
             PasswordEncoder passwordEncoder,
             JwtTokenService jwtTokenService,
-            SystemPermissionService systemPermissionService) {
+            SystemPermissionService systemPermissionService,
+            LoginAttemptService loginAttemptService) {
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenService = jwtTokenService;
         this.systemPermissionService = systemPermissionService;
+        this.loginAttemptService = loginAttemptService;
     }
 
     /**
@@ -61,33 +65,42 @@ public class AuthService {
      */
     @Transactional(readOnly = true)
     public LoginResponse login(String account, String rawPassword, ClientType clientType) {
-        UserRecord user = loadUserByAccount(account);
-        validateUserStatus(user);
-        verifyPassword(rawPassword, user.passwordHash());
+        loginAttemptService.assertAllowed(account, clientType.name());
+        try {
+            UserRecord user = loadUserByAccount(account);
+            validateUserStatus(user);
+            verifyPassword(rawPassword, user.passwordHash());
 
-        List<String> roleCodes = loadRoleCodes(user.id(), user.legacyRoleId());
-        List<String> permissionCodes = loadPermissionCodes(user.id(), user.legacyRoleId());
-        enforceEntryPermission(clientType, permissionCodes);
+            List<String> roleCodes = loadRoleCodes(user.id(), user.legacyRoleId());
+            List<String> permissionCodes = loadPermissionCodes(user.id(), user.legacyRoleId());
+            enforceEntryPermission(clientType, permissionCodes);
 
-        AuthenticatedUser authenticatedUser = new AuthenticatedUser(
-                user.id(),
-                user.username(),
-                user.realName(),
-                clientType.name(),
-                roleCodes,
-                permissionCodes,
-                user.passwordVersion());
+            AuthenticatedUser authenticatedUser = new AuthenticatedUser(
+                    user.id(),
+                    user.username(),
+                    user.realName(),
+                    clientType.name(),
+                    roleCodes,
+                    permissionCodes,
+                    user.passwordVersion());
 
-        String accessToken = jwtTokenService.generateAccessToken(authenticatedUser);
-        List<SystemPermissionService.PermissionTreeNode> menuTree = resolveMenuTree(permissionCodes, clientType.name());
-        return new LoginResponse(
-                accessToken,
-                user.id(),
-                user.realName(),
-                user.username(),
-                roleCodes,
-                permissionCodes,
-                menuTree);
+            String accessToken = jwtTokenService.generateAccessToken(authenticatedUser);
+            List<SystemPermissionService.PermissionTreeNode> menuTree = resolveMenuTree(permissionCodes, clientType.name());
+            loginAttemptService.recordSuccess(account, clientType.name());
+            return new LoginResponse(
+                    accessToken,
+                    user.id(),
+                    user.realName(),
+                    user.username(),
+                    roleCodes,
+                    permissionCodes,
+                    menuTree);
+        } catch (BusinessException exception) {
+            if ("AUTH_INVALID_CREDENTIALS".equals(exception.getCode())) {
+                loginAttemptService.recordFailure(account, clientType.name());
+            }
+            throw exception;
+        }
     }
 
     /**

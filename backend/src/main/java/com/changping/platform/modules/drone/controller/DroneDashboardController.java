@@ -1,6 +1,10 @@
 package com.changping.platform.modules.drone.controller;
 
 import com.changping.platform.common.response.ApiResponse;
+import com.changping.platform.modules.auth.security.PermissionCodes;
+import com.changping.platform.modules.auth.security.PermissionGuard;
+import com.changping.platform.modules.auth.service.AuthService;
+import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.drone.DroneProxyService;
 import com.changping.platform.modules.drone.config.DroneApiProperties;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -15,11 +19,20 @@ public class DroneDashboardController {
     private final DroneProxyService droneProxyService;
     private final DroneApiProperties droneApiProperties;
     private final JdbcTemplate jdbcTemplate;
+    private final CurrentUserService currentUserService;
+    private final PermissionGuard permissionGuard;
 
-    public DroneDashboardController(DroneProxyService droneProxyService, DroneApiProperties droneApiProperties, JdbcTemplate jdbcTemplate) {
+    public DroneDashboardController(
+            DroneProxyService droneProxyService,
+            DroneApiProperties droneApiProperties,
+            JdbcTemplate jdbcTemplate,
+            CurrentUserService currentUserService,
+            PermissionGuard permissionGuard) {
         this.droneProxyService = droneProxyService;
         this.droneApiProperties = droneApiProperties;
         this.jdbcTemplate = jdbcTemplate;
+        this.currentUserService = currentUserService;
+        this.permissionGuard = permissionGuard;
     }
 
     /**
@@ -27,6 +40,7 @@ public class DroneDashboardController {
      */
     @GetMapping("/overview")
     public ApiResponse<Map<String, Object>> overview() {
+        requireDroneDashboardPermission();
         Map<String, Object> result = new HashMap<>();
 
         try {
@@ -85,6 +99,7 @@ public class DroneDashboardController {
      */
     @GetMapping("/devices")
     public ApiResponse<List<Map<String, Object>>> devices() {
+        requireDroneDashboardPermission();
         try {
             DroneProxyService.PageResult<Map<String, Object>> result = droneProxyService.listDevices(droneApiProperties.getFixedWorkspaceId(), 1, 100);
             return ApiResponse.ok(result.items());
@@ -98,6 +113,7 @@ public class DroneDashboardController {
      */
     @GetMapping("/jobs")
     public ApiResponse<List<Map<String, Object>>> jobs(@RequestParam(required = false) Integer status) {
+        requireDroneDashboardPermission();
         try {
             DroneProxyService.PageResult<Map<String, Object>> result = droneProxyService.listJobs(droneApiProperties.getFixedWorkspaceId(), 1, 50, status);
             return ApiResponse.ok(result.items());
@@ -111,6 +127,7 @@ public class DroneDashboardController {
      */
     @GetMapping("/waylines")
     public ApiResponse<List<Map<String, Object>>> waylines() {
+        requireDroneDashboardPermission();
         try {
             DroneProxyService.PageResult<Map<String, Object>> result = droneProxyService.listWaylines(droneApiProperties.getFixedWorkspaceId(), 1, 50);
             return ApiResponse.ok(result.items());
@@ -124,6 +141,7 @@ public class DroneDashboardController {
      */
     @GetMapping("/ai-alerts")
     public ApiResponse<List<Map<String, Object>>> aiAlerts() {
+        requireDroneDashboardPermission();
         try {
             List<Map<String, Object>> alerts = jdbcTemplate.queryForList(
                 "SELECT e.event_code, e.title, e.event_type, e.urgency_level, e.status, e.occurred_at, e.incident_address, " +
@@ -133,5 +151,14 @@ public class DroneDashboardController {
         } catch (Exception e) {
             return ApiResponse.ok(List.of());
         }
+    }
+
+    private void requireDroneDashboardPermission() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.requireAny(
+                PermissionCodes.API_DRONE_DEVICE_LIST,
+                PermissionCodes.API_DRONE_JOB_LIST,
+                PermissionCodes.API_DRONE_WAYLINE_LIST,
+                PermissionCodes.API_DRONE_WS_CONNECT);
     }
 }

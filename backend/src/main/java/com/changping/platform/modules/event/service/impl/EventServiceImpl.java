@@ -113,6 +113,51 @@ public class EventServiceImpl implements EventService {
         return getEventDetail(entity.getId());
     }
 
+    @Override
+    public EventDetailVo importFrom12345(String title, String description, String eventType, String location,
+                                        String reporterName, String reporterPhone, String externalNo) {
+        String externalId = externalNo != null && !externalNo.isBlank() ? externalNo : "12345-" + System.currentTimeMillis();
+        CreateEventRequest request = new CreateEventRequest(
+                externalId, "PUBLIC", "12345",
+                eventType != null ? eventType : "COMPLAINT", title, description,
+                java.time.LocalDateTime.now(), location,
+                null, null, java.util.List.of());
+        EventDetailVo vo = createEvent(request);
+        // 更新来源标记为 12345，并记录来电人信息
+        jdbcTemplate.update("UPDATE biz_event SET report_source = '12345', report_user_name = ?, report_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                reporterName, reporterPhone, vo.id());
+        // 追加转办单号到操作记录
+        jdbcTemplate.update(
+                "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at, updated_at) VALUES (?, ?, ?, '12345_IMPORT', '系统', ?, NOW(), NOW())",
+                vo.id(), EventStatus.WAITING_DISPATCH.name(), EventStatus.WAITING_DISPATCH.name(),
+                "12345 热线转办导入，单号：" + externalNo);
+        return vo;
+    }
+
+    @Override
+    public EventDetailVo reportFromProperty(String title, String description, String eventType, String location,
+                                          String reporterName, String propertyName) {
+        String externalId = "PROPERTY-" + System.currentTimeMillis();
+        String locationFull = location != null ? location : "";
+        if (propertyName != null && !propertyName.isBlank()) {
+            locationFull = propertyName + (locationFull.isBlank() ? "" : " - " + locationFull);
+        }
+        CreateEventRequest request = new CreateEventRequest(
+                externalId, "PROPERTY", "PROPERTY_REPORT",
+                eventType != null ? eventType : "COMPLAINT", title, description,
+                java.time.LocalDateTime.now(), locationFull.isBlank() ? "拔蛟窝社区" : locationFull,
+                null, null, java.util.List.of());
+        EventDetailVo vo = createEvent(request);
+        // 更新来源标记为 PROPERTY，记录上报人
+        jdbcTemplate.update("UPDATE biz_event SET report_source = 'PROPERTY', report_user_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                reporterName, vo.id());
+        jdbcTemplate.update(
+                "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at, updated_at) VALUES (?, ?, ?, 'PROPERTY_REPORT', '系统', ?, NOW(), NOW())",
+                vo.id(), EventStatus.WAITING_DISPATCH.name(), EventStatus.WAITING_DISPATCH.name(),
+                "物业上报，上报人：" + (reporterName != null ? reporterName : "匿名"));
+        return vo;
+    }
+
     /**
      * @Author tangxinglin
      * @Description //根据主键ID获取事件详情，优先从MongoDB取数据并与MySQL合并，降级为仅MySQL数据
@@ -313,7 +358,8 @@ public class EventServiceImpl implements EventService {
                 entity.getGridId(),
                 null,
                 entity.getUrgencyLevel(),
-                entity.getReportSource());
+                entity.getReportSource(),
+                entity.getArchived() != null && entity.getArchived() == 1);
     }
 
     /**
@@ -357,7 +403,8 @@ public class EventServiceImpl implements EventService {
                 entity == null ? null : entity.getGridId(),
                 null,
                 entity == null ? null : entity.getUrgencyLevel(),
-                entity == null ? null : entity.getReportSource());
+                entity == null ? null : entity.getReportSource(),
+                entity != null && entity.getArchived() != null && entity.getArchived() == 1);
     }
 
     /**
@@ -512,7 +559,8 @@ public class EventServiceImpl implements EventService {
                 entity.getGridId(),
                 null,
                 entity.getUrgencyLevel(),
-                entity.getReportSource());
+                entity.getReportSource(),
+                entity.getArchived() != null && entity.getArchived() == 1);
     }
 
     /**
@@ -751,8 +799,31 @@ public class EventServiceImpl implements EventService {
             if (!newLevel.equals(currentLevel)) {
                 jdbcTemplate.update("UPDATE biz_event SET urgency_level = ?, updated_at = NOW() WHERE id = ?",
                     newLevel, event.getId());
+                // 写入督办记录，便于追溯并向责任人预警
+                jdbcTemplate.update(
+                    "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at, updated_at) VALUES (?, ?, ?, 'SUPERVISION_ESCALATE', '系统', ?, NOW(), NOW())",
+                    event.getId(), currentLevel, newLevel,
+                    "超期自动升级督办：" + currentLevel + "→" + newLevel + "（已超" + hours + "小时）");
             }
         }
+    }
+
+    @Override
+    @Transactional
+    public void archiveEvent(Long id) {
+        EventEntity entity = eventMapper.selectDetailById(id);
+        if (entity == null) {
+            throw new BusinessException("EVENT_NOT_FOUND", "事件不存在");
+        }
+        String status = entity.getStatus();
+        // 仅关闭或忽略状态的事件可归档
+        if (!EventStatus.CLOSED.name().equals(status) && !EventStatus.IGNORED.name().equals(status)) {
+            throw new BusinessException("EVENT_ARCHIVE_STATUS_INVALID", "仅关闭或忽略状态的事件可归档");
+        }
+        jdbcTemplate.update("UPDATE biz_event SET archived = 1, archived_at = NOW(), updated_at = NOW() WHERE id = ?", id);
+        jdbcTemplate.update(
+            "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'ARCHIVE', '系统', '归档留存', NOW())",
+            entity.getId(), status, status);
     }
 
     @Override
@@ -782,7 +853,7 @@ public class EventServiceImpl implements EventService {
         if (EventStatus.CLOSED.name().equals(entity.getStatus())) {
             throw new BusinessException("EVENT_ALREADY_CLOSED", "事件已关闭");
         }
-        jdbcTemplate.update("UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ?",
+        jdbcTemplate.update("UPDATE biz_event SET status = ?, archived = 1, archived_at = NOW(), updated_at = NOW() WHERE id = ?",
                 EventStatus.CLOSED.name(), eventId);
         // 记录关闭操作到事件记录表
         jdbcTemplate.update(
@@ -800,7 +871,7 @@ public class EventServiceImpl implements EventService {
         if (!EventStatus.CLOSED.name().equals(entity.getStatus())) {
             throw new BusinessException("EVENT_NOT_CLOSED", "事件未关闭，无法重新打开");
         }
-        jdbcTemplate.update("UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ?",
+        jdbcTemplate.update("UPDATE biz_event SET status = ?, archived = 0, archived_at = NULL, updated_at = NOW() WHERE id = ?",
                 EventStatus.WAITING_DISPATCH.name(), eventId);
         jdbcTemplate.update(
                 "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'REOPEN', '系统', '重新打开事件', NOW())",
@@ -867,6 +938,10 @@ public class EventServiceImpl implements EventService {
             case "REOPEN" -> "重新打开";
             case "IGNORE" -> "忽略事件";
             case "URGENCY_UPDATE" -> "更新紧急程度";
+            case "SUPERVISION_ESCALATE" -> "超期升级督办";
+            case "ARCHIVE" -> "归档留存";
+            case "12345_IMPORT" -> "12345 热线转办";
+            case "PROPERTY_REPORT" -> "物业上报";
             default -> actionType;
         };
     }

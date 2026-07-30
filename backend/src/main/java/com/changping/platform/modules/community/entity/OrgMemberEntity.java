@@ -24,9 +24,14 @@ public class OrgMemberEntity {
 
     private String phone;
 
+    private String position;
+
     private String status;
 
     private String remark;
+
+    @TableField(exist = false)
+    private String gridName;
 
     @TableField(fill = com.baomidou.mybatisplus.annotation.FieldFill.INSERT)
     private LocalDateTime createdAt;

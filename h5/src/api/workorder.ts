@@ -26,7 +26,7 @@ export interface ActionRecordVo {
 interface BackendWorkOrder {
   id: number
   workOrderNo: string
-  status: string // PROCESSING | COMPLETED | CLOSED | TIMEOUT
+  status: string // PROCESSING | WAITING_CLOSE_CONFIRM | WAITING_VERIFY | COMPLETED | CLOSED | TIMEOUT
   assigneeUserId: number
   assigneeName: string
   dispatcherName: string
@@ -42,6 +42,7 @@ interface BackendWorkOrder {
   isCurrentHandler: boolean
   currentNodeName: string | null
   areaName: string | null
+  urgencyLevel: string | null
   // Nested data
   processNodes: ProcessNodeVo[]
   actionRecords: ActionRecordVo[]
@@ -65,7 +66,7 @@ export interface WorkOrderItem {
   id: string
   sourceEventId?: number
   workOrderNo: string
-  status: string // PROCESSING | COMPLETED | CLOSED | TIMEOUT
+  status: string // PROCESSING | WAITING_CLOSE_CONFIRM | WAITING_VERIFY | COMPLETED | CLOSED | TIMEOUT
   statusText: string
   isCurrentHandler: boolean
   assigneeName: string
@@ -77,6 +78,7 @@ export interface WorkOrderItem {
   eventType: string
   currentNodeName: string | null
   areaName: string | null
+  urgencyLevel: string | null
   processNodes: ProcessNodeVo[]
   actionRecords: ActionRecordVo[]
   createdAt: string
@@ -126,6 +128,10 @@ function toStatusText(status: string, isCurrentHandler: boolean): string {
       return '已完成'
     case 'TIMEOUT':
       return '已超时'
+    case 'WAITING_CLOSE_CONFIRM':
+      return '待关闭确认'
+    case 'WAITING_VERIFY':
+      return '待补充证据'
     case 'PROCESSING':
       return isCurrentHandler ? '待我处理' : '处理中'
     default:
@@ -136,6 +142,7 @@ function toStatusText(status: string, isCurrentHandler: boolean): string {
 function mapBackendWorkOrder(order: BackendWorkOrder): WorkOrderItem {
   const isCurrent = order.isCurrentHandler ?? false
   const isFinalized = order.status === 'COMPLETED' || order.status === 'CLOSED' || order.status === 'TIMEOUT'
+  const hasNoActiveAssignee = isFinalized || order.status === 'WAITING_CLOSE_CONFIRM'
   return {
     id: String(order.id),
     sourceEventId: order.sourceEventId || undefined,
@@ -143,7 +150,7 @@ function mapBackendWorkOrder(order: BackendWorkOrder): WorkOrderItem {
     status: order.status,
     statusText: toStatusText(order.status, isCurrent),
     isCurrentHandler: isCurrent,
-    assigneeName: order.assigneeName || (isFinalized ? '无' : '待分配'),
+    assigneeName: order.assigneeName || (hasNoActiveAssignee ? '无' : '待分配'),
     dispatcherName: order.dispatcherName || '',
     eventTitle: order.eventTitle || `工单 ${order.workOrderNo}`,
     eventLocation: order.eventLocation || '',
@@ -152,6 +159,7 @@ function mapBackendWorkOrder(order: BackendWorkOrder): WorkOrderItem {
     eventType: order.eventType || '',
     currentNodeName: order.currentNodeName ?? null,
     areaName: order.areaName ?? null,
+    urgencyLevel: order.urgencyLevel ?? null,
     processNodes: Array.isArray(order.processNodes) ? order.processNodes : [],
     actionRecords: Array.isArray(order.actionRecords) ? order.actionRecords : [],
     createdAt: formatDateTime(order.createdAt),
@@ -230,7 +238,7 @@ export async function handleWorkOrder(
 // ─── Legacy-compat exports ───────────────────────────────────────────────────
 // These are kept for pages that have not yet been migrated.
 
-export const verifyResultOptions = ['属实并已处理', '属实但需继续处理', '不属实', '需补充']
+export const verifyResultOptions = ['属实并已处理', '不属实', '需补充证据']
 
 export interface VerificationRecord {
   id: string

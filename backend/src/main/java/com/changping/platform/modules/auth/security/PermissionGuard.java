@@ -1,7 +1,6 @@
 package com.changping.platform.modules.auth.security;
 
 import com.changping.platform.common.exception.BusinessException;
-import com.changping.platform.modules.auth.model.AuthenticatedUser;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -23,15 +22,11 @@ public class PermissionGuard {
      * @return boolean 是否拥有该权限
      */
     public boolean has(String permissionCode) {
+        if (permissionCode == null || permissionCode.isBlank()) {
+            return false;
+        }
         return AuthenticatedUserContextHolder.getOptional()
-                .map(authenticatedUser -> {
-                    // api:* 只代表后端接口入口，不再作为角色可配置权限。
-                    // 接口层保留登录校验和 Web/H5 客户端隔离，菜单/业务能力由菜单权限控制。
-                    if (isApiPermission(permissionCode)) {
-                        return isClientMatched(permissionCode, authenticatedUser);
-                    }
-                    return authenticatedUser.permissionCodes().stream().anyMatch(permissionCode::equals);
-                })
+                .map(authenticatedUser -> authenticatedUser.permissionCodes().contains(permissionCode))
                 .orElse(false);
     }
 
@@ -44,13 +39,12 @@ public class PermissionGuard {
      */
     public boolean hasAny(String... permissionCodes) {
         Set<String> expectedCodes = new LinkedHashSet<>(Arrays.asList(permissionCodes));
+        expectedCodes.removeIf(permissionCode -> permissionCode == null || permissionCode.isBlank());
+        if (expectedCodes.isEmpty()) {
+            return false;
+        }
         return AuthenticatedUserContextHolder.getOptional()
-                .map(authenticatedUser -> expectedCodes.stream().anyMatch(permissionCode -> {
-                    if (isApiPermission(permissionCode)) {
-                        return isClientMatched(permissionCode, authenticatedUser);
-                    }
-                    return authenticatedUser.permissionCodes().contains(permissionCode);
-                }))
+                .map(authenticatedUser -> expectedCodes.stream().anyMatch(authenticatedUser.permissionCodes()::contains))
                 .orElse(false);
     }
 
@@ -82,14 +76,4 @@ public class PermissionGuard {
         }
     }
 
-    private boolean isApiPermission(String permissionCode) {
-        return permissionCode != null && permissionCode.startsWith("api:");
-    }
-
-    private boolean isClientMatched(String permissionCode, AuthenticatedUser authenticatedUser) {
-        if (permissionCode.startsWith("api:h5:") || PermissionCodes.API_AUTH_H5_ME.equals(permissionCode)) {
-            return "H5".equals(authenticatedUser.clientType());
-        }
-        return "WEB".equals(authenticatedUser.clientType());
-    }
 }

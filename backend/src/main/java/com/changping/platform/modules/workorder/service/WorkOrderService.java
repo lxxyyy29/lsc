@@ -116,7 +116,7 @@ public interface WorkOrderService {
      */
     H5WorkbenchSummary getH5Workbench();
 
-    record DispatchRequest(Long processTemplateId, String remark) {
+    record DispatchRequest(Long assigneeUserId, String remark) {
     }
 
     record HandleAttachment(
@@ -148,7 +148,8 @@ public interface WorkOrderService {
             String eventTitle,
             String currentNodeName,
             boolean isCurrentHandler,
-            String areaName) {
+            String areaName,
+            String urgencyLevel) {
     }
 
     record H5ProcessNodeVo(
@@ -204,7 +205,8 @@ public interface WorkOrderService {
             java.time.LocalDateTime createdAt,
             java.time.LocalDateTime updatedAt,
             Long areaId,
-            String areaName) {
+            String areaName,
+            String urgencyLevel) {
     }
 
     record PagedWorkOrders(
@@ -233,7 +235,8 @@ public interface WorkOrderService {
             java.time.LocalDateTime updatedAt,
             java.time.LocalDateTime completedAt,
             java.time.LocalDateTime closedAt,
-            List<WebWorkOrderFlowRecord> flowRecords) {
+            List<WebWorkOrderFlowRecord> flowRecords,
+            String urgencyLevel) {
     }
 
     record WebWorkOrderFlowRecord(

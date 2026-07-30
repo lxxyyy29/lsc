@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -178,8 +179,46 @@ public class UploadController {
      */
     private void validateDownloadUrl(String fileUrl) {
         String access = ossProperties.getAccess();
-        if (!StringUtils.hasText(access) || !fileUrl.startsWith(access)) {
+        if (!StringUtils.hasText(access) || !StringUtils.hasText(fileUrl)) {
             throw new BusinessException("OSS_DOWNLOAD_FORBIDDEN", "不允许下载该文件");
         }
+        try {
+            URI accessUri = URI.create(access.endsWith("/") ? access : access + "/");
+            URI fileUri = URI.create(fileUrl);
+            if (!sameText(accessUri.getScheme(), fileUri.getScheme())
+                    || !sameText(accessUri.getHost(), fileUri.getHost())
+                    || effectivePort(accessUri) != effectivePort(fileUri)) {
+                throw new BusinessException("OSS_DOWNLOAD_FORBIDDEN", "不允许下载该文件");
+            }
+            String allowedPath = accessUri.getPath() == null ? "/" : accessUri.getPath();
+            if (!allowedPath.endsWith("/")) {
+                allowedPath += "/";
+            }
+            String filePath = fileUri.getPath() == null ? "" : fileUri.getPath();
+            if (!filePath.startsWith(allowedPath)) {
+                throw new BusinessException("OSS_DOWNLOAD_FORBIDDEN", "不允许下载该文件");
+            }
+        } catch (BusinessException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new BusinessException("OSS_DOWNLOAD_FORBIDDEN", "不允许下载该文件");
+        }
+    }
+
+    private boolean sameText(String left, String right) {
+        return left != null && left.equalsIgnoreCase(right);
+    }
+
+    private int effectivePort(URI uri) {
+        if (uri.getPort() >= 0) {
+            return uri.getPort();
+        }
+        if ("https".equalsIgnoreCase(uri.getScheme())) {
+            return 443;
+        }
+        if ("http".equalsIgnoreCase(uri.getScheme())) {
+            return 80;
+        }
+        return -1;
     }
 }

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "cross-env UNI_INPUT_DIR=. uni -p h5 --port 5174",
-    "build": "cross-env UNI_INPUT_DIR=. uni build -p h5 && node -e \"require('fs').cpSync('static','dist/build/h5/static',{recursive:true})\"",
+    "build": "cross-env UNI_INPUT_DIR=. uni build -p h5 && node ./scripts/copy-static.mjs",
     "dev:mp-weixin": "cross-env UNI_INPUT_DIR=. uni -p mp-weixin",
     "build:mp-weixin": "cross-env UNI_INPUT_DIR=. uni build -p mp-weixin",
     "test": "node ./scripts/run-vitest.mjs"

@@ -27,6 +27,18 @@
       </div>
     </div>
 
+    <!-- 督办预警横幅 -->
+    <div v-if="redCount > 0 || yellowCount > 0" style="margin-bottom:16px;padding:12px 16px;border-radius:8px;display:flex;align-items:center;gap:12px;"
+         :style="redCount > 0 ? 'background:#fef2f2;border:1px solid #fecaca;' : 'background:#fffbeb;border:1px solid #fde68a;'">
+      <span style="font-size:20px;">{{ redCount > 0 ? '🚨' : '⚠️' }}</span>
+      <div style="flex:1;">
+        <p style="font-size:13px;font-weight:600;" :style="redCount > 0 ? 'color:#dc2626;' : 'color:#b45309;'">
+          督办预警：有 <strong>{{ redCount }}</strong> 条紧急（红）/ <strong>{{ yellowCount }}</strong> 条重点（黄）工单需优先处理
+        </p>
+        <p style="font-size:12px;color:#6b7280;margin-top:2px;">相关工单已超期自动升级，请及时跟进责任人</p>
+      </div>
+    </div>
+
     <!-- 筛选栏 -->
     <div class="card" style="margin-bottom:16px;">
       <div style="display:flex;gap:8px;align-items:center;">
@@ -39,6 +51,12 @@
           <option value="WAITING_CLOSE_CONFIRM">待确认</option>
           <option value="COMPLETED">已完成</option>
           <option value="CLOSED">已关闭</option>
+        </select>
+        <select v-model="urgencyFilter" @change="loadData" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;">
+          <option value="">全部紧急度</option>
+          <option value="RED">🔴 紧急</option>
+          <option value="YELLOW">🟡 重点</option>
+          <option value="GREEN">🟢 一般</option>
         </select>
         <input v-model="searchKey" placeholder="搜索工单号/事件标题..." style="flex:1;padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;outline:none;" @keyup.enter="loadData" />
         <button @click="loadData" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;">
@@ -68,7 +86,12 @@
           <tbody>
             <tr v-for="o in filteredOrders" :key="o.id || o.workOrderId">
               <td style="font-size:12px;">{{ o.workOrderNo || o.id || '-' }}</td>
-              <td>{{ o.eventTitle || o.title || '-' }}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="font-size:14px;line-height:1;" :title="urgencyLabel(o.urgencyLevel)">{{ urgencyDot(o.urgencyLevel) }}</span>
+                  <span>{{ o.eventTitle || o.title || '-' }}</span>
+                </div>
+              </td>
               <td style="font-size:12px;">{{ o.assigneeName || o.assignee || '-' }}</td>
               <td><span :class="['tag', workOrderStatusClass(o.status)]">{{ workOrderStatusLabel(o.status) }}</span></td>
               <td style="font-size:12px;">{{ o.createdAt || o.created_at || '-' }}</td>
@@ -120,16 +143,16 @@
           </div>
         </div>
 
-        <!-- 关闭确认操作区 -->
+        <!-- 复核核查操作区 -->
         <div v-if="selectedOrder.status === 'WAITING_CLOSE_CONFIRM'" style="margin-top:16px;padding:12px;background:#fef3c7;border-radius:8px;border:1px solid #fcd34d;">
-          <p style="font-size:13px;color:#92400e;margin-bottom:8px;">处置已完成，请确认是否关闭工单。</p>
-          <textarea v-model="closeRemark" placeholder="备注（可选）" rows="2" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;resize:vertical;"></textarea>
+          <p style="font-size:13px;color:#92400e;margin-bottom:8px;">处置已完成，请复核该工单。</p>
+          <textarea v-model="closeRemark" placeholder="请输入复核意见（复核不通过时必填）" rows="2" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;resize:vertical;"></textarea>
         </div>
 
         <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px;">
           <button @click="selectedOrder = null" style="padding:6px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">关闭</button>
-          <button v-if="selectedOrder.status === 'WAITING_CLOSE_CONFIRM'" @click="rejectClose(selectedOrder)" style="padding:6px 16px;border:1px solid #ef4444;border-radius:6px;background:#fff;color:#ef4444;font-size:13px;cursor:pointer;">驳回</button>
-          <button v-if="selectedOrder.status === 'WAITING_CLOSE_CONFIRM'" @click="confirmClose(selectedOrder)" style="padding:6px 16px;border:none;border-radius:6px;background:#52c41a;color:#fff;font-size:13px;cursor:pointer;">确认关闭</button>
+          <button v-if="selectedOrder.status === 'WAITING_CLOSE_CONFIRM'" @click="rejectClose(selectedOrder)" style="padding:6px 16px;border:1px solid #ef4444;border-radius:6px;background:#fff;color:#ef4444;font-size:13px;cursor:pointer;">复核不通过</button>
+          <button v-if="selectedOrder.status === 'WAITING_CLOSE_CONFIRM'" @click="confirmClose(selectedOrder)" style="padding:6px 16px;border:none;border-radius:6px;background:#52c41a;color:#fff;font-size:13px;cursor:pointer;">复核通过</button>
         </div>
       </div>
     </div>
@@ -138,21 +161,29 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { getWorkOrders, confirmCloseWorkOrder, rejectCloseWorkOrder } from '../api'
+import http, { getWorkOrders, confirmCloseWorkOrder, rejectCloseWorkOrder } from '../api'
 
 const loading = ref(false)
 const orders = ref<any[]>([])
 const statusFilter = ref('')
+const urgencyFilter = ref('')
 const searchKey = ref('')
 const totalOrders = ref(0)
 const selectedOrder = ref<any>(null)
 const closeRemark = ref('')
 const attachments = ref<any[]>([])
 
+const redCount = computed(() => orders.value.filter(o => o.urgencyLevel === 'RED').length)
+const yellowCount = computed(() => orders.value.filter(o => o.urgencyLevel === 'YELLOW').length)
+
 const filteredOrders = computed(() => {
-  if (!searchKey.value) return orders.value
+  let result = orders.value
+  if (urgencyFilter.value) {
+    result = result.filter(o => o.urgencyLevel === urgencyFilter.value)
+  }
+  if (!searchKey.value) return result
   const key = searchKey.value.toLowerCase()
-  return orders.value.filter(o =>
+  return result.filter(o =>
     (o.workOrderNo || '').toLowerCase().includes(key) ||
     (o.eventTitle || o.title || '').toLowerCase().includes(key) ||
     (o.id || '').toString().includes(key)
@@ -161,6 +192,20 @@ const filteredOrders = computed(() => {
 
 function statusCount(status: string) {
   return orders.value.filter(o => o.status === status).length
+}
+
+function urgencyDot(level: string) {
+  if (level === 'RED') return '🔴'
+  if (level === 'YELLOW') return '🟡'
+  if (level === 'GREEN') return '🟢'
+  return '⚪'
+}
+
+function urgencyLabel(level: string) {
+  if (level === 'RED') return '紧急'
+  if (level === 'YELLOW') return '重点'
+  if (level === 'GREEN') return '一般'
+  return '未设置'
 }
 
 function workOrderStatusLabel(status: string) {

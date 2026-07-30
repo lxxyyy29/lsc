@@ -3,6 +3,10 @@ package com.changping.platform.modules.audit.controller;
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.audit.entity.AuditLogEntity;
 import com.changping.platform.modules.audit.service.AuditLogService;
+import com.changping.platform.modules.auth.security.PermissionCodes;
+import com.changping.platform.modules.auth.security.PermissionGuard;
+import com.changping.platform.modules.auth.service.AuthService;
+import com.changping.platform.modules.auth.service.CurrentUserService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,9 +17,13 @@ import java.util.Map;
 public class AuditLogController {
 
     private final AuditLogService service;
+    private final CurrentUserService currentUserService;
+    private final PermissionGuard permissionGuard;
 
-    public AuditLogController(AuditLogService service) {
+    public AuditLogController(AuditLogService service, CurrentUserService currentUserService, PermissionGuard permissionGuard) {
         this.service = service;
+        this.currentUserService = currentUserService;
+        this.permissionGuard = permissionGuard;
     }
 
     @GetMapping
@@ -24,6 +32,7 @@ public class AuditLogController {
             @RequestParam(required = false) String recordId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
+        requireViewPermission();
         return ApiResponse.ok(service.queryPaged(tableName, recordId, page, size));
     }
 
@@ -31,21 +40,34 @@ public class AuditLogController {
     public ApiResponse<List<AuditLogEntity>> history(
             @RequestParam String tableName,
             @RequestParam String recordId) {
+        requireViewPermission();
         return ApiResponse.ok(service.getHistory(tableName, recordId));
     }
 
     @GetMapping("/tables")
     public ApiResponse<List<String>> tables() {
+        requireViewPermission();
         return ApiResponse.ok(service.getTables());
     }
 
     @PostMapping("/rollback/{id}")
     public ApiResponse<Boolean> rollback(@PathVariable Long id) {
+        requireRollbackPermission();
         try {
             boolean result = service.rollbackToVersion(id);
             return ApiResponse.ok(result);
         } catch (Exception e) {
             return ApiResponse.fail("ROLLBACK_FAILED", "回滚失败: " + e.getMessage());
         }
+    }
+
+    private void requireViewPermission() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_AUDIT_LOG_VIEW);
+    }
+
+    private void requireRollbackPermission() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_AUDIT_LOG_ROLLBACK);
     }
 }

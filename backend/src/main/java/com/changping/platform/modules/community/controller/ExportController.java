@@ -1,5 +1,9 @@
 package com.changping.platform.modules.community.controller;
 
+import com.changping.platform.modules.auth.security.PermissionCodes;
+import com.changping.platform.modules.auth.security.PermissionGuard;
+import com.changping.platform.modules.auth.service.AuthService;
+import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.community.mapper.ExportMapper;
 import com.changping.platform.modules.community.service.ExportService;
 import org.springframework.http.HttpHeaders;
@@ -18,14 +22,23 @@ public class ExportController {
 
     private final ExportService exportService;
     private final ExportMapper exportMapper;
+    private final CurrentUserService currentUserService;
+    private final PermissionGuard permissionGuard;
 
-    public ExportController(ExportService exportService, ExportMapper exportMapper) {
+    public ExportController(
+            ExportService exportService,
+            ExportMapper exportMapper,
+            CurrentUserService currentUserService,
+            PermissionGuard permissionGuard) {
         this.exportService = exportService;
         this.exportMapper = exportMapper;
+        this.currentUserService = currentUserService;
+        this.permissionGuard = permissionGuard;
     }
 
     @GetMapping("/events")
     public ResponseEntity<byte[]> exportEvents() throws Exception {
+        requireExportPermission(PermissionCodes.API_EVENT_LIST);
         byte[] data = exportService.exportEventLedger();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=event_ledger.xlsx")
@@ -35,9 +48,9 @@ public class ExportController {
 
     @GetMapping("/merchants")
     public ResponseEntity<byte[]> exportMerchants() throws Exception {
+        requireExportPermission(PermissionCodes.MENU_BIZ_LEDGER);
         List<Map<String, Object>> data = exportMapper.getMerchantLedger();
         List<String> columns = List.of("merchant_name", "legal_person_name", "legal_person_phone", "remark", "created_at");
-        String[] headers = {"场所名称", "负责人", "电话", "备注(地址/类别)", "导入时间"};
         byte[] excel = exportService.exportLedger("场所台账", columns, data);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=merchant_ledger.xlsx")
@@ -47,9 +60,9 @@ public class ExportController {
 
     @GetMapping("/population")
     public ResponseEntity<byte[]> exportPopulation() throws Exception {
+        requireExportPermission(PermissionCodes.MENU_COMMUNITY_POPULATION);
         List<Map<String, Object>> data = exportMapper.getPopulationLedger();
         List<String> columns = List.of("name", "id_card", "phone", "household_type", "address", "grid_name", "tags", "created_at");
-        String[] headers = {"姓名", "身份证", "电话", "户籍类型", "地址", "网格", "标签", "创建时间"};
         byte[] excel = exportService.exportLedger("实有人口台账", columns, data);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=population_ledger.xlsx")
@@ -59,9 +72,9 @@ public class ExportController {
 
     @GetMapping("/buildings")
     public ResponseEntity<byte[]> exportBuildings() throws Exception {
+        requireExportPermission(PermissionCodes.MENU_COMMUNITY_BUILDING);
         List<Map<String, Object>> data = exportMapper.getBuildingLedger();
         List<String> columns = List.of("building_no", "address", "landlord_name", "landlord_phone", "fire_risk_level", "is_group_rental", "grid_name");
-        String[] headers = {"楼栋编号", "地址", "房东", "房东电话", "消防风险", "群租房", "网格"};
         byte[] excel = exportService.exportLedger("房屋台账", columns, data);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=building_ledger.xlsx")
@@ -71,9 +84,9 @@ public class ExportController {
 
     @GetMapping("/patrols")
     public ResponseEntity<byte[]> exportPatrols() throws Exception {
+        requireExportPermission(PermissionCodes.MENU_COMMUNITY_PATROL_RECORD);
         List<Map<String, Object>> data = exportMapper.getPatrolLedger();
         List<String> columns = List.of("grid_name", "patrol_type", "content", "status", "created_at", "longitude", "latitude");
-        String[] headers = {"网格", "巡查类型", "内容", "状态", "时间", "经度", "纬度"};
         byte[] excel = exportService.exportLedger("巡查台账", columns, data);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=patrol_ledger.xlsx")
@@ -83,11 +96,17 @@ public class ExportController {
 
     @GetMapping(value = "/test", produces = MediaType.TEXT_PLAIN_VALUE)
     public String testExport() {
+        requireExportPermission(PermissionCodes.API_EVENT_LIST);
         try {
             byte[] data = exportService.exportEventLedger();
             return "Export successful! Size: " + data.length + " bytes";
         } catch (Exception e) {
             return "Export failed: " + e.getMessage();
         }
+    }
+
+    private void requireExportPermission(String permissionCode) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(permissionCode);
     }
 }

@@ -82,8 +82,14 @@ cd backend
 
 ```bash
 cd web-v2
-npx pnpm test
 npx pnpm build
+```
+
+如果依赖已安装且需要避免 `npx` 下载外部包，可直接使用本地命令：
+
+```bash
+cd web-v2
+./node_modules/.bin/vue-tsc && ./node_modules/.bin/vite build
 ```
 
 ### H5 移动端
@@ -94,11 +100,26 @@ npx pnpm test
 npx pnpm build
 ```
 
+如果依赖已安装且需要避免 `npx` 下载外部包，可直接使用本地命令：
+
+```bash
+cd h5
+./node_modules/.bin/vitest run
+UNI_INPUT_DIR=. ./node_modules/.bin/uni build -p h5
+```
+
 ### 居民小程序
 
 ```bash
 cd mp_mysql_test
 npx pnpm build
+```
+
+如果依赖已安装且需要避免 `npx` 下载外部包，可直接使用本地命令：
+
+```bash
+cd mp_mysql_test
+./node_modules/.bin/vite build
 ```
 
 ## 主要业务流程

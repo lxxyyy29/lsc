@@ -62,4 +62,6 @@ public class EventEntity {
     private String urgencyLevel;
     /** 事件来源: GRID_MEMBER=网格员 RESIDENT=居民 12345=12345转办 PROPERTY=物业 AI_CAMERA=AI监控 */
     private String reportSource;
+    /** 是否已归档：0=活跃 1=已归档留存 */
+    private Integer archived;
 }

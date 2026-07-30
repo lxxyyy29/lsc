@@ -167,7 +167,7 @@ let mapInstance: any = null
 let chartInstance: any = null
 let hoverId = 0
 
-const hoverInfo = reactive({ visible: false, x: 0, y: 0, name: '' })
+const hoverInfo = reactive({ visible: false, x: 0, y: 0, name: '', id: 0 })
 const selectedGrid = ref<any>(null)
 
 const total = computed(() => (overview.value.eventGreen || 0) + (overview.value.eventYellow || 0) + (overview.value.eventRed || 0))

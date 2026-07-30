@@ -108,8 +108,6 @@ const menuGroups = [
     name: '智能应用', icon: 'fas fa-helicopter',
     items: [
       { path: '/drones', name: '无人机管理' },
-      { path: '/ai-models', name: 'AI 模型' },
-      { path: '/qwen-models', name: '通义模型' },
       { path: '/integration', name: '信息互通' },
     ]
   },
@@ -132,12 +130,6 @@ const menuGroups = [
       { path: '/reports', name: '数据报表' },
       { path: '/assessment', name: '考核研判' },
       { path: '/audit-logs', name: '审计日志' },
-    ]
-  },
-  {
-    name: '注册审批', icon: 'fas fa-user-check',
-    items: [
-      { path: '/registrations', name: '网格员注册审批' },
     ]
   },
 ]

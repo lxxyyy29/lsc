@@ -25,8 +25,8 @@ public class MediaUploadController {
      * 允许上传的文件扩展名白名单
      */
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
-            // 图片
-            ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg",
+            // 图片（不允许 SVG，避免存储型脚本风险）
+            ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp",
             // 文档
             ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv",
             // 视频

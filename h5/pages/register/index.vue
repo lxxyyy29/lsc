@@ -47,7 +47,7 @@
           <text class="field-label">联系电话</text>
           <view class="field-shell">
             <AppIcon name="phone" class="field-icon" size="24rpx" />
-            <input v-model.trim="form.phone" class="field-input" type="number" placeholder="请输入联系电话" placeholder-class="field-placeholder" />
+            <input v-model.trim="form.phone" class="field-input" type="tel" maxlength="11" placeholder="请输入联系电话" placeholder-class="field-placeholder" />
           </view>
         </view>
 
@@ -91,6 +91,7 @@ const form = reactive<RegisterForm>({
 const submitting = ref(false)
 const errorMessage = ref('')
 const showPassword = ref(false)
+const MOBILE_PHONE_PATTERN = /^1[3-9]\d{9}$/
 
 const hexOverlayStyle = computed(() => ({
   backgroundImage: `url(${loginHexUrl})`
@@ -117,6 +118,10 @@ async function handleSubmit() {
     errorMessage.value = '两次密码不一致'
     return
   }
+  if (form.phone && !MOBILE_PHONE_PATTERN.test(form.phone)) {
+    errorMessage.value = '请输入正确的手机号'
+    return
+  }
 
   submitting.value = true
   errorMessage.value = ''
@@ -125,7 +130,7 @@ async function handleSubmit() {
       account: form.account,
       password: form.password,
       realName: form.realName,
-      phone: form.phone
+      phone: form.phone || undefined
     })
     uni.showToast({ title: '提交成功，等待审批', icon: 'success', duration: 3000 })
     setTimeout(() => goLogin(), 2500)

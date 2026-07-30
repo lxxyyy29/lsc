@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createHttpClient, HttpResponseError, http } from '../api/http'
-import { clearH5Session, getH5Session, logoutH5, persistH5Session } from '../api/auth'
+import { clearH5Session, getH5Session, logoutH5, persistH5Session, registerH5 } from '../api/auth'
 
 const storageState = new Map<string, string>()
 
@@ -38,6 +38,7 @@ describe('h5 http client', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     storageState.clear()
     clearH5Session()
   })
@@ -128,6 +129,24 @@ describe('h5 http client', () => {
     await expect(rejected).rejects.toEqual(expect.any(HttpResponseError))
     await expect(rejected).rejects.toThrow('forbidden')
     expect(getH5Session()).not.toBeNull()
+  })
+
+  it('submits registration through the public api base path', async () => {
+    const post = vi.spyOn(http, 'post').mockResolvedValueOnce(undefined as never)
+
+    await registerH5({
+      account: 'worker01',
+      password: 'secret123',
+      realName: '张三',
+      phone: '13800000000'
+    })
+
+    expect(post).toHaveBeenCalledWith('/registration/submit', {
+      account: 'worker01',
+      password: 'secret123',
+      realName: '张三',
+      phone: '13800000000'
+    }, { baseURL: '/api' })
   })
 
   it('clears local session even if logout transport fails', async () => {

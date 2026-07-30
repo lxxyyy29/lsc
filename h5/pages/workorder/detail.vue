@@ -182,7 +182,7 @@
             v-for="op in operationOptions"
             :key="op.value"
             class="op-btn"
-            :class="selectedOp === op.value ? `op-btn--active-${op.value.toLowerCase()}` : ''"
+            :class="selectedOp === op.value ? op.activeClass : ''"
             @click="selectedOp = op.value"
           >
             <text class="op-btn-text">{{ op.label }}</text>
@@ -324,7 +324,7 @@ interface UploadedAttachment {
 }
 
 // Action form state
-const selectedOp = ref('APPROVED')
+const selectedOp = ref('RESOLVED')
 const remark = ref('')
 const uploadedAttachments = ref<UploadedAttachment[]>([])
 const uploadError = ref('')
@@ -346,14 +346,12 @@ const canHandle = computed(
 )
 
 const operationOptions = [
-  { label: '属实并已处理', value: 'RESOLVED' },
-  { label: '属实但需继续处理', value: 'CONTINUE_PROCESSING' },
-  { label: '不属实', value: 'NOT_TRUE' },
-  { label: '需补充证据', value: 'NEEDS_MORE_EVIDENCE' },
-  { label: '驳回', value: 'REJECTED' }
+  { label: '属实并已处理', value: 'RESOLVED', activeClass: 'op-btn--active-resolved' },
+  { label: '不属实', value: 'NOT_TRUE', activeClass: 'op-btn--active-not-true' },
+  { label: '需补充证据', value: 'NEEDS_MORE_EVIDENCE', activeClass: 'op-btn--active-needs-more-evidence' }
 ]
 
-const remarkRequired = computed(() => ['REJECTED', 'RETURNED', 'NOT_TRUE', 'NEEDS_MORE_EVIDENCE'].includes(selectedOp.value))
+const remarkRequired = computed(() => ['NOT_TRUE', 'NEEDS_MORE_EVIDENCE'].includes(selectedOp.value))
 
 const sortedRecords = computed<ActionRecordVo[]>(() => {
   if (!detail.value) return []
@@ -575,7 +573,7 @@ async function submitHandle() {
   submitError.value = ''
 
   if (remarkRequired.value && !remark.value.trim()) {
-    submitError.value = '驳回或退回时必须填写处理意见'
+    submitError.value = '不属实或需补充证据时必须填写处理意见'
     return
   }
 
@@ -1121,17 +1119,17 @@ onLoad(async (query?: Record<string, unknown>) => {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.op-btn--active-approved {
-  background: rgba(56, 152, 253, 0.18);
-  border-color: rgba(56, 152, 253, 0.45);
+.op-btn--active-resolved {
+  background: rgba(31, 190, 166, 0.16);
+  border-color: rgba(31, 190, 166, 0.45);
 }
 
-.op-btn--active-rejected {
+.op-btn--active-not-true {
   background: rgba(239, 68, 68, 0.14);
   border-color: rgba(239, 68, 68, 0.4);
 }
 
-.op-btn--active-returned {
+.op-btn--active-needs-more-evidence {
   background: rgba(234, 179, 8, 0.14);
   border-color: rgba(234, 179, 8, 0.4);
 }
@@ -1142,9 +1140,9 @@ onLoad(async (query?: Record<string, unknown>) => {
   color: rgba(214, 225, 239, 0.8);
 }
 
-.op-btn--active-approved .op-btn-text { color: #7ab8ff; }
-.op-btn--active-rejected .op-btn-text { color: #fca5a5; }
-.op-btn--active-returned .op-btn-text { color: #fcd34d; }
+.op-btn--active-resolved .op-btn-text { color: #7eded0; }
+.op-btn--active-not-true .op-btn-text { color: #fca5a5; }
+.op-btn--active-needs-more-evidence .op-btn-text { color: #fcd34d; }
 
 .form-group {
   display: grid;

@@ -50,13 +50,22 @@ const reports = ref<any[]>([])
 const hoverRating = ref<Record<string, number>>({})
 
 function statusLabel(status: string) {
-  const map: any = { 'PENDING': '待处理', 'PROCESSING': '处理中', 'CLOSED': '已办结', 'REJECTED': '已驳回' }
+  const map: any = {
+    PENDING: '待处理',
+    WAITING_DISPATCH: '待派单',
+    DISPATCHED_TO_WORK_ORDER: '处理中',
+    PROCESSING: '处理中',
+    WAITING_CLOSE_CONFIRM: '待确认',
+    CLOSED: '已办结',
+    IGNORED: '已忽略',
+    REJECTED: '已驳回'
+  }
   return map[status] || status || '未知'
 }
 function statusClass(status: string) {
   if (status === 'CLOSED') return 'status-green'
-  if (status === 'PROCESSING') return 'status-blue'
-  if (status === 'REJECTED') return 'status-red'
+  if (status === 'DISPATCHED_TO_WORK_ORDER' || status === 'PROCESSING' || status === 'WAITING_CLOSE_CONFIRM') return 'status-blue'
+  if (status === 'REJECTED' || status === 'IGNORED') return 'status-red'
   return 'status-orange'
 }
 

@@ -101,6 +101,7 @@ const loading = ref(false)
 const grids = ref<any[]>([])
 let mapInstance: any = null
 let markerInstance: any = null
+let AMapLib: any = null
 
 const form = ref({
   title: '',
@@ -131,12 +132,12 @@ onUnmounted(() => {
 
 async function initMap() {
   ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
-  const AMap = await AMapLoader.load({
+  AMapLib = await AMapLoader.load({
     key: '5e00e01d2d2b6ca9e1eed533a15572e4',
     version: '2.0',
     plugins: ['AMap.Marker', 'AMap.Geocoder', 'AMap.Geolocation']
   })
-  mapInstance = new AMap.Map('eventMap', {
+  mapInstance = new AMapLib.Map('eventMap', {
     zoom: 15,
     center: [113.939521, 22.971231],
     mapStyle: 'amap://styles/normal'
@@ -151,7 +152,7 @@ async function initMap() {
   })
 
   // 初始标记
-  markerInstance = new AMap.Marker({
+  markerInstance = new AMapLib.Marker({
     position: [113.939521, 22.971231],
     draggable: true,
     map: mapInstance
@@ -173,7 +174,7 @@ function setMarker(lng: number, lat: number) {
   if (markerInstance) {
     markerInstance.setPosition([lng, lat])
   } else {
-    markerInstance = new AMap.Marker({
+    markerInstance = new AMapLib.Marker({
       position: [lng, lat],
       draggable: true,
       map: mapInstance

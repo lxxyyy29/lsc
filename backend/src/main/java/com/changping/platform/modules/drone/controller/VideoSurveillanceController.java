@@ -1,6 +1,10 @@
 package com.changping.platform.modules.drone.controller;
 
 import com.changping.platform.common.response.ApiResponse;
+import com.changping.platform.modules.auth.security.PermissionCodes;
+import com.changping.platform.modules.auth.security.PermissionGuard;
+import com.changping.platform.modules.auth.service.AuthService;
+import com.changping.platform.modules.auth.service.CurrentUserService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -9,11 +13,20 @@ import java.util.*;
 @RequestMapping("/video")
 public class VideoSurveillanceController {
 
+    private final CurrentUserService currentUserService;
+    private final PermissionGuard permissionGuard;
+
+    public VideoSurveillanceController(CurrentUserService currentUserService, PermissionGuard permissionGuard) {
+        this.currentUserService = currentUserService;
+        this.permissionGuard = permissionGuard;
+    }
+
     /**
      * 监控点位列表（对接外部视频平台数据）
      */
     @GetMapping("/cameras")
     public ApiResponse<List<Map<String, Object>>> cameras() {
+        requireVideoPermission();
         // 返回监控点位数据（可从外部视频平台API获取）
         List<Map<String, Object>> cameras = Arrays.asList(
             createCamera(1, "社区入口摄像头", "FIXED", 113.939500, 22.971200, "社区主入口", "ACTIVE"),
@@ -31,6 +44,7 @@ public class VideoSurveillanceController {
      */
     @GetMapping("/cameras/{id}/stream")
     public ApiResponse<Map<String, Object>> getStream(@PathVariable Long id) {
+        requireVideoPermission();
         Map<String, Object> result = new HashMap<>();
         result.put("cameraId", id);
         result.put("streamUrl", "rtmp://drone.kfktec.cn:1935/live/camera_" + id);
@@ -43,6 +57,7 @@ public class VideoSurveillanceController {
      */
     @GetMapping("/external-sources")
     public ApiResponse<List<Map<String, Object>>> externalSources() {
+        requireVideoPermission();
         List<Map<String, Object>> sources = Arrays.asList(
             Map.of("id", 1, "name", "无人机实时图传", "type", "DRONE", "status", "ONLINE",
                    "wsUrl", "ws://drone.kfktec.cn:9080/ws/drone/live", "thumbnail", "/api/drone/thumbnail"),
@@ -65,5 +80,10 @@ public class VideoSurveillanceController {
         camera.put("status", status);
         camera.put("streamUrl", "rtmp://drone.kfktec.cn:1935/live/camera_" + id);
         return camera;
+    }
+
+    private void requireVideoPermission() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_DRONE_WS_CONNECT);
     }
 }

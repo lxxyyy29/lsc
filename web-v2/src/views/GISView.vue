@@ -166,6 +166,7 @@ const hoverInfo = reactive({ visible: false, x: 0, y: 0, name: '', area: '', id:
 const selectedGrid = ref<GridInfo | null>(null)
 let hoverId = 0
 let mapInstance: any = null
+let AMapLib: any = null
 const gridTree = ref<GridInfo[]>([])
 
 const allGrids = computed(() => {
@@ -230,12 +231,12 @@ function focusGrid(grid: GridInfo) {
 
 onMounted(async () => {
   ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
-  const AMap = await AMapLoader.load({
+  AMapLib = await AMapLoader.load({
     key: '5e00e01d2d2b6ca9e1eed533a15572e4',
     version: '2.0',
     plugins: ['AMap.Polygon', 'AMap.Marker']
   })
-  mapInstance = new AMap.Map('gisMapLarge', { zoom: 14, center: [113.939521, 22.971231], mapStyle: 'amap://styles/normal' })
+  mapInstance = new AMapLib.Map('gisMapLarge', { zoom: 14, center: [113.939521, 22.971231], mapStyle: 'amap://styles/normal' })
   const map = mapInstance
 
   const tree = await getGridTree()
@@ -248,7 +249,7 @@ onMounted(async () => {
         try {
           const coords = JSON.parse(node.roiJson)
           if (Array.isArray(coords) && coords.length >= 3) {
-            new AMap.Polygon({
+            new AMapLib.Polygon({
               path: coords, fillColor: '#0284c7', fillOpacity: 0.08,
               strokeColor: '#0284c7', strokeWeight: 3, strokeStyle: 'solid',
               zIndex: 1, bubble: true, map
@@ -290,7 +291,7 @@ function drawGridPolygon(map: any, grid: any, fillColor: string, strokeColor: st
     if (!Array.isArray(coords) || coords.length < 3) return
 
     const myId = ++hoverId
-    const polygon = new AMap.Polygon({
+    const polygon = new AMapLib.Polygon({
       path: coords, fillColor, fillOpacity, strokeColor, strokeWeight,
       strokeStyle: 'solid', zIndex: 5, bubble: false, map
     })

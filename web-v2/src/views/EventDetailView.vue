@@ -15,12 +15,14 @@
               {{ event.urgencyLevel === 'RED' ? '紧急' : event.urgencyLevel === 'YELLOW' ? '重点' : '一般' }}
             </span>
             <span class="tag tag-blue">{{ statusLabel(event.currentStatus) }}</span>
+            <span v-if="event.archived" class="tag" style="background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;">已归档</span>
             <span style="font-size:12px;color:#9ca3af;">{{ event.eventCode }}</span>
           </div>
         </div>
         <div style="display:flex;gap:8px;">
           <button v-if="['WAITING_DISPATCH', 'IN_AUDIT'].includes(event.currentStatus)" @click="showDispatch = true" style="padding:8px 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">派发工单</button>
           <button v-if="event.currentStatus !== 'CLOSED' && event.currentStatus !== 'IGNORED'" @click="showClose = true" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">关闭事件</button>
+          <button v-if="(event.currentStatus === 'CLOSED' || event.currentStatus === 'IGNORED') && !event.archived" @click="handleArchive" style="padding:8px 16px;border:1px solid #6b7280;border-radius:6px;background:#fff;color:#374151;font-size:13px;cursor:pointer;">归档</button>
           <button v-if="event.currentStatus === 'CLOSED'" @click="handleReopen" style="padding:8px 16px;border:1px solid #52c41a;border-radius:6px;background:#fff;color:#52c41a;font-size:13px;cursor:pointer;">重新打开</button>
           <button @click="$router.back()" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">返回</button>
         </div>
@@ -62,18 +64,17 @@
         <div class="modal-box">
           <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">派发工单</h3>
           <div class="form-group">
-            <label class="form-label">选择受派人 <span class="required">*</span></label>
+            <label class="form-label">选择受派人员 <span class="required">*</span></label>
             <select v-model="dispatchForm.assigneeUserId" class="form-select">
-              <option :value="null">请选择网格员</option>
-              <option v-for="u in workers" :key="u.id" :value="u.id">{{ u.realName || u.username }}</option>
+              <option :value="null">请选择受派人员</option>
+              <option v-for="u in filteredWorkers" :key="u.id" :value="u.id">{{ u.realName || u.username }}{{ u.roleNames ? `（${u.roleNames}）` : '' }}</option>
             </select>
-            <p v-if="!workers.length" style="font-size:12px;color:#dc2626;margin-top:6px;">
-              ⚠️ 暂无网格员，请先添加系统用户并分配 GRID_WORKER 角色
+            <p style="font-size:12px;color:#1890ff;margin-top:6px;">
+              ℹ️ 该事件为{{ recommendedRoleCode === 'EVENT_OPERATOR' ? '重点事件' : '简易事件' }}，建议派{{ recommendedRoleLabel }}处理
             </p>
-          </div>
-          <div class="form-group">
-            <label class="form-label">处理时限</label>
-            <input v-model="dispatchForm.deadline" type="datetime-local" class="form-input" />
+            <p v-if="!filteredWorkers.length" style="font-size:12px;color:#dc2626;margin-top:6px;">
+              ⚠️ 暂无可用人员，请先添加系统用户
+            </p>
           </div>
           <div class="form-group">
             <label class="form-label">备注</label>
@@ -107,9 +108,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getSystemUsers } from '../api'
+import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getSystemUsers, archiveEvent } from '../api'
 import { getEventTypeName } from '../utils/eventTypes'
 
 const route = useRoute()
@@ -122,7 +123,39 @@ const showDispatch = ref(false)
 const showClose = ref(false)
 const closeReason = ref('')
 const workers = ref<any[]>([])
-const dispatchForm = ref({ assigneeUserId: null as number | null, deadline: '', remark: '' })
+const dispatchForm = ref({ assigneeUserId: null as number | null, remark: '' })
+
+// 重点事件类型 → 推荐两委干部(EVENT_OPERATOR)；其余简易事件 → 网格员(H5_WORKER)
+const SERIOUS_EVENT_TYPES = new Set([
+  'COMPLAINT', 'FIRE', 'ILLEGAL_BUILDING', 'PUBLIC_SAFETY', 'SAFETY', 'SAFE',
+  '民生诉求', '消防安全', '违建', '公共安全', '安全生产', '矛盾纠纷', '防汛防台风'
+])
+
+const recommendedRoleCode = computed(() => {
+  const eventType = event.value?.eventType
+  return eventType && SERIOUS_EVENT_TYPES.has(eventType) ? 'EVENT_OPERATOR' : 'H5_WORKER'
+})
+
+const recommendedRoleLabel = computed(() =>
+  recommendedRoleCode.value === 'EVENT_OPERATOR' ? '两委干部' : '网格员'
+)
+
+const filteredWorkers = computed(() => {
+  const role = recommendedRoleCode.value
+  const matched = workers.value.filter((user: any) =>
+    user.status === 'ACTIVE' && Array.isArray(user.roleCodes) && user.roleCodes.includes(role)
+  )
+  // 若推荐角色无人，回退到展示全部活跃人员
+  return matched.length > 0 ? matched : workers.value.filter((user: any) => user.status === 'ACTIVE')
+})
+
+const selectedWorker = computed(() =>
+  workers.value.find((worker) => worker.id === dispatchForm.value.assigneeUserId) || null
+)
+
+const selectedWorkerName = computed(() =>
+  selectedWorker.value ? (selectedWorker.value.realName || selectedWorker.value.username) : ''
+)
 
 function statusLabel(status: string) {
   const map: Record<string, string> = {
@@ -142,12 +175,15 @@ async function loadData() {
     const id = Number(route.params.id)
     event.value = await getEventDetail(id)
     timeline.value = await getEventTimeline(id) || []
-    // 网格员列表（从系统用户加载）
     try {
-      const res = await getSystemUsers()
-      workers.value = Array.isArray(res) ? res : []
+      const users = await getSystemUsers()
+      workers.value = (Array.isArray(users) ? users : []).filter((user: any) => user.status === 'ACTIVE')
+      // 默认选中推荐角色的第一个人员
+      if (!dispatchForm.value.assigneeUserId && filteredWorkers.value.length) {
+        dispatchForm.value.assigneeUserId = filteredWorkers.value[0].id
+      }
     } catch (e) {
-      console.error('加载网格员失败:', e)
+      console.error('加载人员失败:', e)
       workers.value = []
     }
   } catch (e) {
@@ -173,10 +209,21 @@ async function handleReopen() {
   } catch (e: any) { alert(e?.message || '操作失败') }
 }
 
-async function handleDispatch() {
-  if (!dispatchForm.value.assigneeUserId) { alert('请选择受派人'); return }
+async function handleArchive() {
+  if (!confirm('确认归档该事件？归档后将从活跃视图隐藏。')) return
   try {
-    await dispatchEvent(Number(route.params.id), dispatchForm.value)
+    await archiveEvent(Number(route.params.id))
+    loadData()
+  } catch (e: any) { alert(e?.message || '归档失败') }
+}
+
+async function handleDispatch() {
+  if (!dispatchForm.value.assigneeUserId) { alert('请选择受派人员'); return }
+  try {
+    await dispatchEvent(Number(route.params.id), {
+      assigneeUserId: dispatchForm.value.assigneeUserId,
+      remark: dispatchForm.value.remark
+    })
     showDispatch.value = false
     loadData()
   } catch (e: any) { alert(e?.message || '派单失败') }

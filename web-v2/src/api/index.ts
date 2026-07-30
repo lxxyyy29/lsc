@@ -1,11 +1,11 @@
-import axios from 'axios'
+import axios, { type AxiosRequestConfig } from 'axios'
 
-const http = axios.create({
+const axiosInstance = axios.create({
   baseURL: '/api',
   timeout: 15000
 })
 
-http.interceptors.request.use(config => {
+axiosInstance.interceptors.request.use(config => {
   const session = JSON.parse(localStorage.getItem('grid-session') || '{}')
   if (session?.token) {
     config.headers.Authorization = `Bearer ${session.token}`
@@ -36,22 +36,31 @@ function translateError(msg: string): string {
   return msg
 }
 
-http.interceptors.response.use(
+axiosInstance.interceptors.response.use(
   response => {
     const data = response.data
     if (data && data.success === true) {
       return data.data
     }
-    return Promise.reject(translateError(data?.message || '请求失败'))
+    return Promise.reject(new Error(translateError(data?.message || '请求失败')))
   },
   error => {
     if (error.response?.status === 401) {
       localStorage.removeItem('grid-session')
       window.location.href = '#/login'
     }
-    return Promise.reject(translateError(error.response?.data?.message || '网络错误，请检查网络连接'))
+    return Promise.reject(new Error(translateError(error.response?.data?.message || '网络错误，请检查网络连接')))
   }
 )
+
+type ApiHttpClient = {
+  get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>
+  post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>
+  put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>
+  delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>
+}
+
+const http = axiosInstance as unknown as ApiHttpClient
 
 export async function login(account: string, password: string) {
   const data = await http.post('/auth/login', { account, password, clientType: 'web' })
@@ -107,8 +116,35 @@ export async function reopenEvent(id: number) {
   return http.put(`/events/${id}/reopen`)
 }
 
-export async function dispatchEvent(id: number, data: { assigneeUserId: number; deadline?: string; remark?: string }) {
+export async function dispatchEvent(id: number, data: { assigneeUserId: number; remark?: string }) {
   return http.post(`/events/${id}/dispatch`, data)
+}
+
+export async function archiveEvent(id: number) {
+  return http.post(`/events/${id}/archive`)
+}
+
+export async function importFrom12345(data: {
+  title: string
+  description?: string
+  eventType?: string
+  location?: string
+  reporterName?: string
+  reporterPhone?: string
+  externalNo?: string
+}) {
+  return http.post('/events/12345-import', data)
+}
+
+export async function reportFromProperty(data: {
+  title: string
+  description?: string
+  eventType?: string
+  location?: string
+  propertyName?: string
+  reporterName?: string
+}) {
+  return http.post('/events/property-report', data)
 }
 
 export async function getEventTimeline(id: number) {

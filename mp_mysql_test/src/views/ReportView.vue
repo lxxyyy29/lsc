@@ -18,8 +18,8 @@
 
     <div class="card">
       <h3>问题描述</h3>
-      <input v-model="form.title" placeholder="简短描述问题（如：路灯损坏）" class="input" />
-      <textarea v-model="form.description" placeholder="详细描述您发现的问题..." class="textarea" rows="3" />
+      <p class="selected-type">已选择：{{ selectedType.label }}</p>
+      <textarea v-model="form.description" placeholder="请详细描述您发现的问题..." class="textarea" rows="3" />
     </div>
 
     <div class="card">
@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { computed, ref, reactive } from 'vue'
 import { reportEvent } from '../api'
 
 const loading = ref(false)
@@ -76,11 +76,12 @@ const types = [
 
 const form = reactive({
   type: 'ROAD',
-  title: '',
   description: '',
   contactName: '',
   contactPhone: ''
 })
+
+const selectedType = computed(() => types.find(t => t.value === form.type) || types[0])
 
 function addPhoto() {
   if (photos.value.length < 3) {
@@ -89,22 +90,21 @@ function addPhoto() {
 }
 
 async function handleSubmit() {
-  if (!form.title) { error.value = '请填写问题描述'; return }
+  if (!form.description.trim()) { error.value = '请填写问题描述'; return }
   loading.value = true
   error.value = ''
   success.value = ''
   try {
-    await reportEvent({
-      title: form.title,
+    const result: any = await reportEvent({
+      title: selectedType.value.label,
       description: form.description,
       type: form.type,
       contactName: form.contactName,
       contactPhone: form.contactPhone,
       photos: photos.value
     })
-    success.value = '上报成功！查询码：' + Date.now().toString(36).toUpperCase()
+    success.value = '上报成功！查询码：' + (result?.eventCode || result?.id || '')
     // 重置表单
-    form.title = ''
     form.description = ''
     form.contactName = ''
     form.contactPhone = ''
@@ -136,6 +136,7 @@ async function handleSubmit() {
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 .card h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #374151; }
+.selected-type { margin-bottom: 8px; font-size: 13px; color: #1890ff; }
 .type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .type-item {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -148,7 +149,7 @@ async function handleSubmit() {
   font-size: 14px; outline: none;
 }
 .input:focus, .textarea:focus { border-color: #1890ff; }
-.textarea { resize: none; margin-top: 8px; }
+.textarea { resize: none; }
 .photo-list { display: flex; gap: 8px; flex-wrap: wrap; }
 .photo-item { position: relative; width: 80px; height: 80px; }
 .photo-placeholder {

@@ -396,7 +396,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import http, { getJobs, createJob, pauseResumeJob, returnHome, getSpeakerFiles, playSpeaker as playSpeakerAction, stopSpeaker, setSpeakerVolume as setSpeakerVolumeAction, switchCameraMode as switchCameraModeAction, startRecording, stopRecording } from '../api'
+import http, { getSession, getJobs, createJob, pauseResumeJob, returnHome, getSpeakerFiles, playSpeaker as playSpeakerAction, stopSpeaker, setSpeakerVolume as setSpeakerVolumeAction, switchCameraMode as switchCameraModeAction, startRecording, stopRecording } from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { getEventTypeName } from '../utils/eventTypes'
 
@@ -629,7 +629,7 @@ async function selectDrone(d: any) {
   if (!deviceSn) return
 
   // 使用 HLS 流（通过后端代理，自动修复签名URL）
-  wsUrl.value = `/api/drone/stream/proxy/${deviceSn}/hls.m3u8`
+  wsUrl.value = `/api/drone/stream/proxy/${encodeURIComponent(deviceSn)}/hls.m3u8`
   streamType.value = 'HLS 实时直播'
 
   await nextTick()
@@ -643,9 +643,13 @@ async function selectDrone(d: any) {
   }
 
   const Hls = (await import('hls.js')).default
+  const session = getSession()
   hlsPlayer = new Hls({
     enableWorker: true,
     lowLatencyMode: true,
+    xhrSetup: (xhr: XMLHttpRequest) => {
+      if (session?.token) xhr.setRequestHeader('Authorization', `Bearer ${session.token}`)
+    },
     // 流畅直播配置
     backBufferLength: 90,
     maxBufferLength: 30,
@@ -848,9 +852,13 @@ async function _initHlsPlayer(url: string) {
   if (!video) return
 
   const Hls = (await import('hls.js')).default
+  const session = getSession()
   hlsPlayer = new Hls({
     enableWorker: true,
     lowLatencyMode: true,
+    xhrSetup: (xhr: XMLHttpRequest) => {
+      if (session?.token) xhr.setRequestHeader('Authorization', `Bearer ${session.token}`)
+    },
     backBufferLength: 2,
     maxBufferLength: 4,
     liveSyncDurationCount: 1

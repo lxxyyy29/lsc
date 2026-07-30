@@ -50,7 +50,10 @@
       >
         <!-- Card header -->
         <view class="task-top">
-          <text class="task-no">{{ item.workOrderNo }}</text>
+          <view style="display:flex;align-items:center;gap:8rpx;">
+            <text class="urgency-dot" :class="`urgency-dot--${item.urgencyLevel || 'NONE'}`"></text>
+            <text class="task-no">{{ item.workOrderNo }}</text>
+          </view>
           <view class="task-top-right">
             <view class="status-badge" :class="`status-badge--${activeTab}`">
               <text v-if="activeTab === 'myPending'" class="pulse-dot"></text>
@@ -127,6 +130,8 @@ const loadError = ref(false)
 const isLoading = ref(false)
 const keyword = ref('')
 const activeTab = ref<GroupKey>('myPending')
+const processedStatuses = ['PROCESSING', 'WAITING_CLOSE_CONFIRM', 'WAITING_VERIFY']
+const completedStatuses = ['COMPLETED', 'CLOSED', 'TIMEOUT']
 
 const filteredOrders = computed(() => {
   const search = keyword.value.trim()
@@ -136,23 +141,35 @@ const filteredOrders = computed(() => {
   )
 })
 
+// 紧急度排序权重：RED > YELLOW > GREEN > 其他
+function urgencyWeight(level: string): number {
+  if (level === 'RED') return 0
+  if (level === 'YELLOW') return 1
+  if (level === 'GREEN') return 2
+  return 3
+}
+
+function sortByUrgency(items: WorkOrderItem[]): WorkOrderItem[] {
+  return [...items].sort((a, b) => urgencyWeight(a.urgencyLevel) - urgencyWeight(b.urgencyLevel))
+}
+
 const allGroups = computed<WorkOrderGroup[]>(() => {
   const source = filteredOrders.value
   return [
     {
       key: 'myPending',
       label: '待处理',
-      items: source.filter((o) => o.isCurrentHandler && o.status === 'PROCESSING')
+      items: sortByUrgency(source.filter((o) => o.isCurrentHandler && o.status === 'PROCESSING'))
     },
     {
       key: 'processing',
       label: '已处理',
-      items: source.filter((o) => !o.isCurrentHandler && o.status === 'PROCESSING')
+      items: sortByUrgency(source.filter((o) => !o.isCurrentHandler && processedStatuses.includes(o.status)))
     },
     {
       key: 'completed',
       label: '已办结',
-      items: source.filter((o) => ['COMPLETED', 'CLOSED', 'TIMEOUT'].includes(o.status))
+      items: source.filter((o) => completedStatuses.includes(o.status))
     }
   ]
 })
@@ -496,6 +513,29 @@ onShow(async () => {
   border-radius: 999rpx;
   background: #5fd2ff;
   box-shadow: 0 0 8rpx rgba(95, 210, 255, 0.9);
+}
+
+/* Urgency dot (三色督办) */
+.urgency-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 999rpx;
+  flex-shrink: 0;
+}
+.urgency-dot--RED {
+  background: #ff4d4f;
+  box-shadow: 0 0 8rpx rgba(255, 77, 79, 0.8);
+}
+.urgency-dot--YELLOW {
+  background: #faad14;
+  box-shadow: 0 0 8rpx rgba(250, 173, 20, 0.7);
+}
+.urgency-dot--GREEN {
+  background: #52c41a;
+  box-shadow: 0 0 6rpx rgba(82, 196, 26, 0.6);
+}
+.urgency-dot--NONE {
+  background: rgba(214, 225, 239, 0.3);
 }
 
 .task-title {

@@ -76,7 +76,7 @@ export async function reportEvent(data: any) {
 }
 
 export async function getMyReports(params?: { page?: number; pageSize?: number }) {
-  return http.get('/events', { params: { page: 1, pageSize: 10, ...params } })
+  return http.get('/events/my-reports', { params: { page: 1, pageSize: 10, ...params } })
 }
 
 export async function rateEvent(eventId: number | string, data: { rating: number; comment?: string }) {

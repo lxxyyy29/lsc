@@ -17,7 +17,6 @@ const routes = [
   { path: '/audits', component: () => import('../views/AuditView.vue') },
   { path: '/processes', component: () => import('../views/ProcessView.vue') },
   { path: '/reports', component: () => import('../views/ReportsView.vue') },
-  { path: '/ai-models', component: () => import('../views/AiModelsView.vue') },
   { path: '/patrol', component: () => import('../views/PatrolView.vue') },
   { path: '/safety', component: () => import('../views/SafetyView.vue') },
   { path: '/party', component: () => import('../views/PartyView.vue') },
@@ -28,8 +27,7 @@ const routes = [
   { path: '/org-members', component: () => import('../views/OrgMemberView.vue') },
   { path: '/biz-areas', component: () => import('../views/BizAreaView.vue') },
   { path: '/resident-reports', component: () => import('../views/ResidentReportView.vue') },
-  { path: '/qwen-models', component: () => import('../views/QwenModelView.vue') },
-  { path: '/registrations', component: () => import('../views/RegistrationView.vue') },
+  { path: '/policy-resources', component: () => import('../views/PolicyResourceView.vue') },
 ]
 
 const router = createRouter({
