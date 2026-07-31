@@ -112,6 +112,7 @@ const menuGroups = [
   {
     name: '智能应用', icon: 'fas fa-helicopter',
     items: [
+      { path: '/big-screen', name: '综合监管大屏' },
       { path: '/drones', name: '无人机管理' },
       { path: '/integration', name: '信息互通' },
     ]

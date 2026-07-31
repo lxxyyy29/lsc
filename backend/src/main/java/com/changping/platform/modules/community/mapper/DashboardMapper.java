@@ -80,6 +80,117 @@ public class DashboardMapper {
         return result;
     }
 
+    /**
+     * 大屏汇总数据 — 一次性返回所有指标
+     */
+    public Map<String, Object> getBigScreenData() {
+        Map<String, Object> result = new HashMap<>();
+
+        // === 核心指标卡片 ===
+        Long eventTotal = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event", Long.class);
+        Long eventToday = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE DATE(created_at) = CURDATE()", Long.class);
+        Long eventPending = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status NOT IN ('CLOSED')", Long.class);
+        Long eventClosed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status = 'CLOSED'", Long.class);
+        Long workOrderTotal = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_work_order", Long.class);
+        Long workOrderProcessing = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_work_order WHERE status IN ('WAITING_ACCEPT','PROCESSING')", Long.class);
+
+        Map<String, Object> kpis = new HashMap<>();
+        kpis.put("eventTotal", eventTotal != null ? eventTotal : 0);
+        kpis.put("eventToday", eventToday != null ? eventToday : 0);
+        kpis.put("eventPending", eventPending != null ? eventPending : 0);
+        kpis.put("eventClosed", eventClosed != null ? eventClosed : 0);
+        kpis.put("workOrderTotal", workOrderTotal != null ? workOrderTotal : 0);
+        kpis.put("workOrderProcessing", workOrderProcessing != null ? workOrderProcessing : 0);
+        result.put("kpis", kpis);
+
+        // === 紧急程度分布 ===
+        List<Map<String, Object>> urgencyDist = jdbcTemplate.queryForList(
+            "SELECT urgency_level AS level, COUNT(id) AS count FROM biz_event GROUP BY urgency_level");
+        result.put("urgencyDist", urgencyDist);
+
+        // === 事件类型分布 ===
+        List<Map<String, Object>> eventTypeDist = jdbcTemplate.queryForList(
+            "SELECT event_type AS type, COUNT(id) AS count FROM biz_event GROUP BY event_type ORDER BY count DESC LIMIT 8");
+        result.put("eventTypeDist", eventTypeDist);
+
+        // === 近 7 天趋势 ===
+        List<Map<String, Object>> weeklyTrend = jdbcTemplate.queryForList(
+            "SELECT DATE(created_at) AS date, COUNT(id) AS count FROM biz_event " +
+            "WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) " +
+            "GROUP BY DATE(created_at) ORDER BY date ASC");
+        result.put("weeklyTrend", weeklyTrend);
+
+        // === 各网格事件排名 ===
+        List<Map<String, Object>> gridRanking = jdbcTemplate.queryForList(
+            "SELECT g.grid_name AS gridName, COUNT(e.id) AS eventCount " +
+            "FROM cmn_grid g LEFT JOIN biz_event e ON g.id = e.grid_id " +
+            "WHERE g.status = 'ACTIVE' AND g.grid_level = 2 " +
+            "GROUP BY g.id, g.grid_name ORDER BY eventCount DESC LIMIT 10");
+        result.put("gridRanking", gridRanking);
+
+        // === 最新工单 ===
+        List<Map<String, Object>> recentWorkOrders = jdbcTemplate.queryForList(
+            "SELECT wo.work_order_no AS workOrderNo, wo.status, wo.assignee_name AS assigneeName, " +
+            "wo.created_at AS createdAt FROM biz_work_order wo ORDER BY wo.created_at DESC LIMIT 10");
+        result.put("recentWorkOrders", recentWorkOrders);
+
+        return result;
+    }
+
+    /**
+     * 月度汇总报表
+     */
+    public Map<String, Object> getMonthlySummary(String year, String month) {
+        Map<String, Object> result = new HashMap<>();
+
+        String startDate = year + "-" + month + "-01";
+        String endDate = year + "-" + month + "-31";
+
+        // 本月事件数
+        Long eventCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM biz_event WHERE created_at >= ? AND created_at <= ?",
+            Long.class, startDate, endDate);
+        result.put("eventCount", eventCount != null ? eventCount : 0);
+
+        // 本月工单数
+        Long workOrderCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM biz_work_order WHERE created_at >= ? AND created_at <= ?",
+            Long.class, startDate, endDate);
+        result.put("workOrderCount", workOrderCount != null ? workOrderCount : 0);
+
+        // 本月完成工单
+        Long completedCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM biz_work_order WHERE status = 'COMPLETED' AND completed_at >= ? AND completed_at <= ?",
+            Long.class, startDate, endDate);
+        result.put("completedCount", completedCount != null ? completedCount : 0);
+
+        result.put("year", year);
+        result.put("month", month);
+        return result;
+    }
+
+    /**
+     * 网格处置排名
+     */
+    public Map<String, Object> getGridRanking(String period) {
+        Map<String, Object> result = new HashMap<>();
+        String timeFilter = "month".equals(period)
+            ? "created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
+            : "created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+
+        List<Map<String, Object>> rankings = jdbcTemplate.queryForList(
+            "SELECT g.grid_name AS gridName, " +
+            "COUNT(e.id) AS eventCount, " +
+            "SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END) AS closedCount, " +
+            "ROUND(SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(e.id), 0), 1) AS closeRate " +
+            "FROM cmn_grid g LEFT JOIN biz_event e ON g.id = e.grid_id AND " + timeFilter + " " +
+            "WHERE g.status = 'ACTIVE' AND g.grid_level = 2 " +
+            "GROUP BY g.id, g.grid_name ORDER BY closeRate DESC");
+        result.put("period", period);
+        result.put("rankings", rankings);
+        return result;
+    }
+
     public Map<String, Object> getGridStats() {
         Map<String, Object> result = new HashMap<>();
 

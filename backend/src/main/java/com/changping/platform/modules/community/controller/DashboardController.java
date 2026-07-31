@@ -9,6 +9,7 @@ import com.changping.platform.modules.community.mapper.DashboardMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -37,6 +38,38 @@ public class DashboardController {
     public ApiResponse<Map<String, Object>> overview() {
         requireDashboardPermission();
         return ApiResponse.ok(dashboardMapper.getOverview());
+    }
+
+    /**
+     * 综合监管大屏 — 一次性返回所有指标
+     */
+    @GetMapping("/big-screen")
+    public ApiResponse<Map<String, Object>> bigScreen() {
+        requireDashboardPermission();
+        return ApiResponse.ok(dashboardMapper.getBigScreenData());
+    }
+
+    /**
+     * 月度汇总报表
+     */
+    @GetMapping("/monthly-summary")
+    public ApiResponse<Map<String, Object>> monthlySummary(
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String month) {
+        requireDashboardPermission();
+        if (year == null) year = String.valueOf(java.time.LocalDate.now().getYear());
+        if (month == null) month = String.valueOf(java.time.LocalDate.now().getMonthValue());
+        return ApiResponse.ok(dashboardMapper.getMonthlySummary(year, month));
+    }
+
+    /**
+     * 网格处置排名
+     */
+    @GetMapping("/grid-ranking")
+    public ApiResponse<Map<String, Object>> gridRanking(
+            @RequestParam(defaultValue = "month") String period) {
+        requireDashboardPermission();
+        return ApiResponse.ok(dashboardMapper.getGridRanking(period));
     }
 
     @GetMapping("/grid-stats")

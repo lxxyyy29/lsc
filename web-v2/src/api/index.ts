@@ -437,4 +437,9 @@ export async function executeImport(type: string, file: File) {
   return http.post('/community/import/execute', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
 }
 
+// 综合监管大屏
+export async function getBigScreenData() {
+  return http.get('/community/dashboard/big-screen')
+}
+
 export default http
