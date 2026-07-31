@@ -6,6 +6,8 @@ import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.community.mapper.ExportMapper;
 import com.changping.platform.modules.community.service.ExportService;
+import com.changping.platform.modules.community.service.PdfExportService;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,17 +23,23 @@ import java.util.Map;
 public class ExportController {
 
     private final ExportService exportService;
+    private final PdfExportService pdfExportService;
     private final ExportMapper exportMapper;
+    private final JdbcTemplate jdbcTemplate;
     private final CurrentUserService currentUserService;
     private final PermissionGuard permissionGuard;
 
     public ExportController(
             ExportService exportService,
+            PdfExportService pdfExportService,
             ExportMapper exportMapper,
+            JdbcTemplate jdbcTemplate,
             CurrentUserService currentUserService,
             PermissionGuard permissionGuard) {
         this.exportService = exportService;
+        this.pdfExportService = pdfExportService;
         this.exportMapper = exportMapper;
+        this.jdbcTemplate = jdbcTemplate;
         this.currentUserService = currentUserService;
         this.permissionGuard = permissionGuard;
     }
@@ -92,6 +100,36 @@ public class ExportController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=patrol_ledger.xlsx")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(excel);
+    }
+
+    /**
+     * 导出事件台账 PDF
+     */
+    @GetMapping("/events-pdf")
+    public ResponseEntity<byte[]> exportEventsPdf() throws Exception {
+        requireExportPermission(PermissionCodes.API_EVENT_LIST);
+        List<Map<String, Object>> data = exportMapper.getEventLedger();
+        byte[] pdf = pdfExportService.exportEventPdf(data);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=event_report.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    /**
+     * 导出工单台账 PDF
+     */
+    @GetMapping("/work-orders-pdf")
+    public ResponseEntity<byte[]> exportWorkOrdersPdf() throws Exception {
+        requireExportPermission(PermissionCodes.API_EVENT_LIST);
+        List<Map<String, Object>> data = jdbcTemplate.queryForList(
+            "SELECT work_order_no, status, assignee_name, dispatcher_name, urgency_level, created_at " +
+            "FROM biz_work_order ORDER BY created_at DESC LIMIT 500");
+        byte[] pdf = pdfExportService.exportWorkOrderPdf(data);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=work_order_report.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
     @GetMapping(value = "/test", produces = MediaType.TEXT_PLAIN_VALUE)

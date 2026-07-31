@@ -516,4 +516,60 @@ public class EventController {
         sql.append(" ORDER BY created_at DESC LIMIT 500");
         return ApiResponse.ok(jdbcTemplate.queryForList(sql.toString(), params.toArray()));
     }
+
+    /**
+     * 批量审核事件（通过/忽略）
+     */
+    @PostMapping("/batch-audit")
+    public ApiResponse<Map<String, Object>> batchAudit(@RequestBody Map<String, Object> request) {
+        @SuppressWarnings("unchecked")
+        List<Number> eventIds = (List<Number>) request.get("eventIds");
+        String action = (String) request.get("action");
+        if (eventIds == null || eventIds.isEmpty()) {
+            return ApiResponse.fail("INVALID_PARAMS", "请选择要操作的事件");
+        }
+        AuthenticatedUser operator = currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_EVENT_IGNORE);
+
+        int success = 0;
+        for (Number id : eventIds) {
+            try {
+                if ("ignore".equals(action)) {
+                    eventIgnoreService.ignoreEvent(id.longValue(), operator.id(), operator.userName(), "批量忽略");
+                }
+                success++;
+            } catch (Exception e) {
+                // 跳过失败
+            }
+        }
+        return ApiResponse.ok(Map.of("success", success, "total", eventIds.size()));
+    }
+
+    /**
+     * 批量派单
+     */
+    @PostMapping("/batch-dispatch")
+    public ApiResponse<Map<String, Object>> batchDispatch(@RequestBody Map<String, Object> request) {
+        @SuppressWarnings("unchecked")
+        List<Number> eventIds = (List<Number>) request.get("eventIds");
+        Long assigneeUserId = request.get("assigneeUserId") != null ? Long.parseLong(request.get("assigneeUserId").toString()) : null;
+        String remark = (String) request.get("remark");
+
+        if (eventIds == null || eventIds.isEmpty() || assigneeUserId == null) {
+            return ApiResponse.fail("INVALID_PARAMS", "请选择事件和网格员");
+        }
+        permissionGuard.require(PermissionCodes.API_WORKORDER_DISPATCH);
+
+        int success = 0;
+        for (Number id : eventIds) {
+            try {
+                workOrderService.dispatch(id.longValue(),
+                    new WorkOrderService.DispatchRequest(assigneeUserId, remark != null ? remark : "批量派单"));
+                success++;
+            } catch (Exception e) {
+                // 跳过失败
+            }
+        }
+        return ApiResponse.ok(Map.of("success", success, "total", eventIds.size()));
+    }
 }

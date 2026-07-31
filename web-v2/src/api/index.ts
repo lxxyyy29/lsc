@@ -442,4 +442,26 @@ export async function getBigScreenData() {
   return http.get('/community/dashboard/big-screen')
 }
 
+// 事件评价
+export async function submitRating(data: { eventId: number; score: number; content?: string; tags?: string }) {
+  return http.post('/event-ratings', data)
+}
+export async function getEventRatings(eventId: number | string) {
+  return http.get(`/event-ratings/event/${eventId}`)
+}
+export async function getEventRatingStats(eventId: number | string) {
+  return http.get(`/event-ratings/event/${eventId}/stats`)
+}
+export async function getOverallRatingStats() {
+  return http.get('/event-ratings/overall-stats')
+}
+
+// 批量操作
+export async function batchAuditEvents(eventIds: number[], action: string) {
+  return http.post('/events/batch-audit', { eventIds, action })
+}
+export async function batchDispatch(data: { eventIds: number[]; assigneeUserId: number; remark?: string }) {
+  return http.post('/events/batch-dispatch', data)
+}
+
 export default http
