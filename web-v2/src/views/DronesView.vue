@@ -732,15 +732,12 @@ function _connectWebSocket(deviceSn: string) {
 
   wsSocket.onopen = () => {
     wsConnected.value = true
-    console.log('WebSocket 已连接')
   }
 
   wsSocket.onmessage = (event: MessageEvent) => {
-    console.log('WebSocket 收到消息:', event.data.substring(0, 200))
     try {
       const msg = JSON.parse(event.data)
       if (msg.type === 'connected') {
-        console.log('WebSocket 连接确认:', msg.deviceSn)
         return
       }
       // 处理遥测数据
@@ -760,7 +757,6 @@ function _connectWebSocket(deviceSn: string) {
         if (data.temperature !== undefined) realtimeData.value.temperature = data.temperature
         if (data.wind_speed !== undefined) realtimeData.value.windSpeed = data.wind_speed
         if (data.rainfall !== undefined) realtimeData.value.rainfall = data.rainfall
-        console.log('实时数据更新:', realtimeData.value)
       }
     } catch (e) {
       console.warn('WebSocket 消息解析失败:', e)
