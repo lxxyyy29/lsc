@@ -112,6 +112,13 @@
         "navigationStyle": "default",
         "navigationBarTitleText": "上报记录"
       }
+    },
+    {
+      "path": "pages/map/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "移动 GIS"
+      }
     }
   ],
   "tabBar": {
@@ -129,6 +136,12 @@
         "text": "工作台",
         "iconPath": "static/tab-home.png",
         "selectedIconPath": "static/tab-home-active.png"
+      },
+      {
+        "pagePath": "pages/map/index",
+        "text": "地图",
+        "iconPath": "static/tab-task.png",
+        "selectedIconPath": "static/tab-task-active.png"
       },
       {
         "pagePath": "pages/patrol/checkin",
