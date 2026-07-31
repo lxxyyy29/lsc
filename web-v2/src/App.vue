@@ -4,6 +4,10 @@
     <nav class="top-nav">
       <h1><i class="fas fa-building"></i>网格社区治理平台</h1>
       <div style="display:flex;align-items:center;gap:16px;">
+        <router-link to="/help" style="font-size:16px;color:#6b7280;text-decoration:none;padding:6px;" title="帮助中心">
+          <i class="fas fa-question-circle"></i>
+        </router-link>
+        <NotificationBell />
         <span style="font-size:12px;color:#9ca3af;">{{ session?.userName || '管理员' }}</span>
         <div style="width:32px;height:32px;background:#0284c7;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;">{{ session?.userName?.slice(0,1) || '管' }}</div>
         <div class="user-menu-wrapper" @click.stop="showUserMenu = !showUserMenu">
@@ -63,6 +67,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getSession, login, logout } from './api'
 import LoginView from './views/LoginView.vue'
+import NotificationBell from './components/NotificationBell.vue'
 
 const session = ref(getSession())
 const route = useRoute()

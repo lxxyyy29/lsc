@@ -1,7 +1,14 @@
 <template>
   <div>
-    <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">房屋/出租屋库</h2>
-    <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">楼栋、分户信息、房东租客、消防隐患</p>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+      <div>
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">房屋/出租屋库</h2>
+        <p style="font-size:13px;color:#6b7280;">楼栋、分户信息、房东租客、消防隐患</p>
+      </div>
+      <button @click="showImport = true" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">
+        <i class="fas fa-file-import"></i> 导入
+      </button>
+    </div>
     <div class="card">
       <div v-if="loading" style="text-align:center;padding:40px;color:#9ca3af;">
         <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
@@ -28,15 +35,21 @@
         <p v-if="!list.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无数据</p>
       </template>
     </div>
+
+    <!-- 导入对话框 -->
+    <ImportDialog v-model:visible="showImport" type="buildings" @success="fetchData" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import http from '../api'
+import ImportDialog from '../components/ImportDialog.vue'
+
 const list = ref<any[]>([])
 const loading = ref(true)
 const error = ref('')
+const showImport = ref(false)
 
 async function fetchData() {
   loading.value = true

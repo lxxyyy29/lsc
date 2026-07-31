@@ -7,6 +7,7 @@ import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.auth.vo.CurrentUserVo;
 import com.changping.platform.modules.auth.vo.LoginResponse;
+import com.changping.platform.modules.common.security.RateLimit;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,6 +47,7 @@ public class H5AuthController {
      * @Param [request 登录请求对象，包含账号和密码]
      * @return ApiResponse<LoginResponse> 登录成功响应，包含令牌和用户信息
      */
+    @RateLimit(limit = 5, window = 60, type = RateLimit.RateLimitType.IP, message = "登录尝试过于频繁，请稍后再试")
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.ok(authService.login(request.account(), request.password(), AuthService.ClientType.H5));

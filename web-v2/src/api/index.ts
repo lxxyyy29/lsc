@@ -405,4 +405,36 @@ export async function rollbackAuditLog(id: number | string) {
   return http.post(`/audit-logs/rollback/${id}`)
 }
 
+// 站内通知
+export async function getNotifications(params?: { page?: number; pageSize?: number }) {
+  return http.get('/notifications', { params: { page: 1, pageSize: 20, ...params } })
+}
+export async function getUnreadCount() {
+  return http.get('/notifications/unread-count')
+}
+export async function markNotificationRead(id: number | string) {
+  return http.post(`/notifications/${id}/read`)
+}
+export async function markAllNotificationsRead() {
+  return http.post('/notifications/read-all')
+}
+export async function deleteNotification(id: number | string) {
+  return http.delete(`/notifications/${id}`)
+}
+
+// 数据导入
+export async function previewImport(type: string, file: File, previewRows = 10) {
+  const formData = new FormData()
+  formData.append('type', type)
+  formData.append('file', file)
+  formData.append('previewRows', String(previewRows))
+  return http.post('/community/import/preview', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+}
+export async function executeImport(type: string, file: File) {
+  const formData = new FormData()
+  formData.append('type', type)
+  formData.append('file', file)
+  return http.post('/community/import/execute', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+}
+
 export default http

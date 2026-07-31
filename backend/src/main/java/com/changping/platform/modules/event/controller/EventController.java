@@ -2,6 +2,7 @@ package com.changping.platform.modules.event.controller;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.ApiResponse;
+import com.changping.platform.modules.common.security.RateLimit;
 import com.changping.platform.common.response.PagedResult;
 import com.changping.platform.modules.auth.model.AuthenticatedUser;
 import com.changping.platform.modules.auth.security.AuthenticatedUserContextHolder;
@@ -410,6 +411,7 @@ public class EventController {
     /**
      * 群众随手拍上报（简化接口，自动填充技术字段）
      */
+    @RateLimit(limit = 30, window = 60, type = RateLimit.RateLimitType.IP, message = "上报过于频繁，请稍后再试")
     @PostMapping("/public-report")
     public ResponseEntity<?> publicReport(@RequestBody Map<String, Object> body) {
         try {

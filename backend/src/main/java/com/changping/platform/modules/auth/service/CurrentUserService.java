@@ -58,4 +58,12 @@ public class CurrentUserService {
         }
         return authenticatedUser;
     }
+
+    /**
+     * 获取当前登录用户ID（Web端），未登录时抛出业务异常
+     */
+    public Long requireUserId() {
+        AuthenticatedUser authenticatedUser = requireClientType(AuthService.ClientType.WEB);
+        return authenticatedUser.id();
+    }
 }

@@ -28,6 +28,7 @@ const routes = [
   { path: '/biz-areas', component: () => import('../views/BizAreaView.vue') },
   { path: '/resident-reports', component: () => import('../views/ResidentReportView.vue') },
   { path: '/policy-resources', component: () => import('../views/PolicyResourceView.vue') },
+  { path: '/help', component: () => import('../views/HelpView.vue') },
 ]
 
 const router = createRouter({
