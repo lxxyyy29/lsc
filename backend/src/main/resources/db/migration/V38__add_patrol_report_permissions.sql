@@ -2,15 +2,17 @@
 -- V38: 新增巡查记录管理和居民上报管理权限
 -- =============================================================================
 
--- 巡查记录管理
+-- 巡查记录管理（动态获取网格治理目录的 ID）
 INSERT INTO sys_permission (permission_code, permission_name, permission_type, client_type, parent_id, path, component, sort_order, status, remark, created_at, updated_at)
-SELECT 'menu:community:patrol-record', '巡查记录管理', 'MENU', 'WEB', 216, '/community/patrol-records', 'community/PatrolRecordListView', 50, 'ACTIVE', '网格治理-巡查记录管理', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM sys_permission WHERE permission_code = 'menu:community:patrol-record');
+SELECT 'menu:community:patrol-record', '巡查记录管理', 'MENU', 'WEB', id, '/community/patrol-records', 'community/PatrolRecordListView', 50, 'ACTIVE', '网格治理-巡查记录管理', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM sys_permission WHERE permission_code = 'catalog:community'
+AND NOT EXISTS (SELECT 1 FROM sys_permission WHERE permission_code = 'menu:community:patrol-record');
 
 -- 居民上报管理
 INSERT INTO sys_permission (permission_code, permission_name, permission_type, client_type, parent_id, path, component, sort_order, status, remark, created_at, updated_at)
-SELECT 'menu:community:resident-report', '居民上报管理', 'MENU', 'WEB', 216, '/community/resident-reports', 'community/ResidentReportListView', 60, 'ACTIVE', '网格治理-居民上报管理', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM sys_permission WHERE permission_code = 'menu:community:resident-report');
+SELECT 'menu:community:resident-report', '居民上报管理', 'MENU', 'WEB', id, '/community/resident-reports', 'community/ResidentReportListView', 60, 'ACTIVE', '网格治理-居民上报管理', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM sys_permission WHERE permission_code = 'catalog:community'
+AND NOT EXISTS (SELECT 1 FROM sys_permission WHERE permission_code = 'menu:community:resident-report');
 
 -- 分配给 SUPER_ADMIN
 INSERT INTO sys_role_permission (role_id, permission_id, created_at, updated_at)
