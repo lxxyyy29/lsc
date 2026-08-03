@@ -152,7 +152,7 @@ services:
       MONGODB_PORT: 27017
       MONGODB_DATABASE: alarm_dgcp
       # JWT 密钥（生产环境必须修改）
-      JWT_SECRET: ${JWT_SECRET:-changping-grid-community-2026-secret-key}
+      JWT_SECRET: changping-grid-community-2026-secret-key
       # 文件上传
       MEDIA_UPLOAD_DIR: /app/uploads/
       MEDIA_ACCESS_URL: ${DOMAIN:-http://localhost:10080}/media/files/
