@@ -135,6 +135,8 @@ services:
       dockerfile: ../docker/Dockerfile.backend
     container_name: changping-backend
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       # 数据库配置（使用容器名内部访问）
       DB_URL: jdbc:mysql://changping-mysql:3306/zhsq?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
