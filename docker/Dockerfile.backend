@@ -1,0 +1,42 @@
+# ============================================
+# 后端 Dockerfile - Spring Boot 应用
+# ============================================
+FROM eclipse-temurin:17-jdk-alpine AS builder
+
+WORKDIR /app
+
+# 复制 Maven 配置和源码
+COPY pom.xml .
+COPY src ./src
+
+# 打包（跳过测试加速构建）
+RUN apk add --no-cache maven && \
+    mvn clean package -DskipTests -q
+
+# ============================================
+# 运行阶段
+# ============================================
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+# 安装 curl 用于健康检查
+RUN apk add --no-cache curl tzdata && \
+    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone
+
+# 从构建阶段复制 JAR
+COPY --from=builder /app/target/*.jar app.jar
+
+# 创建上传目录
+RUN mkdir -p /app/uploads
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/api/auth/login -X POST -H "Content-Type: application/json" -d '{"account":"health","password":"check","clientType":"WEB"}' > /dev/null 2>&1 || exit 1
+
+# 暴露端口
+EXPOSE 8080
+
+# 启动命令
+ENTRYPOINT ["java", "-Xms512m", "-Xmx1g", "-XX:+UseG1GC", "-jar", "app.jar"]

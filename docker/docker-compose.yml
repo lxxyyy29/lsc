@@ -1,0 +1,234 @@
+# ============================================
+# 网格社区治理平台 - Docker Compose 配置
+#
+# 部署注意事项：
+# - 使用 10080/10081/10082/10083 空闲端口，避开已有服务
+#   （已确认与 uav/emqx/wvp/gitlab/gov 等项目无冲突）
+# - 数据库/Redis/MongoDB/MinIO 不映射宿主机端口，仅在 Docker 内部网络访问
+# - 所有容器添加日志轮转，防止磁盘爆满
+# - 容器名统一使用 changping- 前缀，避免与现有容器冲突
+# - 数据目录使用 /home/docker/uav/changping/data/，与现有项目分离
+#
+# 安全建议：
+# - 生产环境必须修改 .env 中所有默认密码
+# - 数据库端口不对公网开放
+# - 配置阿里云安全组限制来源 IP
+# ============================================
+version: '3.8'
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "100m"
+    max-file: "3"
+
+services:
+  # ==========================================
+  # MySQL 数据库（不映射宿主机端口）
+  # ==========================================
+  changping-mysql:
+    image: mysql:8.0
+    container_name: changping-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: zhsq
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+      TZ: Asia/Shanghai
+    # 不映射宿主机端口，仅在 Docker 网络内部访问
+    expose:
+      - "3306"
+    volumes:
+      - /home/docker/uav/changping/data/mysql:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+      - --max-connections=200
+      - --innodb-buffer-pool-size=256M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - changping-net
+    logging: *default-logging
+
+  # ==========================================
+  # Redis 缓存（不映射宿主机端口）
+  # ==========================================
+  changping-redis:
+    image: redis:7-alpine
+    container_name: changping-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    expose:
+      - "6379"
+    volumes:
+      - /home/docker/uav/changping/data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - changping-net
+    logging: *default-logging
+
+  # ==========================================
+  # MongoDB（告警数据，不映射宿主机端口）
+  # ==========================================
+  changping-mongodb:
+    image: mongo:7
+    container_name: changping-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: alarm_dgcp
+      TZ: Asia/Shanghai
+    expose:
+      - "27017"
+    volumes:
+      - /home/docker/uav/changping/data/mongodb:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - changping-net
+    logging: *default-logging
+
+  # ==========================================
+  # MinIO 对象存储（不映射宿主机端口）
+  # ==========================================
+  changping-minio:
+    image: minio/minio:latest
+    container_name: changping-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+      TZ: Asia/Shanghai
+    expose:
+      - "9000"
+      - "9001"
+    volumes:
+      - /home/docker/uav/changping/data/minio:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - changping-net
+    logging: *default-logging
+
+  # ==========================================
+  # 后端 API（映射 10081）
+  # ==========================================
+  changping-backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: changping-backend
+    restart: unless-stopped
+    environment:
+      # 数据库配置（使用容器名内部访问）
+      DB_URL: jdbc:mysql://changping-mysql:3306/zhsq?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # Redis 配置
+      REDIS_HOST: changping-redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DATABASE: 0
+      # MongoDB 配置
+      MONGODB_HOST: changping-mongodb
+      MONGODB_PORT: 27017
+      MONGODB_DATABASE: alarm_dgcp
+      # JWT 密钥（生产环境必须修改）
+      JWT_SECRET: ${JWT_SECRET}
+      # 文件上传
+      MEDIA_UPLOAD_DIR: /app/uploads/
+      MEDIA_ACCESS_URL: ${DOMAIN:-http://localhost:10080}/media/files/
+      # 时区
+      TZ: Asia/Shanghai
+    ports:
+      - "${BACKEND_PORT:-10081}:8080"
+    volumes:
+      - /home/docker/uav/changping/uploads:/app/uploads
+    depends_on:
+      changping-mysql:
+        condition: service_healthy
+      changping-redis:
+        condition: service_healthy
+      changping-mongodb:
+        condition: service_healthy
+    networks:
+      - changping-net
+    logging: *default-logging
+
+  # ==========================================
+  # Web 管理端（映射 10080）
+  # ==========================================
+  changping-web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      target: web
+    container_name: changping-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-10080}:80"
+    depends_on:
+      - changping-backend
+    networks:
+      - changping-net
+    logging: *default-logging
+
+  # ==========================================
+  # H5 移动端（映射 10082）
+  # ==========================================
+  changping-h5:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      target: h5
+    container_name: changping-h5
+    restart: unless-stopped
+    ports:
+      - "${H5_PORT:-10082}:80"
+    depends_on:
+      - changping-backend
+    networks:
+      - changping-net
+    logging: *default-logging
+
+  # ==========================================
+  # 小程序（映射 10083）
+  # ==========================================
+  changping-mp:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      target: mp
+    container_name: changping-mp
+    restart: unless-stopped
+    ports:
+      - "${MP_PORT:-10083}:80"
+    depends_on:
+      - changping-backend
+    networks:
+      - changping-net
+    logging: *default-logging
+
+# ==========================================
+# 网络
+# ==========================================
+networks:
+  changping-net:
+    driver: bridge
+    name: changping-net
