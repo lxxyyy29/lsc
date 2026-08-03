@@ -26,8 +26,6 @@ class ChatClient {
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
-      // 优先使用 WebSocket，禁用 XHR 回退（避免代理环境下 XHR 传输 404）
-      transports: ['websocket', 'xhr-streaming', 'xhr-polling'],
       onConnect: () => {
         console.log('[ChatClient] STOMP connected, subscribing to /user/queue/messages')
         // 订阅个人消息队列

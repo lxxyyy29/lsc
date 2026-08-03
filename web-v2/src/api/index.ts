@@ -8,8 +8,10 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(config => {
   const session = JSON.parse(localStorage.getItem('grid-session') || '{}')
   if (session?.token) {
-    config.headers = config.headers ?? {}
-    config.headers.Authorization = `Bearer ${session.token}`
+    if (!config.headers) {
+      config.headers = {} as any
+    }
+    (config.headers as Record<string, string>).Authorization = `Bearer ${session.token}`
   }
   return config
 })
