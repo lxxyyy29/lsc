@@ -9,6 +9,10 @@
         <button @click="handleSync" class="btn btn-default">
           <i class="fas fa-sync"></i>同步网格员
         </button>
+        <button @click="showApproval = true; fetchPending()" class="btn btn-default">
+          <i class="fas fa-user-check"></i>注册审批
+          <span v-if="pendingCount > 0" style="background:#dc2626;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;">{{ pendingCount }}</span>
+        </button>
         <button @click="showAdd = true" class="btn btn-primary">
           <i class="fas fa-plus"></i>添加组织人员
         </button>
@@ -54,6 +58,32 @@
           <p>暂无网格员，点击"添加网格员"开始添加</p>
         </div>
       </template>
+    </div>
+
+    <!-- 注册审批弹窗 -->
+    <div v-if="showApproval" class="modal-overlay" @click.self="showApproval = false">
+      <div class="modal-box" style="width:600px;">
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">注册审批</h3>
+        <table class="table" style="font-size:13px;">
+          <thead><tr><th>用户名</th><th>姓名</th><th>手机号</th><th>申请时间</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr v-for="r in pendingList" :key="r.id">
+              <td>{{ r.username }}</td>
+              <td>{{ r.realName }}</td>
+              <td>{{ r.phone }}</td>
+              <td>{{ r.createdAt }}</td>
+              <td>
+                <button @click="approveReg(r)" class="btn btn-primary" style="padding:4px 10px;font-size:12px;">通过</button>
+                <button @click="rejectReg(r)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;">拒绝</button>
+              </td>
+            </tr>
+            <tr v-if="!pendingList.length"><td colspan="5" style="text-align:center;color:#999;padding:20px;">暂无待审批</td></tr>
+          </tbody>
+        </table>
+        <div style="text-align:right;margin-top:16px;">
+          <button @click="showApproval = false" class="btn btn-default">关闭</button>
+        </div>
+      </div>
     </div>
 
     <!-- 添加/编辑弹窗 -->
@@ -118,6 +148,9 @@ const loading = ref(true)
 const error = ref('')
 const showAdd = ref(false)
 const showEdit = ref(false)
+const showApproval = ref(false)
+const pendingList = ref<any[]>([])
+const pendingCount = ref(0)
 
 const form = ref({
   id: null as number | null,
@@ -156,11 +189,34 @@ async function fetchData() {
   error.value = ''
   try {
     list.value = await http.get('/community/org-members') || []
+    // 获取待审批数量
+    const pending = await http.get('/registration/pending') || []
+    pendingCount.value = pending.length
   } catch(e: any) {
     error.value = e?.message || '加载失败，请稍后重试'
   } finally {
     loading.value = false
   }
+}
+
+async function fetchPending() {
+  pendingList.value = await http.get('/registration/pending') || []
+}
+
+async function approveReg(row: any) {
+  await http.post(`/registration/${row.id}/approve`, { remark: '审批通过' })
+  alert('已通过')
+  await fetchPending()
+  await fetchData()
+}
+
+async function rejectReg(row: any) {
+  const remark = prompt('拒绝原因：')
+  if (remark === null) return
+  await http.post(`/registration/${row.id}/reject`, { remark })
+  alert('已拒绝')
+  await fetchPending()
+  await fetchData()
 }
 
 async function fetchGrids() {
