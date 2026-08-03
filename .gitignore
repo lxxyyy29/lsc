@@ -11,7 +11,8 @@ backend/.flattened-pom.xml
 !.env.*.example
 backend/src/main/resources/application-local.yml
 .env.local
-backend/src/main/resources/application.yml
+# application.yml is required for Docker deployment
+# backend/src/main/resources/application.yml
 
 # Node
 node_modules/

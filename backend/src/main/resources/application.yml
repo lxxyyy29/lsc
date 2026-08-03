@@ -1,0 +1,90 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  flyway:
+    out-of-order: true
+    validate-on-migrate: false
+  application:
+    name: changping-platform
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/zhsq?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+    driver-class-name: ${DB_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+  data:
+    mongodb:
+      uri: mongodb://${MONGODB_HOST:127.0.0.1}:${MONGODB_PORT:27017}/${MONGODB_DATABASE:alarm_dgcp}
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:123456}
+      database: ${REDIS_DATABASE:7}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+security:
+  auth:
+    jwt-secret: changping-grid-community-2026-secret-key-48chars
+    access-token-expire-minutes: 10080
+media:
+  upload-dir: ${MEDIA_UPLOAD_DIR:${user.dir}/uploads/}
+  access-url: ${MEDIA_ACCESS_URL:http://localhost:8080/media/files/}
+drone:
+  api:
+    server-addr: ${DRONE_API_SERVER:https://drone.kfktec.cn:9085}
+    ws-addr: ${DRONE_WS_SERVER:ws://drone.kfktec.cn:9085}
+    username: ${DRONE_API_USERNAME:admin}
+    password: ${DRONE_API_PASSWORD:kfk@dksl0515}
+    fixed-workspace-id: ${DRONE_API_FIXED_WORKSPACE_ID:d9465bc0-6718-42aa-92e6-2b150a2002ec}
+    sm4-secret-key: ${DRONE_API_SM4_SECRET_KEY:gsis20232023gsis}
+    sm4-iv: ${DRONE_API_SM4_IV:9na3v13cy9bt39vu}
+    token-cache-ttl: ${DRONE_API_TOKEN_CACHE_TTL:50m}
+    drone-sn: ${DRONE_SN:1581F8HGD249Q0010233}
+  alarm-integration:
+    source-system: ${DRONE_ALARM_SOURCE_SYSTEM:THIRD_PARTY_DRONE}
+    source-type: ${DRONE_ALARM_SOURCE_TYPE:DRONE_ALARM}
+    default-event-type: ${DRONE_ALARM_DEFAULT_EVENT_TYPE:DRONE_ALARM}
+    collection: ${DRONE_ALARM_MONGO_COLLECTION:alarm_events}
+    callback:
+      require-verification: ${DRONE_ALARM_CALLBACK_REQUIRE_VERIFICATION:true}
+      token-header: ${DRONE_ALARM_CALLBACK_TOKEN_HEADER:X-Callback-Token}
+      token: ${DRONE_ALARM_CALLBACK_TOKEN:changping-default-callback-token}
+      signature-header: ${DRONE_ALARM_CALLBACK_SIGNATURE_HEADER:X-Callback-Signature}
+      signature-secret: ${DRONE_ALARM_CALLBACK_SIGNATURE_SECRET:changping-default-signature-secret}
+oss:
+  enable: ${OSS_ENABLE:true}
+  provider: ${OSS_PROVIDER:minio}
+  access: ${OSS_ACCESS:http://127.0.0.1:8768/dgcp_oa}
+  endpoint: ${OSS_ENDPOINT:http://127.0.0.1:9009/}
+  accessKey: ${OSS_ACCESS_KEY:admin}
+  secretKey: ${OSS_SECRET_KEY:kfkmi666999}
+  bucket: ${OSS_BUCKET:dgcp-oa}
+  expire: ${OSS_EXPIRE:3600}
+  region: ${OSS_REGION:us-east-1}
