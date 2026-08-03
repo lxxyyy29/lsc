@@ -48,6 +48,13 @@ public class AuditLogController {
         return ApiResponse.ok(service.getHistory(tableName, recordId));
     }
 
+    /** 获取单条审计日志详情 */
+    @GetMapping("/{id}")
+    public ApiResponse<AuditLogEntity> getById(@PathVariable Long id) {
+        requireViewPermission();
+        return ApiResponse.ok(service.getById(id));
+    }
+
     @GetMapping("/tables")
     public ApiResponse<List<String>> tables() {
         requireViewPermission();

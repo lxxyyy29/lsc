@@ -132,7 +132,7 @@ function onRegionChange(e: any) {
 }
 
 // 定位到当前位置
-function locateMe》 {
+function locateMe() {
   uni.getLocation({
     type: 'gcj02',
     success: (res) => {

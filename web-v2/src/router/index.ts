@@ -23,7 +23,8 @@ const routes = [
   { path: '/parking', component: () => import('../views/ParkingView.vue') },
   { path: '/assessment', component: () => import('../views/AssessmentView.vue') },
   { path: '/audit-logs', component: () => import('../views/AuditLogView.vue') },
-  { path: '/integration', component: () => import('../views/IntegrationView.vue') },
+  // 信息互通（实时聊天）功能暂不启用，保留代码后续开发
+  // { path: '/integration', component: () => import('../views/IntegrationView.vue') },
   { path: '/org-members', component: () => import('../views/OrgMemberView.vue') },
   { path: '/biz-areas', component: () => import('../views/BizAreaView.vue') },
   { path: '/resident-reports', component: () => import('../views/ResidentReportView.vue') },

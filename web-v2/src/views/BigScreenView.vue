@@ -83,7 +83,7 @@
           <div class="chart-content">
             <div v-for="(item, idx) in data.eventTypeDist" :key="item.type" class="type-bar-row">
               <span class="type-rank" :class="{ 'top3': idx < 3 }">{{ idx + 1 }}</span>
-              <span class="type-label">{{ item.type || '未知' }}</span>
+              <span class="type-label">{{ getEventTypeName(item.type) }}</span>
               <div class="type-bar-track">
                 <div class="type-bar-fill" :style="{ width: getTypeWidth(item.count) + '%' }"></div>
               </div>
@@ -146,6 +146,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { getBigScreenData } from '../api'
+import { getEventTypeName } from '../utils/eventTypes'
 
 const loading = ref(true)
 const data = ref<any>({})

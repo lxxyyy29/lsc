@@ -32,6 +32,10 @@ export default defineConfig(({ mode }) => {
   return {
     base: isH5 ? '/h5/' : '/',
     plugins: [isTest ? vue() : uni()],
+    // sockjs-client 在浏览器中需要 Node.js 的 global 对象
+    define: {
+      global: 'window',
+    },
     resolve: {
       alias
     },
@@ -39,7 +43,14 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           target: 'http://localhost:8080',
-          changeOrigin: true
+          changeOrigin: true,
+          ws: true,
+        },
+        // 原生 WebSocket 端点（H5 端 STOMP 直连）
+        '/ws-native': {
+          target: 'ws://localhost:8080',
+          changeOrigin: true,
+          ws: true,
         },
         '/dgcp_oa': {
           target: 'https://drone.kfktec.cn:8768',

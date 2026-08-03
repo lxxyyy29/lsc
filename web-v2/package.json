@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
+    "@stomp/stompjs": "^7.3.0",
     "axios": "^1.7.0",
     "echarts": "^5.5.0",
     "flv.js": "^1.6.2",
     "hls.js": "^1.5.17",
+    "sockjs-client": "^1.6.1",
     "vue": "^3.4.0",
     "vue-router": "^4.3.0"
   },

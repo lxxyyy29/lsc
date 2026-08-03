@@ -155,6 +155,10 @@ const managementShortcuts = computed<ManagementShortcut[]>(() => {
   if (hasMenuPermission('menu:h5:vendor:view')) {
     items.push({ key: 'vendors', label: '摊贩管理', to: '/vendors', icon: 'gavel' })
   }
+  // 信息互通（实时聊天）功能暂不启用，保留代码后续开发
+  // if (hasMenuPermission('menu:h5:message:view')) {
+  //   items.push({ key: 'messages', label: '信息互通', to: '/messages', icon: 'chat' })
+  // }
   return items
 })
 const allActionCards = computed(() => [...shortcutCards.value, ...managementShortcuts.value])

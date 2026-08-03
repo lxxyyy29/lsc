@@ -28,6 +28,11 @@ export function consumePendingRedirect() {
 }
 
 export function toPageUrl(path: string) {
+  // 已经是完整路径则直接返回
+  if (path.startsWith('/pages/')) {
+    return path
+  }
+
   if (path.startsWith('/work-orders/')) {
     const [detailPath] = path.split('?')
     const identity = detailPath.slice('/work-orders/'.length)
@@ -52,6 +57,9 @@ export function toPageUrl(path: string) {
       return '/pages/history/index'
     case '/mine':
       return '/pages/mine/index'
+    // 信息互通（实时聊天）功能暂不启用，保留代码后续开发
+    // case '/messages':
+    //   return '/pages/message/index'
     default:
       return '/pages/workbench/index'
   }

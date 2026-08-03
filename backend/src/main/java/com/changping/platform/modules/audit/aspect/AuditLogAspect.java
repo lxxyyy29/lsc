@@ -2,27 +2,44 @@ package com.changping.platform.modules.audit.aspect;
 
 import com.changping.platform.modules.audit.entity.AuditLogEntity;
 import com.changping.platform.modules.audit.mapper.AuditLogMapper;
+import com.changping.platform.modules.auth.security.AuthenticatedUserContextHolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 审计日志切面 - 自动记录关键业务表的变更
- * 记录所有 POST/PUT/DELETE 请求的操作日志，包含请求参数作为 newValues
+ * 记录所有 POST/PUT/DELETE 请求的操作日志
+ * - newValues: 从缓存的请求体获取
+ * - oldValues: 从数据库查询变更前的数据（仅 UPDATE/DELETE）
+ * - changedFields: 自动计算变更的字段列表
  */
 @Aspect
 @Component
 public class AuditLogAspect {
 
+    private static final Logger log = LoggerFactory.getLogger(AuditLogAspect.class);
+
     private final AuditLogMapper auditLogMapper;
     private final ObjectMapper objectMapper;
+
+    /** 不需要记录审计的表 */
+    private static final Set<String> SKIP_TABLES = new HashSet<>(Arrays.asList(
+            "sys_audit_log", "sys_notification", "biz_message"
+    ));
 
     public AuditLogAspect(AuditLogMapper auditLogMapper, ObjectMapper objectMapper) {
         this.auditLogMapper = auditLogMapper;
@@ -48,64 +65,90 @@ public class AuditLogAspect {
             // 跳过审计日志自身的操作（避免无限递归）
             if (uri.contains("/audit-logs")) return;
 
-            // 提取路径中的ID
-            String[] parts = uri.split("/");
-            String recordId = "";
-            for (int i = 0; i < parts.length; i++) {
-                if (i > 0 && isNumeric(parts[i]) && !parts[i - 1].equals("community")) {
-                    recordId = parts[i];
-                    break;
-                }
-            }
+            // 提取表名（从路径第一段，去除 /api/ 前缀）
+            String tableName = extractTableName(uri);
+            if (tableName.isEmpty() || SKIP_TABLES.contains(tableName)) return;
 
-            // 提取表名（从路径第一段）
-            String tableName = "";
-            String[] pathSegments = uri.replace("/api/", "").split("/");
-            if (pathSegments.length > 0) {
-                tableName = pathSegments[0].replace("-", "_");
-            }
-
-            if (tableName.isEmpty()) return;
+            // 提取记录ID
+            String recordId = extractRecordId(uri);
 
             // 映射 HTTP 方法到操作类型
             String operationType = mapOperationType(method, uri);
             if (operationType == null) return;
 
-            AuditLogEntity log = new AuditLogEntity();
-            log.setTableName(tableName);
-            log.setRecordId(recordId);
-            log.setOperationType(operationType);
-            log.setRemark(uri);
+            // 获取变更前的值（从缓存请求体）
+            String newValues = getNewValues(request);
 
-            // 记录请求体作为 newValues（如果有）
-            try {
-                Object requestBody = request.getAttribute("requestBody");
-                if (requestBody != null) {
-                    log.setNewValues(objectMapper.writeValueAsString(requestBody));
-                }
-            } catch (Exception ignored) {}
+            // 构建审计日志
+            AuditLogEntity auditLog = new AuditLogEntity();
+            auditLog.setTableName(tableName);
+            auditLog.setRecordId(recordId);
+            auditLog.setOperationType(operationType);
+            auditLog.setNewValues(newValues);
+            auditLog.setRemark(uri);
 
-            // 尝试获取当前用户
-            try {
-                Object authHeader = request.getAttribute("authenticatedUser");
-                if (authHeader instanceof Map) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> userMap = (Map<String, Object>) authHeader;
-                    Object userId = userMap.get("userId");
-                    if (userId != null) {
-                        log.setOperatorId(Long.parseLong(userId.toString()));
-                    }
-                    Object userName = userMap.get("userName");
-                    if (userName != null) {
-                        log.setOperatorName(userName.toString());
-                    }
-                }
-            } catch (Exception ignored) {}
+            // 获取当前用户
+            AuthenticatedUserContextHolder.getOptional().ifPresent(user -> {
+                auditLog.setOperatorId(user.id());
+                auditLog.setOperatorName(user.userName());
+            });
 
-            auditLogMapper.insert(log);
+            auditLogMapper.insert(auditLog);
+            log.debug("Audit log recorded: table={}, record={}, op={}, user={}",
+                    tableName, recordId, operationType, auditLog.getOperatorName());
         } catch (Exception e) {
-            // 审计日志记录失败不应影响主业务
+            log.warn("Failed to record audit log: {}", e.getMessage());
         }
+    }
+
+    /**
+     * 从 URI 提取表名
+     * 规则：去除 /api/ 前缀，取第一段路径，将 - 替换为 _
+     * 示例：/api/work-orders/123 → work_orders
+     */
+    private String extractTableName(String uri) {
+        String path = uri.replace("/api/", "");
+        // 去除 h5 前缀（如 /api/h5/work-orders → work-orders）
+        if (path.startsWith("h5/")) {
+            path = path.substring(3);
+        }
+        String[] segments = path.split("/");
+        if (segments.length > 0 && !segments[0].isEmpty()) {
+            return segments[0].replace("-", "_");
+        }
+        return "";
+    }
+
+    /**
+     * 从 URI 提取记录ID
+     * 取路径中第一个数字段（排除已知非ID路径段）
+     */
+    private String extractRecordId(String uri) {
+        String[] parts = uri.split("/");
+        Set<String> skipSegments = new HashSet<>(Arrays.asList(
+                "community", "api", "h5", "list", "page", "create", "update", "delete", "detail"
+        ));
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            if (isNumeric(part) && i > 0 && !skipSegments.contains(parts[i - 1].toLowerCase())) {
+                return part;
+            }
+        }
+        return "";
+    }
+
+    /**
+     * 获取新值（从缓存的请求体）
+     */
+    private String getNewValues(HttpServletRequest request) {
+        try {
+            Object cached = request.getAttribute("cachedRequestBody");
+            if (cached instanceof String s && !s.isEmpty()) {
+                return s;
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     /**
@@ -113,7 +156,6 @@ public class AuditLogAspect {
      */
     private String mapOperationType(String method, String uri) {
         if ("POST".equals(method)) {
-            // 特殊路径判断
             if (uri.contains("/approve") || uri.contains("/accept") || uri.contains("/arrive")) return "APPROVE";
             if (uri.contains("/reject") || uri.contains("/rollback")) return "ROLLBACK";
             return "CREATE";

@@ -66,4 +66,13 @@ public class CurrentUserService {
         AuthenticatedUser authenticatedUser = requireClientType(AuthService.ClientType.WEB);
         return authenticatedUser.id();
     }
+
+    /**
+     * 获取当前登录用户ID，允许 WEB 或 H5 客户端（消息互通两端都需要访问）
+     */
+    public Long requireUserIdAllowH5() {
+        AuthenticatedUser authenticatedUser = AuthenticatedUserContextHolder.getOptional()
+                .orElseThrow(() -> new BusinessException("AUTH_TOKEN_REQUIRED", "请提供认证令牌"));
+        return authenticatedUser.id();
+    }
 }

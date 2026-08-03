@@ -2,197 +2,109 @@
   <div class="page-container">
     <div class="page-header">
       <h2>信息互通</h2>
-      <p class="page-desc">外部系统数据对接管理，支持应急管理、卫生健康、民政、物业、12345政务热线等系统</p>
+      <p class="page-desc">与网格员实时沟通，支持文本消息</p>
     </div>
 
-    <!-- 统计卡片 -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">对接系统数</div>
-        <div class="stat-value">{{ statistics.totalSystems || 0 }}</div>
+    <div v-if="loadError" style="background:#fff2f0;border:1px solid #ffccc7;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#cf1322;font-size:13px;">
+      {{ loadError }}
+    </div>
+
+    <div class="chat-layout">
+      <!-- 左侧：会话列表 -->
+      <div class="chat-sidebar">
+        <div class="sidebar-header">
+          <span>会话列表</span>
+          <button class="btn btn-sm" @click="showWorkerPicker = true" title="发起新会话">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+        <div class="conversation-list">
+          <div
+            v-for="conv in conversations"
+            :key="conv.partner_id"
+            :class="['conversation-item', { active: activePartnerId === conv.partner_id }]"
+            @click="selectConversation(conv)"
+          >
+            <div class="conv-avatar">
+              {{ getPartnerName(conv).slice(0, 1) }}
+            </div>
+            <div class="conv-info">
+              <div class="conv-top">
+                <span class="conv-name">{{ getPartnerName(conv) }}</span>
+                <span class="conv-time">{{ formatTime(conv.last_created) }}</span>
+              </div>
+              <div class="conv-bottom">
+                <span class="conv-last">{{ conv.last_content || '暂无消息' }}</span>
+                <span v-if="conv.unread_count > 0" class="conv-unread">{{ conv.unread_count }}</span>
+              </div>
+            </div>
+          </div>
+          <p v-if="!conversations.length" class="empty-tip">暂无会话，点击 + 发起沟通</p>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">启用同步</div>
-        <div class="stat-value">{{ statistics.enabledSystems || 0 }}</div>
+
+      <!-- 右侧：聊天面板 -->
+      <div class="chat-main">
+        <template v-if="activePartnerId">
+          <div class="chat-header">
+            <span class="chat-title">{{ activePartnerName }}</span>
+            <span :class="['ws-status', wsConnected ? 'online' : 'offline']">
+              {{ wsConnected ? '实时连接中' : '连接断开' }}
+            </span>
+          </div>
+
+          <div class="chat-messages" ref="msgListRef">
+            <div
+              v-for="msg in messages"
+              :key="msg.id"
+              :class="['msg-row', msg.senderId === currentUserId ? 'me' : 'other']"
+            >
+              <div class="msg-avatar">
+                {{ (msg.senderId === currentUserId ? '我' : activePartnerName).slice(0, 1) }}
+              </div>
+              <div class="msg-body">
+                <div class="msg-bubble">{{ msg.content }}</div>
+                <div class="msg-time">{{ formatTime(msg.createdAt || msg.created_at) }}</div>
+              </div>
+            </div>
+            <p v-if="!messages.length" class="empty-tip">发送第一条消息开始对话</p>
+          </div>
+
+          <div class="chat-input">
+            <textarea
+              v-model="inputText"
+              placeholder="输入消息，Enter 发送，Shift+Enter 换行"
+              rows="2"
+              @keydown.enter.exact.prevent="sendText"
+            ></textarea>
+            <button class="btn btn-primary" :disabled="!inputText.trim() || !wsConnected" @click="sendText">
+              发送
+            </button>
+          </div>
+        </template>
+        <div v-else class="chat-empty">
+          <i class="fas fa-comments" style="font-size:48px;color:#d1d5db;"></i>
+          <p>选择一个会话开始沟通</p>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">累计同步次数</div>
-        <div class="stat-value">{{ statistics.totalSyncs || 0 }}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">今日同步记录</div>
-        <div class="stat-value">{{ statistics.todaySuccessRecords || 0 }}</div>
-      </div>
     </div>
 
-    <!-- 操作栏 -->
-    <div class="toolbar">
-      <input v-model="searchKey" placeholder="搜索系统名称..." class="search-input" @keyup.enter="loadSystems" />
-      <button @click="loadSystems" class="btn btn-primary">查询</button>
-      <button @click="showCreateDialog = true" class="btn btn-success">新增系统</button>
-      <button @click="loadStatistics" class="btn">刷新统计</button>
-    </div>
-
-    <!-- 系统列表 -->
-    <div class="card">
-      <h3 class="card-title">外部系统配置</h3>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>系统编码</th>
-            <th>系统名称</th>
-            <th>类型</th>
-            <th>API地址</th>
-            <th>同步</th>
-            <th>最后同步</th>
-            <th>状态</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="s in systems" :key="s.id">
-            <td>{{ s.id }}</td>
-            <td style="font-size:12px;font-family:monospace;">{{ s.systemCode }}</td>
-            <td>{{ s.systemName }}</td>
-            <td><span class="tag tag-blue">{{ s.systemType }}</span></td>
-            <td style="font-size:11px;color:#6b7280;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.apiBaseUrl || '-' }}</td>
-            <td>
-              <span :class="['tag', s.syncEnabled ? 'tag-green' : 'tag-gray']">
-                {{ s.syncEnabled ? '启用' : '禁用' }}
-              </span>
-            </td>
-            <td style="font-size:12px;">{{ s.lastSyncAt || '-' }}</td>
-            <td>
-              <span :class="['tag', statusClass(s.lastSyncStatus)]">{{ statusLabel(s.lastSyncStatus) }}</span>
-            </td>
-            <td>
-              <button @click="triggerSync(s)" class="btn btn-sm btn-primary" :disabled="!s.syncEnabled">同步</button>
-              <button @click="viewDetail(s)" class="btn btn-sm">详情</button>
-              <button @click="deleteSystem(s)" class="btn btn-sm btn-danger">删除</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-if="!systems.length" class="empty-text">暂无外部系统配置</p>
-    </div>
-
-    <!-- 同步日志 -->
-    <div class="card" style="margin-top:20px;">
-      <h3 class="card-title">同步日志</h3>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>系统</th>
-            <th>类型</th>
-            <th>动作</th>
-            <th>总计</th>
-            <th>成功</th>
-            <th>失败</th>
-            <th>状态</th>
-            <th>开始时间</th>
-            <th>耗时</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="log in syncLogs" :key="log.id">
-            <td>{{ log.id }}</td>
-            <td style="font-size:12px;font-family:monospace;">{{ log.systemCode }}</td>
-            <td>{{ log.syncType }}</td>
-            <td style="font-size:12px;">{{ log.syncAction }}</td>
-            <td>{{ log.recordsTotal }}</td>
-            <td style="color:#52c41a;">{{ log.recordsSuccess }}</td>
-            <td style="color:#ef4444;">{{ log.recordsFailed }}</td>
-            <td><span :class="['tag', log.status === 'SUCCESS' ? 'tag-green' : 'tag-red']">{{ log.status }}</span></td>
-            <td style="font-size:12px;">{{ log.startedAt }}</td>
-            <td style="font-size:12px;">{{ calcDuration(log) }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-if="!syncLogs.length" class="empty-text">暂无同步日志</p>
-    </div>
-
-    <!-- 新建对话框 -->
-    <div v-if="showCreateDialog" class="dialog-overlay" @click.self="showCreateDialog = false">
-      <div class="dialog">
+    <!-- 选择网格员对话框 -->
+    <div v-if="showWorkerPicker" class="dialog-overlay" @click.self="showWorkerPicker = false">
+      <div class="dialog" style="width:420px;">
         <div class="dialog-header">
-          <h3>新增外部系统</h3>
-          <button @click="showCreateDialog = false" class="btn-close">&times;</button>
+          <h3>选择网格员发起会话</h3>
+          <button @click="showWorkerPicker = false" class="btn-close">&times;</button>
         </div>
         <div class="dialog-body">
-          <div class="form-row">
-            <label>系统编码 <span class="required">*</span></label>
-            <input v-model="form.systemCode" placeholder="如: EMERGENCY" />
+          <div v-for="w in workers" :key="w.id" class="worker-item" @click="startConversation(w)">
+            <div class="conv-avatar">{{ (w.real_name || w.user_name || w.account).slice(0, 1) }}</div>
+            <div>
+              <div style="font-weight:500;">{{ w.real_name || w.user_name || w.account }}</div>
+              <div style="font-size:12px;color:#9ca3af;">{{ w.account }}</div>
+            </div>
           </div>
-          <div class="form-row">
-            <label>系统名称 <span class="required">*</span></label>
-            <input v-model="form.systemName" placeholder="如: 应急管理平台" />
-          </div>
-          <div class="form-row">
-            <label>系统类型</label>
-            <select v-model="form.systemType">
-              <option value="API">API</option>
-              <option value="WEBHOOK">WEBHOOK</option>
-              <option value="FTP">FTP</option>
-              <option value="DB">DB</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <label>API地址</label>
-            <input v-model="form.apiBaseUrl" placeholder="https://example.com/api" />
-          </div>
-          <div class="form-row">
-            <label>备注</label>
-            <textarea v-model="form.remark" rows="2" placeholder="备注信息"></textarea>
-          </div>
-        </div>
-        <div class="dialog-footer">
-          <button @click="showCreateDialog = false" class="btn">取消</button>
-          <button @click="createSystem" class="btn btn-primary">创建</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 详情对话框 -->
-    <div v-if="selectedSystem" class="dialog-overlay" @click.self="selectedSystem = null">
-      <div class="dialog" style="width:600px;">
-        <div class="dialog-header">
-          <h3>系统详情</h3>
-          <button @click="selectedSystem = null" class="btn-close">&times;</button>
-        </div>
-        <div class="dialog-body">
-          <div class="detail-grid">
-            <div class="detail-item"><label>ID:</label><span>{{ selectedSystem.id }}</span></div>
-            <div class="detail-item"><label>编码:</label><span>{{ selectedSystem.systemCode }}</span></div>
-            <div class="detail-item"><label>名称:</label><span>{{ selectedSystem.systemName }}</span></div>
-            <div class="detail-item"><label>类型:</label><span>{{ selectedSystem.systemType }}</span></div>
-            <div class="detail-item"><label>API地址:</label><span>{{ selectedSystem.apiBaseUrl || '-' }}</span></div>
-            <div class="detail-item"><label>同步:</label><span>{{ selectedSystem.syncEnabled ? '启用' : '禁用' }}</span></div>
-            <div class="detail-item"><label>最后同步:</label><span>{{ selectedSystem.lastSyncAt || '-' }}</span></div>
-            <div class="detail-item"><label>同步状态:</label><span>{{ selectedSystem.lastSyncStatus }}</span></div>
-            <div class="detail-item"><label>同步消息:</label><span>{{ selectedSystem.lastSyncMessage || '-' }}</span></div>
-            <div class="detail-item"><label>状态:</label><span>{{ selectedSystem.status }}</span></div>
-          </div>
-        </div>
-        <div class="dialog-footer">
-          <button @click="selectedSystem = null" class="btn">关闭</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 同步结果 -->
-    <div v-if="syncResult" class="dialog-overlay" @click.self="syncResult = null">
-      <div class="dialog">
-        <div class="dialog-header">
-          <h3>同步结果</h3>
-          <button @click="syncResult = null" class="btn-close">&times;</button>
-        </div>
-        <div class="dialog-body">
-          <pre style="background:#f5f5f5;padding:12px;border-radius:6px;font-size:12px;overflow:auto;">{{ JSON.stringify(syncResult, null, 2) }}</pre>
-        </div>
-        <div class="dialog-footer">
-          <button @click="syncResult = null" class="btn">关闭</button>
+          <p v-if="!workers.length" class="empty-tip">暂无网格员</p>
         </div>
       </div>
     </div>
@@ -200,165 +112,323 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed, onErrorCaptured } from 'vue'
 import {
-  getExternalSystems,
-  getExternalSystem,
-  createExternalSystem,
-  updateExternalSystem,
-  deleteExternalSystem,
-  triggerSystemSync,
-  getSyncLogs,
-  getIntegrationStatistics
+  getMessageConversations,
+  getMessageHistory,
+  markMessagesRead,
+  getGridWorkers
 } from '../api'
+import { chatClient } from '../api/chat'
+import { getSession } from '../api'
 
-const systems = ref<any[]>([])
-const syncLogs = ref<any[]>([])
-const statistics = ref<any>({})
-const searchKey = ref('')
-const showCreateDialog = ref(false)
-const selectedSystem = ref<any>(null)
-const syncResult = ref<any>(null)
+const conversations = ref<any[]>([])
+const workers = ref<any[]>([])
+const messages = ref<any[]>([])
+const activePartnerId = ref<number | null>(null)
+const activePartnerName = ref('')
+const inputText = ref('')
+const showWorkerPicker = ref(false)
+const wsConnected = ref(false)
+const msgListRef = ref<HTMLElement | null>(null)
+const loadError = ref('')
 
-const form = ref({
-  systemCode: '',
-  systemName: '',
-  systemType: 'API',
-  apiBaseUrl: '',
-  remark: ''
-})
+const currentUserId = computed(() => getSession()?.userId || getSession()?.id || 0)
 
-async function loadSystems() {
+async function loadConversations() {
   try {
-    const res: any = await getExternalSystems({ keyword: searchKey.value || undefined, pageSize: 50 })
-    systems.value = res?.items || []
-  } catch (e) { console.error('加载失败:', e) }
+    conversations.value = await getMessageConversations() || []
+  } catch (e: any) {
+    loadError.value = '加载会话失败: ' + (e.message || e)
+    console.error('加载会话失败:', e)
+  }
 }
 
-async function loadSyncLogs() {
+async function loadWorkers() {
   try {
-    const res: any = await getSyncLogs({ pageSize: 20 })
-    syncLogs.value = res?.items || []
-  } catch (e) { console.error('加载日志失败:', e) }
+    workers.value = await getGridWorkers() || []
+  } catch (e: any) {
+    console.error('加载网格员失败:', e)
+  }
 }
 
-async function loadStatistics() {
-  try {
-    const res: any = await getIntegrationStatistics()
-    statistics.value = res || {}
-  } catch (e) { console.error('加载统计失败:', e) }
+function getPartnerName(conv: any): string {
+  const partner = conv.partner
+  if (partner) {
+    return partner.real_name || partner.user_name || partner.account || `用户${conv.partner_id}`
+  }
+  return `用户${conv.partner_id}`
 }
 
-async function createSystem() {
-  if (!form.value.systemCode || !form.value.systemName) {
-    alert('请填写系统编码和名称')
+async function selectConversation(conv: any) {
+  activePartnerId.value = conv.partner_id
+  activePartnerName.value = getPartnerName(conv)
+  try {
+    messages.value = await getMessageHistory(conv.partner_id) || []
+    await markMessagesRead(conv.partner_id)
+    conv.unread_count = 0
+    scrollToBottom()
+  } catch (e) { console.error('加载历史失败:', e) }
+}
+
+async function startConversation(w: any) {
+  showWorkerPicker.value = false
+  // 若会话已存在则直接选中，否则先创建占位
+  const existing = conversations.value.find(c => c.partner_id === w.id)
+  if (existing) {
+    selectConversation(existing)
+  } else {
+    conversations.value.unshift({
+      partner_id: w.id,
+      partner: w,
+      last_content: '',
+      last_created: new Date().toISOString(),
+      unread_count: 0
+    })
+    selectConversation(conversations.value[0])
+  }
+}
+
+function sendText() {
+  const content = inputText.value.trim()
+  console.log('[InfoExchange] sendText: content=', content, 'partnerId=', activePartnerId.value, 'wsConnected=', wsConnected.value)
+  if (!content || !activePartnerId.value || !wsConnected.value) {
+    console.warn('[InfoExchange] send blocked: empty=', !content, 'noPartner=', !activePartnerId.value, 'notConnected=', !wsConnected.value)
     return
   }
+  chatClient.send(activePartnerId.value, content)
+  inputText.value = ''
+}
+
+function scrollToBottom() {
+  nextTick(() => {
+    if (msgListRef.value) {
+      msgListRef.value.scrollTop = msgListRef.value.scrollHeight
+    }
+  })
+}
+
+function formatTime(t: string) {
+  if (!t) return ''
   try {
-    await createExternalSystem(form.value)
-    showCreateDialog.value = false
-    form.value = { systemCode: '', systemName: '', systemType: 'API', apiBaseUrl: '', remark: '' }
-    loadSystems()
-  } catch (e: any) {
-    alert(e.message || '创建失败')
-  }
-}
-
-async function deleteSystem(s: any) {
-  if (!confirm(`确定删除系统 ${s.systemName}？`)) return
-  try {
-    await deleteExternalSystem(s.id)
-    loadSystems()
-  } catch (e: any) {
-    alert(e.message || '删除失败')
-  }
-}
-
-async function triggerSync(s: any) {
-  try {
-    const res: any = await triggerSystemSync(s.id)
-    syncResult.value = res
-    loadSystems()
-    loadSyncLogs()
-  } catch (e: any) {
-    alert(e.message || '同步失败')
-  }
-}
-
-function viewDetail(s: any) {
-  selectedSystem.value = s
-}
-
-function statusClass(status: string) {
-  if (status === 'SUCCESS') return 'tag-green'
-  if (status === 'FAILURE') return 'tag-red'
-  return 'tag-gray'
-}
-
-function statusLabel(status: string) {
-  if (status === 'SUCCESS') return '成功'
-  if (status === 'FAILURE') return '失败'
-  if (status === 'PENDING') return '待同步'
-  return status || '未知'
-}
-
-function calcDuration(log: any) {
-  if (!log.startedAt || !log.finishedAt) return '-'
-  const start = new Date(log.startedAt).getTime()
-  const end = new Date(log.finishedAt).getTime()
-  const sec = Math.round((end - start) / 1000)
-  return sec < 60 ? `${sec}秒` : `${Math.round(sec / 60)}分${sec % 60}秒`
+    const d = new Date(t)
+    const now = new Date()
+    const isToday = d.toDateString() === now.toDateString()
+    if (isToday) {
+      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+    }
+    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  } catch { return '' }
 }
 
 onMounted(() => {
-  loadSystems()
-  loadSyncLogs()
-  loadStatistics()
+  console.log('[InfoExchange] mounted, session:', getSession()?.token ? 'has token' : 'no token')
+  loadConversations()
+  loadWorkers()
+  chatClient.onConnected = () => { wsConnected.value = true }
+  chatClient.onDisconnected = () => { wsConnected.value = false }
+  chatClient.onMessage = (msg) => {
+    console.log('[InfoExchange] WS message received:', msg, 'activePartnerId=', activePartnerId.value)
+    // 只处理与当前活跃会话相关的消息
+    const related = msg.senderId === activePartnerId.value || msg.receiverId === activePartnerId.value
+    if (related) {
+      // 避免重复：发送方自己也会收到回执
+      const exists = messages.value.some(m => m.id === msg.id)
+      if (!exists) {
+        messages.value.push(msg)
+        scrollToBottom()
+      }
+    } else {
+      console.log('[InfoExchange] message not related to active conversation, skip')
+    }
+    // 刷新会话列表（最后消息/未读）
+    loadConversations()
+  }
+  try {
+    chatClient.connect()
+  } catch (e: any) {
+    console.error('WS connect error:', e)
+    loadError.value = '实时连接失败: ' + (e.message || e)
+  }
+})
+
+onErrorCaptured((err) => {
+  loadError.value = '页面渲染错误: ' + (err?.message || err)
+  console.error('IntegrationView error:', err)
+  return false
+})
+
+onUnmounted(() => {
+  chatClient.disconnect()
 })
 </script>
 
 <style scoped>
 .page-container { padding: 20px; }
-.page-header { margin-bottom: 20px; }
+.page-header { margin-bottom: 16px; }
 .page-header h2 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
 .page-desc { font-size: 13px; color: #6b7280; }
-.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-.stat-card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-.stat-label { font-size: 13px; color: #6b7280; margin-bottom: 8px; }
-.stat-value { font-size: 28px; font-weight: 700; color: #1f2937; }
-.toolbar { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
-.search-input { padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; width: 200px; }
+
+.chat-layout {
+  display: flex;
+  height: calc(100vh - 160px);
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* 左侧会话列表 */
+.chat-sidebar {
+  width: 280px;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  font-weight: 600;
+  border-bottom: 1px solid #f3f4f6;
+}
+.conversation-list {
+  flex: 1;
+  overflow-y: auto;
+}
+.conversation-item {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f9fafb;
+  transition: background 0.15s;
+}
+.conversation-item:hover { background: #f9fafb; }
+.conversation-item.active { background: #e6f4ff; }
+.conv-avatar {
+  width: 40px; height: 40px;
+  background: #1890ff; color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.conv-info { flex: 1; min-width: 0; }
+.conv-top { display: flex; justify-content: space-between; align-items: baseline; }
+.conv-name { font-weight: 500; font-size: 14px; }
+.conv-time { font-size: 11px; color: #9ca3af; flex-shrink: 0; }
+.conv-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+.conv-last {
+  font-size: 12px; color: #6b7280;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1;
+}
+.conv-unread {
+  background: #ef4444; color: #fff;
+  font-size: 11px; padding: 0 6px; border-radius: 10px;
+  min-width: 18px; text-align: center; flex-shrink: 0; margin-left: 6px;
+}
+
+/* 右侧聊天面板 */
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+.chat-title { font-weight: 600; font-size: 15px; }
+.ws-status { font-size: 12px; }
+.ws-status.online { color: #52c41a; }
+.ws-status.offline { color: #ef4444; }
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: #f7f8fa;
+}
+.msg-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.msg-row.me { flex-direction: row-reverse; }
+.msg-avatar {
+  width: 36px; height: 36px;
+  background: #1890ff; color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+}
+.msg-row.me .msg-avatar { background: #52c41a; }
+.msg-body { max-width: 60%; }
+.msg-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-word;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.msg-row.me .msg-bubble { background: #95de64; }
+.msg-time {
+  font-size: 11px; color: #9ca3af; margin-top: 4px;
+}
+.msg-row.me .msg-time { text-align: right; }
+
+.chat-input {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #f3f4f6;
+  align-items: flex-end;
+}
+.chat-input textarea {
+  flex: 1;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  resize: none;
+  font-family: inherit;
+}
+.chat-input textarea:focus { outline: none; border-color: #1890ff; }
+
+.chat-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #9ca3af;
+}
+
+.empty-tip { text-align: center; padding: 30px; color: #9ca3af; font-size: 13px; }
+
+/* 按钮 & 对话框复用现有风格 */
 .btn { padding: 6px 14px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; }
 .btn-primary { background: #1890ff; color: #fff; border-color: #1890ff; }
-.btn-success { background: #52c41a; color: #fff; border-color: #52c41a; }
-.btn-danger { color: #ef4444; border-color: #ef4444; }
 .btn-sm { padding: 3px 8px; font-size: 12px; }
-.btn:hover { opacity: 0.85; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-.card-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
-.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.data-table th, .data-table td { padding: 8px; text-align: left; border-bottom: 1px solid #f3f4f6; }
-.data-table th { background: #f9fafb; font-weight: 500; color: #6b7280; }
-.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
-.tag-green { background: #f0fdf4; color: #16a34a; }
-.tag-red { background: #fef2f2; color: #dc2626; }
-.tag-blue { background: #eff6ff; color: #2563eb; }
-.tag-gray { background: #f3f4f6; color: #6b7280; }
-.empty-text { text-align: center; padding: 30px; color: #9ca3af; }
+.btn:hover:not(:disabled) { opacity: 0.85; }
 .dialog-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .dialog { width: 480px; max-height: 80vh; background: #fff; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
 .dialog-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f3f4f6; }
 .dialog-header h3 { font-size: 16px; font-weight: 600; }
 .btn-close { border: none; background: none; font-size: 20px; cursor: pointer; color: #9ca3af; }
 .dialog-body { padding: 20px; overflow-y: auto; }
-.dialog-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid #f3f4f6; }
-.form-row { margin-bottom: 12px; }
-.form-row label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
-.form-row input, .form-row select, .form-row textarea { width: 100%; padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; box-sizing: border-box; }
-.required { color: #ef4444; }
-.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.detail-item { display: flex; gap: 8px; }
-.detail-item label { color: #6b7280; font-size: 13px; min-width: 80px; }
-.detail-item span { font-size: 13px; word-break: break-all; }
+.worker-item {
+  display: flex; gap: 12px; align-items: center;
+  padding: 12px; border-radius: 8px; cursor: pointer;
+}
+.worker-item:hover { background: #f0f7ff; }
 </style>

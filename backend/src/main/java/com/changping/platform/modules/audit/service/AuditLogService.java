@@ -151,6 +151,17 @@ public class AuditLogService {
     }
 
     /**
+     * 根据ID获取单条审计日志
+     */
+    public AuditLogEntity getById(Long id) {
+        AuditLogEntity log = mapper.findById(id);
+        if (log == null) {
+            throw new BusinessException("AUDIT_LOG_NOT_FOUND", "审计日志不存在");
+        }
+        return log;
+    }
+
+    /**
      * 获取字段级变更详情（用于前端 Diff 展示）
      */
     public Map<String, Object> getDiffDetail(Long auditLogId) {

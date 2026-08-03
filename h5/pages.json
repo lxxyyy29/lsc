@@ -119,6 +119,13 @@
         "navigationStyle": "custom",
         "navigationBarTitleText": "移动 GIS"
       }
+    },
+    {
+      "path": "pages/message/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "信息互通"
+      }
     }
   ],
   "tabBar": {

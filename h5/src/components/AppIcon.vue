@@ -50,7 +50,8 @@ const ICONS: Record<string, string> = {
   profile: '<circle cx="12" cy="8.5" r="3.2" stroke="COLOR" stroke-width="1.8"/><path d="M6.5 18C7.4 15.7 9.5 14.5 12 14.5C14.5 14.5 16.6 15.7 17.5 18" stroke="COLOR" stroke-width="1.8" stroke-linecap="round"/>',
   grid: '<rect x="5" y="5" width="5.5" height="5.5" rx="1" stroke="COLOR" stroke-width="1.8"/><rect x="13.5" y="5" width="5.5" height="5.5" rx="1" stroke="COLOR" stroke-width="1.8"/><rect x="5" y="13.5" width="5.5" height="5.5" rx="1" stroke="COLOR" stroke-width="1.8"/><rect x="13.5" y="13.5" width="5.5" height="5.5" rx="1" stroke="COLOR" stroke-width="1.8"/>',
   swap: '<path d="M7 7H18" stroke="COLOR" stroke-width="1.8" stroke-linecap="round"/><path d="M15 4L18 7L15 10" stroke="COLOR" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 17H6" stroke="COLOR" stroke-width="1.8" stroke-linecap="round"/><path d="M9 14L6 17L9 20" stroke="COLOR" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
-  shield: '<path d="M12 4L18 6.7V11.3C18 15.2 15.4 18.8 12 20C8.6 18.8 6 15.2 6 11.3V6.7L12 4Z" stroke="COLOR" stroke-width="1.8" stroke-linejoin="round"/>'
+  shield: '<path d="M12 4L18 6.7V11.3C18 15.2 15.4 18.8 12 20C8.6 18.8 6 15.2 6 11.3V6.7L12 4Z" stroke="COLOR" stroke-width="1.8" stroke-linejoin="round"/>',
+  chat: '<path d="M5 5H19V15H8L5 18V5Z" stroke="COLOR" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 10H15" stroke="COLOR" stroke-width="1.8" stroke-linecap="round"/><path d="M9 13H12" stroke="COLOR" stroke-width="1.8" stroke-linecap="round"/>'
 }
 
 const iconSrc = computed(() => {

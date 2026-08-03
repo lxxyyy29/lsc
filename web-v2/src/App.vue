@@ -114,7 +114,8 @@ const menuGroups = [
     items: [
       { path: '/big-screen', name: '综合监管大屏' },
       { path: '/drones', name: '无人机管理' },
-      { path: '/integration', name: '信息互通' },
+      // 信息互通（实时聊天）功能暂不启用，保留代码后续开发
+      // { path: '/integration', name: '信息互通' },
     ]
   },
   {

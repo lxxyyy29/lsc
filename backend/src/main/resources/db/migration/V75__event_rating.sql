@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS biz_event_rating (
 
 -- 评价统计视图（按事件）
 -- 评分权限
-INSERT INTO sys_permission (permission_code, permission_name, permission_type, parent_id, path, component, icon, sort_order, status, remark, created_at, updated_at)
-SELECT 'api:event:rating', '事件评价', 'API', id, NULL, NULL, NULL, 10, 'ACTIVE', '事件评价权限', NOW(), NOW()
+INSERT INTO sys_permission (permission_code, permission_name, permission_type, client_type, parent_id, path, component, icon, sort_order, status, remark, created_at, updated_at)
+SELECT 'api:event:rating', '事件评价', 'API', 'WEB', id, NULL, NULL, NULL, 10, 'ACTIVE', '事件评价权限', NOW(), NOW()
 FROM sys_permission WHERE permission_code = 'catalog:community'
 ON DUPLICATE KEY UPDATE updated_at = NOW();

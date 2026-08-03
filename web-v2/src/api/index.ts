@@ -8,6 +8,7 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(config => {
   const session = JSON.parse(localStorage.getItem('grid-session') || '{}')
   if (session?.token) {
+    config.headers = config.headers ?? {}
     config.headers.Authorization = `Bearer ${session.token}`
   }
   return config
@@ -404,6 +405,10 @@ export async function previewAuditLogRollback(id: number | string) {
 export async function rollbackAuditLog(id: number | string) {
   return http.post(`/audit-logs/rollback/${id}`)
 }
+/** 获取单条审计日志详情 */
+export async function getAuditLogById(id: number | string) {
+  return http.get(`/audit-logs/${id}`)
+}
 
 // 站内通知
 export async function getNotifications(params?: { page?: number; pageSize?: number }) {
@@ -462,6 +467,20 @@ export async function batchAuditEvents(eventIds: number[], action: string) {
 }
 export async function batchDispatch(data: { eventIds: number[]; assigneeUserId: number; remark?: string }) {
   return http.post('/events/batch-dispatch', data)
+}
+
+// 信息互通（消息）
+export async function getMessageConversations() {
+  return http.get('/messaging/conversations')
+}
+export async function getMessageHistory(partnerId: number, limit = 50) {
+  return http.get(`/messaging/history/${partnerId}`, { params: { limit } })
+}
+export async function markMessagesRead(partnerId: number) {
+  return http.post(`/messaging/read/${partnerId}`)
+}
+export async function getGridWorkers() {
+  return http.get('/messaging/workers')
 }
 
 export default http

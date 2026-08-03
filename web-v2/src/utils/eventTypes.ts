@@ -11,6 +11,7 @@ export const EVENT_TYPES: Record<string, string> = {
   NOISE: '噪音扰民',
   OTHER: '其他问题',
   FIRE: '消防安全',
+  FIRE_SAFETY: '消防安全',
   ILLEGAL_BUILDING: '违章建筑',
   PUBLIC_SAFETY: '公共安全',
   DRONE_ALARM: '无人机告警',
