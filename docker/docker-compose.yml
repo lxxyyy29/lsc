@@ -131,8 +131,8 @@ services:
   # ==========================================
   changping-backend:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile.backend
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
     container_name: changping-backend
     restart: unless-stopped
     environment:
