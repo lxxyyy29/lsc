@@ -7,6 +7,7 @@ import com.changping.platform.modules.auth.security.PermissionGuard;
 import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.registration.service.RegistrationService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,12 +26,27 @@ public class RegistrationController {
     private final CurrentUserService currentUserService;
     private final PermissionGuard permissionGuard;
 
+    private final PasswordEncoder passwordEncoder;
+
     public RegistrationController(RegistrationService registrationService,
                                    CurrentUserService currentUserService,
-                                   PermissionGuard permissionGuard) {
+                                   PermissionGuard permissionGuard,
+                                   PasswordEncoder passwordEncoder) {
         this.registrationService = registrationService;
         this.currentUserService = currentUserService;
         this.permissionGuard = permissionGuard;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @PostMapping("/submit")
+    public ApiResponse<Void> submit(@RequestBody Map<String, String> body) {
+        registrationService.submit(
+            body.get("account"),
+            passwordEncoder.encode(body.get("password")),
+            body.get("realName"),
+            body.get("phone")
+        );
+        return ApiResponse.ok(null);
     }
 
     @GetMapping("/pending")

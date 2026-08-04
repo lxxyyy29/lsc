@@ -28,6 +28,13 @@ public class RegistrationService {
     }
 
     @Transactional
+    public void submit(String account, String passwordHash, String realName, String phone) {
+        String sql = "INSERT INTO sys_user (username, password_hash, real_name, phone, status, password_version, deleted) " +
+                     "VALUES (?, ?, ?, ?, 'PENDING', 0, 0)";
+        jdbcTemplate.update(sql, account, passwordHash, realName, phone);
+    }
+
+    @Transactional
     public void approve(Long id, Long operatorId, String remark) {
         String sql = "UPDATE sys_user SET status = 'ACTIVE', updated_at = NOW() WHERE id = ? AND status = 'PENDING'";
         jdbcTemplate.update(sql, id);
