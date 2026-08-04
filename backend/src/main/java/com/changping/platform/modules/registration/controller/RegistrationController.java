@@ -7,6 +7,7 @@ import com.changping.platform.modules.auth.security.PermissionGuard;
 import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.registration.service.RegistrationService;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,15 +40,22 @@ public class RegistrationController {
     }
 
     @PostMapping("/submit")
-    public ApiResponse<Void> submit(@RequestBody Map<String, String> body) {
+    public ApiResponse<Void> submit(@RequestBody SubmitRequest body) {
         registrationService.submit(
-            body.get("account"),
-            passwordEncoder.encode(body.get("password")),
-            body.get("realName"),
-            body.get("phone")
+            body.account(),
+            passwordEncoder.encode(body.password()),
+            body.realName(),
+            body.phone()
         );
         return ApiResponse.ok(null);
     }
+
+    public record SubmitRequest(
+        @JsonProperty("account") String account,
+        @JsonProperty("password") String password,
+        @JsonProperty("realName") String realName,
+        @JsonProperty("phone") String phone
+    ) {}
 
     @GetMapping("/pending")
     public ApiResponse<List<Map<String, Object>>> listPending() {
@@ -57,18 +65,20 @@ public class RegistrationController {
     }
 
     @PostMapping("/{id}/approve")
-    public ApiResponse<Void> approve(@PathVariable Long id, @RequestBody Map<String, String> body) {
+    public ApiResponse<Void> approve(@PathVariable Long id, @RequestBody ApproveRejectRequest body) {
         AuthenticatedUser currentUser = currentUserService.requireClientType(AuthService.ClientType.WEB);
         permissionGuard.require(PermissionCodes.API_SYSTEM_USER_CREATE);
-        registrationService.approve(id, currentUser.id(), body.getOrDefault("remark", "审批通过"));
+        registrationService.approve(id, currentUser.id(), body.remark() != null ? body.remark() : "审批通过");
         return ApiResponse.ok(null);
     }
 
     @PostMapping("/{id}/reject")
-    public ApiResponse<Void> reject(@PathVariable Long id, @RequestBody Map<String, String> body) {
+    public ApiResponse<Void> reject(@PathVariable Long id, @RequestBody ApproveRejectRequest body) {
         currentUserService.requireClientType(AuthService.ClientType.WEB);
         permissionGuard.require(PermissionCodes.API_SYSTEM_USER_CREATE);
-        registrationService.reject(id, body.getOrDefault("remark", "拒绝"));
+        registrationService.reject(id, body.remark() != null ? body.remark() : "拒绝");
         return ApiResponse.ok(null);
     }
+
+    public record ApproveRejectRequest(String remark) {}
 }
