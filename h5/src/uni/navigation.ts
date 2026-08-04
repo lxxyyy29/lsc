@@ -18,12 +18,26 @@ export function setPendingRedirect(path: string) {
   if (!path || path === '/login') {
     return
   }
-  getUni()?.setStorageSync?.(REDIRECT_STORAGE_KEY, path)
+  const uni = getUni()
+  if (uni) {
+    uni.setStorageSync(REDIRECT_STORAGE_KEY, path)
+  } else {
+    // 浏览器环境 fallback
+    localStorage.setItem(REDIRECT_STORAGE_KEY, path)
+  }
 }
 
 export function consumePendingRedirect() {
-  const value = getUni()?.getStorageSync?.(REDIRECT_STORAGE_KEY)
-  getUni()?.removeStorageSync?.(REDIRECT_STORAGE_KEY)
+  const uni = getUni()
+  let value: string
+  if (uni) {
+    value = uni.getStorageSync(REDIRECT_STORAGE_KEY)
+    uni.removeStorageSync(REDIRECT_STORAGE_KEY)
+  } else {
+    // 浏览器环境 fallback
+    value = localStorage.getItem(REDIRECT_STORAGE_KEY) || ''
+    localStorage.removeItem(REDIRECT_STORAGE_KEY)
+  }
   return typeof value === 'string' && value.length > 0 ? value : ''
 }
 
@@ -80,6 +94,9 @@ export function navigateToPath(path: string) {
     } else {
       uni.navigateTo({ url })
     }
+  } else {
+    // 浏览器环境 fallback
+    window.location.hash = '#' + url
   }
 }
 
@@ -88,6 +105,9 @@ export function redirectToPath(path: string) {
   const uni = getUni()
   if (uni) {
     uni.reLaunch({ url })
+  } else {
+    // 浏览器环境 fallback：使用 hash 路由跳转
+    window.location.hash = '#' + url
   }
 }
 
@@ -100,6 +120,9 @@ export function ensureAuthenticated(targetPath: string) {
   const uni = getUni()
   if (uni) {
     uni.reLaunch({ url: '/pages/login/index' })
+  } else {
+    // 浏览器环境 fallback
+    window.location.hash = '#/pages/login/index'
   }
   return false
 }
