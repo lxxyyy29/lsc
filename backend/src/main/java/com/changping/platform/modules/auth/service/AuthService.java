@@ -334,8 +334,10 @@ public class AuthService {
         if (clientType == null) {
             return List.of();
         }
-        if (AuthService.ClientType.WEB.name().equalsIgnoreCase(clientType)) {
-            return systemPermissionService.listAccessibleMenuTree(permissionCodes, AuthService.ClientType.WEB.name());
+        // 支持 WEB 和 H5 两种客户端类型的菜单树
+        if (AuthService.ClientType.WEB.name().equalsIgnoreCase(clientType)
+                || AuthService.ClientType.H5.name().equalsIgnoreCase(clientType)) {
+            return systemPermissionService.listAccessibleMenuTree(permissionCodes, clientType.toUpperCase());
         }
         return List.of();
     }
