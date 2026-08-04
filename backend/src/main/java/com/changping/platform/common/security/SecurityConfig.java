@@ -48,6 +48,10 @@ public class SecurityConfig {
                     cfg.addAllowedOrigin("http://127.0.0.1:5174");
                     cfg.addAllowedOrigin("http://127.0.0.1:5175");
                     cfg.addAllowedOrigin("http://127.0.0.1:5176");
+                    cfg.addAllowedOrigin("http://8.156.93.151:8888");
+                    cfg.addAllowedOrigin("http://8.156.93.151:10081");
+                    cfg.addAllowedOrigin("http://8.156.93.151:10082");
+                    cfg.addAllowedOrigin("http://8.156.93.151:10083");
                     cfg.addAllowedMethod("*");
                     cfg.addAllowedHeader("*");
                     cfg.setAllowCredentials(true);
