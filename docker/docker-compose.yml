@@ -156,6 +156,11 @@ services:
       # 文件上传
       MEDIA_UPLOAD_DIR: /app/uploads/
       MEDIA_ACCESS_URL: ${DOMAIN:-http://localhost:8888}/media/files/
+      # MinIO/OSS 配置
+      OSS_ENDPOINT: http://changping-minio:9000/
+      OSS_ACCESS_KEY: ${MINIO_USER:-admin}
+      OSS_SECRET_KEY: ${MINIO_PASSWORD:-Changping@2024!Minio}
+      OSS_BUCKET: dgcp-oa
       # 时区
       TZ: Asia/Shanghai
     ports:
