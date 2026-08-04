@@ -111,16 +111,6 @@ async function handleSubmit() {
       captcha: form.captcha
     })
     const target = consumePendingRedirect() || fallbackRedirect.value
-    // #ifdef MP-WEIXIN
-    const pageUrl = toPageUrl(target)
-    const tabBarPages = ['/pages/workbench/index', '/pages/workorder/list', '/pages/mine/index']
-    if (tabBarPages.includes(pageUrl)) {
-      uni.switchTab({ url: pageUrl })
-    } else {
-      uni.navigateTo({ url: pageUrl })
-    }
-    return
-    // #endif
     redirectToPath(target)
   } catch (error) {
     const msg = error instanceof HttpResponseError ? error.message : ''
