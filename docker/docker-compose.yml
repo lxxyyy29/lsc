@@ -155,7 +155,7 @@ services:
       JWT_SECRET: changping-grid-community-2026-secret-key
       # 文件上传
       MEDIA_UPLOAD_DIR: /app/uploads/
-      MEDIA_ACCESS_URL: ${DOMAIN:-http://localhost:10080}/media/files/
+      MEDIA_ACCESS_URL: ${DOMAIN:-http://localhost:8888}/media/files/
       # 时区
       TZ: Asia/Shanghai
     ports:
@@ -184,7 +184,7 @@ services:
     container_name: changping-web
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-10080}:80"
+      - "${WEB_PORT:-8888}:80"
     depends_on:
       - changping-backend
     networks:
