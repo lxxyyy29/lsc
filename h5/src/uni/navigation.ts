@@ -5,8 +5,8 @@ import { h5NavigationItems } from '../navigation'
 declare const uni: any
 
 function getUni() {
-  if (typeof uni !== 'undefined') return uni
-  return (globalThis as any).uni
+  if (typeof uni !== 'undefined' && typeof uni.reLaunch === 'function') return uni
+  return undefined
 }
 const REDIRECT_STORAGE_KEY = 'dgcp-oa-h5-redirect'
 
