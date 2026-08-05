@@ -24,7 +24,7 @@ export interface GridTreeVo {
 }
 
 export function getGridTree() {
-  return webApi.get<{ success: boolean; data: GridTreeVo[] }>('/community/grids/tree').then(res => res.data.data)
+  return webApi.get<{ success: boolean; data: GridTreeVo[] }>('/community/grids/h5/tree').then(res => res.data.data)
 }
 
 // ==================== 巡查记录 ====================

@@ -52,6 +52,9 @@ public class SecurityConfig {
                     cfg.addAllowedOrigin("http://8.156.93.151:10081");
                     cfg.addAllowedOrigin("http://8.156.93.151:10082");
                     cfg.addAllowedOrigin("http://8.156.93.151:10083");
+                    // HTTPS 域名入口（浏览器精确定位需安全上下文）
+                    cfg.addAllowedOrigin("https://drone.kfktec.cn");
+                    cfg.addAllowedOrigin("https://drone.kfktec.cn:8443");
                     cfg.addAllowedMethod("*");
                     cfg.addAllowedHeader("*");
                     cfg.setAllowCredentials(true);
