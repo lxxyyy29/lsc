@@ -66,6 +66,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { createResidentReport, ResidentReport } from '../../src/api/community'
+import { getH5Session } from '../../src/api/auth'
 
 const types = [
   { label: '投诉', value: 'COMPLAINT' },
@@ -104,10 +105,41 @@ function takePhoto() {
 
 function removePhoto(idx: number) { photos.value.splice(idx, 1) }
 
+async function uploadPhoto(filePath: string): Promise<string | null> {
+  const session = getH5Session()
+  return await new Promise((resolve) => {
+    uni.uploadFile({
+      url: '/api/media/upload',
+      filePath,
+      name: 'file',
+      formData: { businessType: 'RESIDENT_REPORT' },
+      header: { Authorization: `Bearer ${session?.token || ''}` },
+      success: (res: any) => {
+        try {
+          const data = JSON.parse(res.data)
+          resolve(data.success && data.data?.fileUrl ? data.data.fileUrl : null)
+        } catch {
+          resolve(null)
+        }
+      },
+      fail: () => resolve(null)
+    })
+  })
+}
+
 async function handleSubmit() {
   if (!selectedType.value) { uni.showToast({ title: '请选择问题类型', icon: 'none' }); return }
   if (!title.value) { uni.showToast({ title: '请输入标题', icon: 'none' }); return }
   if (!content.value) { uni.showToast({ title: '请填写详细描述', icon: 'none' }); return }
+
+  // 先上传照片拿到可访问 URL，再随上报提交
+  uni.showLoading({ title: '提交中...' })
+  const uploadedUrls: string[] = []
+  for (const p of photos.value) {
+    const url = await uploadPhoto(p)
+    if (url) uploadedUrls.push(url)
+  }
+  uni.hideLoading()
 
   const report: ResidentReport = {
     reportType: selectedType.value,
@@ -115,7 +147,7 @@ async function handleSubmit() {
     content: content.value,
     residentName: residentName.value || undefined,
     residentPhone: residentPhone.value || undefined,
-    photoUrls: photos.value
+    photoUrls: uploadedUrls
   }
 
   try {

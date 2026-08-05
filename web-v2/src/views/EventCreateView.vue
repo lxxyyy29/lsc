@@ -135,7 +135,7 @@ async function initMap() {
   AMapLib = await AMapLoader.load({
     key: '5e00e01d2d2b6ca9e1eed533a15572e4',
     version: '2.0',
-    plugins: ['AMap.Marker', 'AMap.Geocoder', 'AMap.Geolocation']
+    plugins: ['AMap.Marker', 'AMap.Geocoder', 'AMap.Geolocation', 'AMap.CitySearch']
   })
   mapInstance = new AMapLib.Map('eventMap', {
     zoom: 15,
@@ -211,6 +211,25 @@ function locateMe() {
       setMarker(lng, lat)
       mapInstance.setCenter([lng, lat])
       reverseGeocode(lng, lat)
+    } else {
+      // 精确定位失败（常见于 HTTP 环境被浏览器禁止）：回退 IP 城市级定位
+      locateByIp()
+    }
+  })
+}
+
+function locateByIp() {
+  const citySearch = new (window as any).AMap.CitySearch()
+  citySearch.getLocalPosition((status: string, result: any) => {
+    if (status === 'complete' && result?.bounds) {
+      const bounds = result.bounds
+      const lng = (bounds.getSouthWest().getLng() + bounds.getNorthEast().getLng()) / 2
+      const lat = (bounds.getSouthWest().getLat() + bounds.getNorthEast().getLat()) / 2
+      setMarker(lng, lat)
+      mapInstance.setCenter([lng, lat])
+      mapInstance.setZoom(12)
+      reverseGeocode(lng, lat)
+      alert(`精确定位不可用（HTTP 环境限制），已定位到 ${result.city || '当前城市'} 大致位置，可拖动地图标记修正`)
     } else {
       alert('定位失败，请手动在地图上选择位置')
     }

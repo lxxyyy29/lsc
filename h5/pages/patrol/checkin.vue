@@ -47,6 +47,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { getGridTree, createPatrolRecord, GridTreeVo, PatrolRecord } from '../../src/api/community'
 import { getH5Session } from '../../src/api/auth'
+import { locateWithFallback } from '../../src/utils/geolocation'
 
 interface GridOption {
   label: string
@@ -84,16 +85,14 @@ function onGridChange(e: any) {
 
 function getLocation() {
   locationText.value = '定位中...'
-  uni.getLocation({
-    type: 'gcj02',
-    success: (res) => {
-      longitude.value = res.longitude
-      latitude.value = res.latitude
-      locationText.value = `经度: ${res.longitude.toFixed(6)}, 纬度: ${res.latitude.toFixed(6)}`
-    },
-    fail: () => {
-      locationText.value = '定位失败，请检查GPS权限'
-    }
+  locateWithFallback().then((res) => {
+    longitude.value = res.longitude
+    latitude.value = res.latitude
+    locationText.value = res.precise
+      ? `经度: ${res.longitude.toFixed(6)}, 纬度: ${res.latitude.toFixed(6)}`
+      : `${res.sourceText}：${res.longitude.toFixed(4)}, ${res.latitude.toFixed(4)}`
+  }).catch(() => {
+    locationText.value = '定位失败：HTTP 环境下精确定位被浏览器禁止，已无法获取大致位置'
   })
 }
 
@@ -107,7 +106,7 @@ function takePhoto() {
       paths.forEach((p: string) => {
         // 上传文件
         uni.uploadFile({
-          url: 'http://localhost:8080/api/media/upload',
+          url: '/api/media/upload',
           filePath: p,
           name: 'file',
           formData: {

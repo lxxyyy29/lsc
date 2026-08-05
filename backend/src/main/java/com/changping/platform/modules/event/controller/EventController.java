@@ -420,6 +420,20 @@ public class EventController {
             String type = (String) body.get("type");
             String contactName = body.get("contactName") == null ? null : String.valueOf(body.get("contactName"));
             String contactPhone = body.get("contactPhone") == null ? null : String.valueOf(body.get("contactPhone"));
+            // 现场坐标与照片（前端定位/拍照上传后随上报提交）
+            Double latitude = toDoubleOrNull(body.get("latitude"));
+            Double longitude = toDoubleOrNull(body.get("longitude"));
+            String imagesJson = null;
+            Object photosObj = body.get("photos");
+            if (photosObj instanceof List<?> photoList && !photoList.isEmpty()) {
+                List<String> urls = photoList.stream()
+                        .filter(item -> item instanceof String s && !s.isBlank())
+                        .map(item -> (String) item)
+                        .toList();
+                if (!urls.isEmpty()) {
+                    imagesJson = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(urls);
+                }
+            }
             AuthenticatedUser reporter = AuthenticatedUserContextHolder.getOptional().orElse(null);
             Long reporterUserId = reporter == null ? null : reporter.id();
             String reporterName = contactName != null && !contactName.isBlank()
@@ -436,9 +450,9 @@ public class EventController {
             String externalId = "PUBLIC-" + System.currentTimeMillis();
 
             jdbcTemplate.update(
-                "INSERT INTO biz_event (event_code, external_event_id, source_type, source_system, event_type, title, description, report_user_id, report_user_name, report_phone, incident_address, status, occurred_at, created_at, updated_at) " +
-                "VALUES (?, ?, 'PUBLIC', 'PUBLIC_REPORT', ?, ?, ?, ?, ?, ?, '拔蛟窝社区', 'WAITING_DISPATCH', NOW(), NOW(), NOW())",
-                eventCode, externalId, type != null ? type : "OTHER", title, description, reporterUserId, reporterName, reporterPhone);
+                "INSERT INTO biz_event (event_code, external_event_id, source_type, source_system, event_type, title, description, report_user_id, report_user_name, report_phone, incident_address, latitude, longitude, images, status, occurred_at, created_at, updated_at) " +
+                "VALUES (?, ?, 'PUBLIC', 'PUBLIC_REPORT', ?, ?, ?, ?, ?, ?, '拔蛟窝社区', ?, ?, ?, 'WAITING_DISPATCH', NOW(), NOW(), NOW())",
+                eventCode, externalId, type != null ? type : "OTHER", title, description, reporterUserId, reporterName, reporterPhone, latitude, longitude, imagesJson);
 
             Long eventId = jdbcTemplate.queryForObject("SELECT id FROM biz_event WHERE event_code = ?", Long.class, eventCode);
 
@@ -466,6 +480,23 @@ public class EventController {
             String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             return ResponseEntity.badRequest().body(ApiResponse.fail("PUBLIC_REPORT_ERROR", msg));
         }
+    }
+
+    /**
+     * 将上报请求体中的坐标值安全转为 Double（支持数字或字符串，非法值返回 null）
+     */
+    private Double toDoubleOrNull(Object value) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value instanceof String str && !str.isBlank()) {
+            try {
+                return Double.parseDouble(str.trim());
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
     }
 
     /**

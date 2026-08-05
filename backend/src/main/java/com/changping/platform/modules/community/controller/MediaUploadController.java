@@ -2,10 +2,14 @@ package com.changping.platform.modules.community.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.model.AuthenticatedUser;
+import com.changping.platform.modules.auth.security.AuthenticatedUserContextHolder;
 import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.community.mapper.MediaUploadMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,9 +17,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/media")
@@ -103,11 +106,18 @@ public class MediaUploadController {
         }
 
         try {
-            AuthenticatedUser user = currentUserService.requireClientType(AuthService.ClientType.WEB);
+            // 允许 WEB 与 H5 两种客户端类型上传（网格员巡查签到、居民上报等移动端场景需要上传照片）
+            AuthenticatedUser user = AuthenticatedUserContextHolder.getOptional()
+                    .orElseThrow(() -> new com.changping.platform.common.exception.BusinessException("AUTH_TOKEN_REQUIRED", "请提供认证令牌"));
+            if (!AuthService.ClientType.WEB.name().equals(user.clientType())
+                    && !AuthService.ClientType.H5.name().equals(user.clientType())) {
+                throw new com.changping.platform.common.exception.BusinessException("AUTH_CLIENT_TYPE_FORBIDDEN", "认证令牌不适用于该客户端类型");
+            }
 
-            // 创建存储目录
-            String dateDir = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
-            Path storageDir = Paths.get(uploadDir, dateDir);
+            // 扉平存储：直接存到 uploads 根目录（文件名已是 UUID，不会冲突）。
+            // 注：不能用 yyyy/MM/dd 日期子目录，Spring 6 静态资源解析出于安全考虑
+            // 会拦截 yyyy-MM-dd 形式的 URL 路径段，导致文件永远无法通过 HTTP 访问。
+            Path storageDir = Paths.get(uploadDir);
             Files.createDirectories(storageDir);
 
             // 生成文件名（UUID + 白名单内的扩展名）
@@ -117,9 +127,9 @@ public class MediaUploadController {
             Path targetPath = storageDir.resolve(storedFilename);
             file.transferTo(targetPath.toFile());
 
-            // 构建访问URL
-            String fileUrl = dateDir + "/" + storedFilename;
-            String fullUrl = accessUrl + fileUrl;
+            // 构建访问URL（通过 /media/files/{filename} 接口读取，兼容旧日期子目录中的存量文件）
+            String fileUrl = storedFilename;
+            String fullUrl = accessUrl + storedFilename;
 
             // 确定文件类型
             if (fileType == null) {
@@ -168,5 +178,50 @@ public class MediaUploadController {
             @RequestParam(required = false) String businessType,
             @RequestParam(required = false) Long businessId) {
         return ApiResponse.ok(mediaUploadMapper.findByBusiness(businessType, businessId));
+    }
+
+    /**
+     * 文件读取接口：按文件名返回上传文件。
+     * 背景：Spring 6 静态资源解析会拦截 yyyy-MM-dd 形式的 URL 路径段，
+     * 旧版按日期子目录存储的文件无法通过 /media/files/** 资源映射访问，
+     * 故改用本接口按文件名查找（先在根目录找，再搜日期子目录兼容存量文件）。
+     */
+    @GetMapping("/files/{filename:.+}")
+    public ResponseEntity<byte[]> serveFile(@PathVariable String filename) {
+        // 严格文件名白名单：UUID(32位16进制)+扩展名，或带 yyyy/MM/dd 相对路径形式的存量文件名
+        if (!filename.matches("[A-Za-z0-9_-]+\\.[A-Za-z0-9]+")) {
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            Path root = Paths.get(uploadDir);
+            Path direct = root.resolve(filename).normalize();
+            if (!direct.startsWith(root) || !Files.isRegularFile(direct)) {
+                // 兼容存量文件：在日期子目录中查找
+                try (Stream<Path> stream = Files.walk(root, 4)) {
+                    direct = stream.filter(Files::isRegularFile)
+                            .filter(p -> p.getFileName().toString().equals(filename))
+                            .findFirst().orElse(null);
+                }
+            }
+            if (direct == null || !Files.isRegularFile(direct)) {
+                return ResponseEntity.notFound().build();
+            }
+            byte[] content = Files.readAllBytes(direct);
+            String ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+            MediaType mediaType = switch (ext) {
+                case ".png" -> MediaType.IMAGE_PNG;
+                case ".gif" -> MediaType.IMAGE_GIF;
+                case ".webp", ".bmp" -> MediaType.APPLICATION_OCTET_STREAM;
+                case ".pdf" -> MediaType.APPLICATION_PDF;
+                case ".mp4" -> MediaType.parseMediaType("video/mp4");
+                default -> MediaType.IMAGE_JPEG;
+            };
+            return ResponseEntity.ok()
+                    .contentType(mediaType)
+                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                    .body(content);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

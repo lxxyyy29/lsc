@@ -50,6 +50,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { locateWithFallback } from '../../src/utils/geolocation'
 
 const centerLat = ref(22.9712)
 const centerLng = ref(113.9395)
@@ -131,18 +132,17 @@ function onRegionChange(e: any) {
   // 可以在这里实现按需加载可见区域内的事件
 }
 
-// 定位到当前位置
+// 定位到当前位置（精确定位失败时回退 IP 大致定位）
 function locateMe() {
-  uni.getLocation({
-    type: 'gcj02',
-    success: (res) => {
-      centerLat.value = res.latitude
-      centerLng.value = res.longitude
-      scale.value = 15
-    },
-    fail: () => {
-      uni.showToast({ title: '定位失败', icon: 'none' })
+  locateWithFallback().then((res) => {
+    centerLat.value = res.latitude
+    centerLng.value = res.longitude
+    scale.value = res.precise ? 15 : 12
+    if (!res.precise) {
+      uni.showToast({ title: res.sourceText, icon: 'none' })
     }
+  }).catch(() => {
+    uni.showToast({ title: '定位失败', icon: 'none' })
   })
 }
 

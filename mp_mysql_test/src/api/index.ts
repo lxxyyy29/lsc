@@ -75,6 +75,17 @@ export async function reportEvent(data: any) {
   return http.post('/events/public-report', data)
 }
 
+// 上传现场照片（multipart/form-data），返回带完整访问 URL 的文件信息
+export async function uploadMedia(file: File, businessType = 'PUBLIC_REPORT') {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('businessType', businessType)
+  return http.post('/media/upload', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000
+  })
+}
+
 export async function getMyReports(params?: { page?: number; pageSize?: number }) {
   return http.get('/events/my-reports', { params: { page: 1, pageSize: 10, ...params } })
 }

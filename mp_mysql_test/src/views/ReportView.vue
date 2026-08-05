@@ -23,22 +23,24 @@
     </div>
 
     <div class="card">
-      <h3>现场照片</h3>
+      <h3>现场照片<span v-if="uploading" class="uploading">（上传中...）</span></h3>
       <div class="photo-list">
         <div v-for="(p, idx) in photos" :key="idx" class="photo-item">
-          <div class="photo-placeholder">📷 {{ idx + 1 }}</div>
+          <img v-if="p.url" :src="p.url" class="photo-img" />
+          <div v-else class="photo-placeholder">📷 {{ idx + 1 }}</div>
           <span class="photo-del" @click="photos.splice(idx, 1)">×</span>
         </div>
         <div v-if="photos.length < 3" class="photo-add" @click="addPhoto">
           <span>+</span>
-          <p>添加照片</p>
+          <p>拍照/选图</p>
         </div>
       </div>
+      <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" @change="onFilesSelected" />
     </div>
 
     <div class="card">
       <h3>位置信息</h3>
-      <p class="location">📍 拔蛟窝社区（自动定位）</p>
+      <p class="location">📍 {{ locationText }} <span class="relocate" @click="locate">重新定位</span></p>
     </div>
 
     <div class="card">
@@ -56,13 +58,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive } from 'vue'
-import { reportEvent } from '../api'
+import { computed, ref, reactive, onMounted } from 'vue'
+import { reportEvent, uploadMedia } from '../api'
 
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
-const photos = ref<any[]>([])
+const uploading = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+// 每张照片：{ file?: 待上传文件, url: 本地预览或已上传 URL, uploadedUrl?: 服务端 URL }
+const photos = ref<{ file?: File; url: string; uploadedUrl?: string }[]>([])
+
+// 定位状态
+const locationText = ref('定位中...')
+const latitude = ref<number | null>(null)
+const longitude = ref<number | null>(null)
+
+const AMAP_KEY = '5e00e01d2d2b6ca9e1eed533a15572e4'
+const AMAP_SECURITY_CODE = '0a57a5453a660300283bebf7323d8bce'
 
 const types = [
   { value: 'ROAD', label: '道路损坏', icon: '🛣️' },
@@ -84,24 +97,106 @@ const form = reactive({
 const selectedType = computed(() => types.find(t => t.value === form.type) || types[0])
 
 function addPhoto() {
-  if (photos.value.length < 3) {
-    photos.value.push({})
+  if (photos.value.length >= 3 || uploading.value) return
+  fileInput.value?.click()
+}
+
+async function onFilesSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const files = Array.from(input.files || [])
+  input.value = ''
+  if (!files.length) return
+  const remain = 3 - photos.value.length
+  for (const file of files.slice(0, remain)) {
+    const item = { file, url: URL.createObjectURL(file) } as { file?: File; url: string; uploadedUrl?: string }
+    photos.value.push(item)
+    uploading.value = true
+    try {
+      const res: any = await uploadMedia(file)
+      item.uploadedUrl = res?.fileUrl
+    } catch (err: any) {
+      const idx = photos.value.indexOf(item)
+      if (idx >= 0) photos.value.splice(idx, 1)
+      error.value = typeof err === 'string' ? err : '照片上传失败'
+    } finally {
+      uploading.value = false
+    }
   }
 }
 
+/** 定位：优先浏览器精确定位（需 HTTPS），失败时用高德 IP 定位兑底（城市级） */
+function locate() {
+  locationText.value = '定位中...'
+  if (!('geolocation' in navigator)) {
+    amapIpLocate()
+    return
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      latitude.value = pos.coords.latitude
+      longitude.value = pos.coords.longitude
+      locationText.value = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}（精确定位）`
+    },
+    () => amapIpLocate(),
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+  )
+}
+
+function loadAMap(): Promise<any> {
+  const w = window as any
+  if (w.AMap) return Promise.resolve(w.AMap)
+  w._AMapSecurityConfig = { securityJsCode: AMAP_SECURITY_CODE }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = `https://webapi.amap.com/maps?v=2.0&key=${AMAP_KEY}&plugin=AMap.CitySearch`
+    script.onload = () => (w.AMap ? resolve(w.AMap) : reject(new Error('AMap 加载失败')))
+    script.onerror = () => reject(new Error('AMap 脚本加载失败'))
+    document.head.appendChild(script)
+  })
+}
+
+async function amapIpLocate() {
+  try {
+    const AMap = await loadAMap()
+    const citySearch = new AMap.CitySearch()
+    citySearch.getLocalPosition((status: string, result: any) => {
+      if (status === 'complete' && result?.bounds) {
+        const bounds = result.bounds
+        const lat = (bounds.getSouthWest().getLat() + bounds.getNorthEast().getLat()) / 2
+        const lng = (bounds.getSouthWest().getLng() + bounds.getNorthEast().getLng()) / 2
+        latitude.value = lat
+        longitude.value = lng
+        locationText.value = `${result.city || '当前位置'}（大致定位，精确位置需 HTTPS 环境）`
+      } else {
+        locationText.value = '定位失败：当前为 HTTP 环境，浏览器禁止精确定位；建议部署 HTTPS 后重试'
+      }
+    })
+  } catch {
+    locationText.value = '定位失败：当前为 HTTP 环境，浏览器禁止精确定位；建议部署 HTTPS 后重试'
+  }
+}
+
+onMounted(() => {
+  locate()
+})
+
 async function handleSubmit() {
   if (!form.description.trim()) { error.value = '请填写问题描述'; return }
+  if (uploading.value) { error.value = '照片上传中，请稍候'; return }
   loading.value = true
   error.value = ''
   success.value = ''
   try {
+    const photoUrls = photos.value.map(p => p.uploadedUrl).filter(Boolean) as string[]
     const result: any = await reportEvent({
       title: selectedType.value.label,
       description: form.description,
       type: form.type,
       contactName: form.contactName,
       contactPhone: form.contactPhone,
-      photos: photos.value
+      photos: photoUrls,
+      latitude: latitude.value,
+      longitude: longitude.value
     })
     success.value = '上报成功！查询码：' + (result?.eventCode || result?.id || '')
     // 重置表单
@@ -168,6 +263,9 @@ async function handleSubmit() {
 }
 .photo-add span { font-size: 24px; }
 .location { font-size: 13px; color: #6b7280; padding: 8px; background: #f9fafb; border-radius: 6px; }
+.relocate { color: #1890ff; margin-left: 8px; cursor: pointer; }
+.photo-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; display: block; }
+.uploading { font-size: 12px; color: #1890ff; font-weight: normal; }
 .btn-submit {
   width: 100%; padding: 14px; background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
   color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px;
