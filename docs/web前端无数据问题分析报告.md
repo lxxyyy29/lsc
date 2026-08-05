@@ -12,7 +12,7 @@ AIGC:
 # 前端无数据问题分析报告
 
 **项目**：网格社区综合治理系统（拔蛟窝社区）
-**前端**：`web-v2`（Vue3 + Vite + Axios）| **后端**：Spring Boot（`backend`）
+**前端**：`web`（Vue3 + Vite + Axios）| **后端**：Spring Boot（`backend`）
 **分析日期**：2026-07-24
 
 ---
@@ -21,7 +21,7 @@ AIGC:
 
 | 项目 | 路径 | 技术栈 | 端口 |
 |------|------|--------|------|
-| 前端 | `web-v2/` | Vue 3 + Vite 5 + Axios + TypeScript | **5175** |
+| 前端 | `web/` | Vue 3 + Vite 5 + Axios + TypeScript | **5175** |
 | 后端 | `backend/` | Spring Boot + MyBatis-Plus + Spring Security | **8080** |
 
 - **后端 `context-path`**：`/api`（配置于 `application.yml`：`server.servlet.context-path: /api`）
@@ -215,10 +215,10 @@ SELECT * FROM sys_user WHERE account = 'admin';
 
 | # | 问题 | 文件 | 严重程度 | 修复建议 |
 |---|------|------|----------|----------|
-| 1 | 无人机接口路径不匹配：`/drone/devices` → 应为 `/drone/dashboard/devices` | `web-v2/src/api/index.ts` L129 | 中 | 修改为 `/drone/dashboard/devices` 和 `/drone/dashboard/jobs`，或在后端添加 `/drone` 映射 |
-| 2 | `DashboardView.vue` 无错误处理，接口失败后页面静默无数据 | `web-v2/src/views/DashboardView.vue` L148-152 | 中 | 添加 try-catch，在页面显示错误提示 |
+| 1 | 无人机接口路径不匹配：`/drone/devices` → 应为 `/drone/dashboard/devices` | `web/src/api/index.ts` L129 | 中 | 修改为 `/drone/dashboard/devices` 和 `/drone/dashboard/jobs`，或在后端添加 `/drone` 映射 |
+| 2 | `DashboardView.vue` 无错误处理，接口失败后页面静默无数据 | `web/src/views/DashboardView.vue` L148-152 | 中 | 添加 try-catch，在页面显示错误提示 |
 | 3 | 所有 View 组件缺少 loading 状态 | 多个 `.vue` 文件 | 低 | 接口调用期间添加骨架屏或 loading 指示器 |
-| 4 | `getMenuTree()` 定义了但后端无对应端点 | `web-v2/src/api/index.ts` L69 | 低 | 如不需要可删除；如需要则后端补充 `/auth/menu-tree` 端点 |
+| 4 | `getMenuTree()` 定义了但后端无对应端点 | `web/src/api/index.ts` L69 | 低 | 如不需要可删除；如需要则后端补充 `/auth/menu-tree` 端点 |
 
 ---
 

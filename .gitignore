@@ -1,8 +1,10 @@
 # Java / Maven
 backend/target/
 backend/.flattened-pom.xml
+backend/uploads/
 *.log
 *.class
+*.iml
 
 # Local config / env
 .env
@@ -23,10 +25,13 @@ h5/node_modules/
 h5/dist/
 h5/dist.zip
 h5/unpackage/
+mp/node_modules/
+mp/dist/
 
 # Keep one lockfile strategy (currently keep pnpm-lock.yaml)
 web/package-lock.json
 h5/package-lock.json
+mp/package-lock.json
 
 # IDE / OS
 .idea/

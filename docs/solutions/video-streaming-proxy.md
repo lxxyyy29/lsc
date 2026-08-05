@@ -42,7 +42,7 @@
 
 ### 前端实现
 
-**文件：** `web-v2/src/views/DronesView.vue`
+**文件：** `web/src/views/DronesView.vue`
 
 使用 hls.js 播放后端代理的 HLS 流：
 ```javascript

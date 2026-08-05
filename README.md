@@ -5,9 +5,9 @@
 ## 项目结构
 
 - `backend/`：Spring Boot 3.3 后端服务，Java 17，默认端口 `8080`，接口统一挂载在 `/api`
-- `web-v2/`：Vue 3 + TypeScript + Vite Web 管理端，默认端口 `5175`
+- `web/`：Vue 3 + TypeScript + Vite Web 管理端，默认端口 `5175`
 - `h5/`：Vue 3 + uni-app H5 移动端，默认端口 `5174`
-- `mp_mysql_test/`：Vue 3 + TypeScript + Vite 居民小程序，默认端口 `5176`
+- `mp/`：Vue 3 + TypeScript + Vite 居民小程序，默认端口 `5176`
 - `docs/`
   - `docs/系统说明文档.md`：完整接口文档（2026-08-05 按代码扫描更新，315 个端点）
   - `docs/项目进度记录.md`：项目进度记录
@@ -43,7 +43,7 @@ cd backend
 ### Web 管理端
 
 ```bash
-cd web-v2
+cd web
 npx pnpm install
 npx pnpm dev --host 0.0.0.0 --port 5175
 ```
@@ -63,7 +63,7 @@ npx pnpm dev --host 0.0.0.0 --port 5174
 ### 居民小程序
 
 ```bash
-cd mp_mysql_test
+cd mp
 npx pnpm install
 npx pnpm dev --host 0.0.0.0 --port 5176
 ```
@@ -83,14 +83,14 @@ cd backend
 ### Web 管理端
 
 ```bash
-cd web-v2
+cd web
 npx pnpm build
 ```
 
 如果依赖已安装且需要避免 `npx` 下载外部包，可直接使用本地命令：
 
 ```bash
-cd web-v2
+cd web
 ./node_modules/.bin/vue-tsc && ./node_modules/.bin/vite build
 ```
 
@@ -113,14 +113,14 @@ UNI_INPUT_DIR=. ./node_modules/.bin/uni build -p h5
 ### 居民小程序
 
 ```bash
-cd mp_mysql_test
+cd mp
 npx pnpm build
 ```
 
 如果依赖已安装且需要避免 `npx` 下载外部包，可直接使用本地命令：
 
 ```bash
-cd mp_mysql_test
+cd mp
 ./node_modules/.bin/vite build
 ```
 

@@ -7,9 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This workspace contains four sibling applications that implement one event-governance platform:
 
 - `backend/` — Spring Boot 3.3 / Java 17 API service on port `8080`, served under `/api`
-- `web-v2/` — Vue 3 + TypeScript + Vite admin application on port `5175`（管理人员使用）
+- `web/` — Vue 3 + TypeScript + Vite admin application on port `5175`（管理人员使用）
 - `h5/` — Vue 3 + uni-app mobile field application on port `5174`（网格员使用）
-- `mp_mysql_test/` — Vue 3 + TypeScript + Vite mini-program on port `5176`（居民随手拍）
+- `mp/` — Vue 3 + TypeScript + Vite mini-program on port `5176`（居民随手拍）
 - `docs/architecture/` — delivery contract and manual verification docs for the current phase
 
 Start with `docs/系统说明文档.md` for the current API reference (315 endpoints as of 2026-08-05, Flyway V78). `docs/architecture/phase1-endpoints.md` is the historical Phase1 contract, not the current state.
@@ -25,7 +25,7 @@ Run commands from each app directory.
 - Run a single test class: `./mvnw -Dtest=PermissionGuardTest test`
 - Package app: `./mvnw package`
 
-### Web admin (`web-v2/`)
+### Web admin (`web/`)
 
 - Start dev server: `npx pnpm dev --host 0.0.0.0 --port 5175`
 - Build production bundle: `npx pnpm build`
@@ -36,7 +36,7 @@ Run commands from each app directory.
 - Run all tests: `npx pnpm test`（`src/tests/http.spec.ts`、`src/tests/navigation.spec.ts`）
 - Build production bundle: `npx pnpm build`
 
-### Mini-program (`mp_mysql_test/`)
+### Mini-program (`mp/`)
 
 - Start dev server: `npx pnpm dev --host 0.0.0.0 --port 5176`
 - Build production bundle: `npx pnpm build`
@@ -92,11 +92,11 @@ Files to inspect first for backend behavior:
 
 Web app bootstrap:
 
-- `web-v2/src/main.ts`
+- `web/src/main.ts`
 
 Routing and access control:
 
-- `web-v2/src/router/index.ts`
+- `web/src/router/index.ts`
 
 Key patterns:
 
@@ -131,11 +131,11 @@ Main H5 domains include workbench, work-order list/detail, verification, history
 
 Mini-program app bootstrap:
 
-- `mp_mysql_test/src/main.ts`
+- `mp/src/main.ts`
 
 Routing and access control:
 
-- `mp_mysql_test/src/router/index.ts`
+- `mp/src/router/index.ts`
 
 Key patterns:
 
@@ -192,7 +192,7 @@ H5 page tests:
 
 All frontend apps import shared Figma-oriented tokens:
 
-- `web-v2/src/styles/figma-tokens.css`
+- `web/src/styles/figma-tokens.css`
 - `h5/src/styles/figma-tokens.css`
 
 There are also Figma/design-derived templates and planning artifacts under `docs/superpowers/`, but those are supporting design/history materials rather than the runtime source of truth.

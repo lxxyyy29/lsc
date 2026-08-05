@@ -3,7 +3,7 @@
 ## 启动
 
 ```bash
-cd web-v2
+cd web
 npx pnpm install
 npx pnpm dev --host 0.0.0.0 --port 5175
 ```
