@@ -190,8 +190,13 @@ services:
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-8888}:80"
+      - "${HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./ssl:/etc/nginx/ssl:ro
     depends_on:
       - changping-backend
+      - changping-h5
+      - changping-mp
     networks:
       - changping-net
     logging: *default-logging
