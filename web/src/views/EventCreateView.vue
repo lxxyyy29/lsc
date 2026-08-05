@@ -95,6 +95,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createEvent, getGridTree } from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
+import { locateWithFallback } from '../utils/geolocation'
 
 const router = useRouter()
 const loading = ref(false)
@@ -199,37 +200,59 @@ function reverseGeocode(lng: number, lat: number) {
 }
 
 function locateMe() {
-  const geolocation = new (window as any).AMap.Geolocation({
-    enableHighAccuracy: true,
-    timeout: 10000,
-    zoomToAccuracy: true
-  })
-  geolocation.getCurrentPosition((status: string, result: any) => {
-    if (status === 'complete') {
-      const lng = result.position.lng
-      const lat = result.position.lat
-      setMarker(lng, lat)
-      mapInstance.setCenter([lng, lat])
-      reverseGeocode(lng, lat)
-    } else {
-      // 精确定位失败（常见于 HTTP 环境被浏览器禁止）：回退 IP 城市级定位
-      locateByIp()
+  // 三层定位策略：浏览器原生定位(HTTPS) → uni/其他 → 高德 IP 定位（与 H5 端共用工具）
+  locateWithFallback().then((res) => {
+    setMarker(res.longitude, res.latitude)
+    mapInstance?.setCenter([res.longitude, res.latitude])
+    if (!res.precise) mapInstance?.setZoom(12)
+    reverseGeocode(res.longitude, res.latitude)
+    if (!res.precise) {
+      alert(`精确定位不可用，已定位到 ${res.sourceText}，可拖动地图标记修正`)
     }
+  }).catch(() => {
+    // 兼容旧逻辑：工具全部失败时再试一次 AMap.Geolocation 插件
+    locateByAmapPlugin()
   })
+}
+
+function locateByAmapPlugin() {
+  try {
+    const geolocation = new (window as any).AMap.Geolocation({
+      enableHighAccuracy: true,
+      timeout: 10000,
+      zoomToAccuracy: true
+    })
+    geolocation.getCurrentPosition((status: string, result: any) => {
+      if (status === 'complete') {
+        const lng = result.position.lng
+        const lat = result.position.lat
+        setMarker(lng, lat)
+        mapInstance.setCenter([lng, lat])
+        reverseGeocode(lng, lat)
+      } else {
+        locateByIp()
+      }
+    })
+  } catch {
+    alert('定位失败，请手动在地图上选择位置')
+  }
 }
 
 function locateByIp() {
   const citySearch = new (window as any).AMap.CitySearch()
-  citySearch.getLocalPosition((status: string, result: any) => {
-    if (status === 'complete' && result?.bounds) {
-      const bounds = result.bounds
-      const lng = (bounds.getSouthWest().getLng() + bounds.getNorthEast().getLng()) / 2
-      const lat = (bounds.getSouthWest().getLat() + bounds.getNorthEast().getLat()) / 2
+  // AMap 2.0 的 CitySearch 实例方法是 getLocalCity（1.x 的 getLocalPosition 已不存在）
+  citySearch.getLocalCity((status: string, result: any) => {
+    if (status === 'complete' && result?.infocode === '10000' && result.rectangle) {
+      const [sw, ne] = String(result.rectangle).split(';')
+      const [lng1, lat1] = sw.split(',').map(Number)
+      const [lng2, lat2] = ne.split(',').map(Number)
+      const lng = (lng1 + lng2) / 2
+      const lat = (lat1 + lat2) / 2
       setMarker(lng, lat)
       mapInstance.setCenter([lng, lat])
       mapInstance.setZoom(12)
       reverseGeocode(lng, lat)
-      alert(`精确定位不可用（HTTP 环境限制），已定位到 ${result.city || '当前城市'} 大致位置，可拖动地图标记修正`)
+      alert(`精确定位不可用，已定位到 ${result.city || '当前城市'} 大致位置，可拖动地图标记修正`)
     } else {
       alert('定位失败，请手动在地图上选择位置')
     }
