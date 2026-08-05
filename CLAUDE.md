@@ -12,7 +12,50 @@ This workspace contains four sibling applications that implement one event-gover
 - `mp/` — Vue 3 + TypeScript + Vite mini-program on port `5176`（居民随手拍）
 - `docs/architecture/` — delivery contract and manual verification docs for the current phase
 
-Start with `docs/系统说明文档.md` for the current API reference (315 endpoints as of 2026-08-05, Flyway V78). `docs/architecture/phase1-endpoints.md` is the historical Phase1 contract, not the current state.
+Start with `docs/系统说明文档.md` for the current API reference (315 endpoints as of 2026-08-05, Flyway V80). `docs/architecture/phase1-endpoints.md` is the historical Phase1 contract, not the current state.
+
+## 生产环境速查（服务器上开发，必读）
+
+本项目运行在本云服务器上，**开发即部署**：改完代码用 docker compose 重建容器验证，然后 git commit + push 同步 GitHub（远程 `git@github.com:lxxyyy29/lsc.git`，master，SSH 免密）。宿主机没有 Java/Node 环境，编译一律交给 Docker 构建（构建失败即暴露编译错误）。
+
+### 部署命令（在 `docker/` 目录）
+
+```bash
+docker compose build <服务名>          # 重建镜像（服务名: changping-backend/web/h5/mp）
+docker compose up -d --force-recreate <服务名>   # 重建后重启
+docker ps --filter name=changping      # 查看状态
+```
+
+端口映射（`docker/.env`）：后端 10081→8080、web 8888→80、h5 10082→80、mp 10083→80、**HTTPS 聚合入口 8443→443（changping-web）**。
+
+### 访问地址
+
+| 端 | HTTP（兼容） | HTTPS（精确定位需要） |
+|---|---|---|
+| 管理端 | http://8.156.93.151:8888 | https://drone.kfktec.cn:8443/ |
+| H5 移动端 | http://8.156.93.151:10082/h5/ | https://drone.kfktec.cn:8443/h5/ |
+| 居民端 | http://8.156.93.151:10083 | https://drone.kfktec.cn:8443/mp/ |
+
+域名 `drone.kfktec.cn` 是借用服务器上无人机老项目的（仅开发阶段借挂，交付时客户自购域名切换：换 docker/ssl/ 证书 + nginx server_name + .env DOMAIN + 重建容器）。证书 2026-08-23 到期。443 端口被老项目 dgcp-web-nginx 占用，勿动。
+
+### 测试账号
+
+- 管理端：admin / admin123
+- H5 网格员：grid01~grid05 / 123456（登录端点 `/api/h5/auth/login`，不要用 WEB 端点）
+- MySQL：容器 changping-mysql，库名 **zhsq**（不是 changping），root 密码在 `docker/.env`；sys_user 表用户名字段是 `username`
+
+### 近期关键实现（2026-08）
+
+- **HTTPS 聚合入口**：`docker/nginx-web.conf` 同时监听 80/443，代理 `/h5/` `/mp/` 子入口；这两个 location 必须带 `^~`（否则静态资源被正则 location 拦截 404）；后端 CORS 白名单在 SecurityConfig.java，新增域名需同步
+- **定位**：浏览器精确定位仅 HTTPS 可用；H5 工具在 `h5/src/utils/geolocation.ts`（navigator.geolocation + WGS84→GCJ02 → 高德 IP 定位回退），web 端同款工具在 `web/src/utils/geolocation.ts`；AMap 2.0 的 CitySearch 只有 `getLocalCity`（1.x 的 getLocalPosition 已移除）
+- **媒体文件**：扁平存储 `/media/files/{filename}`，公网 URL 前缀由 `docker/.env` 的 `DOMAIN` 拼接（当前为 HTTPS 域名）；上传目录挂载 `/home/docker/uav/changping/uploads`
+- **网格数据**：cmn_grid（grid_level 1=社区/2=大网格/3=小网格，roiJson 存边界）；H5 专用接口 `/community/grids/h5/tree`、`/community/grids/h5/my-grid`、`/events/h5/map-points`（WEB 专属接口 H5 令牌会被拒，勿混用）
+
+### 硬性约束
+
+- 只允许修改 `/opt/zhsq` 目录；服务器上还有其他老项目在跑，严禁影响（如 443 端口的 dgcp-web-nginx、/home/docker/uav 下的其他服务，只读不写）
+- 文档不可全信，以代码和运行时实际状态为准
+- 私钥类文件（docker/ssl/）不入库，已在 .gitignore
 
 ## Common commands
 
