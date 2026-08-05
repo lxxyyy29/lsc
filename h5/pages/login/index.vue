@@ -7,7 +7,7 @@
     <view class="login-shell">
       <view class="brand-block">
         <image class="brand-shield" :src="loginShieldUrl" mode="widthFix" aria-hidden="true" />
-        <text class="brand-title">居里智能低空巡检</text>
+        <text class="brand-title">拔蛟窝智慧网格</text>
       </view>
 
       <view class="login-card">

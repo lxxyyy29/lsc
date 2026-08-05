@@ -1,8 +1,8 @@
 {
-  "name": "居里智能低空巡检综合监管平台 H5",
+  "name": "拔蛟窝智慧网格移动端",
   "vueVersion": "3",
   "appid": "__UNI__DGCP_OA_H5",
-  "description": "居里智能低空巡检综合监管平台移动端 uni-app 工程",
+  "description": "拔蛟窝智慧网格移动端 uni-app 工程",
   "versionName": "1.0.0",
   "versionCode": "100",
   "transformPx": false,
@@ -20,7 +20,7 @@
     "usingComponents": true
   },
   "h5": {
-    "title": "居里智能低空巡检综合监管平台 H5",
+    "title": "拔蛟窝智慧网格移动端",
     "router": {
       "mode": "hash",
       "base": "/h5/"
