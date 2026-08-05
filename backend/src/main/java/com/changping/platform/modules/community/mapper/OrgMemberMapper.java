@@ -41,6 +41,17 @@ public class OrgMemberMapper {
                 ROW_MAPPER,
                 gridId);
     }
+    /**
+     * 查询指定用户关联的活跃网格 ID 列表（用于 H5 端“我的网格”定位）
+     */
+    public List<Long> findGridIdsByUserId(Long sysUserId) {
+        return jdbcTemplate.queryForList(
+                "SELECT DISTINCT grid_id FROM cmn_org_member " +
+                        "WHERE sys_user_id = ? AND status = 'ACTIVE' AND grid_id IS NOT NULL",
+                Long.class,
+                sysUserId);
+    }
+
     public List<OrgMemberEntity> findAllActive() {
         return jdbcTemplate.query(
                 "SELECT m.*, g.grid_name AS grid_name FROM cmn_org_member m " +

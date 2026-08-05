@@ -549,6 +549,21 @@ public class EventController {
     }
 
     /**
+     * H5 移动端 GIS 事件坐标点（仅需 H5 登录，无需管理端权限）
+     */
+    @GetMapping("/h5/map-points")
+    public ApiResponse<List<Map<String, Object>>> h5MapPoints() {
+        currentUserService.requireClientType(AuthService.ClientType.H5);
+        String sql =
+            "SELECT id, title, event_type, status, " +
+            "CAST(longitude AS DECIMAL(10,6)) as lng, CAST(latitude AS DECIMAL(10,6)) as lat, " +
+            "created_at FROM biz_event " +
+            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0 " +
+            "ORDER BY created_at DESC LIMIT 200";
+        return ApiResponse.ok(jdbcTemplate.queryForList(sql));
+    }
+
+    /**
      * 批量审核事件（通过/忽略）
      */
     @PostMapping("/batch-audit")
