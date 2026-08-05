@@ -96,12 +96,14 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         DispatchAssignee assignee = resolveDispatchAssignee(request.assigneeUserId());
 
         String workOrderNo = "WO-" + eventId + "-" + System.currentTimeMillis();
+        String urgencyLevel = event.getUrgencyLevel() != null ? event.getUrgencyLevel() : "GREEN";
         try {
             jdbcTemplate.update(
-                    "INSERT INTO biz_work_order (work_order_no, source_event_id, process_instance_id, status, assignee_user_id, assignee_name, dispatcher_user_id, dispatcher_name, created_at, updated_at) VALUES (?, ?, ?, 'PROCESSING', ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                    "INSERT INTO biz_work_order (work_order_no, source_event_id, process_instance_id, status, urgency_level, assignee_user_id, assignee_name, dispatcher_user_id, dispatcher_name, created_at, updated_at) VALUES (?, ?, ?, 'PROCESSING', ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                     workOrderNo,
                     eventId,
                     processInstanceId,
+                    urgencyLevel,
                     assignee.id(),
                     assignee.name(),
                     actor.userId(),

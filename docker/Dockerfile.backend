@@ -31,9 +31,10 @@ COPY --from=builder /app/target/*.jar app.jar
 # 创建上传目录
 RUN mkdir -p /app/uploads
 
-# 健康检查
+# 健康检查：探测服务 HTTP 连通性（任何 HTTP 响应均视为存活，连接失败才判不健康）
+# 注：不用 curl -f，因为登录失败会返回非 2xx，用虚构账号登录成功与否做健康判据会误报
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8080/api/auth/login -X POST -H "Content-Type: application/json" -d '{"account":"health","password":"check","clientType":"WEB"}' > /dev/null 2>&1 || exit 1
+    CMD curl -s -o /dev/null -X POST -H "Content-Type: application/json" -d '{"account":"health","password":"check","clientType":"WEB"}' http://localhost:8080/api/auth/login || exit 1
 
 # 暴露端口
 EXPOSE 8080

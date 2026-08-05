@@ -1,5 +1,9 @@
 # Phase 1 Backend-to-Frontend Contract
 
+> ⚠️ **历史文档提示（2026-08-05）**：本文是 Phase 1 阶段的交付契约快照，仅覆盖当时约定的接口。
+> 系统后续新增了通知、消息、注册审核、政策资源、事件评价、导入导出等大量模块，
+> 当前完整接口现状（315 个端点，Flyway V78）以 `docs/系统说明文档.md` 为准。
+
 This document summarizes the phase-1 integration contract between the backend service, the Web admin app, and the H5 field app for the Dongguan Changping closed loop.
 
 Status legend used in this document:

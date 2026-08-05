@@ -12,7 +12,7 @@ This workspace contains four sibling applications that implement one event-gover
 - `mp_mysql_test/` — Vue 3 + TypeScript + Vite mini-program on port `5176`（居民随手拍）
 - `docs/architecture/` — delivery contract and manual verification docs for the current phase
 
-Start with `docs/architecture/phase1-endpoints.md` when you need the current backend/frontend contract.
+Start with `docs/系统说明文档.md` for the current API reference (315 endpoints as of 2026-08-05, Flyway V78). `docs/architecture/phase1-endpoints.md` is the historical Phase1 contract, not the current state.
 
 ## Common commands
 
@@ -22,22 +22,18 @@ Run commands from each app directory.
 
 - Start dev server: `./mvnw spring-boot:run`
 - Run all tests: `./mvnw test`
-- Run a single test class: `./mvnw -Dtest=H5WorkOrderFlowTest test`
-- Run a single test method: `./mvnw -Dtest=H5WorkOrderFlowTest#shouldAcceptWorkOrder test`
+- Run a single test class: `./mvnw -Dtest=PermissionGuardTest test`
 - Package app: `./mvnw package`
 
-### Web admin (`web/`)
+### Web admin (`web-v2/`)
 
-- Start dev server: `npx pnpm dev --host 0.0.0.0 --port 5173`
-- Run all tests: `npx pnpm test`
-- Run a single test file: `npx pnpm test -- src/tests/auth-session.spec.ts`
+- Start dev server: `npx pnpm dev --host 0.0.0.0 --port 5175`
 - Build production bundle: `npx pnpm build`
 
 ### H5 (`h5/`)
 
 - Start dev server: `npx pnpm dev --host 0.0.0.0 --port 5174`
-- Run all tests: `npx pnpm test`
-- Run a single test file: `npx pnpm test -- src/tests/h5-closed-loop-pages.spec.ts`
+- Run all tests: `npx pnpm test`（`src/tests/http.spec.ts`、`src/tests/navigation.spec.ts`）
 - Build production bundle: `npx pnpm build`
 
 ### Mini-program (`mp_mysql_test/`)
@@ -47,8 +43,9 @@ Run commands from each app directory.
 
 Notes:
 
-- Both frontend apps run tests through `node ./scripts/run-vitest.mjs`, which forwards extra CLI args to `vitest run`.
+- H5 tests run through `node ./scripts/run-vitest.mjs`, which forwards extra CLI args to `vitest run`.
 - This environment may not expose a global `pnpm` binary, so prefer `npx pnpm ...`.
+- The backend currently has a single test class: `backend/src/test/java/com/changping/platform/modules/auth/security/PermissionGuardTest.java`.
 
 ## High-level architecture
 
@@ -95,11 +92,11 @@ Files to inspect first for backend behavior:
 
 Web app bootstrap:
 
-- `web/src/main.ts`
+- `web-v2/src/main.ts`
 
 Routing and access control:
 
-- `web/src/router/index.ts`
+- `web-v2/src/router/index.ts`
 
 Key patterns:
 
@@ -108,17 +105,18 @@ Key patterns:
 - Element Plus is the UI library
 - `AdminShellLayout` hosts route-driven admin pages
 
-Main Web domains include dashboard, events, audits, process templates, work orders, patrol tasks, drones, map oversight, and system configuration.
+Main Web domains include dashboard, big screen, events, audits, process templates, work orders, patrol tasks, drones, map oversight, org members, biz areas, resident reports, policy resources, and system configuration.
 
 ### H5 structure
 
 H5 app bootstrap:
 
-- `h5/src/main.ts`
+- `h5/main.ts`
 
-Routing and access control:
+Pages and bottom tab bar:
 
-- `h5/src/router/index.ts`
+- `h5/pages.json` (uni-app page registry)
+- `h5/src/navigation.ts` (navigation entries gated by `menu:h5:*` permissions)
 
 Key patterns:
 
@@ -127,7 +125,7 @@ Key patterns:
 - Vant is the UI library
 - `MobileShellLayout` hosts the main field workflow
 
-Main H5 domains include workbench, work-order list/detail, verification, history, and mine/profile.
+Main H5 domains include workbench, work-order list/detail, verification, history, patrol checkin, merchant/vendor management, map, message (chat entry hidden for now), and mine/profile.
 
 ### Mini-program (居民小程序) structure
 
@@ -146,7 +144,7 @@ Key patterns:
 - Uses same JWT bearer token flow as Web
 - Proxy `/api` → `http://localhost:8080` via Vite config
 
-Main mini-program features: resident report (随手拍), report history with status tracking, event rating (1-5 stars), user profile.
+Main mini-program features: resident report (随手拍), report history with status tracking, event rating (1-5 stars), community services (activities/repairs/policies/points), user profile.
 
 ## Auth and permission model
 
@@ -178,14 +176,17 @@ The legacy `X-Foundation-*` headers still exist only as a fallback/testing path;
 
 Useful references:
 
-- `docs/architecture/phase1-endpoints.md` — current API contract and workflow mapping
+- `docs/系统说明文档.md` — current full API reference (updated 2026-08-05)
+- `docs/architecture/phase1-endpoints.md` — historical Phase1 API contract and workflow mapping
 - `docs/architecture/phase1-verification-checklist.md` — manual verification checklist and known gaps
 
-Important existing tests called out by the docs:
+Existing backend test:
 
-- `backend/src/test/java/com/changping/platform/modules/workorder/DispatchWorkOrderFlowTest.java`
-- `backend/src/test/java/com/changping/platform/modules/workorder/H5WorkOrderFlowTest.java`
-- `h5/src/tests/h5-closed-loop-pages.spec.ts`
+- `backend/src/test/java/com/changping/platform/modules/auth/security/PermissionGuardTest.java`
+
+H5 page tests:
+
+- `h5/src/tests/` (run via `npx pnpm test`)
 
 ## UI and styling conventions
 

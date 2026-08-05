@@ -1,5 +1,8 @@
 # Phase 1 Integration Verification Checklist
 
+> ⚠️ **历史文档提示（2026-08-05）**：本文是 Phase 1 交付时的人工验收清单快照。
+> 系统后续版本的功能现状与已知问题以 `docs/项目进度记录.md` 和 `docs/系统说明文档.md` 为准。
+
 This checklist is the delivery-time manual verification reference for the phase-1 closed loop.
 
 Important notes:

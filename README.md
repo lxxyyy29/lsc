@@ -8,11 +8,13 @@
 - `web-v2/`：Vue 3 + TypeScript + Vite Web 管理端，默认端口 `5175`
 - `h5/`：Vue 3 + uni-app H5 移动端，默认端口 `5174`
 - `mp_mysql_test/`：Vue 3 + TypeScript + Vite 居民小程序，默认端口 `5176`
-- `docs/`：项目文档
-  - `docs/系统说明文档.md`：完整接口文档
+- `docs/`
+  - `docs/系统说明文档.md`：完整接口文档（2026-08-05 按代码扫描更新，315 个端点）
   - `docs/项目进度记录.md`：项目进度记录
-  - `docs/api/apifox-openapi.json`：可导入 Apifox 的 OpenAPI 文件
-  - `docs/architecture/`：接口契约和人工验收说明
+  - `docs/部署实操指南.md`：Docker 生产部署实操指南
+  - `docs/api/apifox-openapi.json`：可导入 Apifox 的 OpenAPI 文件（⚠️ 生成于 2026-07，已落后于代码，以系统说明文档为准）
+  - `docs/architecture/`：历史阶段接口契约和人工验收说明
+- `docker/`：docker-compose 生产部署配置
 
 ## 环境要求
 
@@ -168,14 +170,27 @@ cd mp_mysql_test
 | `OSS_ENDPOINT` | MinIO 地址 | `http://127.0.0.1:9009/` |
 | `APP_TEST_ENABLED` | 是否启用测试接口 | `false`（生产环境务必不设置） |
 
-Flyway 数据库迁移脚本位于：`backend/src/main/resources/db/migration/`
+Flyway 数据库迁移脚本位于：`backend/src/main/resources/db/migration/`（当前 V78）。
+
+## 生产部署（Docker）
+
+生产环境使用 `docker/` 目录的 docker-compose 一键部署，对外端口：
+
+| 容器 | 端口 | 说明 |
+|------|------|------|
+| changping-backend | 10081 | 后端 API |
+| changping-web | 8888 | Web 管理端 |
+| changping-h5 | 10082 | H5 移动端 |
+| changping-mp | 10083 | 居民小程序 |
+
+端口、密码等在 `docker/.env` 中配置，详细步骤见 `docs/部署实操指南.md`。
 
 ## 交付文档
 
-- 完整接口文档：`docs/系统说明文档.md`
+- 完整接口文档：`docs/系统说明文档.md`（2026-08-05 更新）
 - 项目进度记录：`docs/项目进度记录.md`
-- Apifox 接口文件：`docs/api/apifox-openapi.json`
-- 接口契约：`docs/architecture/phase1-endpoints.md`
+- Apifox 接口文件：`docs/api/apifox-openapi.json`（⚠️ 已过时）
+- 历史接口契约：`docs/architecture/phase1-endpoints.md`
 - 人工验收清单：`docs/architecture/phase1-verification-checklist.md`
 
 ## 技术栈
@@ -195,4 +210,4 @@ Flyway 数据库迁移脚本位于：`backend/src/main/resources/db/migration/`
 
 ---
 
-*最后更新：2026-07-28*
+*最后更新：2026-08-05*
