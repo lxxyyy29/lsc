@@ -40,7 +40,13 @@ export const H5_AUTH_STORAGE_KEY = 'dgcp-oa-h5-session'
 let memorySession: H5Session | null = null
 
 function getStorage() {
-  const localStorageCandidate = (globalThis as { localStorage?: Storage }).localStorage
+  let localStorageCandidate: Storage | undefined
+  try {
+    localStorageCandidate = (globalThis as { localStorage?: Storage }).localStorage
+  } catch {
+    // 隐私模式/沙箱环境访问 localStorage 本身就会抛 SecurityError，视为不可用
+    localStorageCandidate = undefined
+  }
   if (
     localStorageCandidate &&
     typeof localStorageCandidate.getItem === 'function' &&
@@ -131,16 +137,26 @@ export function getH5Session(): H5Session | null {
     return normalizeH5Session(memorySession)
   }
 
-  const rawValue = storage.getItem(H5_AUTH_STORAGE_KEY)
+  let rawValue: string | null = null
+  try {
+    rawValue = storage.getItem(H5_AUTH_STORAGE_KEY)
+  } catch {
+    rawValue = null
+  }
+  // 存储不可读时回退到内存会话，避免存储异常导致会话丢失
   if (!rawValue) {
-    return null
+    return normalizeH5Session(memorySession)
   }
 
   try {
     const session = normalizeH5Session(JSON.parse(rawValue))
 
     if (!session) {
-      storage.removeItem(H5_AUTH_STORAGE_KEY)
+      try {
+        storage.removeItem(H5_AUTH_STORAGE_KEY)
+      } catch {
+        // 忽略存储清理失败
+      }
       memorySession = null
       return null
     }
@@ -148,7 +164,11 @@ export function getH5Session(): H5Session | null {
     memorySession = session
     return session
   } catch {
-    storage.removeItem(H5_AUTH_STORAGE_KEY)
+    try {
+      storage.removeItem(H5_AUTH_STORAGE_KEY)
+    } catch {
+      // 忽略存储清理失败
+    }
     memorySession = null
     return null
   }
@@ -168,7 +188,12 @@ export function persistH5Session(session: H5Session) {
     return
   }
 
-  storage.setItem(H5_AUTH_STORAGE_KEY, JSON.stringify(normalized))
+  try {
+    storage.setItem(H5_AUTH_STORAGE_KEY, JSON.stringify(normalized))
+  } catch {
+    // 存储写入失败（如配额已满）时仅保留内存会话，不影响登录流程
+    memorySession = normalized
+  }
 }
 
 export function clearH5Session() {
@@ -179,7 +204,11 @@ export function clearH5Session() {
     return
   }
 
-  storage.removeItem(H5_AUTH_STORAGE_KEY)
+  try {
+    storage.removeItem(H5_AUTH_STORAGE_KEY)
+  } catch {
+    // 忽略存储清理失败
+  }
 }
 
 export function hasH5Session() {

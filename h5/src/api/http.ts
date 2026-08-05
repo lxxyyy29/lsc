@@ -55,10 +55,13 @@ function resolveApiBaseUrl() {
  */
 function handle401(responseCode?: string) {
   clearH5Session()
-  const uniRef = typeof uni !== 'undefined' ? uni : (globalThis as any).uni
-  if (!uniRef) return
+  // 通过 globalThis 获取全局 uni（uni-app 编译期不会替换 globalThis 访问），
+  // H5 运行时 window.uni 可能为空占位对象，需检查 reLaunch 方法再调用
+  const uniRef = (globalThis as { uni?: { reLaunch?: unknown; showModal?: unknown } }).uni
+  if (!uniRef || typeof uniRef.reLaunch !== 'function') return
   const isPasswordChanged = responseCode === 'AUTH_PASSWORD_CHANGED'
   if (isPasswordChanged) {
+    if (typeof uniRef.showModal !== 'function') return
     uniRef.showModal({
       title: '密码已变更',
       content: '管理员已修改您的密码，请重新登录',

@@ -72,7 +72,7 @@ import { HttpResponseError } from '../../src/api/http'
 import { loginH5 } from '../../src/api/auth'
 import { hasMenuPermission } from '../../src/auth/permissions'
 import { h5NavigationItems } from '../../src/navigation'
-import { consumePendingRedirect, redirectToPath, toPageUrl } from '../../src/uni/navigation'
+import { consumePendingRedirect, redirectToPath } from '../../src/uni/navigation'
 
 interface LoginForm {
   account: string
