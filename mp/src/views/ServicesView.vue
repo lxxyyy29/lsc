@@ -1,5 +1,7 @@
 <template>
-  <div class="page">
+  <!-- 子路由（活动报名/便民报修/政策查询/积分明细） -->
+  <router-view v-if="isChildRoute" />
+  <div v-else class="page">
     <div class="header">
       <h2>🏠 便民服务</h2>
       <p>活动报名 / 便民报修 / 政策查询 / 志愿服务积分</p>
@@ -53,11 +55,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { getResidentActivities, getMyPoints } from '../api'
 
 const router = useRouter()
+const route = useRoute()
+// 进入子路由时隐藏服务首页内容，渲染对应子页面
+const isChildRoute = computed(() => route.path !== '/services')
 const loading = ref(false)
 const activities = ref<any[]>([])
 const points = ref<any>({})
