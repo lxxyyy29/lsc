@@ -68,7 +68,9 @@ public class RegistrationController {
     public ApiResponse<Void> approve(@PathVariable Long id, @RequestBody ApproveRejectRequest body) {
         AuthenticatedUser currentUser = currentUserService.requireClientType(AuthService.ClientType.WEB);
         permissionGuard.require(PermissionCodes.API_SYSTEM_USER_CREATE);
-        registrationService.approve(id, currentUser.id(), body.remark() != null ? body.remark() : "审批通过");
+        // 审批时分配身份：memberType = GRID_WORKER(网格员，默认) / STAFF(社区工作人员)，
+        // 审批通过后自动分配对应角色（可登录 H5 端巡查）并同步到组织人员管理
+        registrationService.approve(id, currentUser.id(), body.remark() != null ? body.remark() : "审批通过", body.memberType());
         return ApiResponse.ok(null);
     }
 
@@ -80,5 +82,5 @@ public class RegistrationController {
         return ApiResponse.ok(null);
     }
 
-    public record ApproveRejectRequest(String remark) {}
+    public record ApproveRejectRequest(String remark, String memberType) {}
 }

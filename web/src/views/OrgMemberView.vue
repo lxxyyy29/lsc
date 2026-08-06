@@ -65,7 +65,7 @@
       <div class="modal-box" style="width:600px;">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">注册审批</h3>
         <table class="table" style="font-size:13px;">
-          <thead><tr><th>用户名</th><th>姓名</th><th>手机号</th><th>申请时间</th><th>操作</th></tr></thead>
+          <thead><tr><th>用户名</th><th>姓名</th><th>手机号</th><th>申请时间</th><th>身份</th><th>操作</th></tr></thead>
           <tbody>
             <tr v-for="r in pendingList" :key="r.id">
               <td>{{ r.username }}</td>
@@ -73,11 +73,17 @@
               <td>{{ r.phone }}</td>
               <td>{{ r.createdAt }}</td>
               <td>
+                <select v-model="approvalTypes[r.id]" class="form-select" style="padding:3px 8px;font-size:12px;">
+                  <option value="GRID_WORKER">网格员</option>
+                  <option value="STAFF">社区工作人员</option>
+                </select>
+              </td>
+              <td>
                 <button @click="approveReg(r)" class="btn btn-primary" style="padding:4px 10px;font-size:12px;">通过</button>
                 <button @click="rejectReg(r)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;">拒绝</button>
               </td>
             </tr>
-            <tr v-if="!pendingList.length"><td colspan="5" style="text-align:center;color:#999;padding:20px;">暂无待审批</td></tr>
+            <tr v-if="!pendingList.length"><td colspan="6" style="text-align:center;color:#999;padding:20px;">暂无待审批</td></tr>
           </tbody>
         </table>
         <div style="text-align:right;margin-top:16px;">
@@ -151,6 +157,7 @@ const showEdit = ref(false)
 const showApproval = ref(false)
 const pendingList = ref<any[]>([])
 const pendingCount = ref(0)
+const approvalTypes = ref<Record<number, string>>({})
 
 const form = ref({
   id: null as number | null,
@@ -204,8 +211,9 @@ async function fetchPending() {
 }
 
 async function approveReg(row: any) {
-  await http.post(`/registration/${row.id}/approve`, { remark: '审批通过' })
-  alert('已通过')
+  await http.post(`/registration/${row.id}/approve`, { remark: '审批通过', memberType: approvalTypes.value[row.id] || 'GRID_WORKER' })
+  alert('已通过，用户已分配网格员身份并可登录 H5 端')
+  delete approvalTypes.value[row.id]
   await fetchPending()
   await fetchData()
 }
