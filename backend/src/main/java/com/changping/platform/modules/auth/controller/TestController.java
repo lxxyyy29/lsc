@@ -401,9 +401,13 @@ public class TestController {
         // 获取用户ID
         Long userId = jdbcTemplate.queryForObject("SELECT id FROM sys_user WHERE username = ?", Long.class, account);
 
-        // 分配普通群众角色（PUBLIC 或 EVENT_OPERATOR）
+        // 分配普通群众角色（优先 PUBLIC，PUBLIC 不存在时兜底 EVENT_OPERATOR）
         List<Long> roleIds = jdbcTemplate.queryForList(
-            "SELECT id FROM sys_role WHERE role_code = 'PUBLIC' OR role_code = 'EVENT_OPERATOR' ORDER BY id LIMIT 1", Long.class);
+            "SELECT id FROM sys_role WHERE role_code = 'PUBLIC' ORDER BY id LIMIT 1", Long.class);
+        if (roleIds.isEmpty()) {
+            roleIds = jdbcTemplate.queryForList(
+                "SELECT id FROM sys_role WHERE role_code = 'EVENT_OPERATOR' ORDER BY id LIMIT 1", Long.class);
+        }
         if (!roleIds.isEmpty()) {
             jdbcTemplate.update("INSERT INTO sys_user_role (user_id, role_id) VALUES (?, ?)", userId, roleIds.get(0));
         }

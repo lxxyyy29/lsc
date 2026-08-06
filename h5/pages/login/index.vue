@@ -65,11 +65,12 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import AppIcon from '../../src/components/AppIcon.vue'
 import loginHexUrl from '../../src/assets/login-hex.svg'
 import loginShieldUrl from '../../src/assets/login-shield.svg'
 import { HttpResponseError } from '../../src/api/http'
-import { loginH5 } from '../../src/api/auth'
+import { clearH5Session, loginH5 } from '../../src/api/auth'
 import { hasMenuPermission } from '../../src/auth/permissions'
 import { h5NavigationItems } from '../../src/navigation'
 import { consumePendingRedirect, redirectToPath } from '../../src/uni/navigation'
@@ -89,6 +90,11 @@ const submitting = ref(false)
 const errorMessage = ref('')
 const showPassword = ref(false)
 const rememberAccount = ref(false)
+
+// 进入登录页即代表需要重新认证：清理残留会话，防止切换账号后旧用户信息串号
+onShow(() => {
+  clearH5Session()
+})
 const fallbackRedirect = computed(() =>
   h5NavigationItems.find((item: (typeof h5NavigationItems)[number]) => hasMenuPermission(item.permission))?.to ?? '/workbench'
 )

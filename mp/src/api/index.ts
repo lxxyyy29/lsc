@@ -60,7 +60,7 @@ export async function login(account: string, password: string) {
 }
 
 export async function register(account: string, password: string, realName: string, phone: string) {
-  await http.post('/test/register', { account, password, realName, phone })
+  await http.post('/auth/register', { account, password, realName, phone })
 }
 
 export function getSession() {
