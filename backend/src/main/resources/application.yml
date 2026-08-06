@@ -59,7 +59,8 @@ media:
 drone:
   api:
     server-addr: ${DRONE_API_SERVER:https://drone.kfktec.cn:9085}
-    ws-addr: ${DRONE_WS_SERVER:ws://drone.kfktec.cn:9085}
+    # 注意：平台 9085 端口是 TLS（WSS），不能用明文 ws://，否则 nginx 会返回 400 拒绝升级
+    ws-addr: ${DRONE_WS_SERVER:wss://drone.kfktec.cn:9085}
     username: ${DRONE_API_USERNAME:admin}
     password: ${DRONE_API_PASSWORD:kfk@dksl0515}
     fixed-workspace-id: ${DRONE_API_FIXED_WORKSPACE_ID:d9465bc0-6718-42aa-92e6-2b150a2002ec}

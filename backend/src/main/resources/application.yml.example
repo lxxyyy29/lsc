@@ -60,7 +60,7 @@ security:
 drone:
   api:
     server-addr: ${DRONE_API_SERVER:http://flight.scities.net.cn:9080}
-    ws-addr: ${DRONE_WS_SERVER:ws://flight.scities.net.cn:9080}
+    ws-addr: ${DRONE_WS_SERVER:wss://flight.scities.net.cn:9080}
     username: ${DRONE_API_USERNAME:admin}
     password: ${DRONE_API_PASSWORD:}
     fixed-workspace-id: ${DRONE_API_FIXED_WORKSPACE_ID:}

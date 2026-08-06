@@ -46,7 +46,7 @@
           <tr v-for="d in devices" :key="d.id || d.deviceSn || d.device_sn">
             <td>{{ d.deviceName || d.nickname || d.name || '-' }}</td>
             <td><span class="tag tag-blue">{{ d.deviceType === 3 ? '无人机' : '机场' }}</span></td>
-            <td><span :class="['tag', d.boundStatus === true ? 'tag-green' : 'tag-orange']">{{ d.boundStatus === true ? '在线' : '离线' }}</span></td>
+            <td><span :class="['tag', isOnline(d) ? 'tag-green' : 'tag-orange']">{{ isOnline(d) ? '在线' : '离线' }}</span></td>
             <td style="font-size:12px;">{{ d.deviceSn || d.childSn || '-' }}</td>
           </tr>
         </tbody>
@@ -245,13 +245,13 @@
           <div v-for="d in devices" :key="d.id || d.deviceSn || d.device_sn" @click="selectDrone(d)"
                :style="{padding:'10px',border:'2px solid ' + (selectedDrone && (selectedDrone.deviceSn === d.deviceSn || selectedDrone.id === d.id) ? '#1890ff' : '#e5e7eb'),borderRadius:'8px',cursor:'pointer',background: selectedDrone && (selectedDrone.deviceSn === d.deviceSn || selectedDrone.id === d.id) ? '#e6f4ff' : '#fff',transition:'all 0.2s'}">
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-              <i class="fas" :class="d.deviceType === 3 ? 'fa-helicopter' : 'fa-charging-station'" :style="{color: d.boundStatus ? '#52c41a' : '#ff4d4f',fontSize:'14px'}"></i>
+              <i class="fas" :class="d.deviceType === 3 ? 'fa-helicopter' : 'fa-charging-station'" :style="{color: isOnline(d) ? '#52c41a' : '#ff4d4f',fontSize:'14px'}"></i>
               <span style="font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ d.deviceName || d.nickname || '-' }}</span>
             </div>
             <p style="font-size:10px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ d.deviceSn || d.childSn || '-' }}</p>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
               <span style="font-size:9px;color:#6b7280;">{{ d.longitude ? d.longitude.toFixed(3) : '-' }}, {{ d.latitude ? d.latitude.toFixed(3) : '-' }}</span>
-              <span :class="['tag', d.boundStatus ? 'tag-green' : 'tag-red']" style="font-size:9px;padding:1px 6px;">{{ d.boundStatus ? '在线' : '离线' }}</span>
+              <span :class="['tag', isOnline(d) ? 'tag-green' : 'tag-red']" style="font-size:9px;padding:1px 6px;">{{ isOnline(d) ? '在线' : '离线' }}</span>
             </div>
           </div>
         </div>
@@ -457,7 +457,15 @@ const patrolItems = [
 ]
 
 function isOnline(d: any) {
-  return d.boundStatus === true || 'ONLINE' === d.deviceStatus || 'online' === String(d.status) || d.online === true
+  // 平台语义：modeCode 99=离线，其余值（0待机/1调试/4工作等）均在线
+  if (d.modeCode !== undefined && d.modeCode !== null) {
+    return Number(d.modeCode) !== 99
+  }
+  // 兼容其他状态字段（boundStatus 是绑定状态，不能代表在线）
+  if (d.onlineStatus !== undefined && d.onlineStatus !== null) {
+    return d.onlineStatus === 1 || d.onlineStatus === true || String(d.onlineStatus).toUpperCase() === 'ONLINE'
+  }
+  return 'ONLINE' === d.deviceStatus || 'online' === String(d.status) || d.online === true
 }
 
 function jobStatusLabel(j: any) {
@@ -588,11 +596,11 @@ async function loadData() {
 
 function getSampleDevices() {
   return [
-    { id: 1, deviceName: '机场3', deviceSn: '8UUDM6400AY6S4', nickname: '佛堂', boundStatus: true, deviceType: 2, longitude: 120.06589, latitude: 29.2016,
+    { id: 1, deviceName: '机场3', deviceSn: '8UUDM6400AY6S4', nickname: '佛堂', boundStatus: true, modeCode: 0, deviceType: 2, longitude: 120.06589, latitude: 29.2016,
       videoPlayUrlWebRtc: [{ videoList: [{ playUrl: 'https://drone.kfktec.cn:9085/index/api/whep?app=live&stream=8UUDM6400AY6S4_165-0-7_normal-0' }] }],
       videoPlayUrlInner: [{ videoList: [{ playUrl: 'ws://8.156.93.151:11080/index/api/whip.live.flv?originTypeStr=rtmp_push&sign=41db35390ddad33f83944f44b8b75ded' }] }],
       videoUrl: [{ videoList: [{ playUrl: 'https://drone.kfktec.cn:9085/live/8UUDM6400AY6S4_165-0-7_normal-0/hls.m3u8' }] }] },
-    { id: 2, deviceName: '4TD', deviceSn: '1581F8HGD249Q0010233', nickname: '佛堂4TD', boundStatus: true, deviceType: 3, longitude: 120.06600, latitude: 29.2020,
+    { id: 2, deviceName: '4TD', deviceSn: '1581F8HGD249Q0010233', nickname: '佛堂4TD', boundStatus: true, modeCode: 0, deviceType: 3, longitude: 120.06600, latitude: 29.2020,
       videoPlayUrlWebRtc: [{ videoList: [{ playUrl: 'https://drone.kfktec.cn:9085/index/api/whep?app=live&stream=1581F8HGD249Q0010233_99-0-0_normal-0' }] }],
       videoUrl: [{ videoList: [{ playUrl: 'https://drone.kfktec.cn:9085/live/1581F8HGD249Q0010233_99-0-0_normal-0/hls.m3u8' }] }] },
   ]
