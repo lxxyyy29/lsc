@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.changping.platform.common.jackson.PhotoUrlsDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -27,6 +29,7 @@ public class ResidentReportEntity {
 
     private String content;
 
+    @JsonDeserialize(using = PhotoUrlsDeserializer.class)
     private String photoUrls;
 
     private BigDecimal longitude;
