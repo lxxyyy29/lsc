@@ -9,8 +9,20 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 
-# 打包（跳过测试加速构建）
+# 打包（跳过测试加速构建；配置阿里云 Maven 镜像源，避免官方源网络不稳定导致依赖解析失败）
 RUN apk add --no-cache maven && \
+    mkdir -p /root/.m2 && \
+    printf '%s\n' \
+      '<settings>' \
+      '  <mirrors>' \
+      '    <mirror>' \
+      '      <id>aliyun</id>' \
+      '      <name>Aliyun Maven Mirror</name>' \
+      '      <url>https://maven.aliyun.com/repository/public</url>' \
+      '      <mirrorOf>*</mirrorOf>' \
+      '    </mirror>' \
+      '  </mirrors>' \
+      '</settings>' > /root/.m2/settings.xml && \
     mvn clean package -DskipTests -q
 
 # ============================================
