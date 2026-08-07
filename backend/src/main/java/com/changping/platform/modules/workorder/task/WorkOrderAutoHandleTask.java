@@ -72,10 +72,11 @@ public class WorkOrderAutoHandleTask {
                 if (existCount == null || existCount == 0) {
                     jdbcTemplate.update(
                         "INSERT INTO sys_notification (user_id, title, content, type, level, related_type, related_id, is_read, created_at) " +
-                        "VALUES (?, ?, ?, 'WORK_ORDER_OVERDUE', 'URGENT', 'WORK_ORDER', 0, NOW())",
+                        "VALUES (?, ?, ?, 'WORK_ORDER_OVERDUE', 'URGENT', 'WORK_ORDER', ?, 0, NOW())",
                         assigneeId,
                         "工单严重超期",
-                        "工单 " + workOrderNo + " 已超期 " + hours + " 小时，请尽快处理");
+                        "工单 " + workOrderNo + " 已超期 " + hours + " 小时，请尽快处理",
+                        ((Number) order.get("id")).longValue());
                 }
             }
 

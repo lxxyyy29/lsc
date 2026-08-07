@@ -71,7 +71,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getMyRepairs, submitRepair } from '../api'
+import { getMyRepairs, submitRepair as submitRepairApi } from '../api'
 
 const loading = ref(false)
 const showForm = ref(false)
@@ -116,7 +116,7 @@ async function submitRepair() {
     return
   }
   try {
-    await submitRepair(form)
+    await submitRepairApi(form)
     alert('提交成功！')
     showForm.value = false
     Object.assign(form, { repairType: 'WATER', title: '', description: '', address: '', reporterPhone: '' })
