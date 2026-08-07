@@ -108,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getSystemUsers, archiveEvent } from '../api'
 import { getEventTypeName } from '../utils/eventTypes'
@@ -172,9 +172,15 @@ function statusLabel(status: string) {
 async function loadData() {
   loading.value = true
   try {
-    const id = Number(route.params.id)
-    event.value = await getEventDetail(id)
-    timeline.value = await getEventTimeline(id) || []
+    // 支持数字 id 与字符串 externalEventId 两种路由参数（列表项 id 缺失时用外部事件ID跳转）
+    const idParam = String(route.params.id || '')
+    event.value = await getEventDetail(idParam)
+    try {
+      // timeline 接口仅支持数字 id，externalEventId 场景下容错为空
+      timeline.value = await getEventTimeline(idParam) || []
+    } catch (e) {
+      timeline.value = []
+    }
     try {
       const users = await getSystemUsers()
       workers.value = (Array.isArray(users) ? users : []).filter((user: any) => user.status === 'ACTIVE')
@@ -230,4 +236,6 @@ async function handleDispatch() {
 }
 
 onMounted(loadData)
+// 详情页内路由参数变化（如从列表/地图跳转不同事件）时重新加载，避免显示旧事件内容
+watch(() => route.params.id, loadData)
 </script>

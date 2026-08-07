@@ -150,7 +150,7 @@ export async function reportFromProperty(data: {
   return http.post('/events/property-report', data)
 }
 
-export async function getEventTimeline(id: number) {
+export async function getEventTimeline(id: number | string) {
   return http.get(`/events/${id}/timeline`)
 }
 
