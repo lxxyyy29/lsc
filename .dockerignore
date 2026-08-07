@@ -9,9 +9,6 @@
 
 # Node
 **/node_modules/
-web/dist/
-h5/dist/
-build/
 
 # Java
 target/
