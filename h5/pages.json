@@ -126,6 +126,13 @@
         "navigationStyle": "custom",
         "navigationBarTitleText": "信息互通"
       }
+    },
+    {
+      "path": "pages/volunteer/index",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "志愿服务"
+      }
     }
   ],
   "tabBar": {

@@ -348,6 +348,16 @@ public final class PermissionCodes {
     /** H5端删除摊贩接口权限 */
     public static final String API_H5_VENDOR_DELETE = "api:h5:vendor:delete";
 
+    // H5 志愿服务
+    /** H5端志愿服务查看菜单权限 */
+    public static final String MENU_H5_VOLUNTEER_VIEW = "menu:h5:volunteer:view";
+    /** H5端志愿活动列表接口权限 */
+    public static final String API_H5_VOLUNTEER_LIST = "api:h5:volunteer:list";
+    /** H5端志愿活动报名接口权限 */
+    public static final String API_H5_VOLUNTEER_SIGNUP = "api:h5:volunteer:signup";
+    /** H5端志愿积分查询接口权限 */
+    public static final String API_H5_VOLUNTEER_POINTS = "api:h5:volunteer:points";
+
     // 辖区报表
     /** 辖区报表菜单权限 */
     public static final String MENU_REPORT_DISTRICT = "menu:report:district";

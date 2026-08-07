@@ -138,9 +138,20 @@ public class PartyController {
     @PostMapping("/activities/{id}/signup")
     public ApiResponse<Boolean> signupActivity(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         requirePartyManagePermission();
+        Object userId = body.get("userId");
+        if (userId == null) {
+            userId = AuthenticatedUserContextHolder.getRequired().id();
+        }
+        // 幂等报名：已报名则直接返回成功，避免重复插入
+        Long exists = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM sys_volunteer_signup WHERE activity_id = ? AND user_id = ? AND status = 'SIGNED_UP'",
+            Long.class, id, userId);
+        if (exists != null && exists > 0) {
+            return ApiResponse.ok(true);
+        }
         jdbcTemplate.update(
             "INSERT INTO sys_volunteer_signup (activity_id, user_id, status) VALUES (?, ?, 'SIGNED_UP')",
-            id, body.get("userId"));
+            id, userId);
         return ApiResponse.ok(true);
     }
 
@@ -182,7 +193,10 @@ public class PartyController {
             month = new java.text.SimpleDateFormat("yyyy-MM").format(new Date());
         }
         List<Map<String, Object>> result = jdbcTemplate.queryForList(
-            "SELECT a.*, u.real_name as memberName, u.username " +
+            "SELECT a.*, u.real_name as memberName, u.username, " +
+            "a.patrol_count as patrolCount, a.mediation_count as mediationCount, " +
+            "a.volunteer_hours as volunteerHours, a.meeting_attendance as meetingAttendance, " +
+            "a.total_score as totalScore " +
             "FROM sys_party_assessment a " +
             "LEFT JOIN sys_party_member pm ON pm.id = a.party_member_id " +
             "LEFT JOIN sys_user u ON u.id = pm.user_id " +
@@ -205,13 +219,13 @@ public class PartyController {
         // 删除已存在的考核记录
         jdbcTemplate.update("DELETE FROM sys_party_assessment WHERE assessment_month = ?", month);
 
-        // 生成考核数据
+        // 生成考核数据：巡查次数取巡查打卡记录（cmn_patrol_record），志愿时长按活动日期估算 2 小时/次
         jdbcTemplate.update(
             "INSERT INTO sys_party_assessment (party_member_id, assessment_month, patrol_count, mediation_count, volunteer_hours, meeting_attendance, total_score) " +
             "SELECT pm.id, ?, " +
-            "  (SELECT COUNT(*) FROM biz_patrol_task t WHERE t.user_id = pm.user_id AND DATE_FORMAT(t.completed_at, '%Y-%m') = ?), " +
+            "  (SELECT COUNT(*) FROM cmn_patrol_record r WHERE r.user_id = pm.user_id AND DATE_FORMAT(r.created_at, '%Y-%m') = ?), " +
             "  0, " +
-            "  COALESCE((SELECT SUM(TIMESTAMPDIFF(HOUR, '2026-01-01 00:00:00', '2026-01-01 02:00:00')) FROM sys_volunteer_signup s JOIN sys_volunteer_activity a ON a.id = s.activity_id WHERE s.user_id = pm.user_id AND s.status = 'ATTENDED' AND DATE_FORMAT(a.activity_date, '%Y-%m') = ?), 0), " +
+            "  COALESCE((SELECT SUM(TIMESTAMPDIFF(HOUR, a.activity_date, DATE_ADD(a.activity_date, INTERVAL 2 HOUR))) FROM sys_volunteer_signup s JOIN sys_volunteer_activity a ON a.id = s.activity_id WHERE s.user_id = pm.user_id AND s.status = 'ATTENDED' AND DATE_FORMAT(a.activity_date, '%Y-%m') = ?), 0), " +
             "  (SELECT COUNT(*) FROM sys_party_meeting m WHERE m.meeting_date LIKE CONCAT(?, '%') AND m.status = 'COMPLETED'), " +
             "  0 " +
             "FROM sys_party_member pm WHERE pm.status = 'ACTIVE'",
@@ -222,7 +236,7 @@ public class PartyController {
             "UPDATE sys_party_assessment SET total_score = patrol_count * 10 + mediation_count * 15 + volunteer_hours * 5 + meeting_attendance * 20 WHERE assessment_month = ?",
             month);
 
-        Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_party_assessment WHERE assessment_month = ?", Long.class);
+        Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_party_assessment WHERE assessment_month = ?", Long.class, month);
         return ApiResponse.ok(count != null ? count.intValue() : 0);
     }
 
@@ -442,12 +456,12 @@ public class PartyController {
 
         jdbcTemplate.update("DELETE FROM sys_party_assessment WHERE assessment_month = ?", month);
 
-        // patrol_count 来自巡查任务，mediation_count 来自矛盾纠纷类事件处置
+        // patrol_count 来自巡查打卡记录，mediation_count 来自矛盾纠纷类事件已办结工单
         jdbcTemplate.update(
             "INSERT INTO sys_party_assessment (party_member_id, assessment_month, patrol_count, mediation_count, volunteer_hours, meeting_attendance, total_score) " +
             "SELECT pm.id, ?, " +
-            "  (SELECT COUNT(*) FROM biz_patrol_task t WHERE t.user_id = pm.user_id AND t.status = 'COMPLETED' AND DATE_FORMAT(t.completed_at, '%Y-%m') = ?), " +
-            "  (SELECT COUNT(*) FROM biz_work_order wo JOIN biz_event e ON e.id = wo.source_event_id WHERE wo.assignee_user_id = pm.user_id AND wo.status = 'WAITING_CLOSE_CONFIRM' AND e.event_type IN ('CONTRADICTION','矛盾纠纷','DISPUTE') AND DATE_FORMAT(wo.completed_at, '%Y-%m') = ?), " +
+            "  (SELECT COUNT(*) FROM cmn_patrol_record r WHERE r.user_id = pm.user_id AND DATE_FORMAT(r.created_at, '%Y-%m') = ?), " +
+            "  (SELECT COUNT(*) FROM biz_work_order wo JOIN biz_event e ON e.id = wo.source_event_id WHERE wo.assignee_user_id = pm.user_id AND wo.status IN ('COMPLETED','CLOSED') AND e.event_type IN ('CONTRADICTION','矛盾纠纷','DISPUTE') AND DATE_FORMAT(wo.completed_at, '%Y-%m') = ?), " +
             "  COALESCE((SELECT SUM(TIMESTAMPDIFF(HOUR, a.activity_date, DATE_ADD(a.activity_date, INTERVAL 2 HOUR))) FROM sys_volunteer_signup s JOIN sys_volunteer_activity a ON a.id = s.activity_id WHERE s.user_id = pm.user_id AND s.status = 'ATTENDED' AND DATE_FORMAT(a.activity_date, '%Y-%m') = ?), 0), " +
             "  (SELECT COUNT(*) FROM sys_party_meeting m WHERE m.status = 'COMPLETED' AND DATE_FORMAT(m.meeting_date, '%Y-%m') = ?), " +
             "  0 " +
