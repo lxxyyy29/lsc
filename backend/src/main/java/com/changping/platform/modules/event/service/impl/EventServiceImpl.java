@@ -3,6 +3,7 @@ package com.changping.platform.modules.event.service.impl;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.PagedResult;
+import com.changping.platform.modules.auth.security.AuthenticatedUserContextHolder;
 import com.changping.platform.modules.biz.service.BizManagementService;
 import com.changping.platform.modules.event.domain.EventStatus;
 import com.changping.platform.modules.event.dto.CreateEventRequest;
@@ -87,7 +88,8 @@ public class EventServiceImpl implements EventService {
         entity.setLocation(request.location());
         entity.setLongitude(request.longitude());
         entity.setLatitude(request.latitude());
-        entity.setStatus(EventStatus.WAITING_DISPATCH.name());
+        // 事件接入后先进入待审核，由审核员审核通过后进入待派单（闭环处置）
+        entity.setStatus(EventStatus.PENDING_AUDIT.name());
 
         try {
             eventMapper.insert(entity);
@@ -104,12 +106,19 @@ public class EventServiceImpl implements EventService {
                     areaAtIntake.id(), areaAtIntake.areaName(), entity.getId());
         }
 
+        // H5 端工作人员上报：记录上报人并标记来源为网格员，便于“我的上报”按人追溯
+        if ("H5".equalsIgnoreCase(request.sourceType())) {
+            AuthenticatedUserContextHolder.getOptional().ifPresent(user -> jdbcTemplate.update(
+                    "UPDATE biz_event SET report_user_id = ?, report_user_name = ?, report_source = 'GRID_MEMBER', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    user.id(), user.userName(), entity.getId()));
+        }
+
         for (String reference : request.evidenceReferences()) {
             eventMapper.insertEvidenceReference(entity.getId(), extractFileName(reference), reference);
         }
-        eventMapper.insertEventRecord(entity.getId(), null, EventStatus.WAITING_DISPATCH.name(), EVENT_INTAKE, EVENT_INTAKE);
+        eventMapper.insertEventRecord(entity.getId(), null, EventStatus.PENDING_AUDIT.name(), EVENT_INTAKE, EVENT_INTAKE);
         alarmEventMongoService.upsertManualEvent(request, entity.getId(), entity.getEventCode(), entity.getStatus());
-        alarmWorkflowStatusSyncService.syncWorkflowStatus(entity.getId(), EventStatus.WAITING_DISPATCH.name());
+        alarmWorkflowStatusSyncService.syncWorkflowStatus(entity.getId(), EventStatus.PENDING_AUDIT.name());
         return getEventDetail(entity.getId());
     }
 
@@ -129,7 +138,7 @@ public class EventServiceImpl implements EventService {
         // 追加转办单号到操作记录
         jdbcTemplate.update(
                 "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at, updated_at) VALUES (?, ?, ?, '12345_IMPORT', '系统', ?, NOW(), NOW())",
-                vo.id(), EventStatus.WAITING_DISPATCH.name(), EventStatus.WAITING_DISPATCH.name(),
+                vo.id(), EventStatus.PENDING_AUDIT.name(), EventStatus.PENDING_AUDIT.name(),
                 "12345 热线转办导入，单号：" + externalNo);
         return vo;
     }
@@ -153,7 +162,7 @@ public class EventServiceImpl implements EventService {
                 reporterName, vo.id());
         jdbcTemplate.update(
                 "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at, updated_at) VALUES (?, ?, ?, 'PROPERTY_REPORT', '系统', ?, NOW(), NOW())",
-                vo.id(), EventStatus.WAITING_DISPATCH.name(), EventStatus.WAITING_DISPATCH.name(),
+                vo.id(), EventStatus.PENDING_AUDIT.name(), EventStatus.PENDING_AUDIT.name(),
                 "物业上报，上报人：" + (reporterName != null ? reporterName : "匿名"));
         return vo;
     }
@@ -833,13 +842,47 @@ public class EventServiceImpl implements EventService {
         if (entity == null) {
             throw new BusinessException("EVENT_NOT_FOUND", "事件不存在");
         }
-        String newStatus = passed ? EventStatus.WAITING_DISPATCH.name() : EventStatus.IGNORED.name();
-        String actionType = passed ? "AUDIT_PASS" : "AUDIT_REJECT";
-        jdbcTemplate.update("UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ?", newStatus, id);
-        // 记录审核操作
-        jdbcTemplate.update(
-                "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, ?, '系统', ?, NOW())",
-                id, entity.getStatus(), newStatus, actionType, remark != null ? remark : (passed ? "审核通过" : "驳回"));
+        String fromStatus = entity.getStatus();
+        // 仅待审核/审核中/已驳回的事件可执行审核（驳回后允许重新提交审核）
+        if (!EventStatus.PENDING_AUDIT.name().equals(fromStatus)
+                && !EventStatus.IN_AUDIT.name().equals(fromStatus)
+                && !EventStatus.AUDIT_REJECTED.name().equals(fromStatus)) {
+            throw new BusinessException("EVENT_AUDIT_STATUS_INVALID", "事件当前状态不可审核，仅待审核或已驳回的事件可审核");
+        }
+        String operatorName = AuthenticatedUserContextHolder.getOptional()
+                .map(user -> user.userName()).orElse("系统");
+        String opinion = remark != null && !remark.isBlank() ? remark : (passed ? "审核通过" : "审核驳回");
+        if (passed) {
+            // 通过：待审核/已驳回 → 已通过 → 待派单（进入闭环处置）
+            int updated = jdbcTemplate.update(
+                    "UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ? AND status = ?",
+                    EventStatus.AUDIT_APPROVED.name(), id, fromStatus);
+            if (updated == 0) {
+                throw new BusinessException("EVENT_AUDIT_STATUS_INVALID", "事件状态已变化，请刷新后重试");
+            }
+            jdbcTemplate.update(
+                    "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'AUDIT_PASS', ?, ?, NOW())",
+                    id, fromStatus, EventStatus.AUDIT_APPROVED.name(), operatorName, opinion);
+            jdbcTemplate.update(
+                    "UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ? AND status = ?",
+                    EventStatus.WAITING_DISPATCH.name(), id, EventStatus.AUDIT_APPROVED.name());
+            jdbcTemplate.update(
+                    "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'WAIT_DISPATCH', ?, '审核通过，进入待派单', NOW())",
+                    id, EventStatus.AUDIT_APPROVED.name(), EventStatus.WAITING_DISPATCH.name(), operatorName);
+            alarmWorkflowStatusSyncService.syncWorkflowStatus(id, EventStatus.WAITING_DISPATCH.name());
+        } else {
+            // 驳回：待审核/审核中 → 已驳回
+            int updated = jdbcTemplate.update(
+                    "UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ? AND status = ?",
+                    EventStatus.AUDIT_REJECTED.name(), id, fromStatus);
+            if (updated == 0) {
+                throw new BusinessException("EVENT_AUDIT_STATUS_INVALID", "事件状态已变化，请刷新后重试");
+            }
+            jdbcTemplate.update(
+                    "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'AUDIT_REJECT', ?, ?, NOW())",
+                    id, fromStatus, EventStatus.AUDIT_REJECTED.name(), operatorName, opinion);
+            alarmWorkflowStatusSyncService.syncWorkflowStatus(id, EventStatus.AUDIT_REJECTED.name());
+        }
         return true;
     }
 

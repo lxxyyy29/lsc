@@ -318,6 +318,8 @@ function statusLabel(status: string) {
   const map: Record<string, string> = {
     PENDING_AUDIT: '待审核',
     IN_AUDIT: '审核中',
+    AUDIT_APPROVED: '已通过',
+    AUDIT_REJECTED: '已驳回',
     WAITING_DISPATCH: '待派单',
     DISPATCHED_TO_WORK_ORDER: '已派单',
     CLOSED: '已关闭',

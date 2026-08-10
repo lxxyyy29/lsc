@@ -6,6 +6,14 @@ package com.changping.platform.modules.event.domain;
  * @Date 2026/04/18 10:25
  */
 public enum EventStatus {
+    /** 待审核（事件接入后先进入审核环节） */
+    PENDING_AUDIT,
+    /** 审核中（流程节点审批进行中） */
+    IN_AUDIT,
+    /** 审核通过 */
+    AUDIT_APPROVED,
+    /** 审核驳回 */
+    AUDIT_REJECTED,
     /** 等待派发工单 */
     WAITING_DISPATCH,
     /** 已派发至工单 */

@@ -350,7 +350,8 @@ export async function getIntegrationStatistics() {
 }
 
 // 审核中心
-export async function getAudits(params?: { page?: number; pageSize?: number; status?: string }) {
+// 返回 { items, total, page, pageSize, stats }，stats 含 pending/approved/rejected 三个状态的统计数
+export async function getAudits(params?: { page?: number; pageSize?: number; status?: string; searchKey?: string }) {
   return http.get('/audits', { params: { page: 1, pageSize: 10, ...params } })
 }
 export async function getAuditDetail(eventId: number | string) {
