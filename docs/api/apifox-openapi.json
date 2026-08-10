@@ -496,7 +496,8 @@
           "200": {
             "description": "成功"
           }
-        }
+        },
+        "description": "审核事件（通过/驳回）。请求体 {\"action\": \"pass\"|\"reject\", \"remark\": \"备注\"}。通过后事件流转：待审核/已驳回 → 已通过 → 待派单（进入闭环处置）；驳回后事件为已驳回状态，可重新提交审核。权限：事件创建。"
       }
     },
     "/events/public-report": {
@@ -4409,6 +4410,44 @@
           }
         ],
         "description": "仅开发环境可用",
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/audits": {
+      "get": {
+        "tags": [
+          "审核流程"
+        ],
+        "summary": "分页查询审核中心列表与状态统计",
+        "description": "查询审核相关事件（待审核+已通过+已驳回的并集，与统计卡口径一致）。参数：page 页码(默认1)、pageSize 每页条数(默认10)、status 状态筛选(PENDING待审核/APPROVED已通过/REJECTED已驳回，缺省为全部)、searchKey 关键字(事件编号/标题模糊匹配)。返回 data 含 items 列表、total 总数、page、pageSize、stats 统计(pending/approved/rejected)。权限：审核详情查看。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/my-reports": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "查询当前登录用户自己的上报记录",
+        "description": "WEB 端与 H5 工作人员共用，需登录令牌。参数：page 页码(默认1)、pageSize 每页条数(默认10)。返回分页的本人上报事件列表。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功"
