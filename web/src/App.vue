@@ -116,6 +116,7 @@ const menuGroups = [
     name: '居民服务', icon: 'fas fa-users',
     items: [
       { path: '/resident-reports', name: '居民上报' },
+      { path: '/repairs', name: '报修管理' },
       { path: '/policy-resources', name: '政策资源' },
     ]
   },

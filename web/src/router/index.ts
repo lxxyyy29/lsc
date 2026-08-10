@@ -28,6 +28,7 @@ const routes = [
   { path: '/org-members', component: () => import('../views/OrgMemberView.vue') },
   { path: '/biz-areas', component: () => import('../views/BizAreaView.vue') },
   { path: '/resident-reports', component: () => import('../views/ResidentReportView.vue') },
+  { path: '/repairs', component: () => import('../views/RepairView.vue') },
   { path: '/policy-resources', component: () => import('../views/PolicyResourceView.vue') },
   { path: '/help', component: () => import('../views/HelpView.vue') },
   { path: '/big-screen', component: () => import('../views/BigScreenView.vue') },
