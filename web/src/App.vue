@@ -34,16 +34,24 @@
     <div style="display:flex;flex:1;overflow:hidden;">
       <aside class="sidebar">
         <div style="padding:16px 0;">
-          <div style="padding:0 16px 12px;margin-bottom:8px;border-bottom:1px solid #f3f4f6;">
+          <div style="padding:0 16px 10px;">
             <span style="font-size:11px;color:#9ca3af;font-weight:600;">功能导航</span>
           </div>
-          <div v-for="group in menuGroups" :key="group.name" class="menu-group">
+          <div style="padding:0 12px 10px;">
+            <div class="menu-search">
+              <i class="fas fa-search" style="font-size:11px;color:#9ca3af;"></i>
+              <input v-model="searchKey" placeholder="搜索功能..." style="flex:1;border:none;outline:none;font-size:12px;background:transparent;color:#1e293b;min-width:0;" />
+              <i v-if="searchKey" class="fas fa-times-circle" style="font-size:11px;color:#cbd5e1;cursor:pointer;" @click="searchKey = ''"></i>
+            </div>
+          </div>
+          <div v-if="filteredGroups.length === 0" style="padding:28px 16px;text-align:center;font-size:12px;color:#9ca3af;">未找到匹配的功能</div>
+          <div v-for="group in filteredGroups" :key="group.name" class="menu-group">
             <div class="group-header" @click="toggleGroup(group.name)">
               <i :class="group.icon" style="color:#0284c7;font-size:14px;width:20px;text-align:center;"></i>
               <span style="flex:1;">{{ group.name }}</span>
               <i class="fas fa-chevron-down" style="font-size:10px;color:#9ca3af;transition:transform 0.2s;" :style="{ transform: openGroups.includes(group.name) ? 'rotate(0deg)' : 'rotate(-90deg)' }"></i>
             </div>
-            <div v-show="openGroups.includes(group.name)" class="group-items">
+            <div v-show="openGroups.includes(group.name) || searchKey" class="group-items">
               <router-link v-for="item in group.items" :key="item.path" :to="item.path" class="sidebar-link sub-item" :class="{ active: currentPath === item.path }">
                 <span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;flex-shrink:0;" :style="currentPath === item.path ? { background: '#0284c7' } : {}"></span>
                 <span>{{ item.name }}</span>
@@ -63,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { getSession, login, logout } from './api'
 import LoginView from './views/LoginView.vue'
@@ -80,14 +88,16 @@ const menuGroups = [
     name: '首页概览', icon: 'fas fa-tachometer-alt',
     items: [
       { path: '/', name: '全域态势看板' },
+      { path: '/big-screen', name: '综合监管大屏' },
     ]
   },
   {
-    name: '事件中心', icon: 'fas fa-tasks',
+    name: '事件工单', icon: 'fas fa-tasks',
     items: [
       { path: '/events', name: '事件闭环处置' },
       { path: '/events/create', name: '创建事件' },
       { path: '/work-orders', name: '工单中心' },
+      { path: '/audits', name: '审核中心' },
     ]
   },
   {
@@ -98,7 +108,15 @@ const menuGroups = [
       { path: '/buildings', name: '房屋/出租屋库' },
       { path: '/places', name: '场所资源库' },
       { path: '/org-members', name: '组织人员' },
+      { path: '/biz-areas', name: '辖区管理' },
+      { path: '/ledger', name: '场所台账' },
+    ]
+  },
+  {
+    name: '居民服务', icon: 'fas fa-users',
+    items: [
       { path: '/resident-reports', name: '居民上报' },
+      { path: '/policy-resources', name: '政策资源' },
     ]
   },
   {
@@ -112,10 +130,7 @@ const menuGroups = [
   {
     name: '智能应用', icon: 'fas fa-helicopter',
     items: [
-      { path: '/big-screen', name: '综合监管大屏' },
       { path: '/drones', name: '无人机管理' },
-      // 信息互通（实时聊天）功能暂不启用，保留代码后续开发
-      // { path: '/integration', name: '信息互通' },
     ]
   },
   {
@@ -125,24 +140,44 @@ const menuGroups = [
     ]
   },
   {
-    name: '业务管理', icon: 'fas fa-store',
-    items: [
-      { path: '/biz-areas', name: '辖区管理' },
-      { path: '/ledger', name: '场所台账' },
-    ]
-  },
-  {
     name: '数据决策', icon: 'fas fa-chart-bar',
     items: [
       { path: '/reports', name: '数据报表' },
       { path: '/assessment', name: '考核研判' },
+    ]
+  },
+  {
+    name: '系统管理', icon: 'fas fa-cog',
+    items: [
       { path: '/audit-logs', name: '审计日志' },
     ]
   },
 ]
 
-// 展开的菜单组（默认全部展开）
-const openGroups = ref<string[]>(menuGroups.map(g => g.name))
+// 默认仅展开当前路由所在分组（避免全部展开的视觉噪音）
+const openGroups = ref<string[]>([])
+const searchKey = ref('')
+
+// 搜索过滤后的分组（匹配菜单项名或分组名，组名命中则显示该组全部）
+const filteredGroups = computed(() => {
+  const key = searchKey.value.trim().toLowerCase()
+  if (!key) return menuGroups
+  return menuGroups
+    .map(g => {
+      if (g.name.toLowerCase().includes(key)) return g
+      const items = g.items.filter(i => i.name.toLowerCase().includes(key))
+      return items.length ? { ...g, items } : null
+    })
+    .filter((g): g is typeof menuGroups[number] => g !== null)
+})
+
+// 路由变化时自动展开所在分组
+const activeGroup = computed(() => menuGroups.find(g => g.items.some(i => i.path === route.path))?.name)
+watch(() => route.path, () => {
+  if (activeGroup.value && !openGroups.value.includes(activeGroup.value)) {
+    openGroups.value.push(activeGroup.value)
+  }
+}, { immediate: true })
 
 function toggleGroup(name: string) {
   const idx = openGroups.value.indexOf(name)
@@ -176,6 +211,22 @@ onMounted(() => {
 
 <style scoped>
 /* === 分组菜单 === */
+.menu-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.menu-search:focus-within {
+  background: #fff;
+  border-color: #0284c7;
+}
+
 .menu-group {
   margin-bottom: 2px;
 }
