@@ -16,16 +16,16 @@
       </view>
     </view>
 
-    <!-- 群众随手拍入口 -->
-    <view v-if="isPublic" class="action-section">
-      <text class="section-title">随手拍</text>
+    <!-- 事件上报入口（H5 端均为工作人员登录，上报直接进入事件闭环） -->
+    <view class="action-section">
+      <text class="section-title">事件上报</text>
       <scroll-view scroll-x class="action-scroll" :show-scrollbar="false">
         <view class="action-row">
-          <view class="action-capsule" @click="openPath('/pages/resident/report')">
+          <view class="action-capsule" @click="openPath('/pages/event/report')">
             <view class="action-icon"><AppIcon name="camera" size="30rpx" /></view>
-            <text class="action-label">拍照上报</text>
+            <text class="action-label">事件上报</text>
           </view>
-          <view class="action-capsule" @click="openPath('/pages/resident/history')">
+          <view class="action-capsule" @click="openPath('/pages/event/history')">
             <view class="action-icon"><AppIcon name="history" size="30rpx" /></view>
             <text class="action-label">我的上报</text>
           </view>
@@ -51,11 +51,11 @@
         <text class="stat-label">已办结工单</text>
         <text class="stat-value">{{ closedText }}</text>
       </view>
-      <view v-if="isPublic" class="stat-card stat-card--accent" @click="openPath('/pages/resident/report')">
-        <text class="stat-label">随手拍</text>
+      <view v-if="isPublic" class="stat-card stat-card--accent" @click="openPath('/pages/event/report')">
+        <text class="stat-label">事件上报</text>
         <text class="stat-value stat-value--accent">去上报</text>
       </view>
-      <view v-if="isPublic" class="stat-card" @click="openPath('/pages/resident/history')">
+      <view v-if="isPublic" class="stat-card" @click="openPath('/pages/event/history')">
         <text class="stat-label">我的上报</text>
         <text class="stat-value">{{ myReportCount }}</text>
       </view>
@@ -117,6 +117,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { getH5Session } from '../../src/api/auth'
 import { hasMenuPermission } from '../../src/auth/permissions'
 import { getWorkbenchData, type PendingCountItem, type ShortcutItem, type WorkOrderItem } from '../../src/api/workorder'
+import { getMyReportedEvents } from '../../src/api/event'
 import { ensureAuthenticated, navigateToPath } from '../../src/uni/navigation'
 
 interface ManagementShortcut {
@@ -230,6 +231,9 @@ onShow(async () => {
     pendingCounts.value = response.pendingCounts
     latestOrders.value = response.latestPendingOrders
     shortcuts.value = response.shortcuts
+    getMyReportedEvents()
+      .then((items) => { myReportCount.value = items.length })
+      .catch(() => { myReportCount.value = 0 })
   } catch {
     loadError.value = true
     pendingCounts.value = []

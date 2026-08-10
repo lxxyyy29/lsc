@@ -98,13 +98,14 @@ public class EventController {
     }
 
     /**
-     * 居民小程序查询当前登录用户自己的上报记录。
+     * 查询当前登录用户自己的上报记录（居民小程序 WEB 端与 H5 工作人员共用）。
      */
     @GetMapping("/my-reports")
     public ApiResponse<PagedResult<Map<String, Object>>> getMyReports(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize) {
-        AuthenticatedUser user = currentUserService.requireClientType(AuthService.ClientType.WEB);
+        AuthenticatedUser user = AuthenticatedUserContextHolder.getOptional()
+                .orElseThrow(() -> new BusinessException("AUTH_TOKEN_REQUIRED", "请提供认证令牌"));
         int safePage = Math.max(page, 1);
         int safePageSize = Math.min(Math.max(pageSize, 1), 100);
         int offset = (safePage - 1) * safePageSize;

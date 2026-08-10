@@ -100,17 +100,17 @@
       }
     },
     {
-      "path": "pages/resident/report",
+      "path": "pages/event/report",
       "style": {
         "navigationStyle": "default",
-        "navigationBarTitleText": "居民上报"
+        "navigationBarTitleText": "事件上报"
       }
     },
     {
-      "path": "pages/resident/history",
+      "path": "pages/event/history",
       "style": {
         "navigationStyle": "default",
-        "navigationBarTitleText": "上报记录"
+        "navigationBarTitleText": "我的上报"
       }
     },
     {

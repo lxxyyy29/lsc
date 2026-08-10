@@ -49,35 +49,7 @@ export function createPatrolRecord(data: PatrolRecord) {
   return webApi.post<{ success: boolean; data: boolean }>('/community/patrol-records', data).then(res => res.data.data)
 }
 
-// ==================== 居民上报 ====================
-export interface ResidentReport {
-  id?: number
-  gridId?: number
-  residentName?: string
-  residentPhone?: string
-  reportType: string
-  title: string
-  content?: string
-  photoUrls?: string | string[]
-  longitude?: number
-  latitude?: number
-  queryCode?: string
-  status?: string
-}
-
-export function createResidentReport(data: ResidentReport) {
-  return webApi.post<{ success: boolean; data: boolean }>('/community/resident-reports', data).then(res => res.data.data)
-}
-
-export function getResidentReports() {
-  return webApi.get<{ success: boolean; data: ResidentReport[] }>('/community/resident-reports').then(res => res.data.data)
-}
-
-export function getResidentReportByCode(queryCode: string) {
-  return webApi.get<{ success: boolean; data: ResidentReport }>(`/community/resident-reports/code/${queryCode}`).then(res => res.data.data)
-}
-
-// 媒体文件上传
+// ==================== 媒体文件上传 ====================
 export function uploadMedia(file: string, businessType?: string, businessId?: number, fileType?: string) {
   const form = new FormData()
   form.append('file', file as any)
