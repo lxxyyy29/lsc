@@ -265,6 +265,13 @@ function createUniHttpClient(): HttpLikeClient {
 
 // #endif
 
+// #ifdef MP-WEIXIN
+// 微信小程序环境：uni.request 实现
+const uniHttp = createUniHttpClient()
+export { uniHttp as http }
+// #endif
+
+// #ifndef MP-WEIXIN
 // 默认导出 axios 版本（非微信小程序环境）
-// 微信小程序环境需要在构建时替换
 export { axiosHttp as http }
+// #endif

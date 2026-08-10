@@ -1,6 +1,7 @@
 import { defineConfig, type AliasOptions, type PluginOption } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import uniModule from '@dcloudio/vite-plugin-uni'
+import { preJs } from '@dcloudio/uni-cli-shared'
 
 type UniPluginFactory = (options?: unknown) => PluginOption
 
@@ -20,6 +21,20 @@ if (typeof uni !== 'function') {
 
 export default defineConfig(({ mode }) => {
   const isTest = mode === 'test' || process.env.VITEST === 'true'
+
+  // 测试环境不走 uni 插件，条件编译注释不会被剥离；
+  // 此处按 H5 平台语义对 js/ts 做预处理（#ifdef MP-WEIXIN 移除、#ifndef 保留），
+  // 避免 mp 分支与 h5 分支重复声明/导出导致 esbuild 报错。
+  const stripUniConditional = (): PluginOption => ({
+    name: 'uni:test-strip-conditional',
+    enforce: 'pre',
+    transform(code, id) {
+      if (id.includes('node_modules') || !/\.(m?[jt]s)$/.test(id)) return null
+      const stripped = preJs(code, id)
+      return stripped === code ? null : { code: stripped, map: null }
+    }
+  })
+
   const alias: AliasOptions = isTest
     ? []
     : [
@@ -31,7 +46,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: isH5 ? '/h5/' : '/',
-    plugins: [isTest ? vue() : uni()],
+    plugins: [isTest ? vue() : uni()].concat(isTest ? [stripUniConditional()] : []),
     // sockjs-client 在浏览器中需要 Node.js 的 global 对象
     define: {
       global: 'window',

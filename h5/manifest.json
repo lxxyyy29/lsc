@@ -7,7 +7,8 @@
   "versionCode": "100",
   "transformPx": false,
   "mp-weixin": {
-    "appid": "",
+    // TODO: 若更换小程序主体，请同步更新此处与 project.config.json 的 appid
+    "appid": "wx0a4e63f83f7a369f",
     "permission": {
       "scope.userLocation": {
         "desc": "用于选择商户/摊贩位置及查看事发地点"
