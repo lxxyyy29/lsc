@@ -161,6 +161,11 @@ services:
       OSS_ACCESS_KEY: ${MINIO_USER:-admin}
       OSS_SECRET_KEY: ${MINIO_PASSWORD:-Changping@2024!Minio}
       OSS_BUCKET: dgcp-oa
+      # 阿里云短信（手机号验证码）
+      SMS_ACCESS_KEY_ID: ${SMS_ACCESS_KEY_ID:-}
+      SMS_ACCESS_KEY_SECRET: ${SMS_ACCESS_KEY_SECRET:-}
+      SMS_SIGN_NAME: ${SMS_SIGN_NAME:-}
+      SMS_TEMPLATE_CODE: ${SMS_TEMPLATE_CODE:-}
       # 时区
       TZ: Asia/Shanghai
     ports:

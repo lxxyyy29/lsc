@@ -50,6 +50,13 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+# 阿里云短信（手机号验证码），生产配置通过环境变量覆盖（docker/.env）
+sms:
+  access-key-id: ${SMS_ACCESS_KEY_ID:}
+  access-key-secret: ${SMS_ACCESS_KEY_SECRET:}
+  sign-name: ${SMS_SIGN_NAME:}
+  template-code: ${SMS_TEMPLATE_CODE:}
+
 security:
   auth:
     jwt-secret: changping-grid-community-2026-secret-key-48chars

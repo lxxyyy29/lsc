@@ -8,6 +8,7 @@ import com.changping.platform.modules.auth.dto.SmsCodeRequest;
 import com.changping.platform.modules.auth.security.PermissionCodes;
 import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
+import com.changping.platform.modules.auth.service.SmsService;
 import com.changping.platform.modules.auth.vo.CurrentUserVo;
 import com.changping.platform.modules.auth.vo.LoginResponse;
 import com.changping.platform.modules.common.security.RateLimit;
@@ -41,13 +42,12 @@ public class AuthController {
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate stringRedisTemplate;
+    private final SmsService smsService;
 
     /** 验证码 Redis key 前缀 */
     private static final String SMS_CODE_KEY_PREFIX = "sms:code:";
     /** 验证码有效期（分钟） */
     private static final Duration SMS_CODE_TTL = Duration.ofMinutes(5);
-    /** 测试模式固定验证码（未接入短信服务商前使用；接入后替换为随机验证码+短信发送） */
-    private static final String TEST_SMS_CODE = "123456";
 
     /**
      * @Author tangxinglin
@@ -58,12 +58,13 @@ public class AuthController {
      */
     public AuthController(AuthService authService, CurrentUserService currentUserService,
                           JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder,
-                          StringRedisTemplate stringRedisTemplate) {
+                          StringRedisTemplate stringRedisTemplate, SmsService smsService) {
         this.authService = authService;
         this.currentUserService = currentUserService;
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
         this.stringRedisTemplate = stringRedisTemplate;
+        this.smsService = smsService;
     }
 
     /**
@@ -93,10 +94,10 @@ public class AuthController {
 
     /**
      * @Author tangxinglin
-     * @Description //发送手机号验证码（测试模式：固定验证码 123456 存 Redis，未接入短信服务商前响应中直接返回验证码）
-     * @Date 2026/08/11 14:00
+     * @Description //发送手机号验证码（阿里云短信真实发送，随机 6 位验证码存 Redis 5 分钟）
+     * @Date 2026/08/11 18:00
      * @Param [request 验证码请求，携带手机号]
-     * @return ApiResponse<Map<String, Object>> 发送结果，包含手机号和测试验证码
+     * @return ApiResponse<Map<String, Object>> 发送结果
      */
     @RateLimit(limit = 10, window = 60, type = RateLimit.RateLimitType.IP, message = "发送过于频繁，请稍后再试")
     @PostMapping("/sms-code")
@@ -117,14 +118,19 @@ public class AuthController {
             return ApiResponse.fail("ACCOUNT_DISABLED", "账号已被禁用，请联系管理员");
         }
 
-        // 测试模式：固定验证码，存 Redis 5 分钟；生产接入短信服务后替换为随机验证码 + 短信发送
-        stringRedisTemplate.opsForValue().set(SMS_CODE_KEY_PREFIX + phone, TEST_SMS_CODE, SMS_CODE_TTL);
+        // 生成随机验证码并发送阿里云短信
+        String code = smsService.generateCode();
+        boolean sent = smsService.sendCode(phone, code);
+        if (!sent) {
+            return ApiResponse.fail("SMS_SEND_FAILED", "验证码发送失败，请稍后重试");
+        }
+        // 发送成功后才写入 Redis（5 分钟有效）
+        stringRedisTemplate.opsForValue().set(SMS_CODE_KEY_PREFIX + phone, code, SMS_CODE_TTL);
 
         Map<String, Object> result = new HashMap<>();
         result.put("phone", phone);
         result.put("expireMinutes", SMS_CODE_TTL.toMinutes());
-        result.put("testCode", TEST_SMS_CODE);
-        result.put("message", "验证码已发送（测试模式）");
+        result.put("message", "验证码已发送");
         return ApiResponse.ok(result);
     }
 
