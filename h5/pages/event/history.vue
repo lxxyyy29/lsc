@@ -92,3 +92,10 @@ onShow(async () => {
 .empty-text { text-align: center; color: #7ea4c8; padding: 48px 20px; display: grid; gap: 8px; }
 .empty-hint { font-size: 12px; color: #4d7296; }
 </style>
+
+<style>
+/* 网格员端深色主题：页面根背景与容器一致，避免滑动露出浅色 page 背景 */
+page {
+  background: #081421;
+}
+</style>

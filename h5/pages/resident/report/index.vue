@@ -46,19 +46,27 @@
 
     <view class="card">
       <text class="card-title">位置信息</text>
+      <!-- #ifdef MP-WEIXIN -->
+      <map
+        class="location-map"
+        :latitude="locationLat"
+        :longitude="locationLng"
+        :scale="16"
+        :markers="locationMarkers"
+      ></map>
+      <!-- #endif -->
       <view class="location">
         <text class="location-text">{{ locationText }}</text>
+      </view>
+      <view class="location-actions">
         <text class="relocate" @click="locate">重新定位</text>
+        <text class="relocate relocate-divider">|</text>
+        <text class="relocate" @click="chooseLocation">地图选点</text>
       </view>
     </view>
 
     <view class="card">
       <text class="card-title">联系方式（选填）</text>
-      <!-- 纯原生无样式input测试 -->
-      <input placeholder="测试输入框1" style="width:100%;height:80rpx;border:1px solid red;color:#000;background:#fff;font-size:28rpx;box-sizing:border-box;padding:0 20rpx;" />
-      <view style="height:20rpx;"></view>
-      <input placeholder="测试输入框2" />
-      <view style="height:20rpx;"></view>
       <input v-model="form.contactName" placeholder="您的姓名" class="form-input" placeholder-style="color:#999;font-size:30rpx;" />
       <input v-model="form.contactPhone" placeholder="联系电话" class="form-input" placeholder-style="color:#999;font-size:30rpx;" style="margin-top:20rpx;" />
     </view>
@@ -90,6 +98,24 @@ const photos = ref<{ url: string; uploadedUrl?: string }[]>([])
 const locationText = ref('定位中...')
 const latitude = ref<number | null>(null)
 const longitude = ref<number | null>(null)
+
+// 小程序地图状态
+const locationLat = ref(22.971231)
+const locationLng = ref(113.939521)
+const locationMarkers = ref<any[]>([])
+
+function updateLocationMarker(lat: number, lng: number) {
+  locationLat.value = lat
+  locationLng.value = lng
+  locationMarkers.value = [{
+    id: 1,
+    latitude: lat,
+    longitude: lng,
+    iconPath: '/static/map-marker.png',
+    width: 28,
+    height: 36
+  }]
+}
 
 const AMAP_KEY = '5e00e01d2d2b6ca9e1eed533a15572e4'
 const AMAP_SECURITY_CODE = '0a57a5453a660300283bebf7323d8bce'
@@ -180,6 +206,24 @@ function removePhoto(idx: number) {
   photos.value.splice(idx, 1)
 }
 
+/** 地图选点：微信原生地图选点，返回地址（小程序端） */
+function chooseLocation() {
+  // #ifdef MP-WEIXIN
+  uni.chooseLocation({
+    success: (res: any) => {
+      if (!res.latitude || !res.longitude) return
+      latitude.value = Number(res.latitude.toFixed(6))
+      longitude.value = Number(res.longitude.toFixed(6))
+      updateLocationMarker(Number(res.latitude), Number(res.longitude))
+      locationText.value = res.address || res.name || `${res.latitude.toFixed(6)}, ${res.longitude.toFixed(6)}`
+    },
+    fail: () => {
+      uni.showToast({ title: '取消选点', icon: 'none' })
+    }
+  })
+  // #endif
+}
+
 /** 定位：H5 优先浏览器精确定位（需 HTTPS），失败时用高德 IP 定位兑底；小程序用 uni.getLocation */
 function locate() {
   locationText.value = '定位中...'
@@ -189,7 +233,8 @@ function locate() {
     success: (pos) => {
       latitude.value = pos.latitude
       longitude.value = pos.longitude
-      locationText.value = `${pos.latitude.toFixed(6)}, ${pos.longitude.toFixed(6)}（精确定位）`
+      updateLocationMarker(pos.latitude, pos.longitude)
+      locationText.value = `${pos.latitude.toFixed(6)}, ${pos.longitude.toFixed(6)}（精确定位，可点地图选点获取地址）`
     },
     fail: () => {
       locationText.value = '定位失败，请检查手机定位权限后重试'
@@ -362,9 +407,12 @@ async function handleSubmit() {
   color: #9ca3af; font-size: 24rpx;
 }
 .resident-report-page .photo-add-icon { font-size: 48rpx; color: #9ca3af; }
-.resident-report-page .location { font-size: 26rpx; color: #6b7280; padding: 16rpx; background: #f9fafb; border-radius: 12rpx; display: flex; justify-content: space-between; align-items: center; }
-.resident-report-page .location-text { flex: 1; color: #6b7280; }
-.resident-report-page .relocate { color: #1890ff; margin-left: 16rpx; }
+.resident-report-page .location { font-size: 26rpx; color: #6b7280; padding: 16rpx; background: #f9fafb; border-radius: 12rpx; }
+.resident-report-page .location-map { width: 100%; height: 300rpx; border-radius: 12rpx; margin-bottom: 12rpx; }
+.resident-report-page .location-text { color: #6b7280; line-height: 1.5; }
+.resident-report-page .location-actions { display: flex; align-items: center; gap: 16rpx; margin-top: 12rpx; }
+.resident-report-page .relocate { color: #1890ff; }
+.resident-report-page .relocate-divider { color: #d1d5db; }
 .resident-report-page .photo-img { width: 160rpx; height: 160rpx; border-radius: 16rpx; display: block; }
 .resident-report-page .uploading { font-size: 24rpx; color: #1890ff; font-weight: normal; }
 .resident-report-page .btn-submit {

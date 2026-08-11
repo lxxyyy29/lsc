@@ -61,7 +61,7 @@ export function getGridTree() {
   return webApi.get<{ success: boolean; data: GridTreeVo[] }>('/community/grids/h5/tree').then(res => res.data.data)
   // #endif
   // #ifdef MP-WEIXIN
-  return requestWeb<GridTreeVo[]>('/community/grids/h5/tree')
+  return requestWeb<GridTreeVo[]>('GET', '/community/grids/h5/tree')
   // #endif
 }
 
@@ -84,7 +84,7 @@ export function getPatrolRecords() {
   return webApi.get<{ success: boolean; data: PatrolRecord[] }>('/community/patrol-records/h5').then(res => res.data.data)
   // #endif
   // #ifdef MP-WEIXIN
-  return requestWeb<PatrolRecord[]>('/community/patrol-records/h5')
+  return requestWeb<PatrolRecord[]>('GET', '/community/patrol-records/h5')
   // #endif
 }
 
@@ -93,7 +93,7 @@ export function createPatrolRecord(data: PatrolRecord) {
   return webApi.post<{ success: boolean; data: boolean }>('/community/patrol-records', data).then(res => res.data.data)
   // #endif
   // #ifdef MP-WEIXIN
-  return requestWeb<boolean>('/community/patrol-records', data)
+  return requestWeb<boolean>('POST', '/community/patrol-records', data)
   // #endif
 }
 

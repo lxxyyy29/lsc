@@ -113,6 +113,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import GridWorkerTabBar from '../../src/components/GridWorkerTabBar.vue'
 import AppIcon from '../../src/components/AppIcon.vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getH5Session } from '../../src/api/auth'
@@ -576,5 +577,12 @@ onShow(async () => {
   background: rgba(117, 32, 48, 0.34);
   color: #ffd7de;
   font-size: 24rpx;
+}
+</style>
+
+<style>
+/* 网格员端深色主题：页面根背景与容器一致，避免滑动露出浅色 page 背景 */
+page {
+  background: #081421;
 }
 </style>

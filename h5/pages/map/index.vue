@@ -9,6 +9,7 @@
       :longitude="mpCenterLng"
       :scale="mpScale"
       :markers="mpMarkers"
+      :polygons="mpPolygons"
       @markertap="onMpMarkerTap"
     ></map>
     <!-- #endif -->
@@ -65,8 +66,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import GridWorkerTabBar from '../../src/components/GridWorkerTabBar.vue'
 import { locateWithFallback } from '../../src/utils/geolocation'
 import { getH5Session } from '../../src/api/auth'
+import { getGridTree } from '../../src/api/community'
 
 const AMAP_KEY = '5e00e01d2d2b6ca9e1eed533a15572e4'
 const AMAP_SECURITY_CODE = '0a57a5453a660300283bebf7323d8bce'
@@ -78,6 +81,62 @@ const mpCenterLat = ref(22.971231)
 const mpCenterLng = ref(113.939521)
 const mpScale = ref(13)
 const mpMarkers = ref<any[]>([])
+const mpPolygons = ref<any[]>([])
+
+/** 小程序端：网格树 roiJson → map polygons（按层级配色，我的网格红色高亮，与 H5 一致） */
+function refreshMpPolygons(tree: GridNode[], myGridIds: Set<number> = new Set()) {
+  const polygons: any[] = []
+  const draw = (nodes: GridNode[]) => {
+    for (const node of nodes) {
+      const coords = parseRoi(node.roiJson)
+      if (coords && coords.length >= 3) {
+        const isMine = myGridIds.has(node.id)
+        let strokeColor = '#0284c7'
+        let strokeWidth = 2
+        if (node.gridLevel === 2) { strokeColor = '#f59e0b'; strokeWidth = 2 }
+        if (node.gridLevel === 3) { strokeColor = '#10b981'; strokeWidth = 2 }
+        if (isMine) {
+          strokeColor = '#ff4d4f'
+          strokeWidth = 4
+        }
+        // 与 H5 一致：无填充（完全透明，能看到道路底图），只保留清晰描边
+        polygons.push({
+          points: coords.map(([lng, lat]: number[]) => ({ longitude: lng, latitude: lat })),
+          strokeWidth,
+          strokeColor
+        })
+      }
+      if (node.children) draw(node.children)
+    }
+  }
+  draw(tree)
+  mpPolygons.value = polygons
+}
+
+/** 小程序端：加载我的网格 ID 列表 */
+function loadMyGridIds(): Promise<Set<number>> {
+  return new Promise((resolve) => {
+    uni.request({
+      // #ifdef MP-WEIXIN
+      url: 'https://drone.kfktec.cn:8768/api/community/grids/h5/my-grid',
+      // #endif
+      // #ifndef MP-WEIXIN
+      url: '/api/community/grids/h5/my-grid',
+      // #endif
+      method: 'GET',
+      header: { Authorization: `Bearer ${getToken()}` },
+      success: (res: any) => {
+        const data = res.data
+        if (data && data.code === 'OK' && Array.isArray(data.data)) {
+          resolve(new Set(data.data.map((g: any) => g.id)))
+        } else {
+          resolve(new Set())
+        }
+      },
+      fail: () => resolve(new Set())
+    })
+  })
+}
 
 function onMpMarkerTap(e: any) {
   const id = e?.detail?.markerId ?? e?.markerId
@@ -328,7 +387,13 @@ function selectedEventDetail(p: any) {
 async function loadEvents() {
   try {
     const res: any = await uni.request({
+      // 小程序端必须使用绝对 HTTPS 地址（相对路径 invalid url）
+      // #ifdef MP-WEIXIN
+      url: 'https://drone.kfktec.cn:8768/api/events/h5/map-points',
+      // #endif
+      // #ifndef MP-WEIXIN
       url: '/api/events/h5/map-points',
+      // #endif
       method: 'GET',
       header: { Authorization: `Bearer ${getToken()}` }
     })
@@ -386,6 +451,15 @@ function locateMe() {
 onMounted(async () => {
   // #ifndef MP-WEIXIN
   await initMap()
+  // #endif
+  // #ifdef MP-WEIXIN
+  // 小程序端：加载网格树绘制边界多边形 + 我的网格高亮
+  try {
+    const [tree, myGridIds] = await Promise.all([getGridTree(), loadMyGridIds()])
+    refreshMpPolygons(tree as GridNode[], myGridIds)
+  } catch (e) {
+    console.error('加载网格边界失败:', e)
+  }
   // #endif
   loadEvents()
 })
@@ -618,5 +692,12 @@ onUnmounted(() => {
   border-radius: 12rpx;
   font-size: 26rpx;
   font-weight: 600;
+}
+</style>
+
+<style>
+/* 网格员端深色主题：页面根背景与容器一致，避免滑动露出浅色 page 背景 */
+page {
+  background: #081421;
 }
 </style>

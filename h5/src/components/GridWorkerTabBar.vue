@@ -34,30 +34,32 @@ function go(path: string) {
 </script>
 
 <style>
+/* 网格员端深色主题底部导航 */
 .grid-worker-tab-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   height: 110rpx;
-  background: #ffffff;
-  border-top: 1px solid #e5e7eb;
+  background: rgba(6, 18, 31, 0.97);
+  border-top: 1px solid rgba(125, 163, 220, 0.15);
   display: flex;
   align-items: center;
   justify-content: space-around;
   z-index: 1000;
   padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: content-box;
 }
 .tab-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6rpx;
-  color: #9ca3af;
+  color: #8ba1b4;
   font-size: 22rpx;
 }
 .tab-item.active {
-  color: #1890ff;
+  color: #5ea2ff;
 }
 .tab-icon {
   font-size: 40rpx;

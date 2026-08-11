@@ -356,3 +356,10 @@ function goHistory() {
   box-sizing: border-box;
 }
 </style>
+
+<style>
+/* 网格员端深色主题：页面根背景与容器一致，避免滑动露出浅色 page 背景 */
+page {
+  background: #081421;
+}
+</style>

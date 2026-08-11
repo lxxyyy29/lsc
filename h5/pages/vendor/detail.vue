@@ -21,3 +21,10 @@
 .empty-title { font-size: 36rpx; font-weight: 600; color: #1f2937; margin-bottom: 12rpx; }
 .empty-copy { font-size: 26rpx; color: #9ca3af; }
 </style>
+
+<style>
+/* 网格员端深色主题：页面根背景与容器一致，避免滑动露出浅色 page 背景 */
+page {
+  background: #081421;
+}
+</style>
