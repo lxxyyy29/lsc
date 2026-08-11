@@ -8,7 +8,7 @@
  * 3. 执行 `uni build -p mp-weixin`
  * 4. 无论成败，finally 恢复原始 pages.json
  */
-import { readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, rmSync, cpSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -101,6 +101,14 @@ function main() {
     )
     if (result.status !== 0) {
       process.exitCode = result.status ?? 1
+    }
+
+    // 拷贝 static 静态资源（uni-app 小程序构建不自动拷贝，marker 图标等需要）
+    const staticSrc = resolve(rootDir, 'static')
+    const staticDest = resolve(rootDir, 'dist/build/mp-weixin/static')
+    if (existsSync(staticSrc) && existsSync(resolve(rootDir, 'dist/build/mp-weixin'))) {
+      cpSync(staticSrc, staticDest, { recursive: true })
+      console.log('[build-mp] 已拷贝 static 资源')
     }
   } finally {
     writeFileSync(pagesJsonPath, original, 'utf-8')

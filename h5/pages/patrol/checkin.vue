@@ -91,7 +91,7 @@ function updateMapMarker(lat: number, lng: number) {
     id: 1,
     latitude: lat,
     longitude: lng,
-    iconPath: '/static/map-marker.png',
+    iconPath: '../../static/map-marker.png',
     width: 28,
     height: 36
   }]
