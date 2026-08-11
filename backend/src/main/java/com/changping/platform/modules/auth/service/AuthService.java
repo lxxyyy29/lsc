@@ -105,6 +105,48 @@ public class AuthService {
 
     /**
      * @Author tangxinglin
+     * @Description //手机号验证码登录：按手机号查用户、校验状态、加载角色权限、按角色决定客户端类型（网格员=H5/居民=WEB），生成 JWT
+     * @Date 2026/08/11 14:00
+     * @Param [phone 手机号]
+     * @return LoginResponse 登录成功响应
+     */
+    @Transactional(readOnly = true)
+    public LoginResponse loginByPhone(String phone) {
+        UserRecord user = loadUserByPhone(phone);
+        validateUserStatus(user);
+
+        List<String> roleCodes = loadRoleCodes(user.id(), user.legacyRoleId());
+        List<String> permissionCodes = loadPermissionCodes(user.id(), user.legacyRoleId());
+
+        // 按角色决定客户端类型：拥有 H5 入口权限（menu:h5:workbench:view / menu:h5:workorder:list）视为网格员，走 H5；
+        // 否则视为居民，走 WEB
+        boolean isGridWorker = permissionCodes.stream().anyMatch(H5_ENTRY_PERMISSIONS::contains);
+        ClientType clientType = isGridWorker ? ClientType.H5 : ClientType.WEB;
+
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser(
+                user.id(),
+                user.username(),
+                user.realName(),
+                clientType.name(),
+                roleCodes,
+                permissionCodes,
+                user.passwordVersion());
+
+        String accessToken = jwtTokenService.generateAccessToken(authenticatedUser);
+        List<SystemPermissionService.PermissionTreeNode> menuTree = resolveMenuTree(permissionCodes, clientType.name());
+        loginAttemptService.recordSuccess(phone, clientType.name());
+        return new LoginResponse(
+                accessToken,
+                user.id(),
+                user.realName(),
+                user.username(),
+                roleCodes,
+                permissionCodes,
+                menuTree);
+    }
+
+    /**
+     * @Author tangxinglin
      * @Description //将已认证用户对象转换为当前用户视图对象，过滤出菜单类权限码
      * @Date 2026/04/18 10:05
      * @Param [user 已认证用户对象]
@@ -164,14 +206,14 @@ public class AuthService {
 
     /**
      * @Author tangxinglin
-     * @Description //根据账号查询用户记录，账号不存在时抛出凭证错误业务异常
+     * @Description //根据账号或手机号查询用户记录（支持手机号登录），账号不存在时抛出凭证错误业务异常
      * @Date 2026/04/18 10:05
-     * @Param [account 登录账号]
+     * @Param [account 登录账号（账号或手机号）]
      * @return UserRecord 用户数据库记录
      */
     private UserRecord loadUserByAccount(String account) {
         List<UserRecord> users = jdbcTemplate.query(
-                "SELECT id, username, password_hash, real_name, phone, status, role_id, password_version FROM sys_user WHERE username = ? AND deleted = 0",
+                "SELECT id, username, password_hash, real_name, phone, status, role_id, password_version FROM sys_user WHERE (username = ? OR phone = ?) AND deleted = 0",
                 (rs, rowNum) -> new UserRecord(
                         rs.getLong("id"),
                         rs.getString("username"),
@@ -181,9 +223,38 @@ public class AuthService {
                         rs.getString("status"),
                         rs.getObject("role_id") == null ? null : rs.getLong("role_id"),
                         rs.getInt("password_version")),
-                account);
+                account, account);
         if (users.isEmpty()) {
             throw new BusinessException("AUTH_INVALID_CREDENTIALS", "账号或密码错误");
+        }
+        return users.get(0);
+    }
+
+    /**
+     * @Author tangxinglin
+     * @Description //根据手机号查询用户记录，手机号未绑定账号时抛出凭证错误业务异常
+     * @Date 2026/08/11 14:00
+     * @Param [phone 手机号]
+     * @return UserRecord 用户数据库记录
+     */
+    private UserRecord loadUserByPhone(String phone) {
+        List<UserRecord> users = jdbcTemplate.query(
+                "SELECT id, username, password_hash, real_name, phone, status, role_id, password_version FROM sys_user WHERE phone = ? AND deleted = 0",
+                (rs, rowNum) -> new UserRecord(
+                        rs.getLong("id"),
+                        rs.getString("username"),
+                        rs.getString("password_hash"),
+                        rs.getString("real_name"),
+                        rs.getString("phone"),
+                        rs.getString("status"),
+                        rs.getObject("role_id") == null ? null : rs.getLong("role_id"),
+                        rs.getInt("password_version")),
+                phone);
+        if (users.isEmpty()) {
+            throw new BusinessException("AUTH_INVALID_CREDENTIALS", "该手机号未绑定账号");
+        }
+        if (users.size() > 1) {
+            throw new BusinessException("AUTH_PHONE_DUPLICATED", "该手机号绑定多个账号，请联系管理员处理");
         }
         return users.get(0);
     }

@@ -28,6 +28,7 @@ spring:
     mongodb:
       uri: mongodb://${MONGODB_HOST:127.0.0.1}:${MONGODB_PORT:27017}/${MONGODB_DATABASE:alarm_dgcp}
     redis:
+      enabled: true
       host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:123456}

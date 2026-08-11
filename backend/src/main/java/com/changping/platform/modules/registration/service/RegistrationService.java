@@ -31,11 +31,21 @@ public class RegistrationService {
 
     @Transactional
     public void submit(String account, String passwordHash, String realName, String phone) {
+        // 每个账号必须绑定手机号（手机号登录的前提）
+        if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
+            throw new BusinessException("VALIDATION_ERROR", "请输入正确的手机号");
+        }
         // 预检查账号是否已存在（含待审批/已激活），存在时返回业务错误而非数据库唯一索引 500
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM sys_user WHERE username = ? AND deleted = 0", Integer.class, account);
         if (count != null && count > 0) {
             throw new BusinessException("DUPLICATE_ACCOUNT", "账号已存在");
+        }
+        // 手机号唯一性校验（含待审批/已激活账号）
+        Integer phoneCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM sys_user WHERE phone = ? AND deleted = 0", Integer.class, phone);
+        if (phoneCount != null && phoneCount > 0) {
+            throw new BusinessException("DUPLICATE_PHONE", "该手机号已被绑定");
         }
         String sql = "INSERT INTO sys_user (username, password_hash, real_name, phone, status, password_version, deleted) " +
                      "VALUES (?, ?, ?, ?, 'PENDING', 0, 0)";

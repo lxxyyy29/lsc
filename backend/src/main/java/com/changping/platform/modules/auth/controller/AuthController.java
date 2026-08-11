@@ -1,7 +1,10 @@
 package com.changping.platform.modules.auth.controller;
 
+import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.dto.LoginRequest;
+import com.changping.platform.modules.auth.dto.PhoneLoginRequest;
+import com.changping.platform.modules.auth.dto.SmsCodeRequest;
 import com.changping.platform.modules.auth.security.PermissionCodes;
 import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
@@ -9,6 +12,7 @@ import com.changping.platform.modules.auth.vo.CurrentUserVo;
 import com.changping.platform.modules.auth.vo.LoginResponse;
 import com.changping.platform.modules.common.security.RateLimit;
 import jakarta.validation.Valid;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +40,14 @@ public class AuthController {
     private final CurrentUserService currentUserService;
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
+    private final StringRedisTemplate stringRedisTemplate;
+
+    /** 验证码 Redis key 前缀 */
+    private static final String SMS_CODE_KEY_PREFIX = "sms:code:";
+    /** 验证码有效期（分钟） */
+    private static final Duration SMS_CODE_TTL = Duration.ofMinutes(5);
+    /** 测试模式固定验证码（未接入短信服务商前使用；接入后替换为随机验证码+短信发送） */
+    private static final String TEST_SMS_CODE = "123456";
 
     /**
      * @Author tangxinglin
@@ -44,11 +57,13 @@ public class AuthController {
      * @return void
      */
     public AuthController(AuthService authService, CurrentUserService currentUserService,
-                          JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
+                          JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder,
+                          StringRedisTemplate stringRedisTemplate) {
         this.authService = authService;
         this.currentUserService = currentUserService;
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
+        this.stringRedisTemplate = stringRedisTemplate;
     }
 
     /**
@@ -78,6 +93,73 @@ public class AuthController {
 
     /**
      * @Author tangxinglin
+     * @Description //发送手机号验证码（测试模式：固定验证码 123456 存 Redis，未接入短信服务商前响应中直接返回验证码）
+     * @Date 2026/08/11 14:00
+     * @Param [request 验证码请求，携带手机号]
+     * @return ApiResponse<Map<String, Object>> 发送结果，包含手机号和测试验证码
+     */
+    @RateLimit(limit = 10, window = 60, type = RateLimit.RateLimitType.IP, message = "发送过于频繁，请稍后再试")
+    @PostMapping("/sms-code")
+    public ApiResponse<Map<String, Object>> sendSmsCode(@Valid @RequestBody SmsCodeRequest request) {
+        String phone = request.phone();
+
+        // 校验手机号绑定账号的状态：仅 ACTIVE（已激活）账号可发送验证码
+        List<Map<String, Object>> users = jdbcTemplate.queryForList(
+                "SELECT username, status FROM sys_user WHERE phone = ? AND deleted = 0", phone);
+        if (users.isEmpty()) {
+            return ApiResponse.fail("PHONE_NOT_BOUND", "该手机号未绑定账号");
+        }
+        String status = users.get(0).get("status") != null ? String.valueOf(users.get(0).get("status")) : "";
+        if ("PENDING".equalsIgnoreCase(status)) {
+            return ApiResponse.fail("ACCOUNT_PENDING", "账号待审批，请等待管理员审批后登录");
+        }
+        if (!"ACTIVE".equalsIgnoreCase(status)) {
+            return ApiResponse.fail("ACCOUNT_DISABLED", "账号已被禁用，请联系管理员");
+        }
+
+        // 测试模式：固定验证码，存 Redis 5 分钟；生产接入短信服务后替换为随机验证码 + 短信发送
+        stringRedisTemplate.opsForValue().set(SMS_CODE_KEY_PREFIX + phone, TEST_SMS_CODE, SMS_CODE_TTL);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("phone", phone);
+        result.put("expireMinutes", SMS_CODE_TTL.toMinutes());
+        result.put("testCode", TEST_SMS_CODE);
+        result.put("message", "验证码已发送（测试模式）");
+        return ApiResponse.ok(result);
+    }
+
+    /**
+     * @Author tangxinglin
+     * @Description //手机号验证码登录：校验验证码后按手机号查用户，按角色自动决定客户端类型（网格员=H5/居民=WEB）并返回令牌
+     * @Date 2026/08/11 14:00
+     * @Param [request 登录请求，携带手机号和验证码]
+     * @return ApiResponse<LoginResponse> 登录成功响应
+     */
+    @RateLimit(limit = 10, window = 60, type = RateLimit.RateLimitType.IP, message = "登录尝试过于频繁，请稍后再试")
+    @PostMapping("/phone-login")
+    public ApiResponse<LoginResponse> phoneLogin(@Valid @RequestBody PhoneLoginRequest request) {
+        String phone = request.phone();
+        String redisKey = SMS_CODE_KEY_PREFIX + phone;
+        String cachedCode = stringRedisTemplate.opsForValue().get(redisKey);
+
+        if (cachedCode == null) {
+            return ApiResponse.fail("SMS_CODE_EXPIRED", "验证码已过期，请重新获取");
+        }
+        if (!cachedCode.equals(request.code())) {
+            return ApiResponse.fail("SMS_CODE_INVALID", "验证码错误");
+        }
+        // 验证码校验通过即删除，防止重放
+        stringRedisTemplate.delete(redisKey);
+
+        try {
+            return ApiResponse.ok(authService.loginByPhone(phone));
+        } catch (BusinessException e) {
+            return ApiResponse.fail(e.getCode(), e.getMessage());
+        }
+    }
+
+    /**
+     * @Author tangxinglin
      * @Description //群众注册接口（小程序端匿名注册入口），新注册用户统一绑定 PUBLIC 角色（仅限小程序端使用）
      * @Date 2026/08/06 10:30
      * @Param [request 注册请求，包含账号、密码、姓名、手机号]
@@ -100,11 +182,21 @@ public class AuthController {
         if (password.length() < 6) {
             return ApiResponse.fail("VALIDATION_ERROR", "密码至少6位");
         }
+        // 每个账号必须绑定手机号（手机号登录的前提）
+        if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
+            return ApiResponse.fail("VALIDATION_ERROR", "请输入正确的手机号");
+        }
 
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM sys_user WHERE username = ? AND deleted = 0", Integer.class, account);
         if (count != null && count > 0) {
             return ApiResponse.fail("DUPLICATE_ACCOUNT", "账号已存在");
+        }
+
+        Integer phoneCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM sys_user WHERE phone = ? AND deleted = 0", Integer.class, phone);
+        if (phoneCount != null && phoneCount > 0) {
+            return ApiResponse.fail("DUPLICATE_PHONE", "该手机号已被绑定");
         }
 
         String hashedPassword = passwordEncoder.encode(password);
