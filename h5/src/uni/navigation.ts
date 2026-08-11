@@ -3,14 +3,22 @@ import { hasH5Session } from '../api/auth'
 import { h5NavigationItems } from '../navigation'
 
 declare const uni: any
+declare const wx: any
 
 function getUni() {
+  // 小程序端：全局 uni 不存在（uni-app 仅编译期替换 uni.xxx 调用），直接使用微信全局 wx
+  // #ifdef MP-WEIXIN
+  if (typeof wx !== 'undefined' && typeof wx.reLaunch === 'function') return wx
+  return undefined
+  // #endif
+  // #ifndef MP-WEIXIN
   // 注意：不能用 `uni.reLaunch` 直接判断 —— uni-app 编译期会把 `uni.xxx` 静态替换为
   // 运行时模块函数引用（永远存在），导致误判 window.uni（H5 运行时中仅空对象占位）可用，
   // 随后在空对象上调用 reLaunch 抛错。必须通过 globalThis 访问真实全局 uni 并检查方法。
   const globalUni = (globalThis as { uni?: { reLaunch?: unknown } }).uni
   if (globalUni && typeof globalUni.reLaunch === 'function') return globalUni
   return undefined
+  // #endif
 }
 const REDIRECT_STORAGE_KEY = 'dgcp-oa-h5-redirect'
 
@@ -72,7 +80,7 @@ export function toPageUrl(path: string) {
 
   switch (path) {
     case '/login':
-      return '/pages/login/index'
+      return '/pages/role-select/index'
     case '/workbench':
       return '/pages/workbench/index'
     case '/work-orders':
@@ -97,12 +105,22 @@ export function toPageUrl(path: string) {
   }
 }
 
+// 原生 tabBar 页面（switchTab 只能切这些）：小程序为居民端 3 tab，H5 为网格员端 4 tab
+// #ifdef MP-WEIXIN
+const TAB_BAR_PAGES = [
+  '/pages/resident/report/index',
+  '/pages/resident/services/index',
+  '/pages/resident/mine/index'
+]
+// #endif
+// #ifndef MP-WEIXIN
 const TAB_BAR_PAGES = [
   '/pages/workbench/index',
   '/pages/map/index',
   '/pages/patrol/checkin',
   '/pages/mine/index'
 ]
+// #endif
 
 export function navigateToPath(path: string) {
   const url = toPageUrl(path)
@@ -142,10 +160,10 @@ export function ensureAuthenticated(targetPath: string) {
   setPendingRedirect(targetPath)
   const uni = getUni()
   if (uni) {
-    uni.reLaunch({ url: '/pages/login/index' })
+    uni.reLaunch({ url: '/pages/role-select/index' })
   } else {
     // 浏览器环境 fallback
-    window.location.hash = '#/pages/login/index'
+    window.location.hash = '/pages/role-select/index'
   }
   return false
 }

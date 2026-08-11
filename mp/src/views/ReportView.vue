@@ -11,7 +11,7 @@
         <div v-for="t in types" :key="t.value" class="type-item"
              :class="{ active: form.type === t.value }" @click="form.type = t.value">
           <span class="type-icon">{{ t.icon }}</span>
-          <span>{{ t.label }}</span>
+          <span class="type-labal">{{ t.label }}</span>
         </div>
       </div>
     </div>
@@ -232,13 +232,15 @@ async function handleSubmit() {
 }
 .card h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #374151; }
 .selected-type { margin-bottom: 8px; font-size: 13px; color: #1890ff; }
-.type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;color: #000; }
 .type-item {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 10px 4px; border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 11px;
+
 }
 .type-item.active { border-color: #1890ff; background: #e6f4ff; }
 .type-icon { font-size: 20px; }
+.type-labal { color: #000 ;}
 .input, .textarea {
   width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px;
   font-size: 14px; outline: none;

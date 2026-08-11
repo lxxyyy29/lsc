@@ -107,6 +107,7 @@
       </view>
 
     </view>
+    <GridWorkerTabBar current="/pages/workbench/index" />
   </view>
 </template>
 

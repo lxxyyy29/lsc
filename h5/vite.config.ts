@@ -35,22 +35,27 @@ export default defineConfig(({ mode }) => {
     }
   })
 
+  const isH5 = process.env.UNI_PLATFORM === 'h5'
+  const isMpWeixin = process.env.UNI_PLATFORM === 'mp-weixin'
+
+  const vuePkg = isMpWeixin ? '@dcloudio/uni-mp-vue' : '@dcloudio/uni-h5-vue'
+
   const alias: AliasOptions = isTest
     ? []
     : [
-        { find: 'vue', replacement: '@dcloudio/uni-h5-vue' },
-        { find: 'vue/package.json', replacement: '@dcloudio/uni-h5-vue/package.json' }
+        { find: 'vue', replacement: vuePkg },
+        { find: 'vue/package.json', replacement: `${vuePkg}/package.json` }
       ]
-
-  const isH5 = process.env.UNI_PLATFORM === 'h5'
 
   return {
     base: isH5 ? '/h5/' : '/',
     plugins: [isTest ? vue() : uni()].concat(isTest ? [stripUniConditional()] : []),
-    // sockjs-client 在浏览器中需要 Node.js 的 global 对象
-    define: {
-      global: 'window',
-    },
+    // sockjs-client 在浏览器中需要 Node.js 的 global 对象；小程序环境不注入
+    define: isH5
+      ? {
+          global: 'window',
+        }
+      : undefined,
     resolve: {
       alias
     },

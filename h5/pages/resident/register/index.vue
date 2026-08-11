@@ -23,8 +23,8 @@
         <input v-model="form.realName" placeholder="请输入真实姓名" />
       </view>
       <view class="form-item">
-        <text class="label">联系电话</text>
-        <input v-model="form.phone" placeholder="选填" />
+        <text class="label">手机号（登录凭据）</text>
+        <input v-model="form.phone" type="tel" maxlength="11" placeholder="请输入手机号" />
       </view>
 
       <button class="btn-submit" :disabled="loading" @click="handleRegister">
@@ -46,13 +46,14 @@ const success = ref('')
 const form = reactive({ account: '', password: '', confirmPassword: '', realName: '', phone: '' })
 
 async function handleRegister() {
-  if (!form.account || !form.password || !form.confirmPassword || !form.realName) {
+  if (!form.account || !form.password || !form.confirmPassword || !form.realName || !form.phone) {
     error.value = '请填写完整信息'
     return
   }
   if (form.account.length < 4) { error.value = '账号至少4位'; return }
   if (form.password.length < 6) { error.value = '密码至少6位'; return }
   if (form.password !== form.confirmPassword) { error.value = '两次密码不一致'; return }
+  if (!/^1[3-9]\d{9}$/.test(form.phone)) { error.value = '请输入正确的手机号'; return }
 
   loading.value = true
   error.value = ''

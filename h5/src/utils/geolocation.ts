@@ -65,13 +65,20 @@ function locateByBrowser(): Promise<LocateResult> {
 
 function locateByUni(): Promise<LocateResult> {
   return new Promise((resolve, reject) => {
-    if (typeof uni === 'undefined' || !uni.getLocation) {
+    // 小程序端：全局 uni 不存在，使用微信全局 wx
+    // #ifdef MP-WEIXIN
+    const uniRef = (globalThis as { wx?: { getLocation?: unknown } }).wx
+    // #endif
+    // #ifndef MP-WEIXIN
+    const uniRef = (globalThis as { uni?: { getLocation?: unknown } }).uni
+    // #endif
+    if (!uniRef || typeof uniRef.getLocation !== 'function') {
       reject(new Error('uni 定位不可用'))
       return
     }
-    uni.getLocation({
+    uniRef.getLocation({
       type: 'gcj02',
-      success: (res) => {
+      success: (res: any) => {
         resolve({
           latitude: res.latitude,
           longitude: res.longitude,
@@ -79,7 +86,7 @@ function locateByUni(): Promise<LocateResult> {
           sourceText: '精确定位'
         })
       },
-      fail: (err) => reject(err)
+      fail: (err: any) => reject(err)
     })
   })
 }
@@ -133,8 +140,13 @@ async function locateByAmapIp(): Promise<LocateResult> {
 
 /**
  * 获取当前位置：浏览器原生定位(HTTPS) → uni 定位 → 高德 IP 定位；全部失败时抛出异常
+ * 小程序端：直接使用 uni.getLocation（navigator/document/AMap 均不可用）
  */
 export async function locateWithFallback(): Promise<LocateResult> {
+  // #ifdef MP-WEIXIN
+  return await locateByUni()
+  // #endif
+  // #ifndef MP-WEIXIN
   try {
     return await locateByBrowser()
   } catch {
@@ -145,4 +157,5 @@ export async function locateWithFallback(): Promise<LocateResult> {
   } catch {
     return await locateByAmapIp()
   }
+  // #endif
 }

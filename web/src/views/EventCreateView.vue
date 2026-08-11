@@ -6,7 +6,7 @@
     <div class="card" style="max-width:700px;">
       <div style="margin-bottom:16px;">
         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事件标题 <span style="color:#ff4d4f;">*</span></label>
-        <input v-model="form.title" placeholder="简要描述事件" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
+        <input v-model="form.title" placeholder="简要描述事件" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;line-height:normal;box-sizing:border-box;" />
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
@@ -52,7 +52,7 @@
       <div style="margin-bottom:16px;">
         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事发地点 <span style="color:#ff4d4f;">*</span></label>
         <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <input v-model="form.location" placeholder="点击地图选择位置或手动输入地址" style="flex:1;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
+          <input v-model="form.location" placeholder="点击地图选择位置或手动输入地址" style="flex:1;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;line-height:normal;box-sizing:border-box;" />
           <button @click="locateMe" type="button" style="padding:8px 12px;border:1px solid #1890ff;border-radius:6px;background:#fff;color:#1890ff;font-size:13px;cursor:pointer;white-space:nowrap;">
             <i class="fas fa-crosshairs"></i> 定位
           </button>

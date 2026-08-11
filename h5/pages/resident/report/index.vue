@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="resident-report-page">
     <view class="header">
       <text class="header-title">📸 随手拍</text>
       <text class="header-sub">发现身边问题，一键上报</text>
@@ -19,7 +19,7 @@
     <view class="card">
       <text class="card-title">问题描述</text>
       <text class="selected-type">已选择：{{ selectedType.label }}</text>
-      <textarea v-model="form.description" placeholder="请详细描述您发现的问题..." class="textarea" :maxlength="-1" />
+      <textarea v-model="form.description" placeholder="请详细描述您发现的问题..." class="form-textarea" placeholder-style="color:#999;font-size:30rpx;" />
     </view>
 
     <view class="card">
@@ -54,8 +54,13 @@
 
     <view class="card">
       <text class="card-title">联系方式（选填）</text>
-      <input v-model="form.contactName" placeholder="您的姓名" class="input" />
-      <input v-model="form.contactPhone" placeholder="联系电话" class="input" style="margin-top:16rpx;" />
+      <!-- 纯原生无样式input测试 -->
+      <input placeholder="测试输入框1" style="width:100%;height:80rpx;border:1px solid red;color:#000;background:#fff;font-size:28rpx;box-sizing:border-box;padding:0 20rpx;" />
+      <view style="height:20rpx;"></view>
+      <input placeholder="测试输入框2" />
+      <view style="height:20rpx;"></view>
+      <input v-model="form.contactName" placeholder="您的姓名" class="form-input" placeholder-style="color:#999;font-size:30rpx;" />
+      <input v-model="form.contactPhone" placeholder="联系电话" class="form-input" placeholder-style="color:#999;font-size:30rpx;" style="margin-top:20rpx;" />
     </view>
 
     <button class="btn-submit" :disabled="loading" @click="handleSubmit">
@@ -280,71 +285,93 @@ async function handleSubmit() {
 }
 </script>
 
-<style scoped>
-.page { padding: 32rpx; padding-bottom: 160rpx; background: #f5f7fa; min-height: 100vh; }
-.header {
+<style>
+/* 居民端-随手拍页面 全局样式（小程序scoped样式不生效，使用全局class前缀） */
+.resident-report-page { padding: 32rpx; padding-bottom: 160rpx; background: #f5f7fa; min-height: 100vh; }
+.resident-report-page .header {
   background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
   border-radius: 24rpx;
   padding: 40rpx;
   color: #fff;
   margin-bottom: 32rpx;
 }
-.header-title { font-size: 40rpx; font-weight: 600; display: block; margin-bottom: 8rpx; }
-.header-sub { font-size: 26rpx; opacity: 0.8; }
-.card {
+.resident-report-page .header-title { font-size: 40rpx; font-weight: 600; display: block; margin-bottom: 8rpx; color: #fff; }
+.resident-report-page .header-sub { font-size: 26rpx; opacity: 0.8; color: #fff; }
+.resident-report-page .card {
   background: #fff;
   border-radius: 24rpx;
   padding: 32rpx;
   margin-bottom: 24rpx;
   box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.04);
 }
-.card-title { font-size: 28rpx; font-weight: 600; margin-bottom: 24rpx; color: #374151; display: block; }
-.card-title-row { display: flex; align-items: center; margin-bottom: 24rpx; }
-.card-title-row .card-title { margin-bottom: 0; margin-right: 16rpx; }
-.selected-type { margin-bottom: 16rpx; font-size: 26rpx; color: #1890ff; display: block; }
-.type-grid { display: flex; flex-wrap: wrap; gap: 16rpx; }
-.type-item {
-  display: flex; flex-direction: column; align-items: center; gap: 8rpx;
-  width: calc((100% - 48rpx) / 4);
-  padding: 20rpx 8rpx; border: 1px solid #e5e7eb; border-radius: 16rpx; font-size: 22rpx;
+.resident-report-page .card-title { font-size: 28rpx; font-weight: 600; margin-bottom: 24rpx; color: #374151; display: block; }
+.resident-report-page .card-title-row { display: flex; align-items: center; margin-bottom: 24rpx; }
+.resident-report-page .card-title-row .card-title { margin-bottom: 0; margin-right: 16rpx; }
+.resident-report-page .selected-type { margin-bottom: 16rpx; font-size: 26rpx; color: #1890ff; display: block; }
+.resident-report-page .type-grid { display: flex; flex-wrap: wrap; margin: -8rpx; }
+.resident-report-page .type-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: calc(25% - 16rpx);
+  margin: 8rpx;
+  padding: 20rpx 8rpx; border: 1px solid #d1d5db; border-radius: 12rpx;
+  box-sizing: border-box;
+  background: #fff;
+  color: #111827;
+}
+.resident-report-page .type-item.active { border-color: #1890ff; background: #e6f4ff; color: #000; }
+.resident-report-page .type-icon { font-size: 48rpx; line-height: 1; margin-bottom: 8rpx; }
+.resident-report-page .type-label { font-size: 22rpx; color: #111827; line-height: 1.2; text-align: center; }
+.resident-report-page .form-input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 24rpx;
+  border: 1px solid #d9d9d9;
+  border-radius: 8rpx;
+  font-size: 30rpx;
+  color: #000000;
+  background: #ffffff;
   box-sizing: border-box;
 }
-.type-item.active { border-color: #1890ff; background: #e6f4ff; }
-.type-icon { font-size: 40rpx; }
-.type-label { font-size: 22rpx; }
-.input, .textarea {
-  width: 100%; padding: 20rpx 24rpx; border: 1px solid #e5e7eb; border-radius: 16rpx;
-  font-size: 28rpx; outline: none; box-sizing: border-box;
+.resident-report-page .form-textarea {
+  width: 100%;
+  min-height: 200rpx;
+  padding: 20rpx 24rpx;
+  border: 1px solid #d9d9d9;
+  border-radius: 8rpx;
+  font-size: 30rpx;
+  color: #000000;
+  background: #ffffff;
+  box-sizing: border-box;
+  line-height: 1.5;
 }
-.textarea { min-height: 140rpx; }
-.photo-list { display: flex; gap: 16rpx; flex-wrap: wrap; }
-.photo-item { position: relative; width: 160rpx; height: 160rpx; }
-.photo-placeholder {
+.resident-report-page .photo-list { display: flex; gap: 16rpx; flex-wrap: wrap; }
+.resident-report-page .photo-item { position: relative; width: 160rpx; height: 160rpx; }
+.resident-report-page .photo-placeholder {
   width: 160rpx; height: 160rpx; background: #f3f4f6; border-radius: 16rpx;
   display: flex; align-items: center; justify-content: center; font-size: 48rpx;
+  color: #9ca3af;
 }
-.photo-del {
+.resident-report-page .photo-del {
   position: absolute; top: -12rpx; right: -12rpx; width: 40rpx; height: 40rpx;
   background: #ff4d4f; color: #fff; border-radius: 50%; display: flex;
   align-items: center; justify-content: center; font-size: 24rpx;
 }
-.photo-add {
+.resident-report-page .photo-add {
   width: 160rpx; height: 160rpx; border: 1px dashed #d1d5db; border-radius: 16rpx;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   color: #9ca3af; font-size: 24rpx;
 }
-.photo-add-icon { font-size: 48rpx; }
-.location { font-size: 26rpx; color: #6b7280; padding: 16rpx; background: #f9fafb; border-radius: 12rpx; display: flex; justify-content: space-between; align-items: center; }
-.location-text { flex: 1; }
-.relocate { color: #1890ff; margin-left: 16rpx; }
-.photo-img { width: 160rpx; height: 160rpx; border-radius: 16rpx; display: block; }
-.uploading { font-size: 24rpx; color: #1890ff; font-weight: normal; }
-.btn-submit {
-  width: 100%; padding: 28rpx; background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+.resident-report-page .photo-add-icon { font-size: 48rpx; color: #9ca3af; }
+.resident-report-page .location { font-size: 26rpx; color: #6b7280; padding: 16rpx; background: #f9fafb; border-radius: 12rpx; display: flex; justify-content: space-between; align-items: center; }
+.resident-report-page .location-text { flex: 1; color: #6b7280; }
+.resident-report-page .relocate { color: #1890ff; margin-left: 16rpx; }
+.resident-report-page .photo-img { width: 160rpx; height: 160rpx; border-radius: 16rpx; display: block; }
+.resident-report-page .uploading { font-size: 24rpx; color: #1890ff; font-weight: normal; }
+.resident-report-page .btn-submit {
+  width: 100%; height: 90rpx; line-height: 90rpx; padding: 0; background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
   color: #fff; border: none; border-radius: 16rpx; font-size: 32rpx; font-weight: 600; margin-top: 16rpx;
-  line-height: 1.4;
 }
-.btn-submit[disabled] { opacity: 0.6; }
-.error { color: #ff4d4f; font-size: 26rpx; text-align: center; margin-top: 24rpx; display: block; }
-.success { color: #52c41a; font-size: 26rpx; text-align: center; margin-top: 24rpx; display: block; }
+.resident-report-page .btn-submit[disabled] { opacity: 0.6; }
+.resident-report-page .error { color: #ff4d4f; font-size: 26rpx; text-align: center; margin-top: 24rpx; display: block; }
+.resident-report-page .success { color: #52c41a; font-size: 26rpx; text-align: center; margin-top: 24rpx; display: block; }
 </style>

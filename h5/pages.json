@@ -177,6 +177,13 @@
       }
     },
     {
+      "path": "pages/resident/repairs/form",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "提交报修"
+      }
+    },
+    {
       "path": "pages/resident/policies/index",
       "style": {
         "navigationStyle": "custom"

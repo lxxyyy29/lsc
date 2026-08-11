@@ -55,9 +55,15 @@ function resolveApiBaseUrl() {
  */
 function handle401(responseCode?: string) {
   clearH5Session()
+  // 小程序端：全局 uni 不存在，使用微信全局 wx
+  // #ifdef MP-WEIXIN
+  const uniRef = (globalThis as { wx?: { reLaunch?: unknown; showModal?: unknown } }).wx
+  // #endif
+  // #ifndef MP-WEIXIN
   // 通过 globalThis 获取全局 uni（uni-app 编译期不会替换 globalThis 访问），
   // H5 运行时 window.uni 可能为空占位对象，需检查 reLaunch 方法再调用
   const uniRef = (globalThis as { uni?: { reLaunch?: unknown; showModal?: unknown } }).uni
+  // #endif
   if (!uniRef || typeof uniRef.reLaunch !== 'function') return
   const isPasswordChanged = responseCode === 'AUTH_PASSWORD_CHANGED'
   if (isPasswordChanged) {
@@ -68,16 +74,21 @@ function handle401(responseCode?: string) {
       showCancel: false,
       confirmText: '去登录',
       success() {
-        uniRef.reLaunch({ url: '/pages/login/index' })
+        uniRef.reLaunch({ url: '/pages/role-select/index' })
       }
     })
   } else {
-    uniRef.reLaunch({ url: '/pages/login/index' })
+    uniRef.reLaunch({ url: '/pages/role-select/index' })
   }
 }
 
 function showErrorToast(message: string) {
+  // #ifdef MP-WEIXIN
+  const uniRef = (globalThis as { wx?: { showToast?: unknown } }).wx
+  // #endif
+  // #ifndef MP-WEIXIN
   const uniRef = typeof uni !== 'undefined' ? uni : (globalThis as any).uni
+  // #endif
   if (uniRef?.showToast) {
     uniRef.showToast({ title: message, icon: 'none', duration: 2500 })
   }
@@ -180,7 +191,12 @@ const axiosHttp: HttpLikeClient = {
 function createUniHttpClient(): HttpLikeClient {
   type UniRequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
-  const request = <R>(method: UniRequestMethod, url: string, data?: unknown): Promise<R> => {
+  const resolveRequestBaseUrl = (config?: unknown): string => {
+    const base = (config as { baseURL?: string } | undefined)?.baseURL
+    return typeof base === 'string' && base.trim().length > 0 ? base.trim() : resolveApiBaseUrl()
+  }
+
+  const request = <R>(method: UniRequestMethod, url: string, data?: unknown, config?: unknown): Promise<R> => {
     return new Promise((resolve, reject) => {
       const session = getH5Session()
       const headers: Record<string, string> = {}
@@ -189,7 +205,7 @@ function createUniHttpClient(): HttpLikeClient {
       }
 
       uni.request({
-        url: `${resolveApiBaseUrl()}${url}`,
+        url: `${resolveRequestBaseUrl(config)}${url}`,
         method,
         data: data as any,
         header: headers,
@@ -219,17 +235,17 @@ function createUniHttpClient(): HttpLikeClient {
   }
 
   return {
-    get(url) {
-      return request('GET', url)
+    get(url, config) {
+      return request('GET', url, undefined, config)
     },
-    post(url, data) {
-      return request('POST', url, data)
+    post(url, data, config) {
+      return request('POST', url, data, config)
     },
-    put(url, data) {
-      return request('PUT', url, data)
+    put(url, data, config) {
+      return request('PUT', url, data, config)
     },
-    delete(url) {
-      return request('DELETE', url)
+    delete(url, config) {
+      return request('DELETE', url, undefined, config)
     },
     upload(url, filePath, formData) {
       return new Promise((resolve, reject) => {

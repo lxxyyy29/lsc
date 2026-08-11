@@ -8,10 +8,23 @@
 
     <view class="login-form">
       <view class="form-item">
-        <input v-model="form.account" placeholder="请输入账号" />
+        <input
+          class="login-input"
+          v-model="form.account"
+          placeholder="请输入账号"
+          placeholder-style="color:#9ca3af;font-size:30rpx;"
+          confirm-type="done"
+        />
       </view>
       <view class="form-item">
-        <input v-model="form.password" type="password" placeholder="请输入密码" />
+        <input
+          class="login-input"
+          v-model="form.password"
+          password
+          placeholder="请输入密码"
+          placeholder-style="color:#9ca3af;font-size:30rpx;"
+          confirm-type="done"
+        />
       </view>
       <button class="btn-login" :disabled="loading" @click="handleLogin">
         {{ loading ? '登录中...' : '登 录' }}
@@ -55,7 +68,7 @@ async function handleLogin() {
 }
 
 function goRegister() {
-  uni.navigateTo({ url: '/pages/resident/register/index' })
+  uni.navigateTo({ url: '/pages/register/index' })
 }
 </script>
 
@@ -86,16 +99,9 @@ function goRegister() {
   border-radius: 32rpx;
   padding: 64rpx 48rpx;
   box-shadow: 0 16rpx 64rpx rgba(0,0,0,0.1);
+  color: #000;
 }
 .form-item { margin-bottom: 32rpx; }
-.form-item input {
-  width: 100%;
-  padding: 28rpx 32rpx;
-  border: 1px solid #e5e7eb;
-  border-radius: 16rpx;
-  font-size: 30rpx;
-  outline: none;
-}
 .btn-login {
   width: 100%;
   padding: 28rpx;
@@ -113,4 +119,23 @@ function goRegister() {
 .footer-links { text-align: center; margin-top: 32rpx; }
 .link { color: #1890ff; font-size: 26rpx; }
 .quick-login { margin-top: 48rpx; color: rgba(255,255,255,0.7); font-size: 24rpx; text-align: center; }
+</style>
+
+<style>
+/* 全局样式：小程序 input 是原生组件，scoped 样式不生效，必须用全局 class */
+page {
+  background: #1890ff;
+}
+.login-input {
+  width: 100%;
+  height: 90rpx;
+  padding: 0 32rpx;
+  border: 1px solid #d1d5db;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  color: #111827;
+  background-color: #ffffff;
+  box-sizing: border-box;
+  line-height: 90rpx;
+}
 </style>

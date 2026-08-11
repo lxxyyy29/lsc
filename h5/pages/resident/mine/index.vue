@@ -29,6 +29,11 @@
         <text class="menu-text">我的上报</text>
         <text class="arrow">›</text>
       </view>
+      <view class="menu-item" @click="goGridWorker">
+        <text class="menu-icon">👷</text>
+        <text class="menu-text">网格员入口</text>
+        <text class="arrow">›</text>
+      </view>
       <view class="menu-item" @click="showAbout = true">
         <text class="menu-icon">ℹ️</text>
         <text class="menu-text">关于平台</text>
@@ -72,6 +77,10 @@ function goHistory() {
   uni.reLaunch({ url: '/pages/resident/history/index' })
 }
 
+function goGridWorker() {
+  uni.reLaunch({ url: '/pages/role-select/index' })
+}
+
 function handleLogout() {
   uni.showModal({
     title: '提示',
@@ -79,7 +88,7 @@ function handleLogout() {
     success: (res) => {
       if (!res.confirm) return
       clearResidentSession()
-      uni.reLaunch({ url: '/pages/resident/login/index' })
+      uni.reLaunch({ url: '/pages/role-select/index' })
     }
   })
 }

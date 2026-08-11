@@ -26,11 +26,18 @@ interface ApiResponse<T> {
   data: T
 }
 
-/** 获取 uni 全局对象（H5 运行时 window.uni 可能是空占位对象，需检查方法再调用） */
+/** 获取 uni 全局对象（H5 运行时 window.uni 可能是空占位对象，需检查方法再调用；小程序用微信全局 wx） */
 function getUni() {
+  // #ifdef MP-WEIXIN
+  const wxInstance = (globalThis as { wx?: { reLaunch?: unknown; showToast?: unknown } }).wx
+  if (wxInstance && typeof wxInstance.reLaunch === 'function') return wxInstance
+  return undefined
+  // #endif
+  // #ifndef MP-WEIXIN
   const globalUni = (globalThis as { uni?: { reLaunch?: unknown; showToast?: unknown } }).uni
   if (globalUni && typeof globalUni.reLaunch === 'function') return globalUni
   return undefined
+  // #endif
 }
 
 // ==================== 会话存储（平台兼容） ====================
@@ -104,7 +111,7 @@ function handleResident401() {
   clearResidentSession()
   const uni = getUni()
   if (uni) {
-    uni.reLaunch({ url: '/pages/resident/login/index' })
+    uni.reLaunch({ url: '/pages/role-select/index' })
   }
 }
 
@@ -250,6 +257,16 @@ export async function login(account: string, password: string): Promise<Resident
   const data = await request<ResidentSession>('post', '/auth/login', { account, password, clientType: 'web' })
   persistResidentSession(data)
   return data
+}
+
+/** 发送手机号验证码（测试模式：后端返回固定验证码 testCode） */
+export async function sendSmsCode(phone: string): Promise<{ phone: string; testCode?: string; message?: string }> {
+  return request('post', '/auth/sms-code', { phone })
+}
+
+/** 手机号验证码登录：后端按角色自动决定客户端类型（网格员=H5/居民=WEB），返回统一登录响应 */
+export async function phoneLogin(phone: string, code: string): Promise<ResidentSession> {
+  return request<ResidentSession>('post', '/auth/phone-login', { phone, code })
 }
 
 export async function register(account: string, password: string, realName: string, phone: string): Promise<void> {

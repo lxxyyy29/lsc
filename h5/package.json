@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@dcloudio/types": "3.4.28",
+    "@dcloudio/uni-cli-shared": "3.0.0-alpha-5000520260323001",
     "@dcloudio/vite-plugin-uni": "3.0.0-alpha-5000520260323001",
     "@testing-library/vue": "^8.1.0",
     "@types/sockjs-client": "^1.5.4",

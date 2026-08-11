@@ -40,6 +40,31 @@ export const H5_AUTH_STORAGE_KEY = 'dgcp-oa-h5-session'
 let memorySession: H5Session | null = null
 
 function getStorage() {
+  // 小程序端：全局 uni 不存在（uni-app 仅编译期替换 uni.xxx），直接使用微信全局 wx
+  // #ifdef MP-WEIXIN
+  const wxInstance = (globalThis as { wx?: { getStorageSync?: (key: string) => string | null | undefined; setStorageSync?: (key: string, value: string) => void; removeStorageSync?: (key: string) => void } }).wx
+  if (
+    wxInstance &&
+    typeof wxInstance.getStorageSync === 'function' &&
+    typeof wxInstance.setStorageSync === 'function' &&
+    typeof wxInstance.removeStorageSync === 'function'
+  ) {
+    return {
+      getItem(key: string) {
+        const value = wxInstance.getStorageSync?.(key)
+        return typeof value === 'string' ? value : null
+      },
+      setItem(key: string, value: string) {
+        wxInstance.setStorageSync?.(key, value)
+      },
+      removeItem(key: string) {
+        wxInstance.removeStorageSync?.(key)
+      }
+    }
+  }
+  return null
+  // #endif
+  // #ifndef MP-WEIXIN
   let localStorageCandidate: Storage | undefined
   try {
     localStorageCandidate = (globalThis as { localStorage?: Storage }).localStorage
@@ -78,6 +103,7 @@ function getStorage() {
   }
 
   return null
+  // #endif
 }
 
 function isNonEmptyString(value: unknown): value is string {

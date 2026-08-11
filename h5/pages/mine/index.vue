@@ -28,10 +28,12 @@
 
     <button class="logout-btn" @click="handleLogout">退出系统登录</button>
 
+    <GridWorkerTabBar current="/pages/mine/index" />
   </view>
 </template>
 
 <script setup lang="ts">
+import GridWorkerTabBar from '../../src/components/GridWorkerTabBar.vue'
 import { computed, ref } from 'vue'
 import AppIcon from '../../src/components/AppIcon.vue'
 import { onShow } from '@dcloudio/uni-app'
@@ -54,7 +56,7 @@ const avatarText = computed(() => displayName.value.trim().slice(-1) || '我')
 function goMerchants() { navigateToPath('/merchants') }
 function goVendors() { navigateToPath('/vendors') }
 async function handleLogout() {
-  try { await logoutH5() } finally { redirectToPath('/login') }
+  try { await logoutH5() } finally { uni.reLaunch({ url: '/pages/role-select/index' }) }
 }
 </script>
 

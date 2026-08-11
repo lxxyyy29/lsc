@@ -2,6 +2,15 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { height: 100%; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f7fa; color: #1f2937; }
 
+/* ===== 表单控件修复 =====
+   Chrome 中文输入框文字上下截断：input/textarea 继承 body 的 line-height（1.2 左右）
+   小于字体渲染高度时文字被上下裁剪。统一使用 normal 行高 + border-box，
+   确保 padding/height 计算不挤压文字。 */
+input, select, textarea {
+  line-height: normal;
+  box-sizing: border-box;
+}
+
 /* ===== 布局骨架 ===== */
 #app { height: 100vh; display: flex; flex-direction: column; }
 

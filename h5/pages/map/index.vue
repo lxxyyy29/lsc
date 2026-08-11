@@ -1,7 +1,22 @@
 <template>
   <view class="map-container">
+    <!-- #ifdef MP-WEIXIN -->
+    <!-- 小程序版：原生 map 组件 + markers（事件点） -->
+    <map
+      id="mpMapContainer"
+      class="mp-map"
+      :latitude="mpCenterLat"
+      :longitude="mpCenterLng"
+      :scale="mpScale"
+      :markers="mpMarkers"
+      @markertap="onMpMarkerTap"
+    ></map>
+    <!-- #endif -->
+
+    <!-- #ifndef MP-WEIXIN -->
     <!-- 高德地图容器 -->
     <view id="h5MapContainer" class="map"></view>
+    <!-- #endif -->
 
     <!-- 顶部信息栏 -->
     <view class="map-header">
@@ -12,37 +27,25 @@
       <text class="header-count">{{ eventPoints.length }} 个事件</text>
     </view>
 
-    <!-- 视图切换：我的网格 / 全网格 -->
-    <view class="view-switch">
-      <view
-        class="switch-item"
-        :class="{ active: viewMode === 'mine', disabled: !hasMyGrid }"
-        @click="switchView('mine')"
-      >我的网格</view>
-      <view
-        class="switch-item"
-        :class="{ active: viewMode === 'all' }"
-        @click="switchView('all')"
-      >全网格</view>
-    </view>
-
     <!-- 定位按钮 -->
     <view class="locate-btn" @click="locateMe">
       <text class="locate-icon">📍</text>
     </view>
 
-    <!-- 缩放控制 -->
+    <!-- #ifndef MP-WEIXIN -->
+    <!-- 缩放控制（小程序 map 自带缩放） -->
     <view class="zoom-controls">
       <view class="zoom-btn" @click="zoomIn">+</view>
       <view class="zoom-btn" @click="zoomOut">-</view>
     </view>
+    <!-- #endif -->
 
     <!-- 地图加载失败提示 -->
     <view v-if="loadError" class="map-error">
       <text>地图加载失败，请检查网络后重试</text>
     </view>
 
-    <!-- 底部网格信息 -->
+    <!-- 底部事件/网格信息 -->
     <view v-if="selectedGrid" class="event-detail">
       <view class="event-header">
         <text class="event-title">{{ selectedGrid.gridName }}</text>
@@ -56,6 +59,7 @@
       <text class="event-time">人口：{{ selectedGrid.population || '-' }} 人 ｜ 楼栋：{{ selectedGrid.buildingCount || '-' }} 栋</text>
       <view class="grid-focus-btn" @click="focusGrid(selectedGrid)">聚焦到此网格</view>
     </view>
+    <GridWorkerTabBar current="/pages/map/index" />
   </view>
 </template>
 
@@ -68,6 +72,41 @@ const AMAP_KEY = '5e00e01d2d2b6ca9e1eed533a15572e4'
 const AMAP_SECURITY_CODE = '0a57a5453a660300283bebf7323d8bce'
 const DEFAULT_CENTER: [number, number] = [113.939521, 22.971231]
 const DEFAULT_ZOOM = 14
+
+// ─── 小程序原生 map 状态 ───
+const mpCenterLat = ref(22.971231)
+const mpCenterLng = ref(113.939521)
+const mpScale = ref(13)
+const mpMarkers = ref<any[]>([])
+
+function onMpMarkerTap(e: any) {
+  const id = e?.detail?.markerId ?? e?.markerId
+  const p = eventPoints.value.find((item: any) => item.id === id || item.eventId === id)
+  if (p) selectedEventDetail(p)
+}
+
+function refreshMpMarkers() {
+  mpMarkers.value = eventPoints.value
+    .filter((p: any) => typeof p.lat === 'number' && typeof p.lng === 'number')
+    .map((p: any, idx: number) => ({
+      id: p.id ?? p.eventId ?? idx,
+      latitude: p.lat,
+      longitude: p.lng,
+      title: p.title || '事件点位',
+      iconPath: '../../static/map-marker.png',
+      width: 28,
+      height: 36,
+      callout: {
+        content: p.title || '事件点位',
+        color: '#ffffff',
+        fontSize: 12,
+        borderRadius: 6,
+        bgColor: '#1890ff',
+        padding: 6,
+        display: 'BYCLICK'
+      }
+    }))
+}
 
 interface GridNode {
   id: number
@@ -295,7 +334,12 @@ async function loadEvents() {
     })
     if (res.data && res.data.code === 'OK') {
       eventPoints.value = res.data.data || []
+      // #ifdef MP-WEIXIN
+      refreshMpMarkers()
+      // #endif
+      // #ifndef MP-WEIXIN
       renderMarkers()
+      // #endif
     }
   } catch (e) {
     console.error('加载事件失败:', e)
@@ -308,6 +352,12 @@ function zoomOut() { if (mapInstance) mapInstance.setZoom(Math.max(5, mapInstanc
 // 定位到当前位置（精确定位失败时回退 IP 大致定位）
 function locateMe() {
   locateWithFallback().then((res) => {
+    // #ifdef MP-WEIXIN
+    mpCenterLat.value = res.latitude
+    mpCenterLng.value = res.longitude
+    mpScale.value = res.precise ? 16 : 12
+    // #endif
+    // #ifndef MP-WEIXIN
     const pos: [number, number] = [res.longitude, res.latitude]
     if (mapInstance) {
       mapInstance.setZoomAndCenter(res.precise ? 16 : 12, pos)
@@ -324,6 +374,7 @@ function locateMe() {
         mapInstance.add(locateMarker)
       }
     }
+    // #endif
     if (!res.precise) {
       uni.showToast({ title: res.sourceText, icon: 'none' })
     }
@@ -333,7 +384,9 @@ function locateMe() {
 }
 
 onMounted(async () => {
+  // #ifndef MP-WEIXIN
   await initMap()
+  // #endif
   loadEvents()
 })
 
@@ -353,6 +406,16 @@ onUnmounted(() => {
 }
 
 .map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mp-map {
   position: absolute;
   top: 0;
   left: 0;

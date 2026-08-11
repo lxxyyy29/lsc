@@ -15,18 +15,18 @@
 
       <view class="form-item">
         <text class="label">标题</text>
-        <input v-model="title" class="input" placeholder="简要描述事件" />
+        <input v-model="title" class="input" placeholder="简要描述事件" placeholder-style="color:#5e7488;font-size:30rpx;" />
       </view>
 
       <view class="form-item">
         <text class="label">详细描述</text>
-        <textarea v-model="content" class="textarea" placeholder="详细描述事件情况..." />
+        <textarea v-model="content" class="textarea" placeholder="详细描述事件情况..." placeholder-style="color:#5e7488;font-size:30rpx;" />
       </view>
 
       <view class="form-item">
         <text class="label">事发地点</text>
         <view class="location-row">
-          <input v-model="location" class="input" placeholder="如：拔蛟窝社区 XX 路 XX 号" />
+          <input v-model="location" class="input" placeholder="如：拔蛟窝社区 XX 路 XX 号" placeholder-style="color:#5e7488;font-size:30rpx;" />
           <view class="locate-btn" @click="locateCurrent">
             <text class="locate-btn-text">定位</text>
           </view>
@@ -123,11 +123,21 @@ function takePhoto() {
 
 function removePhoto(idx: number) { photos.value.splice(idx, 1) }
 
+/** 媒体上传基址：小程序用绝对 HTTPS 域名，H5 用相对路径走代理 */
+function resolveMediaBaseUrl(): string {
+  // #ifdef MP-WEIXIN
+  return 'https://drone.kfktec.cn:8768'
+  // #endif
+  // #ifndef MP-WEIXIN
+  return ''
+  // #endif
+}
+
 async function uploadPhoto(filePath: string): Promise<string | null> {
   const session = getH5Session()
   return await new Promise((resolve) => {
     uni.uploadFile({
-      url: '/api/media/upload',
+      url: `${resolveMediaBaseUrl()}/api/media/upload`,
       filePath,
       name: 'file',
       formData: { businessType: 'EVENT' },
@@ -304,5 +314,45 @@ function goHistory() {
 .dialog-btn {
   background: #1890ff; border-radius: 8px; padding: 10px; color: #fff;
   font-size: 14px; margin-top: 12px;
+}
+</style>
+
+<style>
+/* 小程序适配：scoped 样式对 input/textarea 原生组件不生效，用全局样式保证高度/行高/文字完整显示 */
+.container .input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 24rpx;
+  border: 1px solid #1d3d5c;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  line-height: 88rpx;
+  color: #eaf5ff;
+  background: #0a1a2e;
+  box-sizing: border-box;
+}
+.container .textarea {
+  width: 100%;
+  min-height: 200rpx;
+  padding: 20rpx 24rpx;
+  border: 1px solid #1d3d5c;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  line-height: 1.5;
+  color: #eaf5ff;
+  background: #0a1a2e;
+  box-sizing: border-box;
+}
+.container .picker-text {
+  display: flex;
+  align-items: center;
+  min-height: 88rpx;
+  padding: 0 24rpx;
+  border: 1px solid #1d3d5c;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  color: #eaf5ff;
+  background: #0a1a2e;
+  box-sizing: border-box;
 }
 </style>

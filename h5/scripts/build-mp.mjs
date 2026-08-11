@@ -4,7 +4,7 @@
  *
  * pages.json 不支持条件编译，因此：
  * 1. 备份当前 pages.json（工作人员端 + 居民端全量）
- * 2. 生成小程序版 pages.json（仅居民端 10 页，首个为 login，配置原生 tabBar）
+ * 2. 生成小程序版 pages.json（全量 31 页，首个为角色选择页，配置居民端原生 tabBar）
  * 3. 执行 `uni build -p mp-weixin`
  * 4. 无论成败，finally 恢复原始 pages.json
  */
@@ -17,7 +17,32 @@ const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const pagesJsonPath = resolve(rootDir, 'pages.json')
 const backupPath = resolve(rootDir, 'pages.json.h5-backup')
 
-const RESIDENT_PAGES = [
+/** 全量页面：角色选择页为首屏，其后为网格员端 + 居民端全部页面 */
+const ALL_PAGES = [
+  { path: 'pages/role-select/index', style: { navigationStyle: 'custom' } },
+
+  // ---- 网格员端 ----
+  { path: 'pages/login/index', style: { navigationStyle: 'custom' } },
+  { path: 'pages/register/index', style: { navigationStyle: 'custom' } },
+  { path: 'pages/workbench/index', style: { navigationStyle: 'default', navigationBarTitleText: '工作台' } },
+  { path: 'pages/workorder/list', style: { navigationStyle: 'default', navigationBarTitleText: '任务列表' } },
+  { path: 'pages/workorder/detail', style: { navigationStyle: 'default', navigationBarTitleText: '工单详情' } },
+  { path: 'pages/verify/index', style: { navigationStyle: 'default', navigationBarTitleText: '闭环核查' } },
+  { path: 'pages/history/index', style: { navigationStyle: 'default', navigationBarTitleText: '历史记录' } },
+  { path: 'pages/mine/index', style: { navigationStyle: 'default', navigationBarTitleText: '个人中心' } },
+  { path: 'pages/merchant/list', style: { navigationStyle: 'default', navigationBarTitleText: '商户管理' } },
+  { path: 'pages/merchant/detail', style: { navigationStyle: 'default', navigationBarTitleText: '商户详情' } },
+  { path: 'pages/vendor/list', style: { navigationStyle: 'default', navigationBarTitleText: '摊贩管理' } },
+  { path: 'pages/vendor/detail', style: { navigationStyle: 'default', navigationBarTitleText: '摊贩详情' } },
+  { path: 'pages/patrol/checkin', style: { navigationStyle: 'default', navigationBarTitleText: '巡查打卡' } },
+  { path: 'pages/patrol/history', style: { navigationStyle: 'default', navigationBarTitleText: '巡查记录' } },
+  { path: 'pages/event/report', style: { navigationStyle: 'default', navigationBarTitleText: '事件上报' } },
+  { path: 'pages/event/history', style: { navigationStyle: 'default', navigationBarTitleText: '我的上报' } },
+  { path: 'pages/map/index', style: { navigationStyle: 'custom', navigationBarTitleText: '移动 GIS' } },
+  { path: 'pages/message/index', style: { navigationStyle: 'custom', navigationBarTitleText: '信息互通' } },
+  { path: 'pages/volunteer/index', style: { navigationStyle: 'default', navigationBarTitleText: '志愿服务' } },
+
+  // ---- 居民端 ----
   { path: 'pages/resident/login/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/resident/register/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/resident/report/index', style: { navigationStyle: 'custom' } },
@@ -25,12 +50,13 @@ const RESIDENT_PAGES = [
   { path: 'pages/resident/services/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/resident/activities/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/resident/repairs/index', style: { navigationStyle: 'custom' } },
+  { path: 'pages/resident/repairs/form', style: { navigationStyle: 'default', navigationBarTitleText: '提交报修' } },
   { path: 'pages/resident/policies/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/resident/points/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/resident/mine/index', style: { navigationStyle: 'custom' } }
 ]
 
-/** 小程序原生 tabBar：仅文字（iconPath 可选），浅色主题与居民端页面一致 */
+/** 小程序原生 tabBar：居民端 3 tab（仅文字），浅色主题 */
 const MP_TAB_BAR = {
   color: '#9ca3af',
   selectedColor: '#1890ff',
@@ -54,7 +80,7 @@ function main() {
   console.log('[build-mp] 已备份 pages.json -> pages.json.h5-backup')
 
   const mpPagesJson = {
-    pages: RESIDENT_PAGES,
+    pages: ALL_PAGES,
     tabBar: MP_TAB_BAR,
     globalStyle: {
       navigationBarTextStyle: 'white',
@@ -65,7 +91,7 @@ function main() {
   }
 
   writeFileSync(pagesJsonPath, JSON.stringify(mpPagesJson, null, 2) + '\n', 'utf-8')
-  console.log(`[build-mp] 已生成小程序版 pages.json（${RESIDENT_PAGES.length} 页）`)
+  console.log(`[build-mp] 已生成小程序版 pages.json（${ALL_PAGES.length} 页，首屏角色选择）`)
 
   try {
     const result = spawnSync(

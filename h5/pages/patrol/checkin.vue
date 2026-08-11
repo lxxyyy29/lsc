@@ -40,6 +40,7 @@
     </view>
 
     <view class="btn-submit" @click="handleSubmit">确认打卡</view>
+    <GridWorkerTabBar current="/pages/patrol/checkin" />
   </view>
 </template>
 

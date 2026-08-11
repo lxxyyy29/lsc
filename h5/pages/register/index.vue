@@ -1,87 +1,82 @@
 <template>
   <view class="register-page">
-    <view class="register-overlay overlay-hex" :style="hexOverlayStyle"></view>
-    <view class="register-overlay overlay-glow overlay-glow--top"></view>
+    <view class="register-header">
+      <text class="logo">🏘️</text>
+      <text class="title">注册账号</text>
+      <text class="subtitle">选择您的身份完成注册</text>
+    </view>
 
-    <view class="register-shell">
-      <view class="brand-block">
-        <image class="brand-shield" :src="loginShieldUrl" mode="widthFix" aria-hidden="true" />
-        <text class="brand-title">拔蛟窝智慧网格</text>
+    <view class="register-form">
+      <!-- 身份选择 -->
+      <view class="form-item">
+        <text class="label">身份</text>
+        <view class="role-group">
+          <view
+            class="role-option"
+            :class="{ active: form.role === 'RESIDENT' }"
+            @click="form.role = 'RESIDENT'"
+          >
+            <text class="role-icon">📱</text>
+            <text class="role-name">居民</text>
+            <text class="role-desc">随手拍、社区服务，注册即开通</text>
+          </view>
+          <view
+            class="role-option"
+            :class="{ active: form.role === 'GRID_WORKER' }"
+            @click="form.role = 'GRID_WORKER'"
+          >
+            <text class="role-icon">👷</text>
+            <text class="role-name">网格员</text>
+            <text class="role-desc">工单处理、巡查上报，需管理员审批</text>
+          </view>
+        </view>
       </view>
 
-      <view class="register-card">
-        <view class="field-block">
-          <text class="field-label">账号</text>
-          <view class="field-shell">
-            <AppIcon name="user" class="field-icon" size="24rpx" />
-            <input v-model.trim="form.account" class="field-input" placeholder="请输入账号（4-20位）" placeholder-class="field-placeholder" />
-          </view>
-        </view>
+      <view class="form-item">
+        <text class="label">账号</text>
+        <input v-model.trim="form.account" placeholder="请输入账号（4-20位）" placeholder-style="color:#9ca3af;font-size:30rpx;" />
+      </view>
+      <view class="form-item">
+        <text class="label">密码</text>
+        <input v-model="form.password" type="password" placeholder="请输入密码（6-20位）" placeholder-style="color:#9ca3af;font-size:30rpx;" />
+      </view>
+      <view class="form-item">
+        <text class="label">确认密码</text>
+        <input v-model="form.confirmPassword" type="password" placeholder="请再次输入密码" placeholder-style="color:#9ca3af;font-size:30rpx;" />
+      </view>
+      <view class="form-item">
+        <text class="label">真实姓名</text>
+        <input v-model.trim="form.realName" placeholder="请输入真实姓名" placeholder-style="color:#9ca3af;font-size:30rpx;" />
+      </view>
+      <view class="form-item">
+        <text class="label">手机号（登录凭据）</text>
+        <input v-model.trim="form.phone" type="tel" maxlength="11" placeholder="请输入手机号" placeholder-style="color:#9ca3af;font-size:30rpx;" />
+      </view>
 
-        <view class="field-block">
-          <text class="field-label">密码</text>
-          <view class="field-shell">
-            <AppIcon name="lock" class="field-icon" size="24rpx" />
-            <input v-model="form.password" class="field-input" :password="!showPassword" placeholder="请输入密码（6-20位）" placeholder-class="field-placeholder" />
-            <AppIcon :name="showPassword ? 'eye-off' : 'eye'" class="field-action" size="24rpx" @click="showPassword = !showPassword" />
-          </view>
-        </view>
+      <text v-if="form.role === 'GRID_WORKER'" class="approve-hint">提交后需管理员审批，通过后方可登录</text>
+      <text v-if="errorMessage" class="error">{{ errorMessage }}</text>
 
-        <view class="field-block">
-          <text class="field-label">确认密码</text>
-          <view class="field-shell">
-            <AppIcon name="lock" class="field-icon" size="24rpx" />
-            <input v-model="form.confirmPassword" class="field-input" :password="!showPassword" placeholder="请再次输入密码" placeholder-class="field-placeholder" />
-          </view>
-        </view>
+      <button class="btn-register" :disabled="submitting" @click="handleSubmit" style="color:#ffffff;">
+        {{ submitting ? '提交中...' : '注 册' }}
+      </button>
 
-        <view class="field-block">
-          <text class="field-label">真实姓名</text>
-          <view class="field-shell">
-            <AppIcon name="user" class="field-icon" size="24rpx" />
-            <input v-model.trim="form.realName" class="field-input" placeholder="请输入真实姓名" placeholder-class="field-placeholder" />
-          </view>
-        </view>
-
-        <view class="field-block">
-          <text class="field-label">联系电话</text>
-          <view class="field-shell">
-            <AppIcon name="phone" class="field-icon" size="24rpx" />
-            <input v-model.trim="form.phone" class="field-input" type="tel" maxlength="11" placeholder="请输入联系电话" placeholder-class="field-placeholder" />
-          </view>
-        </view>
-
-        <text v-if="errorMessage" class="register-error">{{ errorMessage }}</text>
-
-        <button class="register-button" :disabled="submitting" @click="handleSubmit">
-          {{ submitting ? '注册中...' : '注 册' }}
-        </button>
-
-        <view class="card-footer">
-          <text class="login-link" @click="goLogin">已有账号？去登录</text>
-        </view>
+      <view class="footer-links">
+        <text class="link" @click="goLogin">已有账号？去登录</text>
       </view>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import AppIcon from '../../src/components/AppIcon.vue'
-import loginHexUrl from '../../src/assets/login-hex.svg'
-import loginShieldUrl from '../../src/assets/login-shield.svg'
+import { reactive, ref } from 'vue'
 import { HttpResponseError } from '../../src/api/http'
 import { registerH5 } from '../../src/api/auth'
+import { register as residentRegister } from '../../src/api/resident'
 
-interface RegisterForm {
-  account: string
-  password: string
-  confirmPassword: string
-  realName: string
-  phone: string
-}
+type RoleType = 'RESIDENT' | 'GRID_WORKER'
 
-const form = reactive<RegisterForm>({
+const form = reactive({
+  role: 'RESIDENT' as RoleType,
   account: '',
   password: '',
   confirmPassword: '',
@@ -90,19 +85,14 @@ const form = reactive<RegisterForm>({
 })
 const submitting = ref(false)
 const errorMessage = ref('')
-const showPassword = ref(false)
 const MOBILE_PHONE_PATTERN = /^1[3-9]\d{9}$/
 
-const hexOverlayStyle = computed(() => ({
-  backgroundImage: `url(${loginHexUrl})`
-}))
-
 function goLogin() {
-  uni.navigateTo({ url: '/pages/login/index' })
+  uni.reLaunch({ url: '/pages/role-select/index' })
 }
 
 async function handleSubmit() {
-  if (!form.account || !form.password || !form.confirmPassword || !form.realName) {
+  if (!form.account || !form.password || !form.confirmPassword || !form.realName || !form.phone) {
     errorMessage.value = '请填写完整信息'
     return
   }
@@ -118,7 +108,7 @@ async function handleSubmit() {
     errorMessage.value = '两次密码不一致'
     return
   }
-  if (form.phone && !MOBILE_PHONE_PATTERN.test(form.phone)) {
+  if (!MOBILE_PHONE_PATTERN.test(form.phone)) {
     errorMessage.value = '请输入正确的手机号'
     return
   }
@@ -126,21 +116,25 @@ async function handleSubmit() {
   submitting.value = true
   errorMessage.value = ''
   try {
-    const result = await registerH5({
-      account: form.account,
-      password: form.password,
-      realName: form.realName,
-      phone: form.phone || undefined
-    })
-    uni.showToast({ title: '提交成功，等待审批', icon: 'success', duration: 3000 })
-    setTimeout(() => goLogin(), 2500)
+    if (form.role === 'RESIDENT') {
+      // 居民：即时开通，直接写入数据库
+      await residentRegister(form.account, form.password, form.realName, form.phone)
+      uni.showToast({ title: '注册成功！', icon: 'success', duration: 2000 })
+      setTimeout(() => goLogin(), 1200)
+    } else {
+      // 网格员：提交申请，待管理员审批通过后才可登录
+      await registerH5({
+        account: form.account,
+        password: form.password,
+        realName: form.realName,
+        phone: form.phone
+      })
+      uni.showToast({ title: '提交成功，等待审批', icon: 'success', duration: 3000 })
+      setTimeout(() => goLogin(), 2500)
+    }
   } catch (e: any) {
     console.error('注册失败:', e)
-    if (e instanceof HttpResponseError) {
-      errorMessage.value = e.message || '注册失败'
-    } else {
-      errorMessage.value = '注册失败，请稍后重试'
-    }
+    errorMessage.value = e instanceof HttpResponseError ? (e.message || '注册失败') : '注册失败，请稍后重试'
     uni.showToast({ title: errorMessage.value, icon: 'error', duration: 3000 })
   } finally {
     submitting.value = false
@@ -148,115 +142,88 @@ async function handleSubmit() {
 }
 </script>
 
-<style scoped>
+<style>
+/* 统一注册页 全局样式 */
 .register-page {
   min-height: 100vh;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40rpx;
-  position: relative;
-  overflow: hidden;
+  padding: 60rpx 48rpx;
+  box-sizing: border-box;
 }
-.register-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.overlay-hex {
-  background-size: cover;
-  background-position: center;
-  opacity: 0.1;
-}
-.overlay-glow {
-  background: radial-gradient(ellipse at top, rgba(87, 185, 255, 0.15) 0%, transparent 60%);
-}
-.register-shell {
-  width: 100%;
-  max-width: 600rpx;
-  position: relative;
-  z-index: 1;
-}
-.brand-block {
+.register-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 40rpx;
+  margin-bottom: 48rpx;
 }
-.brand-shield {
-  width: 120rpx;
-  margin-bottom: 16rpx;
-}
-.brand-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #eaf5ff;
-}
-.register-card {
-  background: rgba(6, 18, 31, 0.85);
-  border: 1px solid rgba(87, 185, 255, 0.2);
-  border-radius: 24rpx;
-  padding: 40rpx 32rpx;
-  backdrop-filter: blur(10px);
-}
-.field-block {
-  margin-bottom: 24rpx;
-}
-.field-label {
-  font-size: 24rpx;
-  color: #8db0d0;
-  margin-bottom: 8rpx;
-  display: block;
-}
-.field-shell {
-  display: flex;
-  align-items: center;
-  background: rgba(13, 25, 40, 0.8);
-  border: 1px solid rgba(87, 185, 255, 0.15);
-  border-radius: 12rpx;
-  padding: 16rpx 20rpx;
-}
-.field-icon {
-  margin-right: 16rpx;
-  color: #57b9ff;
-}
-.field-input {
-  flex: 1;
-  font-size: 28rpx;
-  color: #eaf5ff;
-}
-.field-action {
-  color: #57b9ff;
-  margin-left: 16rpx;
-}
-.register-error {
-  color: #ff4d4f;
-  font-size: 24rpx;
-  text-align: center;
-  display: block;
-  margin-bottom: 16rpx;
-}
-.register-button {
+.register-header .logo { font-size: 100rpx; margin-bottom: 24rpx; }
+.register-header .title { font-size: 40rpx; font-weight: 600; margin-bottom: 12rpx; color: #fff; }
+.register-header .subtitle { font-size: 26rpx; opacity: 0.85; color: #fff; }
+.register-form {
   width: 100%;
-  padding: 20rpx;
-  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
-  color: #fff;
+  max-width: 720rpx;
+  background: #fff;
+  border-radius: 32rpx;
+  padding: 48rpx 48rpx 56rpx;
+  box-shadow: 0 16rpx 64rpx rgba(0,0,0,0.1);
+}
+.form-item { margin-bottom: 24rpx; }
+.form-item .label { display: block; font-size: 26rpx; color: #374151; margin-bottom: 12rpx; font-weight: 500; }
+.form-item input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 32rpx;
+  border: 1px solid #d1d5db;
   border-radius: 12rpx;
   font-size: 30rpx;
-  font-weight: 600;
+  color: #111827;
+  background: #fff;
+  box-sizing: border-box;
+}
+.role-group { display: flex; gap: 20rpx; }
+.role-option {
+  flex: 1;
+  border: 2rpx solid #e5e7eb;
+  border-radius: 16rpx;
+  padding: 24rpx 20rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+.role-option.active {
+  border-color: #1890ff;
+  background: #e6f4ff;
+}
+.role-option .role-icon { font-size: 48rpx; margin-bottom: 8rpx; }
+.role-option .role-name { font-size: 30rpx; font-weight: 600; color: #111827; margin-bottom: 6rpx; }
+.role-option .role-desc { font-size: 20rpx; color: #6b7280; text-align: center; line-height: 1.4; }
+.approve-hint {
+  display: block;
+  font-size: 24rpx;
+  color: #fa8c16;
+  margin-bottom: 12rpx;
+}
+.btn-register {
+  width: 100%;
+  height: 90rpx;
+  line-height: 90rpx;
+  padding: 0;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  color: #ffffff;
   border: none;
+  border-radius: 12rpx;
+  font-size: 32rpx;
+  font-weight: 600;
   margin-top: 16rpx;
 }
-.register-button[disabled] {
-  opacity: 0.6;
-}
-.card-footer {
-  text-align: center;
-  margin-top: 24rpx;
-}
-.login-link {
-  font-size: 24rpx;
-  color: #57b9ff;
-}
+.btn-register::after { border: none; }
+.btn-register[disabled] { opacity: 0.6; }
+.error { color: #ff4d4f; font-size: 26rpx; text-align: center; margin-top: 20rpx; display: block; }
+.footer-links { text-align: center; margin-top: 32rpx; }
+.link { color: #1890ff; font-size: 26rpx; }
 </style>
