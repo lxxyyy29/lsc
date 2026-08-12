@@ -54,7 +54,12 @@
             <div v-show="openGroups.includes(group.name) || searchKey" class="group-items">
               <router-link v-for="item in group.items" :key="item.path" :to="item.path" class="sidebar-link sub-item" :class="{ active: currentPath === item.path }">
                 <span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;flex-shrink:0;" :style="currentPath === item.path ? { background: '#0284c7' } : {}"></span>
-                <span>{{ item.name }}</span>
+                <span style="flex:1;">{{ item.name }}</span>
+                <!-- 待处理角标（微信式红点） -->
+                <span v-if="item.badgeKey && badgeCounts[item.badgeKey] > 0"
+                      style="background:#ff4d4f;color:#fff;font-size:10px;border-radius:8px;padding:0 5px;min-width:16px;height:16px;line-height:16px;text-align:center;flex-shrink:0;">
+                  {{ badgeCounts[item.badgeKey] > 99 ? '99+' : badgeCounts[item.badgeKey] }}
+                </span>
               </router-link>
             </div>
           </div>
@@ -71,9 +76,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { getSession, login, logout } from './api'
+import { getSession, login, logout, getMenuBadges } from './api'
 import LoginView from './views/LoginView.vue'
 import NotificationBell from './components/NotificationBell.vue'
 
@@ -81,6 +86,21 @@ const session = ref(getSession())
 const route = useRoute()
 const currentPath = computed(() => route.path)
 const showUserMenu = ref(false)
+
+// 菜单角标：各模块待处理数量 + 定时轮询（30s，微信式红点）
+const badgeCounts = ref<Record<string, number>>({})
+let badgeTimer: number | undefined
+
+async function loadBadges() {
+  try {
+    const res = await getMenuBadges()
+    if (res && typeof res === 'object') {
+      badgeCounts.value = (res as Record<string, number>)
+    }
+  } catch (e) {
+    // 角标失败不影响页面，静默即可
+  }
+}
 
 // 分组菜单（大类 → 子功能）
 const menuGroups = [
@@ -94,10 +114,10 @@ const menuGroups = [
   {
     name: '事件工单', icon: 'fas fa-tasks',
     items: [
-      { path: '/events', name: '事件闭环处置' },
+      { path: '/events', name: '事件闭环处置', badgeKey: 'eventsPending' },
       { path: '/events/create', name: '创建事件' },
-      { path: '/work-orders', name: '工单中心' },
-      { path: '/audits', name: '审核中心' },
+      { path: '/work-orders', name: '工单中心', badgeKey: 'workOrdersPending' },
+      { path: '/audits', name: '审核中心', badgeKey: 'auditsPending' },
     ]
   },
   {
@@ -115,7 +135,7 @@ const menuGroups = [
   {
     name: '居民服务', icon: 'fas fa-users',
     items: [
-      { path: '/resident-reports', name: '居民上报' },
+      { path: '/resident-reports', name: '居民上报', badgeKey: 'residentReportsPending' },
       { path: '/repairs', name: '报修管理' },
       { path: '/policy-resources', name: '政策资源' },
     ]
@@ -207,6 +227,13 @@ function closeUserMenu() {
 // 点击外部关闭下拉菜单
 onMounted(() => {
   document.addEventListener('click', closeUserMenu)
+  loadBadges()
+  badgeTimer = window.setInterval(loadBadges, 30000)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeUserMenu)
+  if (badgeTimer) clearInterval(badgeTimer)
 })
 </script>
 

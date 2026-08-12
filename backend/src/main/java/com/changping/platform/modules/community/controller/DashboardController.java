@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -90,6 +91,30 @@ public class DashboardController {
         } catch (Exception e) {
             return ApiResponse.ok(Map.of("error", e.getMessage()));
         }
+    }
+
+    /**
+     * 菜单角标 — 各模块待处理数量（Web 侧边栏微信式红点）
+     * 登录用户即可访问（菜单可见即可看角标），无需看板权限
+     */
+    @GetMapping("/menu-badges")
+    public ApiResponse<Map<String, Object>> menuBadges() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        Map<String, Object> badges = new LinkedHashMap<>();
+        // 事件闭环处置：待审核 + 审核中 + 待派单
+        badges.put("eventsPending", countBy("SELECT COUNT(*) FROM biz_event WHERE status IN ('PENDING_AUDIT','IN_AUDIT','WAITING_DISPATCH')"));
+        // 工单中心：待接单 + 处理中
+        badges.put("workOrdersPending", countBy("SELECT COUNT(*) FROM biz_work_order WHERE status IN ('WAITING_ACCEPT','PROCESSING')"));
+        // 审核中心：待审核 + 审核中（与 AuditController 默认查询一致）
+        badges.put("auditsPending", countBy("SELECT COUNT(*) FROM biz_event WHERE status IN ('PENDING_AUDIT','IN_AUDIT')"));
+        // 居民上报：待审核
+        badges.put("residentReportsPending", countBy("SELECT COUNT(*) FROM cmn_resident_report WHERE status = 'PENDING'"));
+        return ApiResponse.ok(badges);
+    }
+
+    private long countBy(String sql) {
+        Long c = jdbcTemplate.queryForObject(sql, Long.class);
+        return c != null ? c : 0L;
     }
 
     private void requireDashboardPermission() {

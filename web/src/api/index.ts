@@ -87,6 +87,12 @@ export async function getDashboardOverview() {
   return http.get('/community/dashboard/overview')
 }
 
+// 菜单角标（微信式红点）：各模块待处理数量
+// 返回 { eventsPending, workOrdersPending, auditsPending, residentReportsPending }
+export async function getMenuBadges() {
+  return http.get('/community/dashboard/menu-badges')
+}
+
 export async function getGridStats() {
   return http.get('/community/dashboard/grid-stats')
 }
