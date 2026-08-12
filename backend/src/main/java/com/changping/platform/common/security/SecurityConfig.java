@@ -66,7 +66,7 @@ public class SecurityConfig {
                         .accessDeniedHandler((request, response, accessDeniedException) -> writeFailure(response, objectMapper, HttpServletResponse.SC_FORBIDDEN, "AUTH_PERMISSION_DENIED", "当前用户没有所需权限")))
                 .authorizeHttpRequests(authorize -> authorize
                         // 登录接口公开（注意：Spring Security 自动去掉 context-path /api 前缀）
-                        .requestMatchers("/auth/login", "/h5/auth/login", "/auth/logout", "/auth/register", "/auth/sms-code", "/auth/phone-login")
+                        .requestMatchers("/auth/login", "/h5/auth/login", "/auth/logout", "/auth/register", "/h5/auth/register", "/auth/sms-code", "/h5/auth/sms-code", "/auth/phone-login", "/h5/auth/phone-login")
                         .permitAll()
                         // 媒体文件访问公开（用于前端展示）
                         .requestMatchers("/media/files/**")
