@@ -119,6 +119,7 @@ const gridTree = ref<GridNode[]>([])
 const flatTree = ref<FlatNode[]>([])
 const foldedIds = ref<Set<number>>(new Set())
 const polygons = ref<Map<number, any>>(new Map())
+const defaultStyles = new Map<number, any>()
 const selectedId = ref<number | null>(null)
 const selectedGrid = ref<GridNode | null>(null)
 const currentPolygon = ref<any>(null)
@@ -192,6 +193,7 @@ async function reloadAll() {
 function clearPolylines() {
   polygons.value.forEach(p => p.setMap(null))
   polygons.value = new Map()
+  defaultStyles.clear()
   if (currentPolygon.value) {
     currentPolygon.value.setMap(null)
     currentPolygon.value = null
@@ -214,6 +216,7 @@ function drawAllGrids() {
           const poly = new AMapLib.value.Polygon({ path: coords, zIndex: 5, bubble: true, map: m, ...style })
           poly.on('click', () => selectGrid(n))
           polygons.value.set(n.id, poly)
+          defaultStyles.set(n.id, style)
         }
       }
       if (n.children?.length) draw(n.children)
@@ -234,9 +237,14 @@ function safeParse(json?: string): any[] | null {
 function highlight(id: number) {
   polygons.value.forEach((poly, pid) => {
     const active = pid === id
-    poly.setOptions(active
-      ? { fillOpacity: 0.3, strokeWeight: 3, zIndex: 10 }
-      : { fillOpacity: 0.06, strokeWeight: 1, zIndex: 5 })
+    if (active) {
+      const base = defaultStyles.get(pid) || {}
+      // 选中：保持层级色，仅加深
+      poly.setOptions({ fillColor: base.fillColor, strokeColor: base.strokeColor, fillOpacity: 0.25, strokeWeight: 3, zIndex: 10 })
+    } else {
+      // 非选中：恢复各层级默认样式，不统一覆盖
+      poly.setOptions(defaultStyles.get(pid) || { fillOpacity: 0.06, strokeWeight: 1, zIndex: 5 })
+    }
   })
 }
 
@@ -256,13 +264,13 @@ function fillForm(g: GridNode) {
   }
 }
 
-function selectGrid(g: GridNode) {
+function selectGrid(g: GridNode, skipHighlight = false) {
   if (editing.value) finishEditArea()
   if (drawing.value) cancelDraw()
   selectedId.value = g.id
   selectedGrid.value = g
   fillForm(g)
-  highlight(g.id)
+  if (!skipHighlight) highlight(g.id)
   const poly = polygons.value.get(g.id)
   if (poly) {
     map.value.setFitView([poly], false, [80, 80, 80, 80])
@@ -434,9 +442,9 @@ async function saveGrid() {
       alert('网格已创建')
     }
     await reloadAll()
-    // 定位到新/更新的网格
+    // 定位到新/更新的网格（视野+表单），不改变其样式，保持与同级网格一致
     const target = flatTree.value.find(n => n.gridName === payload.gridName)
-    if (target) selectGrid(target)
+    if (target) selectGrid(target, true)
     else resetForm()
   } catch (e: any) {
     alert(e?.message || '保存失败')
