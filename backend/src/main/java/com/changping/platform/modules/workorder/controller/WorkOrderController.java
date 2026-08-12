@@ -6,6 +6,7 @@ import com.changping.platform.modules.auth.security.PermissionGuard;
 import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.workorder.entity.WorkOrderEntity;
+import com.changping.platform.modules.workorder.service.SmartDispatchService;
 import com.changping.platform.modules.workorder.service.WorkOrderService;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ public class WorkOrderController {
     private final WorkOrderService workOrderService;
     private final PermissionGuard permissionGuard;
     private final CurrentUserService currentUserService;
+    private final SmartDispatchService smartDispatchService;
 
     /**
      * @Author tangxinglin
@@ -41,10 +43,12 @@ public class WorkOrderController {
     public WorkOrderController(
             WorkOrderService workOrderService,
             PermissionGuard permissionGuard,
-            CurrentUserService currentUserService) {
+            CurrentUserService currentUserService,
+            SmartDispatchService smartDispatchService) {
         this.workOrderService = workOrderService;
         this.permissionGuard = permissionGuard;
         this.currentUserService = currentUserService;
+        this.smartDispatchService = smartDispatchService;
     }
 
     /**
@@ -124,6 +128,29 @@ public class WorkOrderController {
         currentUserService.requireClientType(AuthService.ClientType.WEB);
         permissionGuard.require(PermissionCodes.API_WORKORDER_DISPATCH);
         return ApiResponse.ok(workOrderService.dispatch(eventId, request));
+    }
+
+    /**
+     * 智能派单建议：按派单规则推荐受理角色与人员（供派单弹窗展示）
+     */
+    @GetMapping("/dispatch-suggestion")
+    public ApiResponse<SmartDispatchService.Suggestion> dispatchSuggestion(@RequestParam Long eventId) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_WORKORDER_DISPATCH);
+        return ApiResponse.ok(smartDispatchService.suggest(eventId));
+    }
+
+    /**
+     * 一键智能派单：按规则自动选择推荐人派发工单
+     */
+    @PostMapping("/{eventId}/smart-dispatch")
+    public ApiResponse<WorkOrderEntity> smartDispatch(
+            @PathVariable Long eventId,
+            @RequestBody(required = false) Map<String, String> body) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_WORKORDER_DISPATCH);
+        String remark = body != null ? body.getOrDefault("remark", "") : "";
+        return ApiResponse.ok(smartDispatchService.smartDispatch(eventId, remark));
     }
 
     /**

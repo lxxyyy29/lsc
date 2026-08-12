@@ -518,7 +518,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO biz_process_instance (process_no, template_id, business_type, business_id, status, started_at, finished_at, created_at, updated_at) VALUES (NULL, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                    "INSERT INTO biz_process_instance (process_no, template_id, business_type, business_id, status, started_at, finished_at, created_at, updated_at) VALUES (?, NULL, ?, ?, ?, CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                     Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, "PI-WO-" + event.getId() + "-" + UUID.randomUUID());
             statement.setString(2, WORK_ORDER_BUSINESS_TYPE);

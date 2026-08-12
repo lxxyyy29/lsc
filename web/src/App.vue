@@ -117,6 +117,7 @@ const menuGroups = [
       { path: '/events', name: '事件闭环处置', badgeKey: 'eventsPending' },
       { path: '/events/create', name: '创建事件' },
       { path: '/work-orders', name: '工单中心', badgeKey: 'workOrdersPending' },
+      { path: '/dispatch-rules', name: '智能派单规则' },
       { path: '/audits', name: '审核中心', badgeKey: 'auditsPending' },
     ]
   },

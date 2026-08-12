@@ -63,6 +63,24 @@
       <div v-if="showDispatch" class="modal-overlay" @click.self="showDispatch = false">
         <div class="modal-box">
           <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">派发工单</h3>
+
+          <!-- 智能推荐卡片 -->
+          <div v-if="dispatchSuggestion" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="font-size:12px;background:#1890ff;color:#fff;border-radius:4px;padding:2px 8px;">⚡ 智能推荐</span>
+              <span style="font-size:14px;font-weight:600;color:#1e40af;">
+                {{ dispatchSuggestion.recommendedUserName || '暂无可用人员' }}
+              </span>
+              <span v-if="dispatchSuggestion.recommendedUserName" style="font-size:12px;color:#1e40af;background:#dbeafe;border-radius:4px;padding:2px 6px;">
+                {{ dispatchSuggestion.roleLabel }}
+              </span>
+            </div>
+            <p style="font-size:12px;color:#1e40af;line-height:1.6;">{{ dispatchSuggestion.reason }}</p>
+            <p v-if="dispatchSuggestion.candidates?.length" style="font-size:12px;color:#6b7280;margin-top:4px;">
+              候选（按待办量排序）：{{ dispatchSuggestion.candidates.map((c: any) => `${c.name}（待办${c.pendingCount}）`).join('、') }}
+            </p>
+          </div>
+
           <div class="form-group">
             <label class="form-label">选择受派人员 <span class="required">*</span></label>
             <select v-model="dispatchForm.assigneeUserId" class="form-select">
@@ -82,7 +100,8 @@
           </div>
           <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
             <button @click="showDispatch = false" class="btn btn-default">取消</button>
-            <button @click="handleDispatch" class="btn btn-primary">确认派单</button>
+            <button v-if="dispatchSuggestion?.recommendedUserId" @click="handleSmartDispatch" style="padding:8px 16px;border:none;border-radius:6px;background:#722ed1;color:#fff;font-size:13px;cursor:pointer;">⚡ 一键智能派单</button>
+            <button @click="handleDispatch" class="btn btn-primary">手动确认派单</button>
           </div>
         </div>
       </div>
@@ -110,7 +129,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getSystemUsers, archiveEvent } from '../api'
+import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getSystemUsers, archiveEvent, getDispatchSuggestion, smartDispatchEvent } from '../api'
 import { getEventTypeName } from '../utils/eventTypes'
 
 const route = useRoute()
@@ -124,6 +143,7 @@ const showClose = ref(false)
 const closeReason = ref('')
 const workers = ref<any[]>([])
 const dispatchForm = ref({ assigneeUserId: null as number | null, remark: '' })
+const dispatchSuggestion = ref<any>(null)
 
 // 重点事件类型 → 推荐两委干部(EVENT_OPERATOR)；其余简易事件 → 网格员(H5_WORKER)
 const SERIOUS_EVENT_TYPES = new Set([
@@ -235,6 +255,32 @@ async function handleDispatch() {
     showDispatch.value = false
     loadData()
   } catch (e: any) { alert(e?.message || '派单失败') }
+}
+
+// 打开派单弹窗时加载智能推荐
+watch(showDispatch, async (visible) => {
+  if (!visible) return
+  dispatchSuggestion.value = null
+  try {
+    dispatchSuggestion.value = await getDispatchSuggestion(Number(route.params.id))
+    // 推荐人有且当前未选中时，默认选中推荐人
+    if (dispatchSuggestion.value?.recommendedUserId && !dispatchForm.value.assigneeUserId) {
+      dispatchForm.value.assigneeUserId = dispatchSuggestion.value.recommendedUserId
+    }
+  } catch (e) {
+    dispatchSuggestion.value = null
+  }
+})
+
+// 一键智能派单：按规则自动分配推荐人
+async function handleSmartDispatch() {
+  if (!confirm('确认按智能推荐自动派单？')) return
+  try {
+    await smartDispatchEvent(Number(route.params.id), dispatchForm.value.remark)
+    showDispatch.value = false
+    alert('智能派单成功')
+    loadData()
+  } catch (e: any) { alert(e?.message || '智能派单失败') }
 }
 
 onMounted(loadData)

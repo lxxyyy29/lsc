@@ -15,6 +15,7 @@ const routes = [
   { path: '/ledger', component: () => import('../views/LedgerView.vue') },
   { path: '/drones', component: () => import('../views/DronesView.vue') },
   { path: '/work-orders', component: () => import('../views/WorkOrderView.vue') },
+  { path: '/dispatch-rules', component: () => import('../views/DispatchRuleView.vue') },
   { path: '/audits', component: () => import('../views/AuditView.vue') },
   { path: '/processes', component: () => import('../views/ProcessView.vue') },
   { path: '/reports', component: () => import('../views/ReportsView.vue') },

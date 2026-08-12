@@ -142,6 +142,32 @@ export async function dispatchEvent(id: number, data: { assigneeUserId: number; 
   return http.post(`/events/${id}/dispatch`, data)
 }
 
+// 智能分级派单：建议接口 + 一键智能派单
+export async function getDispatchSuggestion(eventId: number) {
+  return http.get('/work-orders/dispatch-suggestion', { params: { eventId } })
+}
+
+export async function smartDispatchEvent(eventId: number, remark?: string) {
+  return http.post(`/work-orders/${eventId}/smart-dispatch`, { remark: remark || '' })
+}
+
+// 派单规则管理（事件类型 → 受理角色）
+export async function getDispatchRules() {
+  return http.get('/dispatch-rules')
+}
+
+export async function createDispatchRule(data: any) {
+  return http.post('/dispatch-rules', data)
+}
+
+export async function updateDispatchRule(id: number, data: any) {
+  return http.put(`/dispatch-rules/${id}`, data)
+}
+
+export async function deleteDispatchRule(id: number) {
+  return http.delete(`/dispatch-rules/${id}`)
+}
+
 export async function archiveEvent(id: number) {
   return http.post(`/events/${id}/archive`)
 }
