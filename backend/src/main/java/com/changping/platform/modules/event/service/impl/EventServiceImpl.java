@@ -228,9 +228,13 @@ public class EventServiceImpl implements EventService {
                 EventStatus.DISPATCHED_TO_WORK_ORDER.name(),
                 EventStatus.IGNORED.name());
 
+        // 解析日期范围(支持 yyyy-MM-dd 或 ISO 时间格式)，结束日期取当天末尾保证全天包含
+        LocalDateTime start = parseStartDate(startDate);
+        LocalDateTime end = parseEndDate(endDate);
+
         // Get total count and current page directly from MongoDB (native pagination)
-        long total = alarmEventMongoService.countEvents(externalEventId, excludeStatuses);
-        List<AlarmEventDocument> pageDocuments = alarmEventMongoService.queryEvents(externalEventId, safePage, safeSize, excludeStatuses);
+        long total = alarmEventMongoService.countEvents(externalEventId, excludeStatuses, status, start, end);
+        List<AlarmEventDocument> pageDocuments = alarmEventMongoService.queryEvents(externalEventId, safePage, safeSize, excludeStatuses, status, start, end);
 
         if (pageDocuments.isEmpty()) {
             return PagedResult.of(List.of(), total, safePage, safeSize);
@@ -249,6 +253,52 @@ public class EventServiceImpl implements EventService {
                 .map(document -> toListVo(document, sqlEventMap.get(document.getExternalEventId()), workflowSnapshots))
                 .toList();
         return PagedResult.of(items, total, safePage, safeSize);
+    }
+
+    /**
+     * @Author tangxinglin
+     * @Description //解析开始日期字符串，支持 yyyy-MM-dd 或 ISO 日期时间格式
+     * @Date 2026/08/12 10:00
+     * @Param [value 日期字符串(可为空)]
+     * @return LocalDateTime 解析结果，非法或为空时返回 null
+     */
+    private LocalDateTime parseStartDate(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String v = value.trim();
+        try {
+            return LocalDateTime.parse(v);
+        } catch (Exception ignored) {
+            try {
+                return java.time.LocalDate.parse(v).atStartOfDay();
+            } catch (Exception ignored2) {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * @Author tangxinglin
+     * @Description //解析结束日期字符串，日期格式时取当天 23:59:59.999，保证当天数据包含在内
+     * @Date 2026/08/12 10:00
+     * @Param [value 日期字符串(可为空)]
+     * @return LocalDateTime 解析结果，非法或为空时返回 null
+     */
+    private LocalDateTime parseEndDate(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String v = value.trim();
+        try {
+            return LocalDateTime.parse(v);
+        } catch (Exception ignored) {
+            try {
+                return java.time.LocalDate.parse(v).atTime(java.time.LocalTime.MAX);
+            } catch (Exception ignored2) {
+                return null;
+            }
+        }
     }
 
     /**

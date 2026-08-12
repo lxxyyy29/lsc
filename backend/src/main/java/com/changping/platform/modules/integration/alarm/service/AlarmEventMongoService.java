@@ -7,12 +7,18 @@ import com.changping.platform.modules.integration.alarm.dto.NormalizedAlarmEvent
 import com.changping.platform.modules.integration.alarm.repository.AlarmEventRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -27,17 +33,19 @@ public class AlarmEventMongoService {
 
     private final AlarmEventRepository alarmEventRepository;
     private final AlarmIntegrationProperties properties;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * @Author tangxinglin
-     * @Description //构造函数，注入告警事件MongoDB仓库及集成配置属性
+     * @Description //构造函数，注入告警事件MongoDB仓库、集成配置属性及MongoTemplate
      * @Date 2026/04/18 10:00
-     * @Param [alarmEventRepository 告警事件MongoDB仓库, properties 告警集成配置属性]
+     * @Param [alarmEventRepository 告警事件MongoDB仓库, properties 告警集成配置属性, mongoTemplate MongoDB模板]
      * @return void
      */
-    public AlarmEventMongoService(AlarmEventRepository alarmEventRepository, AlarmIntegrationProperties properties) {
+    public AlarmEventMongoService(AlarmEventRepository alarmEventRepository, AlarmIntegrationProperties properties, MongoTemplate mongoTemplate) {
         this.alarmEventRepository = alarmEventRepository;
         this.properties = properties;
+        this.mongoTemplate = mongoTemplate;
     }
 
     /**
@@ -249,6 +257,68 @@ public class AlarmEventMongoService {
             return alarmEventRepository.countByWorkflowStatusCurrentStatusNotIn(excludeStatuses);
         }
         return alarmEventRepository.count();
+    }
+
+    /**
+     * @Author tangxinglin
+     * @Description //分页查询告警事件列表，支持按外部事件ID模糊过滤、排除指定工作流状态、按状态与发生时间范围过滤
+     * @Date 2026/08/12 10:00
+     * @Param [externalEventId 外部事件ID模糊关键字(可选), page 页码(从1开始), size 每页条数, excludeStatuses 需要排除的工作流状态(可为空), status 工作流状态精确过滤(可为空), startDate 开始时间(可为空), endDate 结束时间(可为空)]
+     * @return List<AlarmEventDocument> 告警事件文档列表
+     */
+    public List<AlarmEventDocument> queryEvents(String externalEventId, int page, int size,
+                                                Collection<String> excludeStatuses, String status,
+                                                LocalDateTime startDate, LocalDateTime endDate) {
+        int safePage = Math.max(page - 1, 0);
+        int safeSize = Math.max(1, Math.min(size, 500));
+        Query query = new Query(buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate))
+                .with(PageRequest.of(safePage, safeSize,
+                        Sort.by(Sort.Order.desc("occurredAt"), Sort.Order.desc("createdAt"))));
+        return mongoTemplate.find(query, AlarmEventDocument.class);
+    }
+
+    /**
+     * @Author tangxinglin
+     * @Description //统计告警事件总数，支持按外部事件ID模糊过滤、排除指定工作流状态、按状态与发生时间范围过滤
+     * @Date 2026/08/12 10:00
+     * @Param [externalEventId 外部事件ID模糊关键字(可选), excludeStatuses 需要排除的工作流状态(可为空), status 工作流状态精确过滤(可为空), startDate 开始时间(可为空), endDate 结束时间(可为空)]
+     * @return long 事件总数
+     */
+    public long countEvents(String externalEventId, Collection<String> excludeStatuses, String status,
+                            LocalDateTime startDate, LocalDateTime endDate) {
+        return mongoTemplate.count(new Query(buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate)),
+                AlarmEventDocument.class);
+    }
+
+    /**
+     * @Author tangxinglin
+     * @Description //构建告警事件查询条件：外部事件ID模糊、排除状态、状态精确匹配、发生时间范围
+     * @Date 2026/08/12 10:00
+     * @Param [externalEventId 外部事件ID模糊关键字(可选), excludeStatuses 需要排除的工作流状态(可为空), status 工作流状态精确过滤(可为空), startDate 开始时间(可为空), endDate 结束时间(可为空)]
+     * @return Criteria MongoDB查询条件
+     */
+    private Criteria buildCriteria(String externalEventId, Collection<String> excludeStatuses, String status,
+                                   LocalDateTime startDate, LocalDateTime endDate) {
+        List<Criteria> ands = new ArrayList<>();
+        if (StringUtils.hasText(externalEventId)) {
+            ands.add(Criteria.where("externalEventId").regex(Pattern.quote(externalEventId.trim()), "i"));
+        }
+        if (excludeStatuses != null && !excludeStatuses.isEmpty()) {
+            ands.add(Criteria.where("workflowStatus.currentStatus").nin(excludeStatuses));
+        }
+        if (StringUtils.hasText(status)) {
+            ands.add(Criteria.where("workflowStatus.currentStatus").is(status.trim()));
+        }
+        if (startDate != null) {
+            ands.add(Criteria.where("occurredAt").gte(startDate));
+        }
+        if (endDate != null) {
+            ands.add(Criteria.where("occurredAt").lte(endDate));
+        }
+        if (ands.isEmpty()) {
+            return new Criteria();
+        }
+        return new Criteria().andOperator(ands.toArray(new Criteria[0]));
     }
 
     /**
