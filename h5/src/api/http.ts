@@ -43,7 +43,7 @@ function resolveApiBaseUrl() {
   const envValue = (globalThis as { __H5_API_BASE_URL__?: string }).__H5_API_BASE_URL__
   if (typeof envValue === 'string' && envValue.trim().length > 0) return envValue.trim()
   // #ifdef MP-WEIXIN
-  return 'https://drone.kfktec.cn:8768/api/h5'
+  return 'https://drone.kfktec.cn:8443/api/h5'
   // #endif
   return '/api/h5'
 }

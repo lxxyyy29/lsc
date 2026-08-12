@@ -69,7 +69,7 @@ function resolveSharedApiBaseUrl(): string {
     h5Base = envValue.trim()
   } else {
     // #ifdef MP-WEIXIN
-    h5Base = 'https://drone.kfktec.cn:8768/api/h5'
+    h5Base = 'https://drone.kfktec.cn:8443/api/h5'
     // #endif
     // #ifndef MP-WEIXIN
     h5Base = '/api/h5'

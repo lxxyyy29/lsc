@@ -9,7 +9,7 @@ export interface UploadedFile {
 
 function resolveUploadBaseUrl(): string {
   // #ifdef MP-WEIXIN
-  return 'https://drone.kfktec.cn:8768/api'
+  return 'https://drone.kfktec.cn:8443/api'
   // #endif
   // #ifndef MP-WEIXIN
   return '/api'
@@ -46,8 +46,9 @@ export async function fetchAccessPrefix(): Promise<string> {
 
 function ensureHttps(url: string): string {
   // #ifdef MP-WEIXIN
-  url = url.replace('http://8.137.79.139:8768', 'https://drone.kfktec.cn:8768')
-  url = url.replace('http://8.135.237.224:9001', 'https://drone.kfktec.cn:8768/minio-proxy')
+  url = url.replace('http://8.137.79.139:8768', 'https://drone.kfktec.cn:8443')
+  url = url.replace('http://8.135.237.224:9001', 'https://drone.kfktec.cn:8443/minio-proxy')
+  url = url.replace('http://127.0.0.1:8768', 'https://drone.kfktec.cn:8443/minio')
   return url
   // #endif
   // #ifndef MP-WEIXIN

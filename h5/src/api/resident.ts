@@ -100,7 +100,7 @@ export function clearResidentSession() {
 
 function resolveApiBaseUrl() {
   // #ifdef MP-WEIXIN
-  return 'https://drone.kfktec.cn:8768/api'
+  return 'https://drone.kfktec.cn:8443/api'
   // #endif
   // #ifndef MP-WEIXIN
   return '/api'

@@ -18,7 +18,7 @@ webApi.interceptors.request.use((config) => {
 // #ifdef MP-WEIXIN
 /** 小程序端：调用 /api 前缀的 Web API（H5 专用接口在小程序同样使用），走 uni.request */
 function resolveWebApiBase(): string {
-  return 'https://drone.kfktec.cn:8768/api'
+  return 'https://drone.kfktec.cn:8443/api'
 }
 
 function requestWeb<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, data?: unknown): Promise<T> {

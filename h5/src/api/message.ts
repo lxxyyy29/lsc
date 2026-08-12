@@ -25,7 +25,7 @@ export interface MessageItem {
 // 消息互通 API 位于 /api/messaging（非 /api/h5），需要覆盖 baseURL
 // 小程序端必须使用绝对 HTTPS 地址
 // #ifdef MP-WEIXIN
-const webApiConfig = { baseURL: 'https://drone.kfktec.cn:8768/api' }
+const webApiConfig = { baseURL: 'https://drone.kfktec.cn:8443/api' }
 // #endif
 // #ifndef MP-WEIXIN
 const webApiConfig = { baseURL: '/api' }

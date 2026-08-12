@@ -153,7 +153,7 @@ function chooseLocation() {
 /** 媒体上传基址：小程序用绝对 HTTPS 域名，H5 用相对路径走代理 */
 function resolveMediaBaseUrl(): string {
   // #ifdef MP-WEIXIN
-  return 'https://drone.kfktec.cn:8768'
+  return 'https://drone.kfktec.cn:8443'
   // #endif
   // #ifndef MP-WEIXIN
   return ''

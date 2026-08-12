@@ -118,7 +118,7 @@ function loadMyGridIds(): Promise<Set<number>> {
   return new Promise((resolve) => {
     uni.request({
       // #ifdef MP-WEIXIN
-      url: 'https://drone.kfktec.cn:8768/api/community/grids/h5/my-grid',
+      url: 'https://drone.kfktec.cn:8443/api/community/grids/h5/my-grid',
       // #endif
       // #ifndef MP-WEIXIN
       url: '/api/community/grids/h5/my-grid',
@@ -389,7 +389,7 @@ async function loadEvents() {
     const res: any = await uni.request({
       // 小程序端必须使用绝对 HTTPS 地址（相对路径 invalid url）
       // #ifdef MP-WEIXIN
-      url: 'https://drone.kfktec.cn:8768/api/events/h5/map-points',
+      url: 'https://drone.kfktec.cn:8443/api/events/h5/map-points',
       // #endif
       // #ifndef MP-WEIXIN
       url: '/api/events/h5/map-points',
