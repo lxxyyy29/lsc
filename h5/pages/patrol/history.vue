@@ -30,7 +30,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.container { padding: 20px; background: #030913; min-height: 100vh; }
+.container { padding: 20px 20px calc(208rpx + env(safe-area-inset-bottom)); background: #030913; min-height: 100vh; }
 .hero-card { background: linear-gradient(135deg, #0a2a4a, #0d3866); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
 .hero-title { font-size: 22px; font-weight: bold; color: #eaf5ff; }
 .hero-subtitle { font-size: 13px; color: #7ea4c8; margin-top: 4px; }
