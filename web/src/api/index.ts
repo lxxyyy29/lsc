@@ -101,6 +101,19 @@ export async function getGridTree() {
   return http.get('/community/grids/tree')
 }
 
+// 网格管理：新增/更新/删除（Web 管理端手动调整网格区域与数量）
+export async function createGrid(data: any) {
+  return http.post('/community/grids', data)
+}
+
+export async function updateGrid(id: number, data: any) {
+  return http.put(`/community/grids/${id}`, data)
+}
+
+export async function deleteGrid(id: number) {
+  return http.delete(`/community/grids/${id}`)
+}
+
 export async function getEvents(params?: { page?: number; size?: number; status?: string; urgencyLevel?: string; startDate?: string; endDate?: string; areaId?: number }) {
   return http.get('/events', { params: { page: 1, size: 20, ...params } })
 }

@@ -124,6 +124,7 @@ const menuGroups = [
     name: '网格治理', icon: 'fas fa-map-marked-alt',
     items: [
       { path: '/gis', name: 'GIS网格可视化' },
+      { path: '/grid-manage', name: '网格管理' },
       { path: '/population', name: '实有人口库' },
       { path: '/buildings', name: '房屋/出租屋库' },
       { path: '/places', name: '场所资源库' },

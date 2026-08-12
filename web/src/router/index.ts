@@ -5,6 +5,7 @@ const routes = [
   { path: '/login', component: () => import('../views/LoginView.vue') },
   { path: '/', component: () => import('../views/DashboardView.vue') },
   { path: '/gis', component: () => import('../views/GISView.vue') },
+  { path: '/grid-manage', component: () => import('../views/GridManageView.vue') },
   { path: '/population', component: () => import('../views/PopulationView.vue') },
   { path: '/buildings', component: () => import('../views/BuildingsView.vue') },
   { path: '/places', component: () => import('../views/PlacesView.vue') },
