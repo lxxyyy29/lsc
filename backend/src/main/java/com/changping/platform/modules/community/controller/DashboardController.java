@@ -1,6 +1,7 @@
 package com.changping.platform.modules.community.controller;
 
 import com.changping.platform.common.response.ApiResponse;
+import com.changping.platform.modules.auth.model.AuthenticatedUser;
 import com.changping.platform.modules.auth.security.PermissionCodes;
 import com.changping.platform.modules.auth.security.PermissionGuard;
 import com.changping.platform.modules.auth.service.AuthService;
@@ -8,6 +9,8 @@ import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.community.mapper.DashboardMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -95,27 +98,51 @@ public class DashboardController {
 
     /**
      * 菜单角标 — 各模块待处理数量（Web 侧边栏微信式红点）
-     * 登录用户即可访问（菜单可见即可看角标），无需看板权限
+     * 微信式语义：点击进入页面即已读（记录已读时间），仅统计已读时间之后新增的待处理记录；
+     * 从未已读过的模块显示全部待处理数量。
      */
     @GetMapping("/menu-badges")
     public ApiResponse<Map<String, Object>> menuBadges() {
-        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        AuthenticatedUser user = currentUserService.requireClientType(AuthService.ClientType.WEB);
         Map<String, Object> badges = new LinkedHashMap<>();
-        // 事件闭环处置：待审核 + 审核中 + 待派单
-        badges.put("eventsPending", countBy("SELECT COUNT(*) FROM biz_event WHERE status IN ('PENDING_AUDIT','IN_AUDIT','WAITING_DISPATCH')"));
-        // 工单中心：待接单 + 处理中
-        badges.put("workOrdersPending", countBy("SELECT COUNT(*) FROM biz_work_order WHERE status IN ('WAITING_ACCEPT','PROCESSING')"));
-        // 审核中心：待审核 + 审核中（与 AuditController 默认查询一致）
-        badges.put("auditsPending", countBy("SELECT COUNT(*) FROM biz_event WHERE status IN ('PENDING_AUDIT','IN_AUDIT')"));
-        // 居民上报：待审核
-        badges.put("residentReportsPending", countBy("SELECT COUNT(*) FROM cmn_resident_report WHERE status = 'PENDING'"));
-        // 趋势预判：待处理预警
-        badges.put("trendAlerts", countBy("SELECT COUNT(*) FROM biz_trend_alert WHERE status = 'OPEN'"));
+        // 事件闭环处置：待审核 + 审核中 + 待派单（已读后新增）
+        badges.put("eventsPending", countUnread(user.id(), "eventsPending", "biz_event",
+                "status IN ('PENDING_AUDIT','IN_AUDIT','WAITING_DISPATCH')"));
+        // 工单中心：待接单 + 处理中（已读后新增）
+        badges.put("workOrdersPending", countUnread(user.id(), "workOrdersPending", "biz_work_order",
+                "status IN ('WAITING_ACCEPT','PROCESSING')"));
+        // 审核中心：待审核 + 审核中（与 AuditController 默认查询一致，已读后新增）
+        badges.put("auditsPending", countUnread(user.id(), "auditsPending", "biz_event",
+                "status IN ('PENDING_AUDIT','IN_AUDIT')"));
+        // 居民上报：待审核（已读后新增）
+        badges.put("residentReportsPending", countUnread(user.id(), "residentReportsPending", "cmn_resident_report",
+                "status = 'PENDING'"));
+        // 趋势预判：待处理预警（已读后新增）
+        badges.put("trendAlerts", countUnread(user.id(), "trendAlerts", "biz_trend_alert",
+                "status = 'OPEN'"));
         return ApiResponse.ok(badges);
     }
 
-    private long countBy(String sql) {
-        Long c = jdbcTemplate.queryForObject(sql, Long.class);
+    /**
+     * 标记角标已读（点击进入对应页面时前端调用）
+     */
+    @PostMapping("/badges/{badgeKey}/read")
+    public ApiResponse<Boolean> markBadgeRead(@PathVariable String badgeKey) {
+        AuthenticatedUser user = currentUserService.requireClientType(AuthService.ClientType.WEB);
+        jdbcTemplate.update(
+            "INSERT INTO biz_badge_read (user_id, badge_key, read_at, created_at, updated_at) " +
+            "VALUES (?, ?, NOW(), NOW(), NOW()) " +
+            "ON DUPLICATE KEY UPDATE read_at = NOW(), updated_at = NOW()",
+            user.id(), badgeKey);
+        return ApiResponse.ok(true);
+    }
+
+    /** 统计某模块在用户已读时间之后新增的待处理记录数 */
+    private long countUnread(Long userId, String badgeKey, String table, String whereSql) {
+        String readAtSubquery = "IFNULL((SELECT read_at FROM biz_badge_read WHERE user_id = ? AND badge_key = ?), '1970-01-01 00:00:00')";
+        Long c = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM " + table + " WHERE " + whereSql + " AND created_at > " + readAtSubquery,
+            Long.class, userId, badgeKey);
         return c != null ? c : 0L;
     }
 

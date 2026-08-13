@@ -78,7 +78,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { getSession, login, logout, getMenuBadges } from './api'
+import { getSession, login, logout, getMenuBadges, markBadgeRead } from './api'
 import LoginView from './views/LoginView.vue'
 import NotificationBell from './components/NotificationBell.vue'
 
@@ -90,6 +90,23 @@ const showUserMenu = ref(false)
 // 菜单角标：各模块待处理数量 + 定时轮询（30s，微信式红点）
 const badgeCounts = ref<Record<string, number>>({})
 let badgeTimer: number | undefined
+
+// 路径 → 角标KEY：进入对应页面即标记已读（红点消失，有新增才再亮）
+const pathBadgeMap: Record<string, string> = {
+  '/events': 'eventsPending',
+  '/work-orders': 'workOrdersPending',
+  '/audits': 'auditsPending',
+  '/resident-reports': 'residentReportsPending',
+  '/trend-alerts': 'trendAlerts'
+}
+
+watch(currentPath, (path) => {
+  const key = pathBadgeMap[path]
+  if (key && badgeCounts.value[key] > 0) {
+    badgeCounts.value[key] = 0
+    markBadgeRead(key).catch(() => {})
+  }
+})
 
 async function loadBadges() {
   try {

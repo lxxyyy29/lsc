@@ -66,6 +66,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import GridWorkerTabBar from '../../src/components/GridWorkerTabBar.vue'
 import { locateWithFallback } from '../../src/utils/geolocation'
 import { getH5Session } from '../../src/api/auth'
@@ -192,8 +193,10 @@ let AMapRef: any = null
 let mapMarkers: any[] = []
 let locateMarker: any = null
 let myGridPolygons: any[] = []
+let allGridPolygons: any[] = []
 let communityBounds: any = null
 let myGridBounds: any = null
+let focusedOnce = false
 
 function getToken() {
   return getH5Session()?.token || ''
@@ -262,6 +265,7 @@ function drawGridPolygons(tree: GridNode[], myGridIds: Set<number>) {
           map: mapInstance
         })
         polygon.on('click', () => { selectedGrid.value = node })
+        allGridPolygons.push(polygon)
         if (isMine) {
           myGridPolygons.push(polygon)
           if (!myGridBounds) myGridBounds = boundsOfCoords(coords)
@@ -284,31 +288,92 @@ async function initMap() {
     })
     mapInstance.on('click', () => { selectedGrid.value = null })
 
-    // 并行加载：网格树 + 我的网格
-    const [treeRes, myRes]: any[] = await Promise.all([
-      uni.request({ url: '/api/community/grids/h5/tree', method: 'GET', header: { Authorization: `Bearer ${getToken()}` } }),
-      uni.request({ url: '/api/community/grids/h5/my-grid', method: 'GET', header: { Authorization: `Bearer ${getToken()}` } })
-    ])
-
-    const tree: GridNode[] = (treeRes.data && treeRes.data.code === 'OK') ? (treeRes.data.data || []) : []
-    const myGrids: GridNode[] = (myRes.data && myRes.data.code === 'OK') ? (myRes.data.data || []) : []
-
-    const myGridIds = new Set(myGrids.map(g => g.id))
-    drawGridPolygons(tree, myGridIds)
-
-    if (myGrids.length > 0) {
-      hasMyGrid.value = true
-      myGridName.value = myGrids.length === 1 ? myGrids[0].gridName : `我的网格（${myGrids.length}）`
-      viewMode.value = 'mine'
-      // 网格员打开地图先定位到自己负责的网格范围
-      focusGrid(myGrids[0])
-    } else if (communityBounds) {
-      fitCommunity()
-    }
+    // 网格边界绘制（首次定位我的网格；后续 onShow 刷新保持与 Web 端同步）
+    await loadGridBoundaries()
   } catch (e) {
     console.error('地图初始化失败:', e)
     loadError.value = true
   }
+}
+
+/** 递归在树中查找我的网格节点（网格员分配的多为 3 级小网格，位于 children 中） */
+function findMyGrids(tree: GridNode[], ids: Set<number>): GridNode[] {
+  const found: GridNode[] = []
+  const walk = (nodes: GridNode[]) => {
+    for (const node of nodes) {
+      if (ids.has(node.id)) found.push(node)
+      if (node.children) walk(node.children)
+    }
+  }
+  walk(tree)
+  return found
+}
+
+/**
+ * 加载/刷新网格边界：每次页面显示时调用，重新拉取网格树重绘多边形，
+ * 确保 Web 端调整网格区域/数量后，小程序地图同步生效。
+ */
+async function loadGridBoundaries() {
+  // #ifdef MP-WEIXIN
+  try {
+    const [tree, myGridIds] = await Promise.all([getGridTree(), loadMyGridIds()])
+    refreshMpPolygons(tree as GridNode[], myGridIds)
+    const mine = findMyGrids(tree as GridNode[], myGridIds)
+    if (mine.length > 0) {
+      hasMyGrid.value = true
+      myGridName.value = mine.length === 1 ? mine[0].gridName : `我的网格（${mine.length}）`
+    } else {
+      hasMyGrid.value = false
+      myGridName.value = ''
+    }
+  } catch (e) {
+    console.error('加载网格边界失败:', e)
+  }
+  // #endif
+  // #ifndef MP-WEIXIN
+  if (!mapInstance || !AMapRef) return
+  try {
+    const [treeRes, myRes]: any[] = await Promise.all([
+      uni.request({ url: '/api/community/grids/h5/tree', method: 'GET', header: { Authorization: `Bearer ${getToken()}` } }),
+      uni.request({ url: '/api/community/grids/h5/my-grid', method: 'GET', header: { Authorization: `Bearer ${getToken()}` } })
+    ])
+    const tree: GridNode[] = (treeRes.data && treeRes.data.code === 'OK') ? (treeRes.data.data || []) : []
+    const myGrids: GridNode[] = (myRes.data && myRes.data.code === 'OK') ? (myRes.data.data || []) : []
+    // 清除旧多边形后重绘（Web 端调整网格后此处即同步）
+    clearGridPolygons()
+    const myGridIds = new Set(myGrids.map(g => g.id))
+    drawGridPolygons(tree, myGridIds)
+    if (myGrids.length > 0) {
+      hasMyGrid.value = true
+      myGridName.value = myGrids.length === 1 ? myGrids[0].gridName : `我的网格（${myGrids.length}）`
+    } else {
+      hasMyGrid.value = false
+      myGridName.value = ''
+    }
+    if (!focusedOnce) {
+      focusedOnce = true
+      if (myGrids.length > 0) {
+        // 网格员打开地图先定位到自己负责的网格范围
+        focusGrid(myGrids[0])
+      } else if (communityBounds) {
+        fitCommunity()
+      }
+    }
+  } catch (e) {
+    console.error('刷新网格边界失败:', e)
+  }
+  // #endif
+}
+
+/** 清除已绘制的网格多边形（刷新时重绘用） */
+function clearGridPolygons() {
+  if (mapInstance && AMapRef) {
+    allGridPolygons.forEach(p => mapInstance.remove(p))
+  }
+  allGridPolygons = []
+  myGridPolygons = []
+  myGridBounds = null
+  communityBounds = null
 }
 
 function fitCommunity() {
@@ -452,16 +517,12 @@ onMounted(async () => {
   // #ifndef MP-WEIXIN
   await initMap()
   // #endif
-  // #ifdef MP-WEIXIN
-  // 小程序端：加载网格树绘制边界多边形 + 我的网格高亮
-  try {
-    const [tree, myGridIds] = await Promise.all([getGridTree(), loadMyGridIds()])
-    refreshMpPolygons(tree as GridNode[], myGridIds)
-  } catch (e) {
-    console.error('加载网格边界失败:', e)
-  }
-  // #endif
   loadEvents()
+})
+
+// 页面每次显示时刷新网格边界：Web 端调整网格区域/数量后，切回本页即可看到最新地图
+onShow(() => {
+  loadGridBoundaries()
 })
 
 onUnmounted(() => {

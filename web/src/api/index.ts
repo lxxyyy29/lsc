@@ -88,9 +88,14 @@ export async function getDashboardOverview() {
 }
 
 // 菜单角标（微信式红点）：各模块待处理数量
-// 返回 { eventsPending, workOrdersPending, auditsPending, residentReportsPending }
+// 返回 { eventsPending, workOrdersPending, auditsPending, residentReportsPending, trendAlerts }
 export async function getMenuBadges() {
   return http.get('/community/dashboard/menu-badges')
+}
+
+// 标记菜单角标已读（进入对应页面时调用，红点消失，有新增才再亮）
+export async function markBadgeRead(badgeKey: string) {
+  return http.post(`/community/dashboard/badges/${badgeKey}/read`)
 }
 
 export async function getGridStats() {
