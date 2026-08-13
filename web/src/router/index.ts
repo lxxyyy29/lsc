@@ -14,6 +14,7 @@ const routes = [
   { path: '/events/:id', component: () => import('../views/EventDetailView.vue') },
   { path: '/ledger', component: () => import('../views/LedgerView.vue') },
   { path: '/drones', component: () => import('../views/DronesView.vue') },
+  { path: '/video', component: () => import('../views/VideoView.vue') },
   { path: '/work-orders', component: () => import('../views/WorkOrderView.vue') },
   { path: '/dispatch-rules', component: () => import('../views/DispatchRuleView.vue') },
     { path: '/trend-alerts', component: () => import('../views/TrendAlertView.vue') },

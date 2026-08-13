@@ -173,6 +173,11 @@ public final class PermissionCodes {
     /** 查看无人机媒体文件接口权限 */
     public static final String API_DRONE_MEDIA_FILES = "api:drone:media:files";
 
+    /** 查看视频监控点位列表接口权限 */
+    public static final String API_VIDEO_CAMERA_LIST = "api:video:camera:list";
+    /** 管理视频监控点位（增删改/转流）接口权限 */
+    public static final String API_VIDEO_CAMERA_MANAGE = "api:video:camera:manage";
+
     /** 网格治理目录权限 */
     public static final String CATALOG_COMMUNITY = "catalog:community";
     /** 网格治理-GIS网格可视化菜单权限 */

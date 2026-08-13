@@ -173,6 +173,8 @@ services:
       - "${BACKEND_PORT:-10081}:8080"
     volumes:
       - /home/docker/uav/changping/uploads:/app/uploads
+      # 固定摄像头 HLS 转流目录（宿主机 ffmpeg 输出，后端代理提供浏览器播放）
+      - /opt/zhsq/video-hls:/app/video-hls
     depends_on:
       changping-mysql:
         condition: service_healthy

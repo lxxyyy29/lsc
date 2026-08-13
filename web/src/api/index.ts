@@ -638,4 +638,45 @@ export async function getGridWorkers() {
   return http.get('/messaging/workers')
 }
 
+// ==================== 固定摄像头视频轮巡 ====================
+
+export async function getVideoCameras(params?: {
+  keyword?: string
+  gridId?: number
+  status?: string
+  page?: number
+  size?: number
+}) {
+  return http.get('/video/cameras', { params })
+}
+
+export async function getVideoCameraStatistics() {
+  return http.get('/video/cameras/statistics')
+}
+
+export async function createVideoCamera(data: Record<string, any>) {
+  return http.post('/video/cameras', data)
+}
+
+export async function updateVideoCamera(id: number, data: Record<string, any>) {
+  return http.put(`/video/cameras/${id}`, data)
+}
+
+export async function deleteVideoCamera(id: number) {
+  return http.delete(`/video/cameras/${id}`)
+}
+
+export async function getVideoCameraStream(id: number) {
+  return http.get(`/video/cameras/${id}/stream`)
+}
+
+// 录像回放：日期列表 / 按日录像分段列表（播放走 fetch blob 带认证头）
+export async function getVideoRecordDates(id: number) {
+  return http.get(`/video/cameras/${id}/records/dates`)
+}
+
+export async function getVideoRecords(id: number, date: string) {
+  return http.get(`/video/cameras/${id}/records`, { params: { date } })
+}
+
 export default http

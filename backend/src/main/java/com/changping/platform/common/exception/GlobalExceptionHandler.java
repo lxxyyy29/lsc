@@ -69,6 +69,15 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理业务参数校验异常（Service 层抛出的 IllegalArgumentException），返回 400 带具体原因
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException exception) {
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.fail("PARAM_ERROR", exception.getMessage()));
+    }
+
+    /**
      * 处理请求体解析失败（如 JSON 格式错误、缺少请求体）
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
