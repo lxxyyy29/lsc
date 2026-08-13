@@ -168,6 +168,104 @@ export async function deleteDispatchRule(id: number) {
   return http.delete(`/dispatch-rules/${id}`)
 }
 
+// 趋势预判/反复投诉自动预警
+// 自动扫描：同一网格同类型事件 7 天内 ≥3 起、同一地点 7 天内 ≥2 次 → 预警
+export async function getTrendAlerts(params?: { status?: string; dimension?: string; page?: number; size?: number }) {
+  return http.get('/trend-alerts', { params })
+}
+
+export async function getTrendAlertStatistics() {
+  return http.get('/trend-alerts/statistics')
+}
+
+export async function scanTrendAlerts() {
+  return http.post('/trend-alerts/scan')
+}
+
+export async function handleTrendAlert(id: number, remark: string) {
+  return http.post(`/trend-alerts/${id}/handle`, { remark })
+}
+
+// ==================== 爱卫/蚊媒管控（孳生地红黄绿+消杀+卫生监测） ====================
+
+export async function getMosquitoSites(params?: { status?: string; level?: string; page?: number; size?: number }) {
+  return http.get('/community/mosquito/sites', { params })
+}
+
+export async function getMosquitoSiteStatistics() {
+  return http.get('/community/mosquito/sites/statistics')
+}
+
+export async function createMosquitoSite(data: any) {
+  return http.post('/community/mosquito/sites', data)
+}
+
+export async function updateMosquitoSite(id: number, data: any) {
+  return http.put(`/community/mosquito/sites/${id}`, data)
+}
+
+export async function eliminateMosquitoSite(id: number) {
+  return http.post(`/community/mosquito/sites/${id}/eliminate`)
+}
+
+export async function deleteMosquitoSite(id: number) {
+  return http.delete(`/community/mosquito/sites/${id}`)
+}
+
+export async function getMosquitoDisinfections(params?: { siteId?: number; page?: number; size?: number }) {
+  return http.get('/community/mosquito/disinfections', { params })
+}
+
+export async function createMosquitoDisinfection(data: any) {
+  return http.post('/community/mosquito/disinfections', data)
+}
+
+export async function deleteMosquitoDisinfection(id: number) {
+  return http.delete(`/community/mosquito/disinfections/${id}`)
+}
+
+export async function getMosquitoMonitors(params?: { page?: number; size?: number }) {
+  return http.get('/community/mosquito/monitors', { params })
+}
+
+export async function getMosquitoMonitorStatistics() {
+  return http.get('/community/mosquito/monitors/statistics')
+}
+
+export async function createMosquitoMonitor(data: any) {
+  return http.post('/community/mosquito/monitors', data)
+}
+
+export async function updateMosquitoMonitor(id: number, data: any) {
+  return http.put(`/community/mosquito/monitors/${id}`, data)
+}
+
+export async function deleteMosquitoMonitor(id: number) {
+  return http.delete(`/community/mosquito/monitors/${id}`)
+}
+
+// ===== 爱卫蚊媒 - 检测设备接入（设备台账 + 监测数据流） =====
+
+export async function getMosquitoDevices(params?: { page?: number; size?: number }) {
+  return http.get('/community/mosquito/devices', { params })
+}
+
+export async function getMosquitoDeviceData(params?: { siteId?: number; deviceNo?: string; metricType?: string; page?: number; size?: number }) {
+  return http.get('/community/mosquito/device-data', { params })
+}
+
+export async function getMosquitoDeviceTrend(params?: { siteId?: number; deviceNo?: string; metricType?: string; hours?: number }) {
+  return http.get('/community/mosquito/device-data/trend', { params })
+}
+
+export async function getMosquitoDeviceStatistics() {
+  return http.get('/community/mosquito/device-data/statistics')
+}
+
+export async function simulateMosquitoDeviceData(days = 3) {
+  return http.post('/community/mosquito/device-data/simulate', { days })
+}
+
 export async function archiveEvent(id: number) {
   return http.post(`/events/${id}/archive`)
 }
@@ -300,6 +398,10 @@ export async function generatePatrolTasks() {
 
 export async function markOverduePatrolTasks() {
   return http.post('/community/patrol-tasks/mark-overdue')
+}
+
+export async function remindUpcomingPatrolTasks() {
+  return http.post('/community/patrol-tasks/upcoming-remind')
 }
 
 export async function getResidentReports(params?: { page?: number; pageSize?: number; status?: string }) {

@@ -1,0 +1,30 @@
+-- V89：趋势预判/反复投诉自动预警（考核研判 A3）
+-- 同类型事件高频出现 / 同地点反复投诉 → 自动生成预警
+CREATE TABLE IF NOT EXISTS biz_trend_alert (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    alert_no VARCHAR(64) NOT NULL COMMENT '预警编号',
+    dimension VARCHAR(32) NOT NULL DEFAULT 'EVENT_TYPE' COMMENT '维度: EVENT_TYPE=同类型频发 ADDRESS=同地点反复投诉',
+    event_type VARCHAR(64) COMMENT '事件类型',
+    event_type_name VARCHAR(64) COMMENT '事件类型中文名',
+    grid_id BIGINT COMMENT '网格ID',
+    grid_name VARCHAR(100) COMMENT '网格名称',
+    address VARCHAR(255) COMMENT '事发地址（同地点维度）',
+    alert_count INT NOT NULL DEFAULT 0 COMMENT '统计窗口内事件数',
+    threshold INT NOT NULL DEFAULT 3 COMMENT '触发阈值',
+    window_start TIMESTAMP NULL COMMENT '统计窗口开始',
+    window_end TIMESTAMP NULL COMMENT '统计窗口结束',
+    first_event_at TIMESTAMP NULL COMMENT '窗口内最早事件时间',
+    last_event_at TIMESTAMP NULL COMMENT '窗口内最新事件时间',
+    level VARCHAR(16) NOT NULL DEFAULT 'NORMAL' COMMENT '预警级别: NORMAL=一般 URGENT=紧急',
+    status VARCHAR(16) NOT NULL DEFAULT 'OPEN' COMMENT '状态: OPEN=待处理 HANDLED=已处理',
+    title VARCHAR(255) COMMENT '预警标题',
+    content VARCHAR(1000) COMMENT '预警内容',
+    handled_at TIMESTAMP NULL COMMENT '处理时间',
+    handler_id BIGINT NULL COMMENT '处理人ID',
+    handler_name VARCHAR(100) COMMENT '处理人姓名',
+    handle_remark VARCHAR(500) COMMENT '处理备注',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_trend_status (status, level),
+    INDEX idx_trend_dimension (dimension, event_type, grid_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='趋势预判/反复投诉自动预警';

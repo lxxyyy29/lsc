@@ -109,6 +109,8 @@ public class DashboardController {
         badges.put("auditsPending", countBy("SELECT COUNT(*) FROM biz_event WHERE status IN ('PENDING_AUDIT','IN_AUDIT')"));
         // 居民上报：待审核
         badges.put("residentReportsPending", countBy("SELECT COUNT(*) FROM cmn_resident_report WHERE status = 'PENDING'"));
+        // 趋势预判：待处理预警
+        badges.put("trendAlerts", countBy("SELECT COUNT(*) FROM biz_trend_alert WHERE status = 'OPEN'"));
         return ApiResponse.ok(badges);
     }
 

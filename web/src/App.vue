@@ -146,6 +146,7 @@ const menuGroups = [
     name: '巡查防控', icon: 'fas fa-shield-alt',
     items: [
       { path: '/patrol', name: '网格巡查' },
+      { path: '/mosquito', name: '爱卫蚊媒' },
       { path: '/safety', name: '安全防控' },
       { path: '/parking', name: '停车管理' },
     ]
@@ -167,6 +168,7 @@ const menuGroups = [
     items: [
       { path: '/reports', name: '数据报表' },
       { path: '/assessment', name: '考核研判' },
+            { path: '/trend-alerts', name: '趋势预判预警', badgeKey: 'trendAlerts' },
     ]
   },
   {

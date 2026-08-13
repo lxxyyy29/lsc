@@ -83,6 +83,9 @@ public class SecurityConfig {
                         // 告警回调需要签名验证（在 Controller 层校验）
                         .requestMatchers("/integrations/alarms/callback")
                         .permitAll()
+                        // 蚊媒监测设备数据上报公开（设备无平台账号，Controller 层校验参数）
+                        .requestMatchers("/integrations/mosquito/device-data")
+                        .permitAll()
                         // 测试接口需要认证（配合 @ConditionalOnProperty 控制是否启用）
                         .requestMatchers("/test/**")
                         .authenticated()

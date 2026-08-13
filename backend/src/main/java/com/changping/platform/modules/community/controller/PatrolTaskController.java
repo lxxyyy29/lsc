@@ -53,6 +53,15 @@ public class PatrolTaskController {
         return ApiResponse.ok(service.markOverdueTasks());
     }
 
+    /**
+     * 到期未巡自动预警（手动触发，与每日 08:00 定时等价）
+     */
+    @PostMapping("/upcoming-remind")
+    public ApiResponse<Integer> remindUpcoming() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        return ApiResponse.ok(service.checkUpcomingTasks());
+    }
+
     @PostMapping("/{id}/complete")
     public ApiResponse<Boolean> complete(@PathVariable Long id) {
         currentUserService.requireClientType(AuthService.ClientType.H5);

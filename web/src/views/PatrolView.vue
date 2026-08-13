@@ -51,6 +51,9 @@
       <button @click="markOverdue" :disabled="loading" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">
         <i class="fas fa-exclamation" style="margin-right:4px;"></i>标记超期
       </button>
+      <button @click="remindUpcoming" :disabled="loading" style="padding:8px 16px;border:1px solid #f59e0b;border-radius:6px;background:#fff7ed;color:#b45309;font-size:13px;cursor:pointer;">
+        <i class="fas fa-bell" style="margin-right:4px;"></i>到期未巡提醒
+      </button>
       <select v-model="filterStatus" @change="loadTasks" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
         <option value="">全部状态</option>
         <option value="PENDING">待巡查</option>
@@ -119,7 +122,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { getAllPatrolTasks, getPatrolTaskStatistics, generatePatrolTasks, markOverduePatrolTasks, getPatrolRecords } from '../api'
+import { getAllPatrolTasks, getPatrolTaskStatistics, generatePatrolTasks, markOverduePatrolTasks, getPatrolRecords, remindUpcomingPatrolTasks } from '../api'
 
 const tasks = ref<any[]>([])
 const records = ref<any[]>([])
@@ -176,6 +179,15 @@ async function markOverdue() {
     const count = await markOverduePatrolTasks()
     alert(`标记了 ${count} 个超期任务`)
     loadTasks()
+  } catch (e: any) {
+    alert(e?.message || '操作失败')
+  }
+}
+
+async function remindUpcoming() {
+  try {
+    const count = await remindUpcomingPatrolTasks()
+    alert(`已发送 ${count} 条到期未巡提醒`)
   } catch (e: any) {
     alert(e?.message || '操作失败')
   }

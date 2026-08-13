@@ -49,4 +49,18 @@ public class PatrolTaskScheduler {
             log.error("[PatrolTaskScheduler] 标记超期异常: {}", e.getMessage(), e);
         }
     }
+
+    /**
+     * 每天上午8:00 到期未巡自动预警（今日/明日到期任务提醒负责人）
+     */
+    @Scheduled(cron = "0 0 8 * * *")
+    public void remindUpcomingTasks() {
+        try {
+            log.info("[PatrolTaskScheduler] 开始检查到期巡查任务...");
+            int sent = patrolTaskService.checkUpcomingTasks();
+            log.info("[PatrolTaskScheduler] 到期提醒完成，共发送 {} 条", sent);
+        } catch (Exception e) {
+            log.error("[PatrolTaskScheduler] 到期提醒异常: {}", e.getMessage(), e);
+        }
+    }
 }
