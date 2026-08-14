@@ -79,6 +79,7 @@ import { createEventForH5, EventCreatePayload } from '../../src/api/event'
 import { locateWithFallback } from '../../src/utils/geolocation'
 import { getH5Session } from '../../src/api/auth'
 import { navigateToPath } from '../../src/uni/navigation'
+import { enqueueOfflineTask, isNetworkError } from '../../src/utils/offlineQueue'
 
 // 事件类型与 Web 端「创建事件」保持一致
 const types = [
@@ -244,8 +245,30 @@ async function handleSubmit() {
     showCodeDialog.value = true
   } catch (e: any) {
     submitting.value = false
-    uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
+    if (isNetworkError(e)) {
+      // 网络信号差:离线保存,恢复网络后自动同步
+      enqueueOfflineTask('EVENT', payload, `事件上报:${title.value}`)
+      uni.showModal({
+        title: '已离线保存',
+        content: '当前网络不可用,上报内容已保存在本地,恢复网络后将自动上报。',
+        showCancel: false,
+        confirmText: '知道了'
+      })
+      resetForm()
+    } else {
+      uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
+    }
   }
+}
+
+function resetForm() {
+  selectedType.value = ''
+  selectedTypeName.value = ''
+  title.value = ''
+  content.value = ''
+  location.value = ''
+  locationHint.value = ''
+  photos.value = []
 }
 
 function goHistory() {

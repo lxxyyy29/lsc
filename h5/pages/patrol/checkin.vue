@@ -63,6 +63,7 @@ import GridWorkerTabBar from '../../src/components/GridWorkerTabBar.vue'
 import { getGridTree, createPatrolRecord, GridTreeVo, PatrolRecord } from '../../src/api/community'
 import { getH5Session } from '../../src/api/auth'
 import { locateWithFallback } from '../../src/utils/geolocation'
+import { enqueueOfflineTask, isNetworkError } from '../../src/utils/offlineQueue'
 
 interface GridOption {
   label: string
@@ -221,15 +222,29 @@ async function handleSubmit() {
     latitude: latitude.value || undefined,
     address: locationText.value,
     content: content.value,
-    photoUrls: photos.value
+    photoUrls: photos.value,
+    // 离线重试幂等键:同一次打卡重复提交只落一条记录
+    clientRequestId: 'CKI-' + Date.now()
   }
 
   try {
     await createPatrolRecord(record)
     uni.showToast({ title: '打卡成功！', icon: 'success' })
     setTimeout(() => uni.reLaunch({ url: '/pages/workbench/index' }), 1500)
-  } catch (e) {
-    uni.showToast({ title: '打卡失败', icon: 'none' })
+  } catch (e: any) {
+    if (isNetworkError(e)) {
+      // 网络信号差:离线保存,恢复网络后自动同步
+      enqueueOfflineTask('CHECKIN', record, `巡查打卡:${locationText.value || selectedGridId.value}`)
+      uni.showModal({
+        title: '已离线保存',
+        content: '当前网络不可用,打卡记录已保存在本地,恢复网络后将自动上报。',
+        showCancel: false,
+        confirmText: '知道了'
+      })
+      setTimeout(() => uni.reLaunch({ url: '/pages/workbench/index' }), 500)
+    } else {
+      uni.showToast({ title: '打卡失败', icon: 'none' })
+    }
   }
 }
 

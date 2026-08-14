@@ -16,6 +16,16 @@
       </view>
     </view>
 
+    <!-- 离线采集待同步横幅(有未同步数据时显示) -->
+    <view v-if="offlineCount > 0" class="offline-banner" @click="syncOffline">
+      <view class="offline-icon"><AppIcon name="upload" size="32rpx" /></view>
+      <view class="offline-copy">
+        <text class="offline-title">离线采集数据待同步</text>
+        <text class="offline-sub">{{ syncing ? '正在同步...' : `共 ${offlineCount} 条数据保存在本地,点击立即同步` }}</text>
+      </view>
+      <view class="offline-btn"><text>{{ syncing ? '…' : '同步' }}</text></view>
+    </view>
+
     <!-- 事件上报入口（H5 端均为工作人员登录，上报直接进入事件闭环） -->
     <view class="action-section">
       <text class="section-title">事件上报</text>
@@ -121,6 +131,7 @@ import { hasMenuPermission } from '../../src/auth/permissions'
 import { getWorkbenchData, type PendingCountItem, type ShortcutItem, type WorkOrderItem } from '../../src/api/workorder'
 import { getMyReportedEvents } from '../../src/api/event'
 import { ensureAuthenticated, navigateToPath } from '../../src/uni/navigation'
+import { getOfflineTasks, retryOfflineQueue } from '../../src/utils/offlineQueue'
 
 interface ManagementShortcut {
   key: string
@@ -134,6 +145,25 @@ const shortcuts = ref<ShortcutItem[]>([])
 const latestOrders = ref<WorkOrderItem[]>([])
 const loadError = ref(false)
 const myReportCount = ref(0)
+const offlineCount = ref(0)
+const syncing = ref(false)
+
+function refreshOfflineCount() {
+  offlineCount.value = getOfflineTasks().length
+}
+
+async function syncOffline() {
+  if (syncing.value) return
+  syncing.value = true
+  const result = await retryOfflineQueue()
+  syncing.value = false
+  refreshOfflineCount()
+  if (result.success > 0) {
+    uni.showToast({ title: `已同步 ${result.success} 条`, icon: 'success' })
+  } else if (result.failed > 0) {
+    uni.showToast({ title: '同步失败,请检查网络', icon: 'none' })
+  }
+}
 
 const filteredShortcuts = computed(() =>
   shortcuts.value.filter((item: ShortcutItem) => (item.to === '/history' ? hasMenuPermission('menu:h5:history:view') : true))
@@ -229,6 +259,7 @@ function secondaryTimeText(item: WorkOrderItem) {
 
 onShow(async () => {
   if (!ensureAuthenticated('/workbench')) return
+  refreshOfflineCount()
 
   try {
     const response = await getWorkbenchData()
@@ -256,6 +287,52 @@ onShow(async () => {
     radial-gradient(ellipse at top, rgba(20, 60, 110, 0.3) 0%, rgba(20, 60, 110, 0) 50%),
     #081421;
   color: #eef6ff;
+}
+
+/* ─── 离线采集待同步横幅 ─── */
+.offline-banner {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin: 0 20rpx 16rpx;
+  padding: 18rpx 20rpx;
+  background: linear-gradient(135deg, rgba(250, 173, 20, 0.16), rgba(250, 140, 22, 0.10));
+  border: 1rpx solid rgba(250, 173, 20, 0.45);
+  border-radius: 14rpx;
+}
+.offline-icon {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 50%;
+  background: rgba(250, 173, 20, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.offline-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+}
+.offline-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #ffd591;
+}
+.offline-sub {
+  font-size: 22rpx;
+  color: #d8b98a;
+}
+.offline-btn {
+  flex-shrink: 0;
+  padding: 10rpx 22rpx;
+  background: linear-gradient(135deg, #faad14, #fa8c16);
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #1a1a1a;
 }
 
 /* ─── Hero card ───────────────────────────────────── */

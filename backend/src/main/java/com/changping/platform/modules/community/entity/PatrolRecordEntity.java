@@ -34,6 +34,9 @@ public class PatrolRecordEntity {
     @JsonDeserialize(using = PhotoUrlsDeserializer.class)
     private String photoUrls;
 
+    /** 客户端请求ID(离线采集重试幂等,可空) */
+    private String clientRequestId;
+
     private String status;
 
     @TableField(exist = false)

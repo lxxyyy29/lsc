@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onLaunch, onShow } from '@dcloudio/uni-app'
 import { fetchCurrentH5User, recoverH5Session } from './src/api/auth'
+import { initOfflineQueue } from './src/utils/offlineQueue'
 // #ifndef MP-WEIXIN
 import { fetchAccessPrefix } from './src/api/upload'
 // #endif
@@ -15,6 +16,8 @@ async function bootstrapSession() {
 
 onLaunch(() => {
   void bootstrapSession()
+  // 离线采集队列:网络恢复监听 + 定时重试 + 启动同步
+  initOfflineQueue()
 })
 
 onShow(() => {

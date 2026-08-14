@@ -77,6 +77,8 @@ export interface PatrolRecord {
   photoUrls?: string | string[]
   status?: string
   createdAt?: string
+  /** 客户端请求ID(离线重试幂等) */
+  clientRequestId?: string
 }
 
 export function getPatrolRecords() {

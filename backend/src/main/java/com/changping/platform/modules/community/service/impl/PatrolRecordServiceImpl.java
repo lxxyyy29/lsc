@@ -24,6 +24,13 @@ public class PatrolRecordServiceImpl implements PatrolRecordService {
 
     @Override
     public boolean create(PatrolRecordEntity entity) {
+        // 离线采集重试幂等:带客户端请求ID的重复提交直接视为成功
+        if (entity.getClientRequestId() != null && !entity.getClientRequestId().isBlank()) {
+            Long count = mapper.countByClientRequestId(entity.getClientRequestId());
+            if (count != null && count > 0) {
+                return true;
+            }
+        }
         mapper.insert(entity);
         return true;
     }
