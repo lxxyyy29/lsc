@@ -175,8 +175,8 @@ public class DashboardMapper {
     public Map<String, Object> getGridRanking(String period) {
         Map<String, Object> result = new HashMap<>();
         String timeFilter = "month".equals(period)
-            ? "created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
-            : "created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+            ? "e.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
+            : "e.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
 
         List<Map<String, Object>> rankings = jdbcTemplate.queryForList(
             "SELECT g.grid_name AS gridName, " +

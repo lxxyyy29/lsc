@@ -205,8 +205,8 @@
           <text class="char-count">{{ remark.length }}/500</text>
         </view>
 
-        <!-- 关联商户/摊贩 -->
-        <view class="form-group">
+        <!-- 关联商户/摊贩（无商户列表权限时不展示） -->
+        <view v-if="canLinkSubject" class="form-group">
           <text class="form-label">关联商户/摊贩（可选）</text>
           <SubjectSelector
             v-model:subjectType="subjectType"
@@ -344,6 +344,9 @@ const canHandle = computed(
     hasButtonPermission('button:h5:workorder:handle') ||
     hasButtonPermission('api:h5:workorder:handle')
 )
+
+// 是否具备商户/摊贩列表权限（无权限时隐藏“关联主体”选择器，避免越权请求 403）
+const canLinkSubject = computed(() => hasButtonPermission('api:h5:merchant:list'))
 
 const operationOptions = [
   { label: '属实并已处理', value: 'RESOLVED', activeClass: 'op-btn--active-resolved' },
@@ -650,7 +653,8 @@ onLoad(async (query?: Record<string, unknown>) => {
     detail.value = await getWorkOrderDetail(id)
 
     if (detail.value?.sourceEventId) {
-      sourceEvent.value = await getEventDetail(detail.value.sourceEventId)
+      // 无事件详情权限时静默跳过，关联事件区块保持隐藏
+      sourceEvent.value = await getEventDetail(detail.value.sourceEventId).catch(() => undefined)
       void nextTick(() => {
         setTimeout(() => initDetailMap(), 200)
       })

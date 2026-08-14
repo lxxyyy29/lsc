@@ -190,8 +190,8 @@ async function loadData() {
       gridStats: gridRanking.map((g: any) => ({
         gridName: g.gridName,
         eventCount: g.eventCount,
-        completedCount: Math.round((g.eventCount || 0) * 0.7),
-        completionRate: 70
+        completedCount: g.closedCount || 0,
+        completionRate: g.completionRate ?? 0
       }))
     }
   } catch (e: any) {

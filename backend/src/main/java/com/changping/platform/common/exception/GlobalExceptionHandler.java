@@ -5,13 +5,16 @@ import jakarta.validation.ConstraintViolationException;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * @Author tangxinglin
@@ -84,6 +87,33 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(HttpMessageNotReadableException exception) {
         return ResponseEntity.badRequest()
                 .body(ApiResponse.fail("REQUEST_BODY_INVALID", "请求数据格式错误或缺少请求体"));
+    }
+
+    /**
+     * 处理缺失必填请求参数（query/form 参数），返回 400 而不是 500
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingParameter(MissingServletRequestParameterException exception) {
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.fail("PARAM_MISSING", "缺少必填参数: " + exception.getParameterName()));
+    }
+
+    /**
+     * 处理按 ID 查询记录不存在（queryForObject 空结果），返回 404 而不是 500
+     */
+    @ExceptionHandler(EmptyResultDataAccessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleEmptyResult(EmptyResultDataAccessException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.fail("RESOURCE_NOT_FOUND", "请求的记录不存在"));
+    }
+
+    /**
+     * 处理请求路径无匹配资源（未注册接口/生产环境关闭的测试接口），返回 404 而不是 500
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFound(NoResourceFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.fail("NOT_FOUND", "接口不存在"));
     }
 
     /**

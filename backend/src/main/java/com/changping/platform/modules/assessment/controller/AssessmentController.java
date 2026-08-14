@@ -68,9 +68,24 @@ public class AssessmentController {
                 "SELECT event_type as type, COUNT(*) as count FROM biz_event GROUP BY event_type ORDER BY count DESC LIMIT 10");
         result.put("eventTypeDistribution", typeDist);
 
-        // 网格事件排名
+        // 网格事件排名（以二级网格为基准；未关联网格的历史迁移事件归入"未分配网格"）
         List<Map<String, Object>> gridRanking = jdbcTemplate.queryForList(
-                "SELECT g.grid_name as gridName, COUNT(e.id) as eventCount FROM biz_event e LEFT JOIN cmn_grid g ON g.id = e.grid_id GROUP BY g.grid_name ORDER BY eventCount DESC LIMIT 10");
+                "SELECT g.grid_name as gridName, " +
+                "COUNT(e.id) as eventCount, " +
+                "SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END) as closedCount, " +
+                "COALESCE(ROUND(SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(e.id), 0), 1), 0) as completionRate " +
+                "FROM cmn_grid g LEFT JOIN biz_event e ON e.grid_id = g.id " +
+                "WHERE g.status = 'ACTIVE' AND g.grid_level = 2 " +
+                "GROUP BY g.id, g.grid_name ORDER BY eventCount DESC");
+        Map<String, Object> unassigned = jdbcTemplate.queryForMap(
+                "SELECT '未分配网格' as gridName, " +
+                "COUNT(*) as eventCount, " +
+                "SUM(CASE WHEN status = 'CLOSED' THEN 1 ELSE 0 END) as closedCount, " +
+                "ROUND(SUM(CASE WHEN status = 'CLOSED' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) as completionRate " +
+                "FROM biz_event WHERE grid_id IS NULL OR grid_id NOT IN (SELECT id FROM cmn_grid)");
+        if (((Number) unassigned.get("eventCount")).longValue() > 0) {
+            gridRanking.add(unassigned);
+        }
         result.put("gridRanking", gridRanking);
 
         // 按月统计
