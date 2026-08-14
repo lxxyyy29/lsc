@@ -163,6 +163,7 @@ const menuGroups = [
     name: '巡查防控', icon: 'fas fa-shield-alt',
     items: [
       { path: '/patrol', name: '网格巡查' },
+      { path: '/emergency', name: '应急调度' },
       { path: '/mosquito', name: '爱卫蚊媒' },
       { path: '/safety', name: '安全防控' },
       { path: '/parking', name: '停车管理' },

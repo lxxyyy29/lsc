@@ -178,6 +178,19 @@ public final class PermissionCodes {
     /** 管理视频监控点位（增删改/转流）接口权限 */
     public static final String API_VIDEO_CAMERA_MANAGE = "api:video:camera:manage";
 
+    /** 查看应急调度指令接口权限 */
+    public static final String API_EMERGENCY_DISPATCH_VIEW = "api:emergency:dispatch:view";
+    /** 发起/完成应急调度指令接口权限 */
+    public static final String API_EMERGENCY_DISPATCH_MANAGE = "api:emergency:dispatch:manage";
+    /** 应急调度回执反馈接口权限 */
+    public static final String API_EMERGENCY_RECEIPT_FEEDBACK = "api:emergency:receipt:feedback";
+    /** H5 查看应急调度指令接口权限 */
+    public static final String API_H5_EMERGENCY_VIEW = "api:h5:emergency:view";
+    /** H5 应急调度回执反馈接口权限 */
+    public static final String API_H5_EMERGENCY_FEEDBACK = "api:h5:emergency:feedback";
+    /** H5 查看站内通知接口权限 */
+    public static final String API_H5_NOTIFICATION_VIEW = "api:h5:notification:view";
+
     /** 网格治理目录权限 */
     public static final String CATALOG_COMMUNITY = "catalog:community";
     /** 网格治理-GIS网格可视化菜单权限 */

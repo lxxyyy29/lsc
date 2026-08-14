@@ -679,4 +679,35 @@ export async function getVideoRecords(id: number, date: string) {
   return http.get(`/video/cameras/${id}/records`, { params: { date } })
 }
 
+// ==================== 应急会商/一键多方联合调度 ====================
+
+export async function getEmergencyMeta() {
+  return http.get('/emergency/dispatches/meta')
+}
+
+export async function getEmergencyDispatches(params?: {
+  status?: string
+  level?: string
+  page?: number
+  size?: number
+}) {
+  return http.get('/emergency/dispatches', { params })
+}
+
+export async function getEmergencyDispatchDetail(id: number) {
+  return http.get(`/emergency/dispatches/${id}`)
+}
+
+export async function createEmergencyDispatch(data: Record<string, any>) {
+  return http.post('/emergency/dispatches', data)
+}
+
+export async function feedbackEmergencyReceipt(id: number, data: { status: string; feedback?: string }) {
+  return http.post(`/emergency/dispatches/${id}/receipt`, data)
+}
+
+export async function completeEmergencyDispatch(id: number) {
+  return http.post(`/emergency/dispatches/${id}/complete`)
+}
+
 export default http

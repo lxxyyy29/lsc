@@ -22,6 +22,7 @@ const routes = [
   { path: '/processes', component: () => import('../views/ProcessView.vue') },
   { path: '/reports', component: () => import('../views/ReportsView.vue') },
   { path: '/patrol', component: () => import('../views/PatrolView.vue') },
+  { path: '/emergency', component: () => import('../views/EmergencyView.vue') },
   { path: '/mosquito', component: () => import('../views/MosquitoView.vue') },
   { path: '/safety', component: () => import('../views/SafetyView.vue') },
   { path: '/party', component: () => import('../views/PartyView.vue') },
