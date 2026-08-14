@@ -16,6 +16,9 @@
         <button @click="loadData" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;">
           <i class="fas fa-sync"></i> 刷新
         </button>
+        <button @click="exportData" style="padding:4px 10px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;">
+          <i class="fas fa-download"></i> 导出报表
+        </button>
       </div>
     </div>
 
@@ -108,6 +111,48 @@ import { getEventTypeName } from '../utils/eventTypes'
 const timeRange = ref('week')
 const reportData = ref<any>({})
 const loading = ref(false)
+
+const TIME_RANGE_LABELS: Record<string, string> = {
+  today: '今日', week: '本周', month: '本月', quarter: '本季度', year: '本年'
+}
+
+/** 导出当前报表数据为 CSV(UTF-8 BOM,Excel 打开中文不乱码) */
+function exportData() {
+  const r = reportData.value || {}
+  const rows: (string | number)[][] = []
+  rows.push(['社区治理综合报表', `统计时间:${TIME_RANGE_LABELS[timeRange.value] || timeRange.value}`, `导出时间:${new Date().toLocaleString()}`])
+  rows.push([])
+  rows.push(['概览统计', '数值'])
+  rows.push(['事件总数', r.eventCount ?? 0])
+  rows.push(['工单完成数', r.completedOrderCount ?? 0])
+  rows.push(['工单完成率(%)', r.completionRate ?? 0])
+  rows.push(['巡查完成数', r.patrolCount ?? 0])
+  rows.push(['超期数', r.overdueCount ?? 0])
+  rows.push(['AI 告警数', r.aiAlertCount ?? 0])
+  rows.push(['待派单数', r.pendingAlertCount ?? 0])
+  rows.push([])
+  rows.push(['事件类型', '数量'])
+  for (const t of (r.eventTypeStats || [])) rows.push([t.name, t.count])
+  rows.push([])
+  rows.push(['工单状态', '数量'])
+  for (const s of (r.orderStatusStats || [])) rows.push([s.name, s.count])
+  rows.push([])
+  rows.push(['网格名称', '事件数', '完成率(%)'])
+  for (const g of (r.gridStats || [])) rows.push([g.gridName, g.eventCount, g.completionRate])
+
+  const escapeCell = (v: string | number) => {
+    const s = String(v)
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+  }
+  const csv = '\uFEFF' + rows.map((row) => row.map(escapeCell).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `社区治理报表_${TIME_RANGE_LABELS[timeRange.value] || timeRange.value}_${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 async function loadData() {
   loading.value = true

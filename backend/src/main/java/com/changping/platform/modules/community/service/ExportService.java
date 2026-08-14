@@ -71,9 +71,16 @@ public class ExportService {
     }
 
     /**
-     * 导出台账（通用）
+     * 导出台账(通用)
      */
     public byte[] exportLedger(String sheetName, List<String> columns, List<Map<String, Object>> data) throws Exception {
+        return exportLedger(sheetName, columns, columns, data);
+    }
+
+    /**
+     * 导出台账(通用,字段与中文表头分离):fields 为取值键,labels 为表头展示名
+     */
+    public byte[] exportLedger(String sheetName, List<String> fields, List<String> labels, List<Map<String, Object>> data) throws Exception {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet(sheetName);
 
@@ -83,21 +90,21 @@ public class ExportService {
             headerStyle.setFont(headerFont);
 
             Row headerRow = sheet.createRow(0);
-            for (int i = 0; i < columns.size(); i++) {
+            for (int i = 0; i < fields.size(); i++) {
                 Cell cell = headerRow.createCell(i);
-                cell.setCellValue(columns.get(i));
+                cell.setCellValue(labels.get(i));
                 cell.setCellStyle(headerStyle);
             }
 
             int rowNum = 1;
             for (Map<String, Object> rowData : data) {
                 Row row = sheet.createRow(rowNum++);
-                for (int i = 0; i < columns.size(); i++) {
-                    row.createCell(i).setCellValue(getString(rowData, columns.get(i)));
+                for (int i = 0; i < fields.size(); i++) {
+                    row.createCell(i).setCellValue(getString(rowData, fields.get(i)));
                 }
             }
 
-            for (int i = 0; i < columns.size(); i++) {
+            for (int i = 0; i < fields.size(); i++) {
                 sheet.autoSizeColumn(i);
             }
 

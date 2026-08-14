@@ -99,9 +99,32 @@ async function loadData() {
   }
 }
 
-function exportData() {
+async function exportData() {
   if (!selectedTemplate.value) return
-  window.open(`/api/ledger/export/${selectedTemplate.value.templateType}`, '_blank')
+  // 原生 fetch 带鉴权下载(xhr/axios 响应拦截器会拦 blob)
+  const session = JSON.parse(localStorage.getItem('grid-session') || '{}')
+  try {
+    const res = await fetch(`/api/ledger/export/${selectedTemplate.value.templateType}`, {
+      headers: { Authorization: `Bearer ${session.token}` }
+    })
+    if (!res.ok) {
+      alert(res.status === 401 ? '登录已过期,请重新登录' : '导出失败,请稍后重试')
+      return
+    }
+    const blob = await res.blob()
+    const cd = res.headers.get('content-disposition') || ''
+    const m = cd.match(/filename="?([^";]+)"?/)
+    const filename = m ? decodeURIComponent(m[1]) : `${selectedTemplate.value.templateName}.xlsx`
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (e) {
+    console.error(e)
+    alert('导出失败,请检查网络')
+  }
 }
 
 onMounted(loadTemplates)
