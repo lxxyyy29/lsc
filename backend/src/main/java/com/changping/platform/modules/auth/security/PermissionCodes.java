@@ -188,6 +188,8 @@ public final class PermissionCodes {
     public static final String API_H5_EMERGENCY_VIEW = "api:h5:emergency:view";
     /** H5 应急调度回执反馈接口权限 */
     public static final String API_H5_EMERGENCY_FEEDBACK = "api:h5:emergency:feedback";
+    /** 居民小程序：应急公告只读查看 */
+    public static final String API_MP_EMERGENCY_VIEW = "api:mp:emergency:view";
     /** H5 查看站内通知接口权限 */
     public static final String API_H5_NOTIFICATION_VIEW = "api:h5:notification:view";
 
@@ -221,6 +223,8 @@ public final class PermissionCodes {
     public static final String API_PARKING_VIEW = "api:parking:view";
     /** 停车管理操作接口权限 */
     public static final String API_PARKING_MANAGE = "api:parking:manage";
+    /** 车辆轨迹追踪查看接口权限 */
+    public static final String API_VEHICLE_TRACK_VIEW = "api:vehicle:track:view";
     /** 考核研判查看接口权限 */
     public static final String API_ASSESSMENT_VIEW = "api:assessment:view";
     /** 安全防控菜单权限 */

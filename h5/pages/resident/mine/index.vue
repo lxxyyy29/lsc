@@ -29,6 +29,11 @@
         <text class="menu-text">我的上报</text>
         <text class="arrow">›</text>
       </view>
+      <view class="menu-item" @click="goEmergency">
+        <text class="menu-icon">📢</text>
+        <text class="menu-text">应急公告</text>
+        <text class="arrow">›</text>
+      </view>
       <view class="menu-item" @click="goGridWorker">
         <text class="menu-icon">👷</text>
         <text class="menu-text">网格员入口</text>
@@ -75,6 +80,10 @@ const completedCount = ref(0)
 
 function goHistory() {
   uni.reLaunch({ url: '/pages/resident/history/index' })
+}
+
+function goEmergency() {
+  uni.navigateTo({ url: '/pages/resident/emergency/index' })
 }
 
 function goGridWorker() {

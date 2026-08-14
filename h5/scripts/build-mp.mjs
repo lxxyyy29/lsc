@@ -53,7 +53,8 @@ const ALL_PAGES = [
   { path: 'pages/resident/repairs/form', style: { navigationStyle: 'default', navigationBarTitleText: '提交报修' } },
   { path: 'pages/resident/policies/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/resident/points/index', style: { navigationStyle: 'custom' } },
-  { path: 'pages/resident/mine/index', style: { navigationStyle: 'custom' } }
+  { path: 'pages/resident/mine/index', style: { navigationStyle: 'custom' } },
+  { path: 'pages/resident/emergency/index', style: { navigationStyle: 'custom' } }
 ]
 
 /** 小程序原生 tabBar：居民端 3 tab（仅文字），浅色主题 */

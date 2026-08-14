@@ -198,6 +198,20 @@ public class EmergencyDispatchService {
         return rows.isEmpty() ? null : rows.get(0);
     }
 
+    /** 居民小程序：指令详情（只读，不含回执个人明细，仅响应进度统计） */
+    public Map<String, Object> detailForPublic(Long id) {
+        Map<String, Object> row = detail(id);
+        row.remove("receipts");
+        Long receiverCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM biz_emergency_receipt WHERE dispatch_id = ?", Long.class, id);
+        Long respondedCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM biz_emergency_receipt WHERE dispatch_id = ? AND status <> 'PENDING'",
+                Long.class, id);
+        row.put("receiver_count", receiverCount != null ? receiverCount : 0L);
+        row.put("responded_count", respondedCount != null ? respondedCount : 0L);
+        return row;
+    }
+
     /** H5：我收到的指令列表（含我的回执状态） */
     public List<Map<String, Object>> myDispatches(Long userId) {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
