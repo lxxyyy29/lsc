@@ -1,7 +1,7 @@
 package com.changping.platform.modules.audit.aspect;
 
 import com.changping.platform.modules.audit.entity.AuditLogEntity;
-import com.changping.platform.modules.audit.mapper.AuditLogMapper;
+import com.changping.platform.modules.audit.service.AuditBatchWriter;
 import com.changping.platform.modules.auth.security.AuthenticatedUserContextHolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.aspectj.lang.JoinPoint;
@@ -33,7 +33,7 @@ public class AuditLogAspect {
 
     private static final Logger log = LoggerFactory.getLogger(AuditLogAspect.class);
 
-    private final AuditLogMapper auditLogMapper;
+    private final AuditBatchWriter auditBatchWriter;
     private final ObjectMapper objectMapper;
 
     /** 不需要记录审计的表 */
@@ -41,8 +41,8 @@ public class AuditLogAspect {
             "sys_audit_log", "sys_notification", "biz_message"
     ));
 
-    public AuditLogAspect(AuditLogMapper auditLogMapper, ObjectMapper objectMapper) {
-        this.auditLogMapper = auditLogMapper;
+    public AuditLogAspect(AuditBatchWriter auditBatchWriter, ObjectMapper objectMapper) {
+        this.auditBatchWriter = auditBatchWriter;
         this.objectMapper = objectMapper;
     }
 
@@ -93,7 +93,8 @@ public class AuditLogAspect {
                 auditLog.setOperatorName(user.userName());
             });
 
-            auditLogMapper.insert(auditLog);
+            // 异步攒批落库，避免同步 INSERT 阻塞业务接口
+            auditBatchWriter.enqueue(auditLog);
             log.debug("Audit log recorded: table={}, record={}, op={}, user={}",
                     tableName, recordId, operationType, auditLog.getOperatorName());
         } catch (Exception e) {

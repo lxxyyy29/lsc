@@ -12,13 +12,15 @@ import java.util.Map;
 public class NotificationService {
 
     private final NotificationMapper mapper;
+    private final NotificationBatchWriter batchWriter;
 
-    public NotificationService(NotificationMapper mapper) {
+    public NotificationService(NotificationMapper mapper, NotificationBatchWriter batchWriter) {
         this.mapper = mapper;
+        this.batchWriter = batchWriter;
     }
 
     /**
-     * 创建通知
+     * 创建通知（异步攒批落库，避免高频单条 INSERT 阻塞业务线程）
      */
     public void createNotification(Long userId, String title, String content,
                                    String type, String level, String relatedType, Long relatedId) {
@@ -30,7 +32,7 @@ public class NotificationService {
         entity.setLevel(level);
         entity.setRelatedType(relatedType);
         entity.setRelatedId(relatedId);
-        mapper.insert(entity);
+        batchWriter.enqueue(entity);
     }
 
     /**
