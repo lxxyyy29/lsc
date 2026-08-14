@@ -167,6 +167,7 @@ const menuGroups = [
       { path: '/mosquito', name: '爱卫蚊媒' },
       { path: '/safety', name: '安全防控' },
       { path: '/parking', name: '停车管理' },
+      { path: '/vehicle-track', name: '车辆轨迹' },
     ]
   },
   {

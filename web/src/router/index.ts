@@ -27,6 +27,7 @@ const routes = [
   { path: '/safety', component: () => import('../views/SafetyView.vue') },
   { path: '/party', component: () => import('../views/PartyView.vue') },
   { path: '/parking', component: () => import('../views/ParkingView.vue') },
+  { path: '/vehicle-track', component: () => import('../views/VehicleTrackView.vue') },
   { path: '/assessment', component: () => import('../views/AssessmentView.vue') },
   { path: '/audit-logs', component: () => import('../views/AuditLogView.vue') },
   // 信息互通（实时聊天）功能暂不启用，保留代码后续开发
