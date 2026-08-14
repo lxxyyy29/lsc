@@ -9,11 +9,15 @@
 - `h5/`：Vue 3 + uni-app H5 移动端，默认端口 `5174`
 - `mp/`：Vue 3 + TypeScript + Vite 居民小程序，默认端口 `5176`
 - `docs/`
-  - `docs/系统说明文档.md`：完整接口文档（2026-08-05 按代码扫描更新，315 个端点）
+  - `docs/项目功能说明文档.md`：**全项目功能说明**(文件结构归类 + 文档归纳 + 后端 30 模块/Web 36 页/小程序 34 页功能全景,2026-08-14)
+  - `docs/系统说明文档.md`：完整接口文档(2026-08-05 按代码扫描更新,315 个端点)
   - `docs/项目进度记录.md`：项目进度记录
   - `docs/部署实操指南.md`：Docker 生产部署实操指南
-  - `docs/api/apifox-openapi.json`：可导入 Apifox 的 OpenAPI 文件（⚠️ 生成于 2026-07，已落后于代码，以系统说明文档为准）
+  - `docs/部署运维指南.md`：运维操作指南
+  - `docs/需求规格文档.docx`：客户原始需求规格
+  - `docs/api/apifox-openapi.json`：可导入 Apifox 的 OpenAPI 文件(⚠️ 生成于 2026-07,已落后于代码,以系统说明文档为准)
   - `docs/architecture/`：历史阶段接口契约和人工验收说明
+  - `docs/superpowers/`：历史设计快照(plans/specs/tracking)
 - `docker/`：docker-compose 生产部署配置
 
 ## 环境要求
