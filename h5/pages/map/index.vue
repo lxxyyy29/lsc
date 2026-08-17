@@ -10,6 +10,7 @@
       :scale="mpScale"
       :markers="mpMarkers"
       :polygons="mpPolygons"
+      show-location
       @markertap="onMpMarkerTap"
     ></map>
     <!-- #endif -->
@@ -485,7 +486,24 @@ function locateMe() {
     // #ifdef MP-WEIXIN
     mpCenterLat.value = res.latitude
     mpCenterLng.value = res.longitude
-    mpScale.value = res.precise ? 16 : 12
+    // 小程序 map 靠 latitude/longitude 属性驱动：第二次定位坐标不变时属性无 diff、地图不响应，
+    // 故用 MapContext 方法调用强制回位（精确定位用 moveToLocation，其余用 includePoints 居中）
+    const mapCtx = uni.createMapContext('mpMapContainer')
+    if (res.precise) {
+      mpScale.value = 16
+      mapCtx?.moveToLocation({
+        fail: () => mapCtx?.includePoints({
+          points: [{ latitude: res.latitude, longitude: res.longitude }],
+          padding: [120, 60, 180, 60]
+        })
+      })
+    } else {
+      mpScale.value = 12
+      mapCtx?.includePoints({
+        points: [{ latitude: res.latitude, longitude: res.longitude }],
+        padding: [120, 60, 180, 60]
+      })
+    }
     // #endif
     // #ifndef MP-WEIXIN
     const pos: [number, number] = [res.longitude, res.latitude]
