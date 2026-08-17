@@ -34,11 +34,6 @@
         <text class="menu-text">应急公告</text>
         <text class="arrow">›</text>
       </view>
-      <view class="menu-item" @click="goGridWorker">
-        <text class="menu-icon">👷</text>
-        <text class="menu-text">网格员入口</text>
-        <text class="arrow">›</text>
-      </view>
       <view class="menu-item" @click="showAbout = true">
         <text class="menu-icon">ℹ️</text>
         <text class="menu-text">关于平台</text>
@@ -88,10 +83,6 @@ function goHistory() {
 
 function goEmergency() {
   uni.navigateTo({ url: '/pages/resident/emergency/index' })
-}
-
-function goGridWorker() {
-  uni.reLaunch({ url: '/pages/role-select/index' })
 }
 
 function handleLogout() {
