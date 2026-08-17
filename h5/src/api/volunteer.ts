@@ -10,6 +10,8 @@ export interface VolunteerActivity {
   status: 'PLANNED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED'
   signedUpCount: number
   signedUp: boolean
+  /** 当前用户是否已签到 */
+  checkedIn: boolean
 }
 
 export interface VolunteerPoints {
@@ -35,6 +37,11 @@ export function getVolunteerActivities() {
 
 export function signupVolunteerActivity(activityId: number) {
   return http.post<boolean, boolean>(`/activities/${activityId}/signup`, {})
+}
+
+/** 活动签到（限活动当天至结束后2天，仅一次，成功后发放积分） */
+export function checkinVolunteerActivity(activityId: number) {
+  return http.post<boolean, boolean>(`/activities/${activityId}/checkin`, {})
 }
 
 export function cancelVolunteerActivitySignup(activityId: number) {

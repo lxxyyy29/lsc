@@ -35,9 +35,8 @@
     <view class="tips">
       <text class="tips-title">💡 如何获取积分？</text>
       <view class="tips-list">
-        <text class="tips-item">· 参与志愿活动并完成签到：+20 积分/次</text>
-        <text class="tips-item">· 处理报修工单：+10 积分/次</text>
-        <text class="tips-item">· 参与矛盾调解：+15 积分/次</text>
+        <text class="tips-item">· 报名志愿活动并在活动期内签到：+20 积分/次</text>
+        <text class="tips-item">· 签到入口：便民服务 → 活动报名</text>
       </view>
     </view>
 
@@ -61,7 +60,9 @@ const points = ref<any>({})
 async function loadData() {
   loading.value = true
   try {
-    points.value = await getMyPoints() || {}
+    // 后端返回 { account: { totalPoints, availablePoints }, logs }，展平后供模板使用
+    const res: any = await getMyPoints()
+    points.value = { ...(res?.account || {}), logs: res?.logs || [] }
   } catch (e) {
     console.error('加载失败:', e)
   } finally {

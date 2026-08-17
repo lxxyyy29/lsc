@@ -17,7 +17,11 @@
         </view>
         <view class="card-action">
           <button v-if="!a.signedUp && a.status === 'PLANNED'" @click="signup(a.id)" class="btn-primary">立即报名</button>
-          <button v-else-if="a.signedUp" @click="cancelSignup(a.id)" class="btn-default">取消报名</button>
+          <template v-else-if="a.signedUp">
+            <button v-if="!a.checkedIn" @click="checkin(a.id)" class="btn-primary">签到 +20积分</button>
+            <text v-else class="tag tag-green">已签到 ✓</text>
+            <button v-if="!a.checkedIn" @click="cancelSignup(a.id)" class="btn-default">取消报名</button>
+          </template>
           <text v-else class="tag tag-gray">已结束</text>
         </view>
       </view>
@@ -32,7 +36,7 @@
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import ResidentTabBar from '../../../src/components/ResidentTabBar.vue'
-import { getResidentActivities, signupActivity, cancelActivitySignup } from '../../../src/api/resident'
+import { getResidentActivities, signupActivity, cancelActivitySignup, checkinActivity } from '../../../src/api/resident'
 import { useStatusBar } from '../../../src/utils/useStatusBar'
 import ResidentBackBar from '../../../src/components/ResidentBackBar.vue'
 
@@ -72,6 +76,16 @@ async function cancelSignup(id: number) {
   }
 }
 
+async function checkin(id: number) {
+  try {
+    await checkinActivity(id)
+    uni.showToast({ title: '签到成功，+20积分', icon: 'success' })
+    loadData()
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '签到失败', icon: 'none' })
+  }
+}
+
 onLoad(loadData)
 </script>
 
@@ -90,7 +104,7 @@ onLoad(loadData)
 .card-title { font-size: 28rpx; font-weight: 600; margin-bottom: 12rpx; }
 .desc { font-size: 26rpx; color: #6b7280; margin-bottom: 20rpx; display: block; line-height: 1.5; }
 .card-meta { display: flex; justify-content: space-between; font-size: 24rpx; color: #9ca3af; margin-bottom: 24rpx; }
-.card-action { display: flex; justify-content: flex-end; }
+.card-action { display: flex; justify-content: flex-end; align-items: center; gap: 16rpx; }
 .btn-primary {
   padding: 16rpx 40rpx; background: #1890ff; color: #fff; border: none;
   border-radius: 12rpx; font-size: 26rpx; line-height: 1.6;
@@ -101,6 +115,7 @@ onLoad(loadData)
 }
 .tag { font-size: 22rpx; padding: 8rpx 20rpx; border-radius: 8rpx; }
 .tag-gray { background: #f3f4f6; color: #9ca3af; }
+.tag-green { background: #f6ffed; color: #52c41a; font-weight: 600; }
 .loading { text-align: center; padding: 80rpx; color: #9ca3af; }
 .empty { text-align: center; padding: 80rpx; color: #9ca3af; font-size: 26rpx; display: block; }
 </style>

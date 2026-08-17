@@ -7,6 +7,7 @@ import com.changping.platform.modules.auth.security.PermissionGuard;
 import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -53,12 +54,13 @@ public class H5VolunteerController {
         Long userId = AuthenticatedUserContextHolder.getRequired().id();
         return ApiResponse.ok(jdbcTemplate.queryForList(
             "SELECT a.*, u.real_name as creatorName, " +
-            "  (SELECT COUNT(DISTINCT s.user_id) FROM sys_volunteer_signup s WHERE s.activity_id = a.id AND s.status = 'SIGNED_UP') as signedUpCount, " +
-            "  EXISTS(SELECT 1 FROM sys_volunteer_signup s WHERE s.activity_id = a.id AND s.user_id = ? AND s.status = 'SIGNED_UP') as signedUp " +
+            "  (SELECT COUNT(DISTINCT s.user_id) FROM sys_volunteer_signup s WHERE s.activity_id = a.id AND s.status IN ('SIGNED_UP','CHECKED_IN')) as signedUpCount, " +
+            "  EXISTS(SELECT 1 FROM sys_volunteer_signup s WHERE s.activity_id = a.id AND s.user_id = ? AND s.status IN ('SIGNED_UP','CHECKED_IN')) as signedUp, " +
+            "  EXISTS(SELECT 1 FROM sys_volunteer_signup s WHERE s.activity_id = a.id AND s.user_id = ? AND s.status = 'CHECKED_IN') as checkedIn " +
             "FROM sys_volunteer_activity a " +
             "LEFT JOIN sys_user u ON u.id = a.created_by " +
             "ORDER BY a.activity_date DESC",
-            userId));
+            userId, userId));
     }
 
     /**
@@ -100,6 +102,54 @@ public class H5VolunteerController {
         jdbcTemplate.update(
             "DELETE FROM sys_volunteer_signup WHERE activity_id = ? AND user_id = ? AND status = 'SIGNED_UP'",
             id, userId);
+        return ApiResponse.ok(true);
+    }
+
+    /**
+     * @Author tangxinglin
+     * @Description //当前 H5 用户对已报名志愿活动签到，限活动期间（活动当天至结束后2天）且仅一次，成功后发放20积分
+     * @Date 2026/08/17 16:00
+     * @Param [id 活动ID]
+     * @return ApiResponse<Boolean> 签到结果
+     */
+    @PostMapping("/activities/{id}/checkin")
+    @Transactional
+    public ApiResponse<Boolean> checkinActivity(@PathVariable Long id) {
+        currentUserService.requireClientType(AuthService.ClientType.H5);
+        permissionGuard.require(PermissionCodes.API_H5_VOLUNTEER_SIGNUP);
+        Long userId = AuthenticatedUserContextHolder.getRequired().id();
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+            "SELECT a.activity_date, a.title, s.status FROM sys_volunteer_activity a " +
+            "JOIN sys_volunteer_signup s ON s.activity_id = a.id AND s.user_id = ? " +
+            "WHERE a.id = ?", userId, id);
+        if (rows.isEmpty()) {
+            throw new com.changping.platform.common.exception.BusinessException("VALIDATION_ERROR", "请先报名该活动");
+        }
+        Map<String, Object> row = rows.get(0);
+        if ("CHECKED_IN".equals(row.get("status"))) {
+            return ApiResponse.ok(true);
+        }
+        java.sql.Date activityDate = (java.sql.Date) row.get("activity_date");
+        if (activityDate == null) {
+            throw new com.changping.platform.common.exception.BusinessException("VALIDATION_ERROR", "活动未设置日期，无法签到");
+        }
+        long diffDays = java.time.temporal.ChronoUnit.DAYS.between(
+            activityDate.toLocalDate(), java.time.LocalDate.now());
+        if (diffDays < 0 || diffDays > 2) {
+            throw new com.changping.platform.common.exception.BusinessException("VALIDATION_ERROR", "仅可在活动当天至活动结束后2天内签到");
+        }
+        jdbcTemplate.update(
+            "UPDATE sys_volunteer_signup SET status = 'CHECKED_IN', check_in_time = CURRENT_TIMESTAMP " +
+            "WHERE activity_id = ? AND user_id = ? AND status = 'SIGNED_UP'", id, userId);
+        jdbcTemplate.update(
+            "INSERT INTO sys_volunteer_points (user_id, total_points, available_points) VALUES (?, 20, 20) " +
+            "ON DUPLICATE KEY UPDATE total_points = total_points + 20, available_points = available_points + 20",
+            userId);
+        jdbcTemplate.update(
+            "INSERT INTO sys_volunteer_points_log (user_id, points, reason, source_type, source_id) " +
+            "VALUES (?, 20, ?, 'VOLUNTEER_ACTIVITY', ?)",
+            userId, "志愿活动签到：" + row.get("title"), id);
         return ApiResponse.ok(true);
     }
 

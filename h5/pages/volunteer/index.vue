@@ -31,7 +31,11 @@
           <text>👥 {{ a.signedUpCount || 0 }}/{{ a.max_participants || '不限' }}</text>
         </view>
         <view class="activity-action">
-          <button v-if="a.signedUp" class="btn-cancel" @click="cancelSignup(a.id)">取消报名</button>
+          <template v-if="a.signedUp">
+            <button v-if="!a.checkedIn" class="btn-signup" @click="checkin(a.id)">签到 +20积分</button>
+            <text v-else class="tag-checked">已签到 ✓</text>
+            <button v-if="!a.checkedIn" class="btn-cancel" @click="cancelSignup(a.id)">取消报名</button>
+          </template>
           <button v-else-if="a.status === 'PLANNED' || a.status === 'ONGOING'" class="btn-signup" @click="signup(a.id)">立即报名</button>
           <text v-else class="tag-closed">已结束</text>
         </view>
@@ -62,6 +66,7 @@ import {
   getVolunteerActivities,
   getMyVolunteerPoints,
   signupVolunteerActivity,
+  checkinVolunteerActivity,
   cancelVolunteerActivitySignup,
   type VolunteerActivity,
   type VolunteerPointsResponse
@@ -124,6 +129,17 @@ async function cancelSignup(id: number) {
   }
 }
 
+async function checkin(id: number) {
+  try {
+    await checkinVolunteerActivity(id)
+    showToast('签到成功，+20积分')
+    loadActivities()
+    loadPoints()
+  } catch (e: any) {
+    showToast('签到失败：' + (e?.message || '未知错误'))
+  }
+}
+
 onShow(async () => {
   if (!ensureAuthenticated('/volunteer')) return
   loadActivities()
@@ -164,6 +180,7 @@ onShow(async () => {
   border-radius: 8px; font-size: 13px;
 }
 .tag-closed { font-size: 12px; color: #7ea4c8; padding: 8px 0; }
+.tag-checked { font-size: 12px; color: #67e8a9; font-weight: 600; padding: 8px 0; }
 .log-list { background: #0e233a; border-radius: 12px; overflow: hidden; }
 .log-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .log-row:last-child { border-bottom: none; }
