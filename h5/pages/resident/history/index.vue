@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :style="{ paddingTop: statusBarPadding }">
     <view class="header">
       <text class="header-title">📋 我的上报</text>
       <text class="header-sub">查看上报记录和处理进度</text>
@@ -43,8 +43,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import { useStatusBar } from '../../../src/utils/useStatusBar'
 import ResidentTabBar from '../../../src/components/ResidentTabBar.vue'
 import { getMyReports, rateEvent } from '../../../src/api/resident'
+
+const { statusBarPadding } = useStatusBar()
 
 const loading = ref(false)
 const reports = ref<any[]>([])

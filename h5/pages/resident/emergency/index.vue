@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :style="{ paddingTop: statusBarPadding }">
     <!-- 顶部标题栏 -->
     <view class="top-bar">
       <view class="back-btn" @click="goBack">‹</view>
@@ -56,6 +56,9 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import ResidentTabBar from '../../../src/components/ResidentTabBar.vue'
 import { getEmergencyNotices, getEmergencyNoticeDetail } from '../../../src/api/resident'
+import { useStatusBar } from '../../../src/utils/useStatusBar'
+
+const { statusBarPadding } = useStatusBar()
 
 const loading = ref(false)
 const notices = ref<any[]>([])
@@ -87,7 +90,13 @@ function goBack() {
   if (pages.length > 1) {
     uni.navigateBack()
   } else {
+    // “我的”在小程序端是 tabBar 页，必须用 switchTab 返回
+    // #ifdef MP-WEIXIN
+    uni.switchTab({ url: '/pages/resident/mine/index' })
+    // #endif
+    // #ifndef MP-WEIXIN
     uni.reLaunch({ url: '/pages/resident/mine/index' })
+    // #endif
   }
 }
 

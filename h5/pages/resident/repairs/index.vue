@@ -1,5 +1,5 @@
 <template>
-  <view class="resident-repairs-page">
+  <view class="resident-repairs-page" :style="{ paddingTop: statusBarPadding }">
     <view class="header">
       <text class="header-title">🔧 便民报修</text>
       <text class="header-sub">提交报修申请，查看处理进度</text>
@@ -38,6 +38,9 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import ResidentTabBar from '../../../src/components/ResidentTabBar.vue'
 import { getMyRepairs } from '../../../src/api/resident'
+import { useStatusBar } from '../../../src/utils/useStatusBar'
+
+const { statusBarPadding } = useStatusBar()
 
 const loading = ref(false)
 const repairs = ref<any[]>([])

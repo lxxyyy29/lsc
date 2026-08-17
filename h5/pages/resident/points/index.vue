@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :style="{ paddingTop: statusBarPadding }">
     <view class="header">
       <text class="header-title">⭐ 志愿服务积分</text>
       <text class="header-sub">参与志愿活动，积累服务积分</text>
@@ -49,6 +49,9 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import ResidentTabBar from '../../../src/components/ResidentTabBar.vue'
 import { getMyPoints } from '../../../src/api/resident'
+import { useStatusBar } from '../../../src/utils/useStatusBar'
+
+const { statusBarPadding } = useStatusBar()
 
 const loading = ref(false)
 const points = ref<any>({})

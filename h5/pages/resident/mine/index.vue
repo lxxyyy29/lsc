@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :style="{ paddingTop: statusBarPadding }">
     <view class="header">
       <view class="avatar">{{ session?.userName?.slice(0, 1) || '用' }}</view>
       <view class="info">
@@ -71,6 +71,9 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import ResidentTabBar from '../../../src/components/ResidentTabBar.vue'
 import { getResidentSession, clearResidentSession, getMyReports } from '../../../src/api/resident'
+import { useStatusBar } from '../../../src/utils/useStatusBar'
+
+const { statusBarPadding } = useStatusBar()
 
 const session = ref(getResidentSession())
 const showAbout = ref(false)
@@ -79,7 +82,8 @@ const processingCount = ref(0)
 const completedCount = ref(0)
 
 function goHistory() {
-  uni.reLaunch({ url: '/pages/resident/history/index' })
+  // 保留导航栈，避免返回时直接退出小程序
+  uni.navigateTo({ url: '/pages/resident/history/index' })
 }
 
 function goEmergency() {

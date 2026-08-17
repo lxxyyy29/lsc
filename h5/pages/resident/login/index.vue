@@ -1,5 +1,5 @@
 <template>
-  <view class="login-page">
+  <view class="login-page" :style="{ paddingTop: statusBarPadding }">
     <view class="login-header">
       <view class="logo">🏘️</view>
       <text class="title">拔蛟窝智慧网格</text>
@@ -45,6 +45,9 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { login } from '../../../src/api/resident'
+import { useStatusBar } from '../../../src/utils/useStatusBar'
+
+const { statusBarPadding } = useStatusBar()
 
 const loading = ref(false)
 const error = ref('')

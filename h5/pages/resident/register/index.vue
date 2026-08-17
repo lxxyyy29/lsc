@@ -1,5 +1,5 @@
 <template>
-  <view class="register-page">
+  <view class="register-page" :style="{ paddingTop: statusBarPadding }">
     <view class="header">
       <text class="back-btn" @click="goBack">← 返回</text>
       <text class="header-title">注册账号</text>
@@ -39,6 +39,9 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { register } from '../../../src/api/resident'
+import { useStatusBar } from '../../../src/utils/useStatusBar'
+
+const { statusBarPadding } = useStatusBar()
 
 const loading = ref(false)
 const error = ref('')
