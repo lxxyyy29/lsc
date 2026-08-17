@@ -12,11 +12,11 @@ This workspace contains four sibling applications that implement one event-gover
 - `mp/` — Vue 3 + TypeScript + Vite mini-program on port `5176`（居民随手拍）
 - `docs/architecture/` — delivery contract and manual verification docs for the current phase
 
-Start with `docs/系统说明文档.md` for the current API reference (315 endpoints as of 2026-08-05, Flyway V80). `docs/architecture/phase1-endpoints.md` is the historical Phase1 contract, not the current state.
+Start with `docs/系统说明文档.md` for the current API reference (403 endpoints as of 2026-08-17，其中 V81~V96 新增模块接口清单待补; Flyway V96). `docs/architecture/phase1-endpoints.md` is the historical Phase1 contract, not the current state.
 
 ## 生产环境速查（服务器上开发，必读）
 
-本项目运行在本云服务器上，**开发即部署**：改完代码用 docker compose 重建容器验证，然后 git commit + push 同步 GitHub（远程 `git@github.com:lxxyyy29/lsc.git`，master，SSH 免密）。宿主机没有 Java/Node 环境，编译一律交给 Docker 构建（构建失败即暴露编译错误）。
+本项目运行在本云服务器上，**开发即部署**：改完代码用 docker compose 重建容器验证，然后 git commit + push 同步 GitHub（远程 `git@github.com:lxxyyy29/lsc.git`，master，SSH 免密）。宿主机装有 JDK 17 和 Maven（早期说"无 Java/Node 环境"已过时）；注意后端 Dockerfile 只 COPY 本地 `backend/target/*.jar`，**必须先 `cd backend && mvn clean package -DskipTests` 再 build 镜像**，否则打进去的是旧 jar（构建全走缓存是未重新打包的信号）。宿主机没有 Node 环境，前端编译交给 Docker 构建。
 
 ### 部署命令（在 `docker/` 目录）
 
@@ -41,7 +41,7 @@ docker ps --filter name=changping      # 查看状态
 ### 测试账号
 
 - 管理端：admin / admin123
-- H5 网格员：grid01~grid05 / 123456（登录端点 `/api/h5/auth/login`，不要用 WEB 端点）
+- H5 网格员：grid01~grid06 / 123456（登录端点 `/api/h5/auth/login`，不要用 WEB 端点）
 - MySQL：容器 changping-mysql，库名 **zhsq**（不是 changping），root 密码在 `docker/.env`；sys_user 表用户名字段是 `username`
 
 ### 近期关键实现（2026-08）
@@ -219,7 +219,7 @@ The legacy `X-Foundation-*` headers still exist only as a fallback/testing path;
 
 Useful references:
 
-- `docs/系统说明文档.md` — current full API reference (updated 2026-08-05)
+- `docs/系统说明文档.md` — current full API reference (updated 2026-08-17；接口清单收录 315/403，V81~V96 新增模块待补)
 - `docs/architecture/phase1-endpoints.md` — historical Phase1 API contract and workflow mapping
 - `docs/architecture/phase1-verification-checklist.md` — manual verification checklist and known gaps
 

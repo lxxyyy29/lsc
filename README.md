@@ -10,7 +10,7 @@
 - `mp/`：Vue 3 + TypeScript + Vite 居民小程序，默认端口 `5176`
 - `docs/`
   - `docs/项目功能说明文档.md`：**全项目功能说明**(文件结构归类 + 文档归纳 + 后端 30 模块/Web 36 页/小程序 34 页功能全景,2026-08-14)
-  - `docs/系统说明文档.md`：完整接口文档(2026-08-05 按代码扫描更新,315 个端点)
+  - `docs/系统说明文档.md`：完整接口文档(代码实际 403 端点；清单收录 315，V81~V96 新增模块待补；2026-08-17 体检修正)
   - `docs/项目进度记录.md`：项目进度记录
   - `docs/部署实操指南.md`：Docker 生产部署实操指南
   - `docs/部署运维指南.md`：运维操作指南
@@ -26,7 +26,7 @@
 - Node.js 18+
 - Maven Wrapper：后端已包含 `mvnw` / `mvnw.cmd`
 - pnpm：如本机未全局安装，可使用 `npx pnpm ...`
-- MySQL 9.7
+- MySQL 8.0（生产镜像 mysql:8.0）
 - MongoDB 6.0
 - Redis 7
 - MinIO
@@ -154,7 +154,7 @@ cd mp
 | 账号 | 密码 | 角色 | 端 |
 |------|------|------|------|
 | admin | admin123 | 系统管理员 | Web |
-| grid01-grid05 | grid123 | 网格员 | H5 |
+| grid01-grid06 | 123456 | 网格员 | H5 |
 | yonghu | 123456 | 普通群众 | 小程序 |
 
 ## 配置说明
@@ -174,7 +174,7 @@ cd mp
 | `OSS_ENDPOINT` | MinIO 地址 | `http://127.0.0.1:9009/` |
 | `APP_TEST_ENABLED` | 是否启用测试接口 | `false`（生产环境务必不设置） |
 
-Flyway 数据库迁移脚本位于：`backend/src/main/resources/db/migration/`（当前 V78）。
+Flyway 数据库迁移脚本位于：`backend/src/main/resources/db/migration/`（当前 V96）。
 
 ## 生产部署（Docker）
 
@@ -184,6 +184,7 @@ Flyway 数据库迁移脚本位于：`backend/src/main/resources/db/migration/`�
 |------|------|------|
 | changping-backend | 10081 | 后端 API |
 | changping-web | 8888 | Web 管理端 |
+| changping-web | 8443 | HTTPS 聚合入口（代理 /h5/ /mp/ 子入口，定位类功能需走此入口） |
 | changping-h5 | 10082 | H5 移动端 |
 | changping-mp | 10083 | 居民小程序 |
 
@@ -202,7 +203,7 @@ Flyway 数据库迁移脚本位于：`backend/src/main/resources/db/migration/`�
 | 层级 | 技术 |
 |------|------|
 | 后端框架 | Spring Boot 3.3 / Java 17 |
-| 数据库 | MySQL 9.7（业务数据） |
+| 数据库 | MySQL 8.0（业务数据） |
 | 缓存 | Redis 7（会话/令牌缓存） |
 | 文档数据库 | MongoDB 6.0（告警事件） |
 | 对象存储 | MinIO（文件/图片/视频） |
@@ -214,4 +215,4 @@ Flyway 数据库迁移脚本位于：`backend/src/main/resources/db/migration/`�
 
 ---
 
-*最后更新：2026-08-05*
+*最后更新：2026-08-17*
