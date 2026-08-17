@@ -827,14 +827,15 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public void autoEscalateUrgency() {
-        // 获取所有活跃事件（未关闭的）
+        // 获取所有活跃事件（未关闭的）；created_at 允许为空，避免单条脏数据 NPE 中断整轮扫描
         List<EventEntity> activeEvents = jdbcTemplate.query(
             "SELECT id, urgency_level, created_at FROM biz_event WHERE status NOT IN ('CLOSED', 'COMPLETED')",
             (rs, rowNum) -> {
                 EventEntity e = new EventEntity();
                 e.setId(rs.getLong("id"));
                 e.setUrgencyLevel(rs.getString("urgency_level"));
-                e.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+                java.sql.Timestamp createdAt = rs.getTimestamp("created_at");
+                e.setCreatedAt(createdAt == null ? null : createdAt.toLocalDateTime());
                 return e;
             });
 
