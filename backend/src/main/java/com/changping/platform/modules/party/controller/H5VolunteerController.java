@@ -6,6 +6,7 @@ import com.changping.platform.modules.auth.security.PermissionCodes;
 import com.changping.platform.modules.auth.security.PermissionGuard;
 import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
+import com.changping.platform.modules.resident.controller.ResidentController;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -26,18 +27,21 @@ public class H5VolunteerController {
     private final JdbcTemplate jdbcTemplate;
     private final CurrentUserService currentUserService;
     private final PermissionGuard permissionGuard;
+    private final ResidentController residentController;
 
     /**
      * @Author tangxinglin
-     * @Description //构造函数，注入 JDBC 模板、当前用户服务及权限校验
+     * @Description //构造函数，注入 JDBC 模板、当前用户服务、权限校验及居民端控制器（复用签到积分逻辑）
      * @Date 2026/08/07 10:00
      */
     public H5VolunteerController(JdbcTemplate jdbcTemplate,
                                  CurrentUserService currentUserService,
-                                 PermissionGuard permissionGuard) {
+                                 PermissionGuard permissionGuard,
+                                 ResidentController residentController) {
         this.jdbcTemplate = jdbcTemplate;
         this.currentUserService = currentUserService;
         this.permissionGuard = permissionGuard;
+        this.residentController = residentController;
     }
 
     /**
@@ -118,39 +122,8 @@ public class H5VolunteerController {
         currentUserService.requireClientType(AuthService.ClientType.H5);
         permissionGuard.require(PermissionCodes.API_H5_VOLUNTEER_SIGNUP);
         Long userId = AuthenticatedUserContextHolder.getRequired().id();
-
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-            "SELECT a.activity_date, a.title, s.status FROM sys_volunteer_activity a " +
-            "JOIN sys_volunteer_signup s ON s.activity_id = a.id AND s.user_id = ? " +
-            "WHERE a.id = ?", userId, id);
-        if (rows.isEmpty()) {
-            throw new com.changping.platform.common.exception.BusinessException("VALIDATION_ERROR", "请先报名该活动");
-        }
-        Map<String, Object> row = rows.get(0);
-        if ("CHECKED_IN".equals(row.get("status"))) {
-            return ApiResponse.ok(true);
-        }
-        java.sql.Date activityDate = (java.sql.Date) row.get("activity_date");
-        if (activityDate == null) {
-            throw new com.changping.platform.common.exception.BusinessException("VALIDATION_ERROR", "活动未设置日期，无法签到");
-        }
-        long diffDays = java.time.temporal.ChronoUnit.DAYS.between(
-            activityDate.toLocalDate(), java.time.LocalDate.now());
-        if (diffDays < 0 || diffDays > 2) {
-            throw new com.changping.platform.common.exception.BusinessException("VALIDATION_ERROR", "仅可在活动当天至活动结束后2天内签到");
-        }
-        jdbcTemplate.update(
-            "UPDATE sys_volunteer_signup SET status = 'CHECKED_IN', check_in_time = CURRENT_TIMESTAMP " +
-            "WHERE activity_id = ? AND user_id = ? AND status = 'SIGNED_UP'", id, userId);
-        jdbcTemplate.update(
-            "INSERT INTO sys_volunteer_points (user_id, total_points, available_points) VALUES (?, 20, 20) " +
-            "ON DUPLICATE KEY UPDATE total_points = total_points + 20, available_points = available_points + 20",
-            userId);
-        jdbcTemplate.update(
-            "INSERT INTO sys_volunteer_points_log (user_id, points, reason, source_type, source_id) " +
-            "VALUES (?, 20, ?, 'VOLUNTEER_ACTIVITY', ?)",
-            userId, "志愿活动签到：" + row.get("title"), id);
-        return ApiResponse.ok(true);
+        // 复用居民端签到公共逻辑（报名校验、取消拦截、日期窗口、并发闸门与积分发放）
+        return ApiResponse.ok(residentController.checkinAndGrantPoints(id, userId));
     }
 
     /**

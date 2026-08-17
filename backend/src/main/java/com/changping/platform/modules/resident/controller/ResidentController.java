@@ -123,14 +123,14 @@ public class ResidentController {
 
     /**
      * @Author tangxinglin
-     * @Description //签到校验与积分发放公共逻辑：校验报名状态与活动窗口，幂等返回已签到，成功后更新签到状态、累计积分并写入流水
+     * @Description //签到校验与积分发放公共逻辑：校验报名状态与活动窗口，幂等返回已签到，成功后更新签到状态、累计积分并写入流水。供居民端与H5端复用
      * @Date 2026/08/17 16:00
      * @Param [activityId 活动ID, userId 签到用户ID]
      * @return boolean 是否签到成功（已签到幂等返回 true）
      */
-    boolean checkinAndGrantPoints(Long activityId, Long userId) {
+    public boolean checkinAndGrantPoints(Long activityId, Long userId) {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-            "SELECT a.activity_date, a.title, s.status FROM sys_volunteer_activity a " +
+            "SELECT a.activity_date, a.title, a.status as activity_status, s.status FROM sys_volunteer_activity a " +
             "JOIN sys_volunteer_signup s ON s.activity_id = a.id AND s.user_id = ? " +
             "WHERE a.id = ?", userId, activityId);
         if (rows.isEmpty()) {
@@ -139,6 +139,9 @@ public class ResidentController {
         Map<String, Object> row = rows.get(0);
         if ("CHECKED_IN".equals(row.get("status"))) {
             return true;
+        }
+        if ("CANCELLED".equals(row.get("activity_status"))) {
+            throw new BusinessException("VALIDATION_ERROR", "活动已取消，无法签到");
         }
         java.sql.Date activityDate = (java.sql.Date) row.get("activity_date");
         if (activityDate == null) {
@@ -149,9 +152,19 @@ public class ResidentController {
         if (diffDays < 0 || diffDays > 2) {
             throw new BusinessException("VALIDATION_ERROR", "仅可在活动当天至活动结束后2天内签到");
         }
-        jdbcTemplate.update(
+        // 以 UPDATE 作为并发闸门：仅 SIGNED_UP→CHECKED_IN 成功者才发放积分，杜绝并发/双击重复加分
+        int updated = jdbcTemplate.update(
             "UPDATE sys_volunteer_signup SET status = 'CHECKED_IN', check_in_time = CURRENT_TIMESTAMP " +
             "WHERE activity_id = ? AND user_id = ? AND status = 'SIGNED_UP'", activityId, userId);
+        if (updated == 0) {
+            Integer checked = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM sys_volunteer_signup WHERE activity_id = ? AND user_id = ? AND status = 'CHECKED_IN'",
+                Integer.class, activityId, userId);
+            if (checked != null && checked > 0) {
+                return true;
+            }
+            throw new BusinessException("VALIDATION_ERROR", "报名状态已变化，无法签到");
+        }
         jdbcTemplate.update(
             "INSERT INTO sys_volunteer_points (user_id, total_points, available_points) VALUES (?, 20, 20) " +
             "ON DUPLICATE KEY UPDATE total_points = total_points + 20, available_points = available_points + 20",

@@ -32,7 +32,8 @@
         </view>
         <view class="activity-action">
           <template v-if="a.signedUp">
-            <button v-if="!a.checkedIn" class="btn-signup" @click="checkin(a.id)">签到 +20积分</button>
+            <button v-if="!a.checkedIn && inCheckinWindow(a)" class="btn-signup" @click="checkin(a.id)">签到 +20积分</button>
+            <text v-else-if="!a.checkedIn" class="tag-closed">不在签到时间</text>
             <text v-else class="tag-checked">已签到 ✓</text>
             <button v-if="!a.checkedIn" class="btn-cancel" @click="cancelSignup(a.id)">取消报名</button>
           </template>
@@ -138,6 +139,18 @@ async function checkin(id: number) {
   } catch (e: any) {
     showToast('签到失败：' + (e?.message || '未知错误'))
   }
+}
+
+/** 签到窗口判断：活动当天至结束后2天内（与后端口径一致），窗口外不展示签到按钮 */
+function inCheckinWindow(a: any): boolean {
+  const raw = a.activityDate || a.activity_date
+  if (!raw) return false
+  const start = new Date(String(raw).replace(/-/g, '/'))
+  start.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const diff = Math.round((today.getTime() - start.getTime()) / 86400000)
+  return diff >= 0 && diff <= 2
 }
 
 onShow(async () => {
