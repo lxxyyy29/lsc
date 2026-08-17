@@ -12,7 +12,7 @@ This workspace contains four sibling applications that implement one event-gover
 - `mp/` — Vue 3 + TypeScript + Vite mini-program on port `5176`（居民随手拍）
 - `docs/architecture/` — delivery contract and manual verification docs for the current phase
 
-Start with `docs/系统说明文档.md` for the current API reference (403 endpoints as of 2026-08-17，其中 V81~V96 新增模块接口清单待补; Flyway V96). `docs/architecture/phase1-endpoints.md` is the historical Phase1 contract, not the current state.
+Start with `docs/系统说明文档.md` for the current API reference (403 endpoints fully listed as of 2026-08-17, incl. section 4.35 for V81~V96 modules; Flyway V96). `docs/architecture/phase1-endpoints.md` is the historical Phase1 contract, not the current state.
 
 ## 生产环境速查（服务器上开发，必读）
 
@@ -219,7 +219,7 @@ The legacy `X-Foundation-*` headers still exist only as a fallback/testing path;
 
 Useful references:
 
-- `docs/系统说明文档.md` — current full API reference (updated 2026-08-17；接口清单收录 315/403，V81~V96 新增模块待补)
+- `docs/系统说明文档.md` — current full API reference (updated 2026-08-17；403 端点全量收录，含 4.35 节 V81~V96 新增模块)
 - `docs/architecture/phase1-endpoints.md` — historical Phase1 API contract and workflow mapping
 - `docs/architecture/phase1-verification-checklist.md` — manual verification checklist and known gaps
 
