@@ -1,5 +1,6 @@
 <template>
   <view class="page" :style="{ paddingTop: statusBarPadding }">
+    <ResidentBackBar />
     <view class="header">
       <text class="header-title">🏠 便民服务</text>
       <text class="header-sub">活动报名 / 便民报修 / 政策查询 / 志愿服务积分</text>
@@ -58,6 +59,7 @@
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useStatusBar } from '../../../src/utils/useStatusBar'
+import ResidentBackBar from '../../../src/components/ResidentBackBar.vue'
 import ResidentTabBar from '../../../src/components/ResidentTabBar.vue'
 import { getResidentActivities, getMyPoints } from '../../../src/api/resident'
 

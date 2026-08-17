@@ -1,5 +1,6 @@
 <template>
   <view class="page" :style="{ paddingTop: statusBarPadding }">
+    <ResidentBackBar />
     <view class="header">
       <text class="header-title">📋 政策查询</text>
       <text class="header-sub">惠民政策，一查便知</text>
@@ -54,6 +55,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import ResidentTabBar from '../../../src/components/ResidentTabBar.vue'
 import { getResidentPolicies } from '../../../src/api/resident'
 import { useStatusBar } from '../../../src/utils/useStatusBar'
+import ResidentBackBar from '../../../src/components/ResidentBackBar.vue'
 
 const { statusBarPadding } = useStatusBar()
 

@@ -173,8 +173,8 @@ async function handlePasswordLogin() {
   errorMessage.value = ''
   submitting.value = true
   try {
-    // 第一次：H5 接口（网格员）
-    await loginH5({ account: form.account, password: form.password })
+    // 第一次：H5 接口（网格员）。探测性请求，失败时静默（居民账号不允许 H5 登录属正常分支，不弹错）
+    await loginH5({ account: form.account, password: form.password }, { silent: true })
     uni.reLaunch({ url: '/pages/workbench/index' })
   } catch {
     // 第二次：WEB 接口（居民）

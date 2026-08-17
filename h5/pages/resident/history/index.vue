@@ -1,5 +1,6 @@
 <template>
   <view class="page" :style="{ paddingTop: statusBarPadding }">
+    <ResidentBackBar />
     <view class="header">
       <text class="header-title">📋 我的上报</text>
       <text class="header-sub">查看上报记录和处理进度</text>
@@ -44,6 +45,7 @@
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useStatusBar } from '../../../src/utils/useStatusBar'
+import ResidentBackBar from '../../../src/components/ResidentBackBar.vue'
 import ResidentTabBar from '../../../src/components/ResidentTabBar.vue'
 import { getMyReports, rateEvent } from '../../../src/api/resident'
 

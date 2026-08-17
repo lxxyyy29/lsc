@@ -275,8 +275,10 @@ export function mergeCurrentUserIntoSession(session: H5Session, currentUser: Cur
   }
 }
 
-export async function loginH5(payload: H5LoginPayload): Promise<H5Session> {
-  const response = await http.post<H5LoginResponse, H5LoginResponse>('/auth/login', payload)
+export async function loginH5(payload: H5LoginPayload, options?: { silent?: boolean }): Promise<H5Session> {
+  const response = await http.post<H5LoginResponse, H5LoginResponse>('/auth/login', payload, {
+    silent: options?.silent === true
+  } as any)
   const session = createH5SessionFromLoginResponse(response)
   persistH5Session(session)
   return session
@@ -302,7 +304,8 @@ export async function logoutH5() {
 }
 
 export async function fetchCurrentH5User() {
-  return http.get<CurrentH5User, CurrentH5User>('/auth/me')
+  // 启动时会话恢复属于探测性请求，失败时静默，不向用户弹错
+  return http.get<CurrentH5User, CurrentH5User>('/auth/me', { silent: true } as any)
 }
 
 export async function recoverH5Session(fetchCurrentUser: () => Promise<CurrentH5User>) {

@@ -170,7 +170,9 @@ function createResidentHttpClient(config?: AxiosRequestConfig): AxiosInstance {
       const payload = response.data as ApiResponse<unknown>
       if (!payload || typeof payload !== 'object' || payload.success !== true) {
         const msg = translateError((payload as ApiResponse<unknown>)?.message || '请求失败，请稍后重试')
-        showErrorToast(msg)
+        if (!(response.config as { silent?: boolean })?.silent) {
+          showErrorToast(msg)
+        }
         throw new HttpResponseError(msg, response.status)
       }
       return payload.data
@@ -182,7 +184,8 @@ function createResidentHttpClient(config?: AxiosRequestConfig): AxiosInstance {
       }
       const rawMsg = error.response?.data?.message || (error instanceof Error && error.message ? error.message : '网络错误，请检查网络连接')
       const message = translateError(rawMsg)
-      if (status !== 401) {
+      const silent = (error.config as { silent?: boolean } | undefined)?.silent === true
+      if (status !== 401 && !silent) {
         showErrorToast(message)
       }
       return Promise.reject(new HttpResponseError(message, status))
@@ -203,7 +206,8 @@ async function request<T>(method: 'get' | 'post' | 'put' | 'delete', url: string
 // ---- 微信小程序环境：uni.request ----
 type UniRequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
-function uniRequest<T>(method: UniRequestMethod, url: string, data?: unknown): Promise<T> {
+function uniRequest<T>(method: UniRequestMethod, url: string, data?: unknown, config?: { silent?: boolean }): Promise<T> {
+  const silent = config?.silent === true
   return new Promise((resolve, reject) => {
     const session = getResidentSession()
     const headers: Record<string, string> = {}
@@ -224,7 +228,7 @@ function uniRequest<T>(method: UniRequestMethod, url: string, data?: unknown): P
             : '请求失败，请稍后重试'
           if (response.statusCode === 401) {
             handleResident401()
-          } else {
+          } else if (!silent) {
             showErrorToast(message)
           }
           reject(new HttpResponseError(message, response.statusCode))
@@ -234,15 +238,17 @@ function uniRequest<T>(method: UniRequestMethod, url: string, data?: unknown): P
       },
       fail: (error) => {
         const msg = error?.errMsg?.includes('timeout') ? '请求超时，请稍后重试' : '网络错误，请检查网络连接'
-        showErrorToast(msg)
+        if (!silent) {
+          showErrorToast(msg)
+        }
         reject(new HttpResponseError(msg))
       }
     })
   })
 }
 
-function request<T>(method: UniRequestMethod, url: string, data?: unknown): Promise<T> {
-  return uniRequest<T>(method, url, data)
+function request<T>(method: UniRequestMethod, url: string, data?: unknown, config?: { silent?: boolean }): Promise<T> {
+  return uniRequest<T>(method, url, data, config)
 }
 // #endif
 
@@ -254,7 +260,8 @@ export interface ResidentLoginPayload {
 }
 
 export async function login(account: string, password: string): Promise<ResidentSession> {
-  const data = await request<ResidentSession>('post', '/auth/login', { account, password, clientType: 'web' })
+  // 登录失败由调用方页面内联展示错误，不全局弹 toast
+  const data = await request<ResidentSession>('post', '/auth/login', { account, password, clientType: 'web' }, { silent: true } as any)
   persistResidentSession(data)
   return data
 }

@@ -138,7 +138,9 @@ export function createHttpClient(config?: AxiosRequestConfig) {
       const payload = response.data as ApiResponse<unknown>
       if (!payload || typeof payload !== 'object' || payload.success !== true) {
         const msg = translateError(payload?.message || '请求失败，请稍后重试')
-        showErrorToast(msg)
+        if (!(response.config as { silent?: boolean })?.silent) {
+          showErrorToast(msg)
+        }
         throw new HttpResponseError(msg, response.status)
       }
 
@@ -153,7 +155,8 @@ export function createHttpClient(config?: AxiosRequestConfig) {
 
       const rawMsg = error.response?.data?.message || getErrorMessage(error)
       const message = translateError(rawMsg)
-      if (status !== 401) {
+      const silent = (error.config as { silent?: boolean } | undefined)?.silent === true
+      if (status !== 401 && !silent) {
         showErrorToast(message)
       }
       return Promise.reject(new HttpResponseError(message, status))
@@ -197,6 +200,7 @@ function createUniHttpClient(): HttpLikeClient {
   }
 
   const request = <R>(method: UniRequestMethod, url: string, data?: unknown, config?: unknown): Promise<R> => {
+    const silent = (config as { silent?: boolean } | undefined)?.silent === true
     return new Promise((resolve, reject) => {
       const session = getH5Session()
       const headers: Record<string, string> = {}
@@ -216,7 +220,7 @@ function createUniHttpClient(): HttpLikeClient {
             if (response.statusCode === 401) {
               const responseCode = payload && typeof payload === 'object' && 'code' in payload ? String(payload.code ?? '') : undefined
               handle401(responseCode)
-            } else {
+            } else if (!silent) {
               showErrorToast(message)
             }
             reject(new HttpResponseError(message, response.statusCode))
@@ -227,7 +231,9 @@ function createUniHttpClient(): HttpLikeClient {
         },
         fail: (error) => {
           const msg = getErrorMessage(error)
-          showErrorToast(msg)
+          if (!silent) {
+            showErrorToast(msg)
+          }
           reject(new HttpResponseError(msg))
         }
       })
