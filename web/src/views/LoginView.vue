@@ -138,11 +138,6 @@
 
       <!-- 底部信息 -->
       <div class="login-footer">
-        <div class="quick-login">
-          <span class="quick-label">快速登录:</span>
-          <button @click="quickLogin('admin', 'admin123')" class="quick-btn">管理员</button>
-          <button @click="quickLogin('grid01', '123456')" class="quick-btn">网格员</button>
-        </div>
         <p class="copyright">© 2026 拔蛟窝社区综合治理办公室</p>
       </div>
     </div>
@@ -196,12 +191,6 @@ async function handleLogin() {
   } finally {
     loading.value = false
   }
-}
-
-function quickLogin(account: string, password: string) {
-  form.account = account
-  form.password = password
-  handleLogin()
 }
 
 async function handleRegister() {
@@ -529,36 +518,6 @@ async function handleRegister() {
   padding-top: 20px;
   border-top: 1px solid #f1f5f9;
   text-align: center;
-}
-
-.quick-login {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.quick-label {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.quick-btn {
-  padding: 4px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: #f8fafc;
-  color: #64748b;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.quick-btn:hover {
-  border-color: #0284c7;
-  color: #0284c7;
-  background: #eff6ff;
 }
 
 .copyright {
