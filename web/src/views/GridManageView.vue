@@ -298,6 +298,8 @@ function fillForm(g: GridNode) {
 function selectGrid(g: GridNode, skipHighlight = false) {
   if (editing.value) finishEditArea()
   if (drawing.value) cancelDraw()
+  // 有未保存的新绘边界时先确认，避免点一下已有网格就把刚画的图静默清掉
+  if (!form.value.id && roiPoints.value >= 3 && !confirmLeaveUnsaved()) return
   selectedId.value = g.id
   selectedGrid.value = g
   fillForm(g)
@@ -312,9 +314,18 @@ function selectGrid(g: GridNode, skipHighlight = false) {
   tipText.value = `已选中「${g.gridName}」，可拖拽顶点或重绘边界调整区域`
 }
 
+/** 未保存的新绘边界拦截：确认放弃才切换，取消则留在原地继续保存 */
+function confirmLeaveUnsaved(): boolean {
+  return window.confirm('当前新勾画的网格边界还未保存，切换后将被丢弃。\n确定放弃吗？（建议先点右侧「保存网格」）')
+}
+
 function setCurrentPolygon(poly: any | null) {
-  if (currentPolygon.value && currentPolygon.value !== poly) {
-    currentPolygon.value.setMap(null)
+  const prev = currentPolygon.value
+  if (prev && prev !== poly) {
+    // 已保存网格的多边形由 polygons 集合管理，不能移除，否则切换选中后该网格就从地图上消失；
+    // 只有临时多边形（新勾画未保存的）才需要从地图上清掉
+    const isSavedGridPoly = [...polygons.value.values()].includes(prev)
+    if (!isSavedGridPoly) prev.setMap(null)
   }
   currentPolygon.value = poly
   if (poly) {
@@ -335,8 +346,9 @@ function updateFormFromPolygon(poly: any) {
   }
 }
 
-function startCreate() {
+async function startCreate() {
   if (editing.value) finishEditArea()
+  if (!form.value.id && roiPoints.value >= 3 && !confirmLeaveUnsaved()) return
   selectedId.value = null
   selectedGrid.value = null
   highlight(0)
@@ -575,6 +587,8 @@ async function saveGrid() {
     return
   }
   saving.value = true
+  // 保存成功后要重新定位到该网格，先记下临时多边形路径，避免未保存拦截误触发
+  const tempPath: any[] | null = (!form.value.id && currentPolygon.value) ? currentPolygon.value.getPath() : null
   try {
     const payload = {
       gridName: form.value.gridName.trim(),
@@ -591,14 +605,24 @@ async function saveGrid() {
       await updateGrid(form.value.id, payload)
       notify('网格已更新', 'success')
     } else {
-      await createGrid(payload)
+      const created = await createGrid(payload)
       notify('网格已创建', 'success')
+      if (created?.id) form.value.id = created.id
     }
     await reloadAll()
-    // 定位到新/更新的网格（视野+表单），不改变其样式，保持与同级网格一致
-    const target = flatTree.value.find(n => n.gridName === payload.gridName)
+    // 定位到新/更新的网格（视野+表单），优先用返回的id，其次按名称匹配
+    const target = flatTree.value.find(n => (form.value.id && n.id === form.value.id) || n.gridName === payload.gridName)
     if (target) selectGrid(target, true)
-    else resetForm()
+    else {
+      resetForm()
+      // 未定位到目标（如后端未返回id）时，把刚保存的边界临时画回地图，避免视觉上“消失”
+      if (tempPath && tempPath.length >= 3) {
+        setCurrentPolygon(new AMapLib.value.Polygon({
+          path: tempPath, map: map.value,
+          strokeColor: '#0284c7', fillColor: '#0284c7', fillOpacity: 0.2, strokeWeight: 2, zIndex: 11
+        }))
+      }
+    }
   } catch (e: any) {
     notify(`保存失败：${e?.message || '服务器内部异常，请稍后重试'}`)
   } finally {
