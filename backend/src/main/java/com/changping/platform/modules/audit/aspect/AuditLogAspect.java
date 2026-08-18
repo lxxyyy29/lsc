@@ -36,9 +36,9 @@ public class AuditLogAspect {
     private final AuditBatchWriter auditBatchWriter;
     private final ObjectMapper objectMapper;
 
-    /** 不需要记录审计的表 */
+    /** 不需要记录审计的模块（登录/注册是查询型动作非数据变更，不记入审计，避免噪音占据大头） */
     private static final Set<String> SKIP_TABLES = new HashSet<>(Arrays.asList(
-            "sys_audit_log", "sys_notification", "biz_message"
+            "sys_audit_log", "sys_notification", "biz_message", "auth", "register"
     ));
 
     public AuditLogAspect(AuditBatchWriter auditBatchWriter, ObjectMapper objectMapper) {

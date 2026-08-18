@@ -74,9 +74,9 @@ public class DroneDashboardController {
         }
 
         try {
-            // AI告警（从告警事件表中统计）
+            // AI告警（从告警事件表中统计，与事件列表页口径一致：仅计未归档的活跃事件）
             Long aiAlerts = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event WHERE source_type = 'AI_CAMERA' AND status NOT IN ('CLOSED', 'IGNORED')", Long.class);
+                "SELECT COUNT(*) FROM biz_event WHERE source_type = 'AI_CAMERA' AND COALESCE(archived, 0) = 0 AND status NOT IN ('CLOSED', 'IGNORED')", Long.class);
             result.put("aiAlerts", aiAlerts != null ? aiAlerts : 0);
         } catch (Exception e) {
             result.put("aiAlerts", 0);
@@ -146,7 +146,7 @@ public class DroneDashboardController {
             List<Map<String, Object>> alerts = jdbcTemplate.queryForList(
                 "SELECT e.event_code, e.title, e.event_type, e.urgency_level, e.status, e.occurred_at, e.incident_address, " +
                 "g.grid_name FROM biz_event e LEFT JOIN cmn_grid g ON g.id = e.grid_id " +
-                "WHERE e.source_type = 'AI_CAMERA' ORDER BY e.created_at DESC LIMIT 50");
+                "WHERE e.source_type = 'AI_CAMERA' AND COALESCE(e.archived, 0) = 0 ORDER BY e.created_at DESC LIMIT 50");
             return ApiResponse.ok(alerts);
         } catch (Exception e) {
             return ApiResponse.ok(List.of());

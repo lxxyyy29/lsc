@@ -827,9 +827,9 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public void autoEscalateUrgency() {
-        // 获取所有活跃事件（未关闭的）；created_at 允许为空，避免单条脏数据 NPE 中断整轮扫描
+        // 获取所有活跃事件（未关闭且未归档的）；created_at 允许为空，避免单条脏数据 NPE 中断整轮扫描
         List<EventEntity> activeEvents = jdbcTemplate.query(
-            "SELECT id, urgency_level, created_at FROM biz_event WHERE status NOT IN ('CLOSED', 'COMPLETED')",
+            "SELECT id, urgency_level, created_at FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status NOT IN ('CLOSED', 'COMPLETED')",
             (rs, rowNum) -> {
                 EventEntity e = new EventEntity();
                 e.setId(rs.getLong("id"));
@@ -995,14 +995,15 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public EventStatistics getStatistics() {
-        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event", Long.class);
-        Long waiting = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status = 'WAITING_DISPATCH'", Long.class);
-        Long dispatched = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status = 'DISPATCHED_TO_WORK_ORDER'", Long.class);
-        Long closed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status = 'CLOSED'", Long.class);
-        Long ignored = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status = 'IGNORED'", Long.class);
-        Long green = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE urgency_level = 'GREEN' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
-        Long yellow = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE urgency_level = 'YELLOW' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
-        Long red = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE urgency_level = 'RED' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
+        // 与事件列表页口径一致：仅计未归档的活跃事件，避免各页面同类指标数量不一致
+        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0", Long.class);
+        Long waiting = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'WAITING_DISPATCH'", Long.class);
+        Long dispatched = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'DISPATCHED_TO_WORK_ORDER'", Long.class);
+        Long closed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'CLOSED'", Long.class);
+        Long ignored = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'IGNORED'", Long.class);
+        Long green = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND urgency_level = 'GREEN' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
+        Long yellow = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND urgency_level = 'YELLOW' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
+        Long red = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND urgency_level = 'RED' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
         return new EventStatistics(
                 total != null ? total : 0,
                 waiting != null ? waiting : 0,

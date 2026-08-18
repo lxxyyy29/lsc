@@ -110,13 +110,14 @@ public class EventController {
         int safePageSize = Math.min(Math.max(pageSize, 1), 100);
         int offset = (safePage - 1) * safePageSize;
 
+        // 与事件列表页口径一致：仅展示未归档的活跃事件
         Long total = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event WHERE report_user_id = ?",
+                "SELECT COUNT(*) FROM biz_event WHERE report_user_id = ? AND COALESCE(archived, 0) = 0",
                 Long.class,
                 user.id());
         List<Map<String, Object>> items = jdbcTemplate.query(
                 "SELECT id, event_code, title, description, status, created_at " +
-                        "FROM biz_event WHERE report_user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
+                        "FROM biz_event WHERE report_user_id = ? AND COALESCE(archived, 0) = 0 ORDER BY id DESC LIMIT ? OFFSET ?",
                 (rs, rowNum) -> {
                     Map<String, Object> item = new java.util.LinkedHashMap<>();
                     item.put("id", rs.getLong("id"));

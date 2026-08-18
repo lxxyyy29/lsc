@@ -95,6 +95,8 @@ public class AuditController {
 
         List<String> where = new ArrayList<>();
         List<Object> params = new ArrayList<>();
+        // 与全站口径一致：仅统计未归档的活跃事件
+        where.add("COALESCE(e.archived, 0) = 0");
         if ("PENDING".equalsIgnoreCase(status)) {
             where.add("e.status IN ('PENDING_AUDIT','IN_AUDIT')");
         } else if ("APPROVED".equalsIgnoreCase(status)) {
@@ -120,11 +122,11 @@ public class AuditController {
         // 三个状态的统计数（不受分页影响）
         Map<String, Long> stats = new HashMap<>();
         stats.put("pending", jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event e WHERE e.status IN ('PENDING_AUDIT','IN_AUDIT')", Long.class));
+                "SELECT COUNT(*) FROM biz_event e WHERE COALESCE(e.archived, 0) = 0 AND e.status IN ('PENDING_AUDIT','IN_AUDIT')", Long.class));
         stats.put("approved", jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event e WHERE EXISTS (SELECT 1 FROM biz_event_record r WHERE r.event_id = e.id AND r.action_type = 'AUDIT_PASS')", Long.class));
+                "SELECT COUNT(*) FROM biz_event e WHERE COALESCE(e.archived, 0) = 0 AND EXISTS (SELECT 1 FROM biz_event_record r WHERE r.event_id = e.id AND r.action_type = 'AUDIT_PASS')", Long.class));
         stats.put("rejected", jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event e WHERE e.status = 'AUDIT_REJECTED'", Long.class));
+                "SELECT COUNT(*) FROM biz_event e WHERE COALESCE(e.archived, 0) = 0 AND e.status = 'AUDIT_REJECTED'", Long.class));
 
         List<Map<String, Object>> items = new ArrayList<>();
         if (total != null && total > 0) {

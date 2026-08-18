@@ -7,8 +7,8 @@
       <!-- 筛选栏 -->
       <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
         <select v-model="filters.tableName" @change="page = 1; loadData()" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
-          <option value="">全部表</option>
-          <option v-for="t in tables" :key="t" :value="t">{{ t }}</option>
+          <option value="">全部模块</option>
+          <option v-for="t in tables" :key="t" :value="t">{{ moduleLabel(t) }}</option>
         </select>
         <select v-model="filters.operationType" @change="page = 1; loadData()" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
           <option value="">全部操作</option>
@@ -46,7 +46,7 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>表名</th>
+              <th>模块</th>
               <th>记录ID</th>
               <th>操作</th>
               <th>变更字段</th>
@@ -58,7 +58,7 @@
           <tbody>
             <tr v-for="log in items" :key="log.id">
               <td>{{ log.id }}</td>
-              <td><span class="tag tag-blue">{{ log.tableName }}</span></td>
+              <td><span class="tag tag-blue" :title="log.tableName">{{ moduleLabel(log.tableName) }}</span></td>
               <td style="font-size:12px;color:#6b7280;">{{ log.recordId }}</td>
               <td>
                 <span :class="['tag', opClass(log.operationType)]">
@@ -101,7 +101,7 @@
 
         <!-- 基本信息 -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;font-size:13px;padding:12px;background:#f9fafb;border-radius:8px;">
-          <div><span style="color:#6b7280;">表名：</span><strong>{{ diffData.tableName }}</strong></div>
+          <div><span style="color:#6b7280;">模块：</span><strong>{{ moduleLabel(diffData.tableName) }}</strong></div>
           <div><span style="color:#6b7280;">记录ID：</span><strong>{{ diffData.recordId }}</strong></div>
           <div><span style="color:#6b7280;">操作类型：</span><span :class="['tag', opClass(diffData.operationType)]">{{ opLabel(diffData.operationType) }}</span></div>
           <div><span style="color:#6b7280;">操作人：</span><strong>{{ diffData.operatorName || '-' }}</strong></div>
@@ -160,7 +160,7 @@
         </div>
 
         <div style="padding:12px;background:#fff7e6;border:1px solid #ffe58f;border-radius:8px;margin-bottom:16px;font-size:13px;">
-          <strong>注意：</strong>回滚将把 <code style="background:#fff;padding:1px 4px;border-radius:3px;">{{ previewData.tableName }}</code> 表中 ID 为 <strong>{{ previewData.recordId }}</strong> 的记录恢复到变更前状态。
+          <strong>注意：</strong>回滚将把 <code style="background:#fff;padding:1px 4px;border-radius:3px;">{{ moduleLabel(previewData.tableName) }}</code> 中 ID 为 <strong>{{ previewData.recordId }}</strong> 的记录恢复到变更前状态。
         </div>
 
         <!-- 变更预览 -->
@@ -236,6 +236,19 @@ function resetFilters() {
 function opLabel(type: string) {
   const map: Record<string, string> = { CREATE: '新增', UPDATE: '修改', DELETE: '删除', APPROVE: '审批', ROLLBACK: '回滚' }
   return map[type] || type
+}
+
+/** 审计切面按接口路径首段记录模块代号，这里映射为中文便于阅读 */
+function moduleLabel(name: string) {
+  const map: Record<string, string> = {
+    auth: '登录认证', h5: '移动端', community: '社区基础', events: '事件工单', party: '党建治理',
+    messaging: '消息', resident: '居民服务', emergency: '应急指挥', notifications: '通知',
+    activities: '志愿活动', trend_alerts: '趋势预警', media: '媒体资源', registration: '注册',
+    work_orders: '工单', upload: '文件上传', repairs: '报修', integrations: '外部集成',
+    video: '视频', dispatch_rules: '派单规则', vehicle_tracks: '车辆轨迹', processes: '流程',
+    test: '测试', grids: '网格', assessments: '考核研判', audits: '审核', drones: '无人机',
+  }
+  return map[name] || name
 }
 
 function opClass(type: string) {

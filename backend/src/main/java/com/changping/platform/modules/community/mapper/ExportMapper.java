@@ -15,9 +15,11 @@ public class ExportMapper {
     }
 
     public List<Map<String, Object>> getEventLedger() {
+        // 与事件列表页口径一致：仅导未归档的活跃事件
         String sql = "SELECT e.event_code, e.title, e.event_type, e.report_source, e.status, " +
                 "e.urgency_level, g.grid_name, e.incident_address, e.occurred_at, e.created_at " +
                 "FROM biz_event e LEFT JOIN cmn_grid g ON e.grid_id = g.id " +
+                "WHERE COALESCE(e.archived, 0) = 0 " +
                 "ORDER BY e.created_at DESC";
         return jdbcTemplate.queryForList(sql);
     }

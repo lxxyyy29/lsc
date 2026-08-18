@@ -32,12 +32,12 @@ public class AssessmentController {
         requireAssessmentPermission();
         Map<String, Object> result = new HashMap<>();
 
-        // 事件统计
-        Long totalEvents = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event", Long.class);
-        Long waitingDispatch = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status = 'WAITING_DISPATCH'", Long.class);
-        Long dispatched = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status = 'DISPATCHED_TO_WORK_ORDER'", Long.class);
-        Long closed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status = 'CLOSED'", Long.class);
-        Long pendingAudit = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE status IN ('PENDING_AUDIT', 'IN_AUDIT')", Long.class);
+        // 事件统计（与事件列表页口径一致：仅计未归档的活跃事件）
+        Long totalEvents = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0", Long.class);
+        Long waitingDispatch = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'WAITING_DISPATCH'", Long.class);
+        Long dispatched = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'DISPATCHED_TO_WORK_ORDER'", Long.class);
+        Long closed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'CLOSED'", Long.class);
+        Long pendingAudit = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status IN ('PENDING_AUDIT', 'IN_AUDIT')", Long.class);
 
         Map<String, Long> events = new HashMap<>();
         events.put("total", totalEvents != null ? totalEvents : 0);
@@ -60,21 +60,23 @@ public class AssessmentController {
 
         // 紧急程度分布
         List<Map<String, Object>> urgencyDist = jdbcTemplate.queryForList(
-                "SELECT urgency_level as level, COUNT(*) as count FROM biz_event GROUP BY urgency_level");
+                "SELECT urgency_level as level, COUNT(*) as count FROM biz_event WHERE COALESCE(archived, 0) = 0 GROUP BY urgency_level");
         result.put("urgencyDistribution", urgencyDist);
 
         // 事件类型分布
         List<Map<String, Object>> typeDist = jdbcTemplate.queryForList(
-                "SELECT event_type as type, COUNT(*) as count FROM biz_event GROUP BY event_type ORDER BY count DESC LIMIT 10");
+                "SELECT event_type as type, COUNT(*) as count FROM biz_event WHERE COALESCE(archived, 0) = 0 GROUP BY event_type ORDER BY count DESC LIMIT 10");
         result.put("eventTypeDistribution", typeDist);
 
-        // 网格事件排名（以二级网格为基准；未关联网格的历史迁移事件归入"未分配网格"）
+        // 网格事件排名（以二级网格为基准：三级网格事件归入其父网格；未关联或历史遗留 grid_id 归入"未分配网格"）
         List<Map<String, Object>> gridRanking = jdbcTemplate.queryForList(
                 "SELECT g.grid_name as gridName, " +
                 "COUNT(e.id) as eventCount, " +
                 "SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END) as closedCount, " +
                 "COALESCE(ROUND(SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(e.id), 0), 1), 0) as completionRate " +
-                "FROM cmn_grid g LEFT JOIN biz_event e ON e.grid_id = g.id " +
+                "FROM cmn_grid g " +
+                "LEFT JOIN (biz_event e JOIN cmn_grid eg ON eg.id = e.grid_id) " +
+                "  ON (eg.id = g.id OR eg.parent_id = g.id) AND COALESCE(e.archived, 0) = 0 " +
                 "WHERE g.status = 'ACTIVE' AND g.grid_level = 2 " +
                 "GROUP BY g.id, g.grid_name ORDER BY eventCount DESC");
         Map<String, Object> unassigned = jdbcTemplate.queryForMap(
@@ -82,7 +84,7 @@ public class AssessmentController {
                 "COUNT(*) as eventCount, " +
                 "SUM(CASE WHEN status = 'CLOSED' THEN 1 ELSE 0 END) as closedCount, " +
                 "ROUND(SUM(CASE WHEN status = 'CLOSED' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) as completionRate " +
-                "FROM biz_event WHERE grid_id IS NULL OR grid_id NOT IN (SELECT id FROM cmn_grid)");
+                "FROM biz_event WHERE COALESCE(archived, 0) = 0 AND (grid_id IS NULL OR grid_id NOT IN (SELECT id FROM cmn_grid))");
         if (((Number) unassigned.get("eventCount")).longValue() > 0) {
             gridRanking.add(unassigned);
         }
@@ -90,7 +92,7 @@ public class AssessmentController {
 
         // 按月统计
         List<Map<String, Object>> monthlyStats = jdbcTemplate.queryForList(
-                "SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count FROM biz_event GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY month DESC LIMIT 12");
+                "SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count FROM biz_event WHERE COALESCE(archived, 0) = 0 GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY month DESC LIMIT 12");
         result.put("monthlyStats", monthlyStats);
 
         return ApiResponse.ok(result);
@@ -136,12 +138,12 @@ public class AssessmentController {
 
         // 超期未处置数量（超过24小时未派单）
         Long overdueDispatch = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event WHERE status = 'WAITING_DISPATCH' AND TIMESTAMPDIFF(HOUR, created_at, NOW()) > 24", Long.class);
+                "SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'WAITING_DISPATCH' AND TIMESTAMPDIFF(HOUR, created_at, NOW()) > 24", Long.class);
         result.put("overdueDispatch", overdueDispatch != null ? overdueDispatch : 0);
 
         // 超期未处置数量（超过48小时未关闭）
         Long overdueClose = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event WHERE status NOT IN ('CLOSED', 'IGNORED') AND TIMESTAMPDIFF(HOUR, created_at, NOW()) > 48", Long.class);
+                "SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status NOT IN ('CLOSED', 'IGNORED') AND TIMESTAMPDIFF(HOUR, created_at, NOW()) > 48", Long.class);
         result.put("overdueClose", overdueClose != null ? overdueClose : 0);
 
         return ApiResponse.ok(result);
@@ -157,19 +159,19 @@ public class AssessmentController {
 
         // 平均评分
         Double avgRating = jdbcTemplate.queryForObject(
-                "SELECT AVG(rating) FROM biz_event WHERE rating IS NOT NULL", Double.class);
+                "SELECT AVG(rating) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND rating IS NOT NULL", Double.class);
         result.put("avgRating", avgRating != null ? Math.round(avgRating * 10.0) / 10.0 : 0);
 
         // 已评价数量
         Long totalRated = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event WHERE rating IS NOT NULL", Long.class);
+                "SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND rating IS NOT NULL", Long.class);
         result.put("totalRated", totalRated != null ? totalRated : 0);
 
         // 满意率（4-5星占比）
         Long satisfied = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event WHERE rating >= 4", Long.class);
+                "SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND rating >= 4", Long.class);
         Long totalWithRating = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event WHERE rating IS NOT NULL", Long.class);
+                "SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND rating IS NOT NULL", Long.class);
         if (totalWithRating != null && totalWithRating > 0) {
             result.put("satisfactionRate", Math.round((satisfied != null ? satisfied : 0) * 100.0 / totalWithRating) + "%");
         } else {
@@ -190,7 +192,7 @@ public class AssessmentController {
         // 本月高频问题 TOP5
         List<Map<String, Object>> topIssues = jdbcTemplate.queryForList(
                 "SELECT event_type as type, COUNT(*) as count FROM biz_event " +
-                "WHERE created_at >= DATE_FORMAT(NOW(), '%Y-%m-01') " +
+                "WHERE COALESCE(archived, 0) = 0 AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01') " +
                 "GROUP BY event_type ORDER BY count DESC LIMIT 5");
         result.put("topIssues", topIssues);
 
@@ -198,17 +200,17 @@ public class AssessmentController {
         List<Map<String, Object>> topGrids = jdbcTemplate.queryForList(
                 "SELECT g.grid_name as gridName, COUNT(e.id) as count FROM biz_event e " +
                 "LEFT JOIN cmn_grid g ON g.id = e.grid_id " +
-                "WHERE e.created_at >= DATE_FORMAT(NOW(), '%Y-%m-01') " +
+                "WHERE COALESCE(e.archived, 0) = 0 AND e.created_at >= DATE_FORMAT(NOW(), '%Y-%m-01') " +
                 "GROUP BY g.grid_name ORDER BY count DESC LIMIT 5");
         result.put("topGrids", topGrids);
 
         // 本月关键指标
         Long monthTotal = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event WHERE created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')", Long.class);
+                "SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')", Long.class);
         Long monthClosed = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event WHERE status = 'CLOSED' AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')", Long.class);
+                "SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'CLOSED' AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')", Long.class);
         Double monthAvgRating = jdbcTemplate.queryForObject(
-                "SELECT AVG(rating) FROM biz_event WHERE rating IS NOT NULL AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')", Double.class);
+                "SELECT AVG(rating) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND rating IS NOT NULL AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')", Double.class);
         result.put("monthTotal", monthTotal != null ? monthTotal : 0);
         result.put("monthClosed", monthClosed != null ? monthClosed : 0);
         result.put("monthCompletionRate", monthTotal != null && monthTotal > 0
@@ -228,7 +230,7 @@ public class AssessmentController {
                 "SELECT e.event_type as type, g.grid_name as gridName, COUNT(*) as count, " +
                 "MAX(e.created_at) as latestTime, GROUP_CONCAT(DISTINCT e.title SEPARATOR ' | ') as sampleTitles " +
                 "FROM biz_event e LEFT JOIN cmn_grid g ON g.id = e.grid_id " +
-                "WHERE e.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) " +
+                "WHERE COALESCE(e.archived, 0) = 0 AND e.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) " +
                 "AND e.status NOT IN ('CLOSED', 'IGNORED') " +
                 "GROUP BY e.event_type, g.grid_name HAVING COUNT(*) >= 3 " +
                 "ORDER BY count DESC LIMIT 20");

@@ -156,24 +156,26 @@ public class DashboardMapper {
     public Map<String, Object> getMonthlySummary(String year, String month) {
         Map<String, Object> result = new HashMap<>();
 
+        // 月区间用 [月初, 次月初)，避免固定“-31”在小月/二月的边界误差，且能完整覆盖月末当天
         String startDate = year + "-" + month + "-01";
-        String endDate = year + "-" + month + "-31";
+        java.time.YearMonth ym = java.time.YearMonth.of(Integer.parseInt(year), Integer.parseInt(month));
+        String endDate = ym.plusMonths(1).atDay(1).toString();
 
-        // 本月事件数
+        // 本月事件数（与事件列表页口径一致：仅计未归档的活跃事件）
         Long eventCount = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM biz_event WHERE created_at >= ? AND created_at <= ?",
+            "SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND created_at >= ? AND created_at < ?",
             Long.class, startDate, endDate);
         result.put("eventCount", eventCount != null ? eventCount : 0);
 
         // 本月工单数
         Long workOrderCount = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM biz_work_order WHERE created_at >= ? AND created_at <= ?",
+            "SELECT COUNT(*) FROM biz_work_order WHERE created_at >= ? AND created_at < ?",
             Long.class, startDate, endDate);
         result.put("workOrderCount", workOrderCount != null ? workOrderCount : 0);
 
         // 本月完成工单
         Long completedCount = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM biz_work_order WHERE status = 'COMPLETED' AND completed_at >= ? AND completed_at <= ?",
+            "SELECT COUNT(*) FROM biz_work_order WHERE status = 'COMPLETED' AND completed_at >= ? AND completed_at < ?",
             Long.class, startDate, endDate);
         result.put("completedCount", completedCount != null ? completedCount : 0);
 
@@ -196,7 +198,7 @@ public class DashboardMapper {
             "COUNT(e.id) AS eventCount, " +
             "SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END) AS closedCount, " +
             "ROUND(SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(e.id), 0), 1) AS closeRate " +
-            "FROM cmn_grid g LEFT JOIN biz_event e ON g.id = e.grid_id AND " + timeFilter + " " +
+            "FROM cmn_grid g LEFT JOIN biz_event e ON g.id = e.grid_id AND " + timeFilter + " AND COALESCE(e.archived, 0) = 0 " +
             "WHERE g.status = 'ACTIVE' AND g.grid_level = 2 " +
             "GROUP BY g.id, g.grid_name ORDER BY closeRate DESC");
         result.put("period", period);
@@ -215,10 +217,10 @@ public class DashboardMapper {
             "GROUP BY g.id, g.grid_name ORDER BY populationCount DESC");
         result.put("populationRanking", populationRanking);
 
-        // 各网格事件统计
+        // 各网格事件统计（与事件列表页口径一致：仅计未归档的活跃事件）
         List<Map<String, Object>> eventStats = jdbcTemplate.queryForList(
             "SELECT g.grid_name AS gridName, COUNT(e.id) AS eventCount " +
-            "FROM cmn_grid g LEFT JOIN biz_event e ON g.id = e.grid_id " +
+            "FROM cmn_grid g LEFT JOIN biz_event e ON g.id = e.grid_id AND COALESCE(e.archived, 0) = 0 " +
             "WHERE g.status = 'ACTIVE' AND g.grid_level = 2 " +
             "GROUP BY g.id, g.grid_name ORDER BY eventCount DESC");
         result.put("eventStats", eventStats);

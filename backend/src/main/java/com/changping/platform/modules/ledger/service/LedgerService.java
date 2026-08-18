@@ -65,10 +65,11 @@ public class LedgerService {
     }
 
     private List<Map<String, Object>> getEventData(Map<String, String> filters) {
+        // 与事件列表页口径一致：仅展示未归档的活跃事件
         StringBuilder sql = new StringBuilder(
             "SELECT e.event_code, e.title, e.event_type, e.report_source, e.status, " +
             "e.urgency_level, g.grid_name, e.incident_address, e.occurred_at, e.created_at " +
-            "FROM biz_event e LEFT JOIN cmn_grid g ON g.id = e.grid_id WHERE 1=1");
+            "FROM biz_event e LEFT JOIN cmn_grid g ON g.id = e.grid_id WHERE COALESCE(e.archived, 0) = 0");
         List<Object> params = new ArrayList<>();
         applyFilter(sql, params, filters);
         sql.append(" ORDER BY e.created_at DESC LIMIT 500");
