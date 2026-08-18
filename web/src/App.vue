@@ -119,7 +119,7 @@ async function loadBadges() {
   }
 }
 
-// 分组菜单（大类 → 子功能）
+// 分组菜单（大类 → 子功能）：合并单条目组、拆出台账类，减少视觉噪音
 const menuGroups = [
   {
     name: '首页概览', icon: 'fas fa-tachometer-alt',
@@ -132,10 +132,9 @@ const menuGroups = [
     name: '事件工单', icon: 'fas fa-tasks',
     items: [
       { path: '/events', name: '事件闭环处置', badgeKey: 'eventsPending' },
-      { path: '/events/create', name: '创建事件' },
       { path: '/work-orders', name: '工单中心', badgeKey: 'workOrdersPending' },
-      { path: '/dispatch-rules', name: '智能派单规则' },
       { path: '/audits', name: '审核中心', badgeKey: 'auditsPending' },
+      { path: '/dispatch-rules', name: '智能派单规则' },
     ]
   },
   {
@@ -143,11 +142,16 @@ const menuGroups = [
     items: [
       { path: '/gis', name: 'GIS网格可视化' },
       { path: '/grid-manage', name: '网格管理' },
+      { path: '/biz-areas', name: '辖区管理' },
+      { path: '/org-members', name: '组织人员' },
+    ]
+  },
+  {
+    name: '基础台账', icon: 'fas fa-database',
+    items: [
       { path: '/population', name: '实有人口库' },
       { path: '/buildings', name: '房屋/出租屋库' },
       { path: '/places', name: '场所资源库' },
-      { path: '/org-members', name: '组织人员' },
-      { path: '/biz-areas', name: '辖区管理' },
       { path: '/ledger', name: '场所台账' },
     ]
   },
@@ -171,16 +175,11 @@ const menuGroups = [
     ]
   },
   {
-    name: '智能应用', icon: 'fas fa-helicopter',
-    items: [
-      { path: '/drones', name: '无人机管理' },
-      { path: '/video', name: '视频轮巡' },
-    ]
-  },
-  {
-    name: '党建治理', icon: 'fas fa-flag',
+    name: '智慧应用', icon: 'fas fa-helicopter',
     items: [
       { path: '/party', name: '智慧党建' },
+      { path: '/drones', name: '无人机管理' },
+      { path: '/video', name: '视频轮巡' },
     ]
   },
   {
@@ -188,12 +187,7 @@ const menuGroups = [
     items: [
       { path: '/reports', name: '数据报表' },
       { path: '/assessment', name: '考核研判' },
-            { path: '/trend-alerts', name: '趋势预判预警', badgeKey: 'trendAlerts' },
-    ]
-  },
-  {
-    name: '系统管理', icon: 'fas fa-cog',
-    items: [
+      { path: '/trend-alerts', name: '趋势预判预警', badgeKey: 'trendAlerts' },
       { path: '/audit-logs', name: '审计日志' },
     ]
   },

@@ -89,7 +89,7 @@
               </div>
               <span class="type-count">{{ item.count }}</span>
             </div>
-            <p v-if="!data.eventTypeDist?.length" style="color:#999;text-align:center;padding:20px;">暂无数据</p>
+            <p v-if="!data.eventTypeDist?.length" style="color:#94a3b8;text-align:center;padding:20px;">暂无数据</p>
           </div>
         </div>
 
@@ -105,7 +105,7 @@
                 <span class="trend-date">{{ formatTrendDate(item.date) }}</span>
               </div>
             </div>
-            <p v-if="!data.weeklyTrend?.length" style="color:#999;text-align:center;padding:20px;">暂无数据</p>
+            <p v-if="!data.weeklyTrend?.length" style="color:#94a3b8;text-align:center;padding:20px;">暂无数据</p>
           </div>
         </div>
       </div>
@@ -121,7 +121,7 @@
               <span class="rank-name">{{ item.gridName || '未知' }}</span>
               <span class="rank-count">{{ item.count }}</span>
             </div>
-            <p v-if="!data.gridRanking?.length" style="color:#999;text-align:center;padding:20px;">暂无数据</p>
+            <p v-if="!data.gridRanking?.length" style="color:#94a3b8;text-align:center;padding:20px;">暂无数据</p>
           </div>
         </div>
 
@@ -135,7 +135,7 @@
               <span class="wo-assignee">{{ item.assigneeName || '未派单' }}</span>
               <span class="wo-time">{{ formatTime(item.createdAt) }}</span>
             </div>
-            <p v-if="!data.recentWorkOrders?.length" style="color:#999;text-align:center;padding:20px;">暂无工单</p>
+            <p v-if="!data.recentWorkOrders?.length" style="color:#94a3b8;text-align:center;padding:20px;">暂无工单</p>
           </div>
         </div>
       </div>
@@ -230,10 +230,10 @@ onUnmounted(() => {
 
 <style scoped>
 .big-screen {
-  padding: 20px;
-  background: #0a1628;
-  min-height: calc(100vh - 60px);
-  color: #e0e6ed;
+  padding: 4px;
+  background: transparent;
+  min-height: calc(100vh - 140px);
+  color: #1e293b;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -243,34 +243,34 @@ onUnmounted(() => {
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #1e3a5f;
+  border-bottom: 2px solid #e2e8f0;
 }
 
 .bs-header h1 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #ffffff;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
   margin: 0;
 }
 
 .bs-header h1 i {
-  color: #00d4ff;
+  color: #0284c7;
   margin-right: 10px;
 }
 
 .bs-time {
   font-size: 14px;
-  color: #8899aa;
+  color: #64748b;
 }
 
 .bs-loading {
   text-align: center;
   padding: 60px;
-  color: #8899aa;
+  color: #64748b;
   font-size: 16px;
 }
 
-/* KPI 卡片 */
+/* KPI 卡片：白底 + 左侧色条，与全站 card-border-* 风格一致 */
 .bs-kpi-row {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -279,13 +279,14 @@ onUnmounted(() => {
 }
 
 .bs-kpi-card {
-  background: linear-gradient(135deg, #1a2d4a 0%, #0f2137 100%);
+  background: #fff;
   border-radius: 12px;
   padding: 16px;
   display: flex;
   align-items: center;
   gap: 12px;
-  border: 1px solid #1e3a5f;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .kpi-icon {
@@ -298,28 +299,35 @@ onUnmounted(() => {
   font-size: 20px;
 }
 
-.kpi-blue .kpi-icon { background: rgba(0, 123, 255, 0.2); color: #007bff; }
-.kpi-green .kpi-icon { background: rgba(40, 167, 69, 0.2); color: #28a745; }
-.kpi-orange .kpi-icon { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
-.kpi-purple .kpi-icon { background: rgba(156, 39, 176, 0.2); color: #9c27b0; }
-.kpi-cyan .kpi-icon { background: rgba(0, 212, 255, 0.2); color: #00d4ff; }
-.kpi-red .kpi-icon { background: rgba(255, 82, 82, 0.2); color: #ff5252; }
+.kpi-blue { border-left: 4px solid #0284c7; }
+.kpi-green { border-left: 4px solid #059669; }
+.kpi-orange { border-left: 4px solid #d97706; }
+.kpi-purple { border-left: 4px solid #7c3aed; }
+.kpi-cyan { border-left: 4px solid #0891b2; }
+.kpi-red { border-left: 4px solid #dc2626; }
+
+.kpi-blue .kpi-icon { background: #e0f2fe; color: #0284c7; }
+.kpi-green .kpi-icon { background: #d1fae5; color: #059669; }
+.kpi-orange .kpi-icon { background: #fef3c7; color: #d97706; }
+.kpi-purple .kpi-icon { background: #ede9fe; color: #7c3aed; }
+.kpi-cyan .kpi-icon { background: #cffafe; color: #0891b2; }
+.kpi-red .kpi-icon { background: #fee2e2; color: #dc2626; }
 
 .kpi-value {
   font-size: 28px;
   font-weight: 700;
-  color: #ffffff;
+  color: #0f172a;
   margin: 0;
   line-height: 1;
 }
 
 .kpi-label {
   font-size: 12px;
-  color: #8899aa;
+  color: #64748b;
   margin: 4px 0 0;
 }
 
-/* 图表卡片 */
+/* 图表卡片：与全站 .card 白底圆角风格一致 */
 .bs-chart-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -334,19 +342,20 @@ onUnmounted(() => {
 }
 
 .bs-chart-card {
-  background: linear-gradient(135deg, #1a2d4a 0%, #0f2137 100%);
+  background: #fff;
   border-radius: 12px;
-  border: 1px solid #1e3a5f;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   padding: 16px;
 }
 
 .chart-title {
   font-size: 14px;
   font-weight: 600;
-  color: #ffffff;
+  color: #0f172a;
   margin: 0 0 14px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #1e3a5f;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .chart-content {
@@ -369,14 +378,14 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 
-.urgency-green { background: rgba(40, 167, 69, 0.2); color: #28a745; }
-.urgency-yellow { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
-.urgency-red { background: rgba(255, 82, 82, 0.2); color: #ff5252; }
+.urgency-green { background: #d1fae5; color: #059669; }
+.urgency-yellow { background: #fef3c7; color: #d97706; }
+.urgency-red { background: #fee2e2; color: #dc2626; }
 
 .urgency-bar-track {
   flex: 1;
   height: 20px;
-  background: #0a1628;
+  background: #f1f5f9;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -387,15 +396,16 @@ onUnmounted(() => {
   transition: width 0.5s;
 }
 
-.bar-green { background: linear-gradient(90deg, #28a745, #5dd879); }
-.bar-yellow { background: linear-gradient(90deg, #ffc107, #ffe083); }
-.bar-red { background: linear-gradient(90deg, #ff5252, #ff8a80); }
+.bar-green { background: linear-gradient(90deg, #059669, #34d399); }
+.bar-yellow { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.bar-red { background: linear-gradient(90deg, #dc2626, #f87171); }
 
 .urgency-count {
   width: 40px;
   text-align: right;
   font-size: 14px;
   font-weight: 600;
+  color: #0f172a;
 }
 
 /* 事件类型条形图 */
@@ -410,8 +420,8 @@ onUnmounted(() => {
   width: 20px;
   height: 20px;
   border-radius: 4px;
-  background: #1e3a5f;
-  color: #8899aa;
+  background: #f1f5f9;
+  color: #64748b;
   font-size: 11px;
   display: flex;
   align-items: center;
@@ -419,15 +429,15 @@ onUnmounted(() => {
 }
 
 .type-rank.top3 {
-  background: #00d4ff;
-  color: #0a1628;
+  background: #0284c7;
+  color: #fff;
   font-weight: 700;
 }
 
 .type-label {
   width: 80px;
   font-size: 12px;
-  color: #ccc;
+  color: #475569;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -436,14 +446,14 @@ onUnmounted(() => {
 .type-bar-track {
   flex: 1;
   height: 18px;
-  background: #0a1628;
+  background: #f1f5f9;
   border-radius: 4px;
   overflow: hidden;
 }
 
 .type-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #007bff, #00d4ff);
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
   border-radius: 4px;
   transition: width 0.5s;
 }
@@ -453,6 +463,7 @@ onUnmounted(() => {
   text-align: right;
   font-size: 13px;
   font-weight: 600;
+  color: #0f172a;
 }
 
 /* 趋势图 */
@@ -481,7 +492,7 @@ onUnmounted(() => {
 .trend-bar {
   width: 100%;
   max-width: 40px;
-  background: linear-gradient(180deg, #00d4ff, #007bff);
+  background: linear-gradient(180deg, #38bdf8, #0284c7);
   border-radius: 4px 4px 0 0;
   position: relative;
   transition: height 0.5s;
@@ -494,14 +505,14 @@ onUnmounted(() => {
   left: 50%;
   transform: translateX(-50%);
   font-size: 11px;
-  color: #00d4ff;
+  color: #0284c7;
   font-weight: 600;
 }
 
 .trend-date {
   margin-top: 6px;
   font-size: 11px;
-  color: #8899aa;
+  color: #64748b;
 }
 
 /* 排名 */
@@ -510,15 +521,15 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid #1a2d4a;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .rank-num {
   width: 22px;
   height: 22px;
   border-radius: 4px;
-  background: #1e3a5f;
-  color: #8899aa;
+  background: #f1f5f9;
+  color: #64748b;
   font-size: 12px;
   display: flex;
   align-items: center;
@@ -526,7 +537,7 @@ onUnmounted(() => {
 }
 
 .rank-num.top3 {
-  background: #ff9800;
+  background: #d97706;
   color: #fff;
   font-weight: 700;
 }
@@ -534,12 +545,13 @@ onUnmounted(() => {
 .rank-name {
   flex: 1;
   font-size: 13px;
+  color: #334155;
 }
 
 .rank-count {
   font-size: 14px;
   font-weight: 600;
-  color: #00d4ff;
+  color: #0284c7;
 }
 
 /* 工单动态 */
@@ -548,13 +560,13 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 8px 0;
-  border-bottom: 1px solid #1a2d4a;
+  border-bottom: 1px solid #f1f5f9;
   font-size: 12px;
 }
 
 .wo-no {
   width: 100px;
-  color: #8899aa;
+  color: #94a3b8;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -566,19 +578,19 @@ onUnmounted(() => {
   font-size: 11px;
 }
 
-.status-waiting_accept { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
-.status-processing { background: rgba(0, 123, 255, 0.2); color: #007bff; }
-.status-completed { background: rgba(40, 167, 69, 0.2); color: #28a745; }
-.status-closed { background: rgba(108, 117, 125, 0.2); color: #6c757d; }
-.status-waiting_close_confirm { background: rgba(156, 39, 176, 0.2); color: #9c27b0; }
+.status-waiting_accept { background: #fef3c7; color: #d97706; }
+.status-processing { background: #e0f2fe; color: #0284c7; }
+.status-completed { background: #d1fae5; color: #059669; }
+.status-closed { background: #f1f5f9; color: #64748b; }
+.status-waiting_close_confirm { background: #ede9fe; color: #7c3aed; }
 
 .wo-assignee {
   flex: 1;
-  color: #ccc;
+  color: #334155;
 }
 
 .wo-time {
-  color: #8899aa;
+  color: #94a3b8;
   font-size: 11px;
 }
 </style>
