@@ -20,11 +20,13 @@
 
       <view class="footer-links">
         <text class="link" @click="goRegister">注册账号</text>
+        <text class="link-divider">|</text>
+        <text class="link" @click="goForgotPassword">忘记密码</text>
       </view>
     </view>
 
     <view class="login-help">
-      <text>忘记密码请联系管理员重置</text>
+      <text>忘记密码可在线提交重置申请，管理员处理后告知新密码</text>
     </view>
   </view>
 </template>
@@ -73,6 +75,10 @@ async function handleLogin() {
 
 function goRegister() {
   uni.navigateTo({ url: '/pages/register/index' })
+}
+
+function goForgotPassword() {
+  uni.navigateTo({ url: '/pages/password-reset/index' })
 }
 </script>
 
@@ -134,7 +140,8 @@ function goRegister() {
 .btn-login::after { border: none; }
 .btn-login[disabled] { opacity: 0.6; }
 .error { color: #ff4d4f; font-size: 26rpx; text-align: center; margin-top: 24rpx; display: block; }
-.footer-links { text-align: center; margin-top: 32rpx; }
+.footer-links { text-align: center; margin-top: 32rpx; display: flex; align-items: center; justify-content: center; }
 .link { color: #1890ff; font-size: 26rpx; }
+.link-divider { color: #d1d5db; font-size: 24rpx; margin: 0 20rpx; }
 .login-help { margin-top: 48rpx; color: rgba(255,255,255,0.7); font-size: 24rpx; text-align: center; }
 </style>

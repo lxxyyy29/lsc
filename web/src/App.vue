@@ -120,7 +120,8 @@ const pathBadgeMap: Record<string, string> = {
   '/work-orders': 'workOrdersPending',
   '/audits': 'auditsPending',
   '/resident-reports': 'residentReportsPending',
-  '/trend-alerts': 'trendAlerts'
+  '/trend-alerts': 'trendAlerts',
+  '/org-members': 'pwdResetsPending'
 }
 
 watch(currentPath, (path) => {
@@ -166,7 +167,7 @@ const menuGroups = [
       { path: '/gis', name: 'GIS网格可视化' },
       { path: '/grid-manage', name: '网格管理' },
       { path: '/biz-areas', name: '辖区管理' },
-      { path: '/org-members', name: '组织人员' },
+      { path: '/org-members', name: '组织人员', badgeKey: 'pwdResetsPending' },
     ]
   },
   {

@@ -302,6 +302,36 @@ export async function registerH5(payload: H5RegisterPayload): Promise<void> {
   // #endif
 }
 
+/** 密码重置进度查询结果（公开接口，无需登录） */
+export interface PasswordResetStatus {
+  found: boolean
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED'
+  createdAt?: string
+  handledAt?: string
+  remark?: string
+}
+
+/** 提交密码重置申请（无需登录）：账号+注册手机号校验，管理员审批后重置为手机号后6位 */
+export async function submitPasswordReset(payload: { account: string; phone: string }): Promise<void> {
+  // #ifdef MP-WEIXIN
+  await http.post<void, void>('/password-reset/submit', payload, { baseURL: 'https://drone.kfktec.cn:8443/api' })
+  // #endif
+  // #ifndef MP-WEIXIN
+  await http.post<void, void>('/password-reset/submit', payload, { baseURL: '/api' })
+  // #endif
+}
+
+/** 查询密码重置申请进度（无需登录） */
+export async function queryPasswordResetStatus(account: string, phone: string): Promise<PasswordResetStatus> {
+  const url = `/password-reset/status?account=${encodeURIComponent(account)}&phone=${encodeURIComponent(phone)}`
+  // #ifdef MP-WEIXIN
+  return http.get<PasswordResetStatus, PasswordResetStatus>(url, { baseURL: 'https://drone.kfktec.cn:8443/api' })
+  // #endif
+  // #ifndef MP-WEIXIN
+  return http.get<PasswordResetStatus, PasswordResetStatus>(url, { baseURL: '/api' })
+  // #endif
+}
+
 export async function logoutH5() {
   try {
     await http.post<void, void>('/auth/logout')

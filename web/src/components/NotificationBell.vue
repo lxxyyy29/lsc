@@ -107,6 +107,8 @@ async function handleClick(n: any) {
   // 跳转到关联业务
   if (n.relatedType === 'WORK_ORDER' && n.relatedId) {
     router.push('/work-orders')
+  } else if (n.relatedType === 'PWD_RESET') {
+    router.push('/org-members')
   }
   showPanel.value = false
 }

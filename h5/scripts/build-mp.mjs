@@ -4,7 +4,7 @@
  *
  * pages.json 不支持条件编译，因此：
  * 1. 备份当前 pages.json（工作人员端 + 居民端全量）
- * 2. 生成小程序版 pages.json（全量 31 页，首个为角色选择页，配置居民端原生 tabBar）
+ * 2. 生成小程序版 pages.json（全量 32 页，首个为角色选择页，配置居民端原生 tabBar）
  * 3. 执行 `uni build -p mp-weixin`
  * 4. 无论成败，finally 恢复原始 pages.json
  */
@@ -24,6 +24,7 @@ const ALL_PAGES = [
   // ---- 网格员端 ----
   { path: 'pages/login/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/register/index', style: { navigationStyle: 'custom' } },
+  { path: 'pages/password-reset/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/workbench/index', style: { navigationStyle: 'default', navigationBarTitleText: '工作台' } },
   { path: 'pages/workorder/list', style: { navigationStyle: 'default', navigationBarTitleText: '任务列表' } },
   { path: 'pages/workorder/detail', style: { navigationStyle: 'default', navigationBarTitleText: '工单详情' } },

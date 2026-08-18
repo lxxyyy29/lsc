@@ -13,6 +13,10 @@
           <i class="fas fa-user-check"></i>注册审批
           <span v-if="pendingCount > 0" style="background:#dc2626;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;">{{ pendingCount }}</span>
         </button>
+        <button v-if="canResetPwd" @click="showPwdReset = true; fetchPwdResets()" class="btn btn-default">
+          <i class="fas fa-key"></i>密码重置
+          <span v-if="pwdResetCount > 0" style="background:#dc2626;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;">{{ pwdResetCount }}</span>
+        </button>
         <button @click="showAdd = true" class="btn btn-primary">
           <i class="fas fa-plus"></i>添加组织人员
         </button>
@@ -98,6 +102,42 @@
       </div>
     </div>
 
+    <!-- 密码重置申请弹窗 -->
+    <div v-if="showPwdReset" class="modal-overlay" @click.self="showPwdReset = false">
+      <div class="modal-box" style="width:640px;">
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">密码重置申请</h3>
+        <table class="table" style="font-size:13px;">
+          <thead><tr><th>姓名</th><th>账号</th><th>手机号</th><th>申请时间</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr v-for="r in pwdResetList" :key="r.id">
+              <td>{{ r.real_name || '-' }}</td>
+              <td>{{ r.account }}</td>
+              <td>{{ r.phone }}</td>
+              <td>{{ formatTs(r.created_at) }}</td>
+              <td>
+                <span :class="r.status === 'PENDING' ? 'tag tag-orange' : (r.status === 'APPROVED' ? 'tag tag-green' : 'tag tag-red')">
+                  {{ r.status === 'PENDING' ? '待处理' : (r.status === 'APPROVED' ? '已重置' : '已驳回') }}
+                </span>
+                <span v-if="r.status !== 'PENDING' && r.handled_by_name" style="font-size:11px;color:#999;margin-left:4px;">{{ r.handled_by_name }}处理</span>
+              </td>
+              <td>
+                <template v-if="r.status === 'PENDING'">
+                  <button @click="approvePwdReset(r)" class="btn btn-primary" style="padding:4px 10px;font-size:12px;">重置</button>
+                  <button @click="rejectPwdReset(r)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;">驳回</button>
+                </template>
+                <span v-else style="font-size:12px;color:#999;">{{ formatTs(r.handled_at) }}</span>
+              </td>
+            </tr>
+            <tr v-if="!pwdResetList.length"><td colspan="6" style="text-align:center;color:#999;padding:20px;">暂无密码重置申请</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:12px;color:#999;margin-top:12px;">重置后新密码为手机号后 6 位，请通过电话/微信告知用户本人</p>
+        <div style="text-align:right;margin-top:12px;">
+          <button @click="showPwdReset = false" class="btn btn-default">关闭</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 添加/编辑弹窗 -->
     <div v-if="showAdd || showEdit" class="modal-overlay" @click.self="closeModal">
       <div class="modal-box">
@@ -156,6 +196,8 @@ import http, { syncGridWorkersToOrgMembers, hasPermission } from '../api'
 
 // 注册审批仅超级管理员可见（后端同样校验 api:system:user:create）
 const canApprove = hasPermission('api:system:user:create')
+// 密码重置处理：超管与普通管理员均可（后端校验 api:password-reset:handle）
+const canResetPwd = hasPermission('api:password-reset:handle')
 
 const list = ref<any[]>([])
 const grids = ref<any[]>([])
@@ -167,6 +209,9 @@ const showApproval = ref(false)
 const pendingList = ref<any[]>([])
 const pendingCount = ref(0)
 const approvalTypes = ref<Record<number, string>>({})
+const showPwdReset = ref(false)
+const pwdResetList = ref<any[]>([])
+const pwdResetCount = ref(0)
 
 const form = ref({
   id: null as number | null,
@@ -216,6 +261,47 @@ async function fetchData() {
       const pending = await http.get('/registration/pending') || []
       pendingCount.value = pending.length
     } catch { pendingCount.value = 0 }
+  }
+  // 待处理密码重置申请数：超管与普通管理员均可见
+  if (canResetPwd) {
+    try {
+      const resets: any[] = await http.get('/password-reset/list', { params: { status: 'PENDING' } }) || []
+      pwdResetCount.value = resets.length
+    } catch { pwdResetCount.value = 0 }
+  }
+}
+
+function formatTs(value: any): string {
+  if (!value) return '-'
+  return String(value).replace('T', ' ').slice(0, 16)
+}
+
+async function fetchPwdResets() {
+  pwdResetList.value = await http.get('/password-reset/list') || []
+}
+
+async function approvePwdReset(row: any) {
+  if (!confirm(`确认将 ${row.real_name || row.account} 的密码重置为手机号后 6 位吗？`)) return
+  try {
+    const res: any = await http.post(`/password-reset/${row.id}/approve`)
+    alert(`已重置成功！\n新密码：${res?.newPassword}\n\n请通过电话/微信告知用户本人，提醒其登录后自行修改`)
+    await fetchPwdResets()
+    await fetchData()
+  } catch (e: any) {
+    alert('重置失败：' + (e?.message || '请稍后重试'))
+  }
+}
+
+async function rejectPwdReset(row: any) {
+  const remark = prompt('驳回原因：')
+  if (remark === null) return
+  try {
+    await http.post(`/password-reset/${row.id}/reject`, { remark })
+    alert('已驳回')
+    await fetchPwdResets()
+    await fetchData()
+  } catch (e: any) {
+    alert('驳回失败：' + (e?.message || '请稍后重试'))
   }
 }
 

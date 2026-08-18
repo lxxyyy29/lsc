@@ -120,6 +120,9 @@ public class DashboardController {
         // 趋势预判：待处理预警（已读后新增）
         badges.put("trendAlerts", countUnread(user.id(), "trendAlerts", "biz_trend_alert",
                 "status = 'OPEN'"));
+        // 组织人员：待处理密码重置申请（已读后新增）
+        badges.put("pwdResetsPending", countUnread(user.id(), "pwdResetsPending", "pwd_reset_request",
+                "status = 'PENDING'"));
         return ApiResponse.ok(badges);
     }
 

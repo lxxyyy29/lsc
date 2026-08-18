@@ -77,6 +77,9 @@ public class SecurityConfig {
                         // 网格员注册申请提交公开（未登录用户可提交）
                         .requestMatchers("/registration/submit")
                         .permitAll()
+                        // 密码重置申请提交/进度查询公开（忘记密码用户无法登录）
+                        .requestMatchers("/password-reset/submit", "/password-reset/status")
+                        .permitAll()
                         // WebSocket 端点公开（浏览器无法发送认证头）
                         .requestMatchers("/ws/**")
                         .permitAll()

@@ -86,6 +86,9 @@ public final class PermissionCodes {
     public static final String API_SYSTEM_USER_DETAIL = "api:system:user:detail";
     /** 创建系统用户接口权限 */
     public static final String API_SYSTEM_USER_CREATE = "api:system:user:create";
+
+    /** 密码重置申请处理（超管+普通管理员） */
+    public static final String API_PASSWORD_RESET_HANDLE = "api:password-reset:handle";
     /** 更新系统用户接口权限 */
     public static final String API_SYSTEM_USER_UPDATE = "api:system:user:update";
     /** 修改系统用户状态接口权限 */
