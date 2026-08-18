@@ -21,6 +21,10 @@
               </div>
             </div>
             <div class="dropdown-divider"></div>
+            <div class="dropdown-item" @click="openPwdModal">
+              <i class="fas fa-key"></i>
+              <span>修改密码</span>
+            </div>
             <div class="dropdown-item" @click="handleLogout">
               <i class="fas fa-sign-out-alt"></i>
               <span>退出登录</span>
@@ -29,6 +33,25 @@
         </div>
       </div>
     </nav>
+
+    <!-- 修改密码弹窗 -->
+    <div v-if="showPwdModal" class="pwd-modal-overlay" @click.self="showPwdModal = false">
+      <div class="pwd-modal">
+        <h3 style="font-size:16px;font-weight:600;margin:0 0 16px;">修改密码</h3>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <input v-model="pwdForm.oldPassword" type="password" class="pwd-input" placeholder="当前密码" autocomplete="current-password" />
+          <input v-model="pwdForm.newPassword" type="password" class="pwd-input" placeholder="新密码（6-64 位）" autocomplete="new-password" />
+          <input v-model="pwdForm.confirm" type="password" class="pwd-input" placeholder="再次输入新密码" autocomplete="new-password" />
+          <p v-if="pwdError" style="color:#ef4444;font-size:12px;margin:0;">{{ pwdError }}</p>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
+          <button @click="showPwdModal = false" class="pwd-btn">取消</button>
+          <button @click="submitPwdChange" :disabled="pwdLoading" class="pwd-btn pwd-btn-primary">
+            {{ pwdLoading ? '提交中...' : '确认修改' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- 侧边栏 -->
     <div style="display:flex;flex:1;overflow:hidden;">
@@ -76,9 +99,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { getSession, login, logout, getMenuBadges, markBadgeRead } from './api'
+import { getSession, login, logout, getMenuBadges, markBadgeRead, changePassword } from './api'
 import LoginView from './views/LoginView.vue'
 import NotificationBell from './components/NotificationBell.vue'
 
@@ -236,6 +259,40 @@ function handleLogout() {
   session.value = null
   showUserMenu.value = false
   window.location.hash = '#/login'
+}
+
+// 修改密码
+const showPwdModal = ref(false)
+const pwdLoading = ref(false)
+const pwdError = ref('')
+const pwdForm = reactive({ oldPassword: '', newPassword: '', confirm: '' })
+
+function openPwdModal() {
+  showUserMenu.value = false
+  pwdForm.oldPassword = ''
+  pwdForm.newPassword = ''
+  pwdForm.confirm = ''
+  pwdError.value = ''
+  showPwdModal.value = true
+}
+
+async function submitPwdChange() {
+  pwdError.value = ''
+  if (!pwdForm.oldPassword) { pwdError.value = '请输入当前密码'; return }
+  if (pwdForm.newPassword.length < 6 || pwdForm.newPassword.length > 64) { pwdError.value = '新密码长度须在 6 到 64 位之间'; return }
+  if (pwdForm.newPassword !== pwdForm.confirm) { pwdError.value = '两次输入的新密码不一致'; return }
+  pwdLoading.value = true
+  try {
+    await changePassword(pwdForm.oldPassword, pwdForm.newPassword)
+    showPwdModal.value = false
+    // 密码修改后存量令牌全部失效，直接退出引导用新密码重新登录
+    alert('密码修改成功，请使用新密码重新登录')
+    handleLogout()
+  } catch (e: any) {
+    pwdError.value = e?.message || '修改失败，请稍后重试'
+  } finally {
+    pwdLoading.value = false
+  }
 }
 
 function closeUserMenu() {
@@ -400,5 +457,75 @@ onUnmounted(() => {
   font-size: 14px;
   width: 16px;
   text-align: center;
+}
+
+/* === 修改密码弹窗 === */
+.pwd-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.pwd-modal {
+  width: 360px;
+  max-width: 90vw;
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.pwd-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+
+.pwd-input:focus {
+  border-color: #0284c7;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+}
+
+.pwd-btn {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pwd-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.pwd-btn-primary {
+  border: none;
+  background: #0284c7;
+  color: #fff;
+}
+
+.pwd-btn-primary:hover {
+  background: #0369a1;
+}
+
+.pwd-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

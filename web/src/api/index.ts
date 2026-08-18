@@ -90,6 +90,11 @@ export async function registerAdmin(payload: { account: string; password: string
   return http.post('/registration/submit', { ...payload, source: 'WEB' })
 }
 
+/** 当前登录用户自助修改密码（需校验旧密码；成功后存量令牌失效需重新登录） */
+export async function changePassword(oldPassword: string, newPassword: string) {
+  return http.put('/auth/change-password', { oldPassword, newPassword })
+}
+
 export async function getMenuTree() {
   return http.get('/auth/menu-tree')
 }

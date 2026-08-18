@@ -19,6 +19,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -236,6 +237,38 @@ public class AuthController {
         result.put("username", account);
         result.put("message", "注册成功");
         return ApiResponse.ok(result);
+    }
+
+    /**
+     * 当前登录用户自助修改密码：需校验旧密码；成功后 password_version 提升，
+     * 存量令牌（含当前会话）全部失效，前端需引导重新登录
+     */
+    @PutMapping("/change-password")
+    public ApiResponse<Void> changeOwnPassword(@RequestBody ChangeOwnPasswordRequest body) {
+        var user = currentUserService.requireClientType(AuthService.ClientType.WEB);
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT password_hash FROM sys_user WHERE id = ? AND deleted = 0", user.id());
+        if (rows.isEmpty()) {
+            throw new BusinessException("AUTH_USER_NOT_FOUND", "用户不存在");
+        }
+        String currentHash = rows.get(0).get("password_hash") != null ? String.valueOf(rows.get(0).get("password_hash")) : "";
+        if (body.oldPassword() == null || !passwordEncoder.matches(body.oldPassword(), currentHash)) {
+            throw new BusinessException("AUTH_INVALID_CREDENTIALS", "旧密码不正确");
+        }
+        String newPwd = body.newPassword() != null ? body.newPassword().trim() : "";
+        if (newPwd.length() < 6 || newPwd.length() > 64) {
+            throw new BusinessException("VALIDATION_ERROR", "新密码长度须在 6 到 64 位之间");
+        }
+        if (passwordEncoder.matches(newPwd, currentHash)) {
+            throw new BusinessException("VALIDATION_ERROR", "新密码不能与旧密码相同");
+        }
+        jdbcTemplate.update(
+                "UPDATE sys_user SET password_hash = ?, password_version = password_version + 1, updated_at = NOW() WHERE id = ?",
+                passwordEncoder.encode(newPwd), user.id());
+        return ApiResponse.ok(null);
+    }
+
+    public record ChangeOwnPasswordRequest(String oldPassword, String newPassword) {
     }
 
     /**
