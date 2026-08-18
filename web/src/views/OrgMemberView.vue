@@ -9,7 +9,7 @@
         <button @click="handleSync" class="btn btn-default">
           <i class="fas fa-sync"></i>同步网格员
         </button>
-        <button @click="showApproval = true; fetchPending()" class="btn btn-default">
+        <button v-if="canApprove" @click="showApproval = true; fetchPending()" class="btn btn-default">
           <i class="fas fa-user-check"></i>注册审批
           <span v-if="pendingCount > 0" style="background:#dc2626;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;">{{ pendingCount }}</span>
         </button>
@@ -65,7 +65,7 @@
       <div class="modal-box" style="width:600px;">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">注册审批</h3>
         <table class="table" style="font-size:13px;">
-          <thead><tr><th>用户名</th><th>姓名</th><th>手机号</th><th>申请时间</th><th>身份</th><th>操作</th></tr></thead>
+          <thead><tr><th>用户名</th><th>姓名</th><th>手机号</th><th>申请时间</th><th>来源</th><th>身份</th><th>操作</th></tr></thead>
           <tbody>
             <tr v-for="r in pendingList" :key="r.id">
               <td>{{ r.username }}</td>
@@ -73,17 +73,23 @@
               <td>{{ r.phone }}</td>
               <td>{{ r.createdAt }}</td>
               <td>
-                <select v-model="approvalTypes[r.id]" class="form-select" style="padding:3px 8px;font-size:12px;">
+                <span :class="r.regSource === 'WEB' ? 'tag tag-green' : 'tag tag-blue'">
+                  {{ r.regSource === 'WEB' ? 'Web管理员注册' : '小程序注册' }}
+                </span>
+              </td>
+              <td>
+                <select v-if="r.regSource !== 'WEB'" v-model="approvalTypes[r.id]" class="form-select" style="padding:3px 8px;font-size:12px;">
                   <option value="GRID_WORKER">网格员</option>
                   <option value="STAFF">社区工作人员</option>
                 </select>
+                <span v-else style="font-size:12px;color:#059669;">普通管理员</span>
               </td>
               <td>
                 <button @click="approveReg(r)" class="btn btn-primary" style="padding:4px 10px;font-size:12px;">通过</button>
                 <button @click="rejectReg(r)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;">拒绝</button>
               </td>
             </tr>
-            <tr v-if="!pendingList.length"><td colspan="6" style="text-align:center;color:#999;padding:20px;">暂无待审批</td></tr>
+            <tr v-if="!pendingList.length"><td colspan="7" style="text-align:center;color:#999;padding:20px;">暂无待审批</td></tr>
           </tbody>
         </table>
         <div style="text-align:right;margin-top:16px;">
@@ -146,7 +152,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import http, { syncGridWorkersToOrgMembers } from '../api'
+import http, { syncGridWorkersToOrgMembers, hasPermission } from '../api'
+
+// 注册审批仅超级管理员可见（后端同样校验 api:system:user:create）
+const canApprove = hasPermission('api:system:user:create')
 
 const list = ref<any[]>([])
 const grids = ref<any[]>([])
@@ -196,23 +205,33 @@ async function fetchData() {
   error.value = ''
   try {
     list.value = await http.get('/community/org-members') || []
-    // 获取待审批数量
-    const pending = await http.get('/registration/pending') || []
-    pendingCount.value = pending.length
   } catch(e: any) {
     error.value = e?.message || '加载失败，请稍后重试'
   } finally {
     loading.value = false
   }
+  // 待审批数量单独拉取：无审批权限的普通管理员不影响页面正常使用
+  if (canApprove) {
+    try {
+      const pending = await http.get('/registration/pending') || []
+      pendingCount.value = pending.length
+    } catch { pendingCount.value = 0 }
+  }
 }
 
 async function fetchPending() {
   pendingList.value = await http.get('/registration/pending') || []
+  // web 管理员注册默认审批为普通管理员（STAFF），小程序注册默认网格员
+  for (const r of pendingList.value) {
+    if (!approvalTypes.value[r.id]) {
+      approvalTypes.value[r.id] = r.regSource === 'WEB' ? 'STAFF' : 'GRID_WORKER'
+    }
+  }
 }
 
 async function approveReg(row: any) {
   await http.post(`/registration/${row.id}/approve`, { remark: '审批通过', memberType: approvalTypes.value[row.id] || 'GRID_WORKER' })
-  alert('已通过，用户已分配网格员身份并可登录 H5 端')
+  alert(row.regSource === 'WEB' ? '已通过，账号已获得普通管理员权限，可登录 web 管理端' : '已通过，用户已分配网格员身份并可登录 H5 端')
   delete approvalTypes.value[row.id]
   await fetchPending()
   await fetchData()

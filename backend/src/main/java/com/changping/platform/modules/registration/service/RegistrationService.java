@@ -19,7 +19,7 @@ public class RegistrationService {
     }
 
     public List<Map<String, Object>> listPending() {
-        String sql = "SELECT id, username, real_name as realName, phone, created_at as createdAt " +
+        String sql = "SELECT id, username, real_name as realName, phone, reg_source as regSource, created_at as createdAt " +
                      "FROM sys_user WHERE status = 'PENDING' ORDER BY created_at DESC";
         try {
             return jdbcTemplate.queryForList(sql);
@@ -30,11 +30,13 @@ public class RegistrationService {
     }
 
     @Transactional
-    public void submit(String account, String passwordHash, String realName, String phone) {
+    public void submit(String account, String passwordHash, String realName, String phone, String source) {
         // 每个账号必须绑定手机号（手机号登录的前提）
         if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
             throw new BusinessException("VALIDATION_ERROR", "请输入正确的手机号");
         }
+        // 注册来源仅允许 WEB（web 管理员注册）/ GRID（小程序网格员注册）
+        String regSource = "WEB".equalsIgnoreCase(source) ? "WEB" : "GRID";
         // 预检查账号是否已存在（含待审批/已激活），存在时返回业务错误而非数据库唯一索引 500
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM sys_user WHERE username = ? AND deleted = 0", Integer.class, account);
@@ -47,10 +49,10 @@ public class RegistrationService {
         if (phoneCount != null && phoneCount > 0) {
             throw new BusinessException("DUPLICATE_PHONE", "该手机号已被绑定");
         }
-        String sql = "INSERT INTO sys_user (username, password_hash, real_name, phone, status, password_version, deleted) " +
-                     "VALUES (?, ?, ?, ?, 'PENDING', 0, 0)";
+        String sql = "INSERT INTO sys_user (username, password_hash, real_name, phone, reg_source, status, password_version, deleted) " +
+                     "VALUES (?, ?, ?, ?, ?, 'PENDING', 0, 0)";
         try {
-            jdbcTemplate.update(sql, account, passwordHash, realName, phone);
+            jdbcTemplate.update(sql, account, passwordHash, realName, phone, regSource);
         } catch (DuplicateKeyException e) {
             // 并发场景下唯一索引兜底，同样返回业务错误；按撞的索引区分提示
             boolean phoneDup = e.getMessage() != null && e.getMessage().contains("uk_sys_user_phone");
@@ -69,13 +71,18 @@ public class RegistrationService {
 
         // 2. 查询用户信息（用于组织人员同步）
         List<Map<String, Object>> users = jdbcTemplate.queryForList(
-                "SELECT id, real_name, phone FROM sys_user WHERE id = ? AND deleted = 0", id);
+                "SELECT id, real_name, phone, reg_source FROM sys_user WHERE id = ? AND deleted = 0", id);
         if (users.isEmpty()) {
             throw new BusinessException("USER_NOT_FOUND", "用户不存在");
         }
         Map<String, Object> user = users.get(0);
         String realName = user.get("real_name") != null ? String.valueOf(user.get("real_name")) : "";
         String phone = user.get("phone") != null ? String.valueOf(user.get("phone")) : null;
+        // web 端注册的账号统一审批为普通管理员，审批页身份选择仅对小程序注册生效
+        String regSource = user.get("reg_source") != null ? String.valueOf(user.get("reg_source")) : "GRID";
+        if ("WEB".equals(regSource)) {
+            memberType = "STAFF";
+        }
 
         // 3. 根据审批身份分配角色（默认为网格员 GRID_WORKER，可登录 H5 端巡查）
         String roleCode = "GRID_WORKER";
@@ -84,7 +91,7 @@ public class RegistrationService {
         if ("STAFF".equals(memberType)) {
             roleCode = "EVENT_OPERATOR";
             orgMemberType = "STAFF";
-            position = "社区工作人员";
+            position = "WEB".equals(regSource) ? "社区管理员" : "社区工作人员";
         }
         Long roleId = jdbcTemplate.queryForObject(
                 "SELECT id FROM sys_role WHERE role_code = ? AND status = 'ACTIVE' ORDER BY id LIMIT 1", Long.class, roleCode);

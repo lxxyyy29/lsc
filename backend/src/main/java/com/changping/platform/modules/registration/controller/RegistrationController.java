@@ -45,7 +45,8 @@ public class RegistrationController {
             body.account(),
             passwordEncoder.encode(body.password()),
             body.realName(),
-            body.phone()
+            body.phone(),
+            body.source()
         );
         return ApiResponse.ok(null);
     }
@@ -54,7 +55,8 @@ public class RegistrationController {
         @JsonProperty("account") String account,
         @JsonProperty("password") String password,
         @JsonProperty("realName") String realName,
-        @JsonProperty("phone") String phone
+        @JsonProperty("phone") String phone,
+        @JsonProperty("source") String source
     ) {}
 
     @GetMapping("/pending")

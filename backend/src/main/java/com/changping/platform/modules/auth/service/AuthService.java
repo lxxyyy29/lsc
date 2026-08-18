@@ -293,6 +293,10 @@ public class AuthService {
      * @return void
      */
     private void validateUserStatus(UserRecord user) {
+        if ("PENDING".equalsIgnoreCase(user.status())) {
+            // 注册待审批账号：提示审核中，避免误以为账号被禁用
+            throw new BusinessException("AUTH_USER_PENDING", "账号审核中，请等待管理员审批后再登录");
+        }
         if (!"ACTIVE".equalsIgnoreCase(user.status())) {
             throw new BusinessException("AUTH_USER_DISABLED", "用户已被禁用");
         }

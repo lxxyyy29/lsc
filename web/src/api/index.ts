@@ -79,6 +79,17 @@ export function logout() {
   localStorage.removeItem('grid-session')
 }
 
+/** 判断当前登录会话是否拥有指定权限码（未登录返回 false） */
+export function hasPermission(code: string): boolean {
+  const session = getSession()
+  return Array.isArray(session?.permissionCodes) && session.permissionCodes.includes(code)
+}
+
+/** web 端管理员注册（无需登录），提交后待超级管理员审批通过才能登录 */
+export async function registerAdmin(payload: { account: string; password: string; realName: string; phone: string }) {
+  return http.post('/registration/submit', { ...payload, source: 'WEB' })
+}
+
 export async function getMenuTree() {
   return http.get('/auth/menu-tree')
 }

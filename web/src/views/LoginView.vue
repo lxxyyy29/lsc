@@ -21,7 +21,7 @@
       </div>
 
       <!-- 登录表单 -->
-      <form @submit.prevent="handleLogin" class="login-form">
+      <form v-if="mode === 'login'" @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
           <label class="form-label">
             <i class="fas fa-user"></i>
@@ -67,6 +67,75 @@
         </p>
       </form>
 
+      <!-- 注册表单（普通管理员，需超级管理员审批后才能登录） -->
+      <form v-else @submit.prevent="handleRegister" class="login-form">
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-user"></i>
+            <span>账号</span>
+          </label>
+          <input v-model="regForm.account" type="text" placeholder="请输入登录账号" class="form-input" autocomplete="username" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-id-card"></i>
+            <span>姓名</span>
+          </label>
+          <input v-model="regForm.realName" type="text" placeholder="请输入真实姓名" class="form-input" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-mobile-alt"></i>
+            <span>手机号</span>
+          </label>
+          <input v-model="regForm.phone" type="text" placeholder="请输入手机号" class="form-input" maxlength="11" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-lock"></i>
+            <span>密码</span>
+          </label>
+          <input v-model="regForm.password" type="password" placeholder="请输入密码（至少6位）" class="form-input" autocomplete="new-password" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-lock"></i>
+            <span>确认密码</span>
+          </label>
+          <input v-model="regForm.confirm" type="password" placeholder="请再次输入密码" class="form-input" autocomplete="new-password" />
+        </div>
+
+        <button type="submit" class="login-btn" :disabled="regLoading">
+          <span v-if="!regLoading" class="btn-content">
+            <span>提交注册</span>
+            <i class="fas fa-arrow-right"></i>
+          </span>
+          <span v-else class="btn-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>提交中...</span>
+          </span>
+        </button>
+
+        <p v-if="regMsg" :class="regOk ? 'success-msg' : 'error-msg'">
+          <i :class="regOk ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'"></i>
+          {{ regMsg }}
+        </p>
+      </form>
+
+      <!-- 登录/注册切换 -->
+      <div class="mode-switch">
+        <template v-if="mode === 'login'">
+          还没有账号？<a href="javascript:;" @click="switchMode('register')">注册普通管理员</a>
+        </template>
+        <template v-else>
+          已有账号？<a href="javascript:;" @click="switchMode('login')">返回登录</a>
+        </template>
+      </div>
+
       <!-- 底部信息 -->
       <div class="login-footer">
         <div class="quick-login">
@@ -83,12 +152,26 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { login } from '../api'
+import { login, registerAdmin } from '../api'
 
 const router = useRouter()
 const loading = ref(false)
 const error = ref('')
 const form = reactive({ account: '', password: '' })
+
+// 登录/注册双模式
+const mode = ref<'login' | 'register'>('login')
+const regLoading = ref(false)
+const regMsg = ref('')
+const regOk = ref(false)
+const regForm = reactive({ account: '', realName: '', phone: '', password: '', confirm: '' })
+
+function switchMode(m: 'login' | 'register') {
+  mode.value = m
+  error.value = ''
+  regMsg.value = ''
+  regOk.value = false
+}
 
 const emit = defineEmits(['success'])
 
@@ -119,6 +202,35 @@ function quickLogin(account: string, password: string) {
   form.account = account
   form.password = password
   handleLogin()
+}
+
+async function handleRegister() {
+  regMsg.value = ''
+  regOk.value = false
+  if (!regForm.account.trim()) { regMsg.value = '请输入账号'; return }
+  if (!regForm.realName.trim()) { regMsg.value = '请输入姓名'; return }
+  if (!/^1[3-9]\d{9}$/.test(regForm.phone)) { regMsg.value = '请输入正确的手机号'; return }
+  if (regForm.password.length < 6) { regMsg.value = '密码至少 6 位'; return }
+  if (regForm.password !== regForm.confirm) { regMsg.value = '两次输入的密码不一致'; return }
+
+  regLoading.value = true
+  try {
+    await registerAdmin({
+      account: regForm.account.trim(),
+      password: regForm.password,
+      realName: regForm.realName.trim(),
+      phone: regForm.phone
+    })
+    regOk.value = true
+    regMsg.value = '注册申请已提交，请等待超级管理员审批后再登录'
+    // 回填账号密码方便审批通过后直接登录
+    form.account = regForm.account.trim()
+    form.password = ''
+  } catch (e: any) {
+    regMsg.value = e?.message || '注册失败，请稍后重试'
+  } finally {
+    regLoading.value = false
+  }
 }
 </script>
 
@@ -356,7 +468,7 @@ function quickLogin(account: string, password: string) {
   gap: 8px;
 }
 
-/* === 错误提示 === */
+/* === 错误/成功提示 === */
 .error-msg {
   display: flex;
   align-items: center;
@@ -373,6 +485,42 @@ function quickLogin(account: string, password: string) {
 
 .error-msg i {
   font-size: 14px;
+}
+
+.success-msg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #059669;
+  font-size: 13px;
+  margin: 0;
+  padding: 8px 12px;
+  background: #ecfdf5;
+  border-radius: 8px;
+  border: 1px solid #a7f3d0;
+}
+
+.success-msg i {
+  font-size: 14px;
+}
+
+/* === 登录/注册切换 === */
+.mode-switch {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.mode-switch a {
+  color: #0284c7;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.mode-switch a:hover {
+  text-decoration: underline;
 }
 
 /* === 底部 === */
