@@ -52,8 +52,10 @@ public class RegistrationService {
         try {
             jdbcTemplate.update(sql, account, passwordHash, realName, phone);
         } catch (DuplicateKeyException e) {
-            // 并发场景下唯一索引兜底，同样返回业务错误
-            throw new BusinessException("DUPLICATE_ACCOUNT", "账号已存在");
+            // 并发场景下唯一索引兜底，同样返回业务错误；按撞的索引区分提示
+            boolean phoneDup = e.getMessage() != null && e.getMessage().contains("uk_sys_user_phone");
+            throw new BusinessException(phoneDup ? "DUPLICATE_PHONE" : "DUPLICATE_ACCOUNT",
+                    phoneDup ? "该手机号已被绑定" : "账号已存在");
         }
     }
 

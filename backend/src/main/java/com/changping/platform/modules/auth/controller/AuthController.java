@@ -13,6 +13,7 @@ import com.changping.platform.modules.auth.vo.CurrentUserVo;
 import com.changping.platform.modules.auth.vo.LoginResponse;
 import com.changping.platform.modules.common.security.RateLimit;
 import jakarta.validation.Valid;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -206,9 +207,16 @@ public class AuthController {
         }
 
         String hashedPassword = passwordEncoder.encode(password);
-        jdbcTemplate.update(
-                "INSERT INTO sys_user (username, password_hash, real_name, phone, status, password_version, deleted, created_at, updated_at) VALUES (?, ?, ?, ?, 'ACTIVE', 1, 0, NOW(), NOW())",
-                account, hashedPassword, realName, phone);
+        try {
+            jdbcTemplate.update(
+                    "INSERT INTO sys_user (username, password_hash, real_name, phone, status, password_version, deleted, created_at, updated_at) VALUES (?, ?, ?, ?, 'ACTIVE', 1, 0, NOW(), NOW())",
+                    account, hashedPassword, realName, phone);
+        } catch (DuplicateKeyException e) {
+            // 并发注册或账号/手机号被软删记录占用时，唯一索引兜底，转可读业务错而非 500
+            String msg = e.getMessage() != null && e.getMessage().contains("uk_sys_user_phone")
+                    ? "该手机号已被绑定" : "账号已存在";
+            return ApiResponse.fail("DUPLICATE_ACCOUNT", msg);
+        }
 
         Long userId = jdbcTemplate.queryForObject("SELECT id FROM sys_user WHERE username = ?", Long.class, account);
 
