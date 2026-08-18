@@ -155,8 +155,8 @@ function refreshMpMarkers() {
       longitude: p.lng,
       title: p.title || '事件点位',
       iconPath: '../../static/map-marker.png',
-      width: 28,
-      height: 36,
+      width: 26,
+      height: 46,
       callout: {
         content: p.title || '事件点位',
         color: '#ffffff',
