@@ -31,12 +31,17 @@
       <div class="map-toolbar">
         <button class="tool-btn" :disabled="!selectedGrid || drawing || editing" @click="startEditArea">✏ 拖拽顶点</button>
         <button class="tool-btn" :disabled="!selectedGrid || drawing || editing" @click="startRedraw">🔲 重绘边界</button>
+        <template v-if="drawing">
+          <button class="tool-btn" :disabled="!drawPoints.length" @click="undoDrawPoint">↩ 撤销上一点（{{ drawPoints.length }}）</button>
+          <button class="tool-btn primary" @click="finishDraw">✔ 完成绘制</button>
+          <button class="tool-btn" @click="cancelDraw">取消</button>
+        </template>
         <button v-if="editing" class="tool-btn primary" @click="finishEditArea">✔ 完成编辑</button>
         <button v-if="editing" class="tool-btn" @click="cancelEditArea">取消</button>
         <button class="tool-btn danger" :disabled="!selectedGrid || drawing || editing" @click="removeGrid">🗑 删除网格</button>
       </div>
       <div class="map-tip" :class="{ warn: drawing }">
-        <template v-if="drawing">⚠ 请在地图上点击绘制新网格边界（首尾相连闭合），完成后点击「保存网格」</template>
+        <template v-if="drawing">⚠ 逐点点击绘制边界（已点 {{ drawPoints.length }} 个点）：双击或点击第一个红点/「完成绘制」闭合；画错了点「撤销上一点」</template>
         <template v-else-if="editing">正在编辑 {{ selectedGrid?.gridName }} 边界：拖动白色顶点调整，完成后点击「完成编辑」</template>
         <template v-else>{{ tipText }}</template>
       </div>
@@ -124,8 +129,16 @@ const selectedId = ref<number | null>(null)
 const selectedGrid = ref<GridNode | null>(null)
 const currentPolygon = ref<any>(null)
 const polyEditor = ref<any>(null)
-const mouseTool = ref<any>(null)
 const drawing = ref(false)
+// 自定义绘制状态：顶点数组 + 预览线/面 + 顶点标记（替代 MouseTool，支持逐点撤销）
+const drawPoints = ref<[number, number][]>([])
+let drawPreviewLine: any = null
+let drawPreviewPoly: any = null
+let drawVertexMarkers: any[] = []
+let mapClickHandler: ((e: any) => void) | null = null
+let mapMoveHandler: ((e: any) => void) | null = null
+let mapDblHandler: (() => void) | null = null
+let moveRafPending = false
 const editing = ref(false)
 const saving = ref(false)
 const tipText = ref('点击左侧网格查看/调整区域；选中后可拖拽顶点或重绘边界')
@@ -340,22 +353,139 @@ function startDraw() {
   const m = map.value
   if (!m || drawing.value) return
   drawing.value = true
-  mouseTool.value = new AMapLib.value.MouseTool(m)
-  mouseTool.value.polygon({
-    strokeColor: '#0284c7', fillColor: '#0284c7', fillOpacity: 0.2, strokeWeight: 2
-  })
-  mouseTool.value.on('draw-complete', (e: any) => {
-    const poly = e.obj
-    mouseTool.value?.close()
-    drawing.value = false
-    setCurrentPolygon(poly)
-    tipText.value = '边界绘制完成，可填写右侧信息后保存'
+  drawPoints.value = []
+  mapClickHandler = (e: any) => onDrawMapClick(e)
+  mapMoveHandler = (e: any) => onDrawMapMove(e)
+  mapDblHandler = () => finishDraw()
+  m.on('click', mapClickHandler)
+  m.on('mousemove', mapMoveHandler)
+  // dblclick 在 click 之后触发，此时已多加一个重复点，finishDraw 内会自动去重
+  m.on('dblclick', mapDblHandler)
+  tipText.value = '绘制中：逐点点击地图添加顶点，画错可撤销，双击或点「完成绘制」闭合'
+}
+
+/** 绘制中点击：近首点则闭合，否则追加顶点 */
+function onDrawMapClick(e: any) {
+  const lng = e.lnglat.getLng()
+  const lat = e.lnglat.getLat()
+  const first = drawPoints.value[0]
+  if (first && drawPoints.value.length >= 3) {
+    const px = map.value.lngLatToContainer(new AMapLib.value.LngLat(lng, lat))
+    const p0 = map.value.lngLatToContainer(new AMapLib.value.LngLat(first[0], first[1]))
+    if (Math.hypot(px.x - p0.x, px.y - p0.y) < 16) {
+      finishDraw()
+      return
+    }
+  }
+  drawPoints.value.push([lng, lat])
+  refreshDrawPreview()
+}
+
+/** 鼠标移动时预览“最后一个点 → 光标”的虚线，跟随更直观 */
+function onDrawMapMove(e: any) {
+  if (moveRafPending || !drawPoints.value.length) return
+  moveRafPending = true
+  const lng = e.lnglat.getLng()
+  const lat = e.lnglat.getLat()
+  requestAnimationFrame(() => {
+    moveRafPending = false
+    if (!drawPoints.value.length) return
+    const last = drawPoints.value[drawPoints.value.length - 1]
+    if (!drawPreviewLine) {
+      drawPreviewLine = new AMapLib.value.Polyline({
+        path: [last, [lng, lat]], map: map.value,
+        strokeColor: '#0284c7', strokeWeight: 2, strokeStyle: 'dashed', strokeOpacity: 0.8, zIndex: 12
+      })
+    } else {
+      drawPreviewLine.setPath([last, [lng, lat]])
+    }
   })
 }
 
-function cancelDraw() {
+/** 根据顶点数组重绘预览：≥3 点显示半透明预览面，顶点用标记高亮（首点红色提示可点击闭合） */
+function refreshDrawPreview() {
+  const pts = drawPoints.value
+  drawVertexMarkers.forEach(mk => mk.setMap(null))
+  drawVertexMarkers = pts.map((p, i) => new AMapLib.value.Marker({
+    position: p,
+    content: `<div style="width:${i === 0 ? '14px' : '10px'};height:${i === 0 ? '14px' : '10px'};border-radius:50%;background:${i === 0 ? '#ef4444' : '#0284c7'};border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.4);"></div>`,
+    offset: new AMapLib.value.Pixel(i === 0 ? -8 : -6, i === 0 ? -8 : -6),
+    zIndex: 20,
+    map: map.value
+  }))
+  if (pts.length >= 3) {
+    if (!drawPreviewPoly) {
+      drawPreviewPoly = new AMapLib.value.Polygon({
+        path: pts, map: map.value,
+        strokeColor: '#0284c7', fillColor: '#0284c7', fillOpacity: 0.2, strokeWeight: 2, zIndex: 11
+      })
+    } else {
+      drawPreviewPoly.setPath(pts)
+    }
+  } else if (drawPreviewPoly) {
+    drawPreviewPoly.setMap(null)
+    drawPreviewPoly = null
+  }
+}
+
+/** 撤销上一个顶点 */
+function undoDrawPoint() {
+  if (!drawing.value || !drawPoints.value.length) return
+  drawPoints.value.pop()
+  refreshDrawPreview()
+}
+
+/** 完成绘制：顶点转正式多边形（双击闭合时自动去除重复尾点） */
+function finishDraw() {
+  const pts = drawPoints.value.slice()
+  // 双击闭合会在同一位置连加两个点，先去掉相邻重复点；再去掉与首点重合的尾点
+  while (pts.length >= 2 && pts[pts.length - 1][0] === pts[pts.length - 2][0] && pts[pts.length - 1][1] === pts[pts.length - 2][1]) {
+    pts.pop()
+  }
+  if (pts.length >= 4 && pts[0][0] === pts[pts.length - 1][0] && pts[0][1] === pts[pts.length - 1][1]) {
+    pts.pop()
+  }
+  if (pts.length < 3) {
+    tipText.value = '至少需要 3 个点才能闭合为网格边界，请继续点击地图添加顶点'
+    return
+  }
+  teardownDrawOverlays()
   drawing.value = false
-  mouseTool.value?.close()
+  const poly = new AMapLib.value.Polygon({
+    path: pts, map: map.value,
+    strokeColor: '#0284c7', fillColor: '#0284c7', fillOpacity: 0.2, strokeWeight: 2, zIndex: 11
+  })
+  setCurrentPolygon(poly)
+  tipText.value = '边界绘制完成，可填写右侧信息后保存；不满意可「重绘边界」'
+}
+function cancelDraw() {
+  const prev = selectedGrid.value?.roiJson ? safeParse(selectedGrid.value.roiJson) : null
+  teardownDrawOverlays()
+  drawing.value = false
+  if (prev && currentPolygon.value) {
+    currentPolygon.value.setPath(prev)
+    // 重绘前隐藏过旧边界，取消时需恢复显示
+    currentPolygon.value.setMap(map.value)
+  }
+  tipText.value = '已取消绘制'
+}
+
+/** 清理绘制态的全部临时图层与事件监听 */
+function teardownDrawOverlays() {
+  const m = map.value
+  if (m) {
+    if (mapClickHandler) m.off('click', mapClickHandler)
+    if (mapMoveHandler) m.off('mousemove', mapMoveHandler)
+    if (mapDblHandler) m.off('dblclick', mapDblHandler)
+  }
+  mapClickHandler = mapMoveHandler = mapDblHandler = null
+  drawVertexMarkers.forEach(mk => mk.setMap(null))
+  drawVertexMarkers = []
+  drawPreviewLine?.setMap(null)
+  drawPreviewLine = null
+  drawPreviewPoly?.setMap(null)
+  drawPreviewPoly = null
+  drawPoints.value = []
 }
 
 function startEditArea() {
@@ -395,6 +525,11 @@ function cancelEditArea() {
 
 function startRedraw() {
   if (!selectedGrid.value) return
+  // 重绘前先隐藏旧边界，避免绘制时新旧两层重叠干扰；
+  // 取消绘制/保存后 reloadAll 会恢复
+  if (selectedGrid.value.id != null) {
+    polygons.value.get(selectedGrid.value.id)?.setMap(null)
+  }
   startDraw()
 }
 
@@ -476,7 +611,7 @@ onMounted(async () => {
   AMapLib.value = await AMapLoader.load({
     key: '5e00e01d2d2b6ca9e1eed533a15572e4',
     version: '2.0',
-    plugins: ['AMap.Polygon', 'AMap.PolyEditor', 'AMap.MouseTool']
+    plugins: ['AMap.Polygon', 'AMap.Polyline', 'AMap.Marker', 'AMap.PolyEditor']
   })
   map.value = new AMapLib.value.Map('gridManageMap', {
     zoom: 13,
