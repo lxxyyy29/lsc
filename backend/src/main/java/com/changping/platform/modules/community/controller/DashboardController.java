@@ -105,15 +105,15 @@ public class DashboardController {
     public ApiResponse<Map<String, Object>> menuBadges() {
         AuthenticatedUser user = currentUserService.requireClientType(AuthService.ClientType.WEB);
         Map<String, Object> badges = new LinkedHashMap<>();
-        // 事件闭环处置：待审核 + 审核中 + 待派单（已读后新增）
+        // 事件闭环处置：待审核 + 审核中 + 待派单（已读后新增；与全站口径一致排除归档事件）
         badges.put("eventsPending", countUnread(user.id(), "eventsPending", "biz_event",
-                "status IN ('PENDING_AUDIT','IN_AUDIT','WAITING_DISPATCH')"));
+                "status IN ('PENDING_AUDIT','IN_AUDIT','WAITING_DISPATCH') AND COALESCE(archived, 0) = 0"));
         // 工单中心：待接单 + 处理中（已读后新增）
         badges.put("workOrdersPending", countUnread(user.id(), "workOrdersPending", "biz_work_order",
                 "status IN ('WAITING_ACCEPT','PROCESSING')"));
-        // 审核中心：待审核 + 审核中（与 AuditController 默认查询一致，已读后新增）
+        // 审核中心：待审核 + 审核中（与 AuditController 默认查询一致，已读后新增；排除归档事件）
         badges.put("auditsPending", countUnread(user.id(), "auditsPending", "biz_event",
-                "status IN ('PENDING_AUDIT','IN_AUDIT')"));
+                "status IN ('PENDING_AUDIT','IN_AUDIT') AND COALESCE(archived, 0) = 0"));
         // 居民上报：待审核（已读后新增）
         badges.put("residentReportsPending", countUnread(user.id(), "residentReportsPending", "cmn_resident_report",
                 "status = 'PENDING'"));
