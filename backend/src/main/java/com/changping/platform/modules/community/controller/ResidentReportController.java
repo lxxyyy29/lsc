@@ -23,8 +23,8 @@ public class ResidentReportController {
     }
 
     @GetMapping
-    public ApiResponse<List<ResidentReportEntity>> list() {
-        return ApiResponse.ok(service.listAll());
+    public ApiResponse<List<ResidentReportEntity>> list(@RequestParam(required = false) String status) {
+        return ApiResponse.ok(service.listByStatus(status));
     }
 
     @GetMapping("/{id}")
@@ -46,6 +46,7 @@ public class ResidentReportController {
     public ApiResponse<Boolean> handle(@PathVariable Long id, @RequestBody Map<String, String> body) {
         AuthenticatedUser user = currentUserService.requireClientType(AuthService.ClientType.WEB);
         String handleResult = body.getOrDefault("handleResult", "已处理");
-        return ApiResponse.ok(service.handleReport(id, user.id(), handleResult));
+        boolean ignored = "true".equalsIgnoreCase(body.getOrDefault("ignored", "false"));
+        return ApiResponse.ok(service.handleReport(id, user.id(), handleResult, ignored));
     }
 }

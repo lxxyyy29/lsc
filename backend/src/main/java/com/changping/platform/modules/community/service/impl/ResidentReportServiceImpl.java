@@ -16,6 +16,9 @@ public class ResidentReportServiceImpl implements ResidentReportService {
     public List<ResidentReportEntity> listAll() { return mapper.findAll(); }
 
     @Override
+    public List<ResidentReportEntity> listByStatus(String status) { return mapper.findByStatus(status); }
+
+    @Override
     public ResidentReportEntity findByCode(String queryCode) { return mapper.findByQueryCode(queryCode); }
 
     @Override
@@ -29,8 +32,9 @@ public class ResidentReportServiceImpl implements ResidentReportService {
     }
 
     @Override
-    public boolean handleReport(Long id, Long handlerUserId, String handleResult) {
-        mapper.updateHandle(id, handlerUserId, handleResult);
+    public boolean handleReport(Long id, Long handlerUserId, String handleResult, boolean ignored) {
+        // 忽略与正常处理区分状态，便于列表筛选与统计
+        mapper.updateHandle(id, handlerUserId, handleResult, ignored ? "IGNORED" : "HANDLED");
         return true;
     }
 }

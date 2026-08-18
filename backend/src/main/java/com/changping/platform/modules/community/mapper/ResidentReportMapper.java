@@ -40,11 +40,22 @@ public class ResidentReportMapper {
     public ResidentReportMapper(JdbcTemplate jdbcTemplate) { this.jdbcTemplate = jdbcTemplate; }
 
     public List<ResidentReportEntity> findAll() {
-        return jdbcTemplate.query(
+        return findByStatus(null);
+    }
+
+    /** 按状态筛选（status 为空时查全部） */
+    public List<ResidentReportEntity> findByStatus(String status) {
+        StringBuilder sql = new StringBuilder(
             "SELECT r.*, g.grid_name, hu.real_name FROM cmn_resident_report r " +
             "LEFT JOIN cmn_grid g ON r.grid_id = g.id " +
-            "LEFT JOIN sys_user hu ON r.handler_user_id = hu.id " +
-            "ORDER BY r.created_at DESC", ROW_MAPPER);
+            "LEFT JOIN sys_user hu ON r.handler_user_id = hu.id");
+        if (status != null && !status.isBlank()) {
+            sql.append(" WHERE r.status = ?");
+        }
+        sql.append(" ORDER BY r.created_at DESC");
+        return status != null && !status.isBlank()
+                ? jdbcTemplate.query(sql.toString(), ROW_MAPPER, status)
+                : jdbcTemplate.query(sql.toString(), ROW_MAPPER);
     }
 
     public ResidentReportEntity findByQueryCode(String queryCode) {
@@ -65,10 +76,10 @@ public class ResidentReportMapper {
         return results.isEmpty() ? null : results.get(0);
     }
 
-    public void updateHandle(Long id, Long handlerUserId, String handleResult) {
+    public void updateHandle(Long id, Long handlerUserId, String handleResult, String status) {
         jdbcTemplate.update(
-            "UPDATE cmn_resident_report SET handler_user_id = ?, handle_result = ?, status = 'HANDLED', handled_at = NOW(), updated_at = NOW() WHERE id = ?",
-            handlerUserId, handleResult, id);
+            "UPDATE cmn_resident_report SET handler_user_id = ?, handle_result = ?, status = ?, handled_at = NOW(), updated_at = NOW() WHERE id = ?",
+            handlerUserId, handleResult, status, id);
     }
 
     public Long insert(ResidentReportEntity e) {

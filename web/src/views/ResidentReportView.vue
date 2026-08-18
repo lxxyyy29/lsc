@@ -28,8 +28,8 @@
           <tbody>
             <tr v-for="item in list" :key="item.id">
               <td>{{ item.title }}</td>
-              <td><span class="tag tag-blue">{{ getEventTypeName(item.eventType) }}</span></td>
-              <td>{{ formatTime(item.createdAt || item.occurredAt) }}</td>
+              <td><span class="tag tag-blue">{{ getEventTypeName(item.reportType) }}</span></td>
+              <td>{{ formatTime(item.createdAt) }}</td>
               <td>
                 <span :class="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
               </td>
@@ -39,20 +39,16 @@
                     style="padding:4px 12px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#374151;">
                     详情
                   </button>
-                  <button v-if="item.status === 'WAITING_DISPATCH'" @click="handleProcess(item)"
+                  <button v-if="item.status === 'PENDING'" @click="handleProcess(item)"
                     style="padding:4px 12px;border:none;border-radius:4px;background:#0284c7;color:#fff;font-size:12px;cursor:pointer;">
                     处理
                   </button>
-                  <button v-if="item.status === 'WAITING_DISPATCH'" @click="handleIgnore(item)"
+                  <button v-if="item.status === 'PENDING'" @click="handleIgnore(item)"
                     style="padding:4px 12px;border:1px solid #ff4d4f;border-radius:4px;background:#fff;color:#ff4d4f;font-size:12px;cursor:pointer;">
                     忽略
                   </button>
-                  <button v-if="item.status === 'CLOSED' && !item.rating" disabled
-                    style="padding:4px 12px;border:1px solid #e5e7eb;border-radius:4px;background:#f9fafb;color:#9ca3af;font-size:12px;cursor:default;">
-                    待评价
-                  </button>
-                  <span v-else-if="item.rating" style="color:#faad14;font-size:12px;line-height:24px;">
-                    {{ '★'.repeat(item.rating) }}
+                  <span v-if="item.status === 'HANDLED' || item.status === 'COMPLETED'" style="color:#059669;font-size:12px;line-height:24px;">
+                    已处理
                   </span>
                 </div>
               </td>
@@ -72,9 +68,10 @@ import { getEventTypeName } from '../utils/eventTypes'
 
 const statusTabs = [
   { key: '', label: '全部' },
-  { key: 'WAITING_DISPATCH', label: '待派单' },
-  { key: 'DISPATCHED_TO_WORK_ORDER', label: '处理中' },
-  { key: 'CLOSED', label: '已办结' },
+  { key: 'PENDING', label: '待处理' },
+  { key: 'PROCESSING', label: '处理中' },
+  { key: 'HANDLED', label: '已处理' },
+  { key: 'COMPLETED', label: '已完成' },
   { key: 'IGNORED', label: '已忽略' }
 ]
 const activeStatus = ref('')
@@ -83,12 +80,12 @@ const loading = ref(true)
 const error = ref('')
 
 function statusLabel(s: string) {
-  return { WAITING_DISPATCH: '待派单', DISPATCHED_TO_WORK_ORDER: '处理中', CLOSED: '已办结', IGNORED: '已忽略' }[s] || s || '未知'
+  return { PENDING: '待处理', PROCESSING: '处理中', HANDLED: '已处理', COMPLETED: '已完成', IGNORED: '已忽略' }[s] || s || '未知'
 }
 
 function statusClass(s: string) {
-  if (s === 'CLOSED') return 'tag tag-green'
-  if (s === 'DISPATCHED_TO_WORK_ORDER') return 'tag tag-blue'
+  if (s === 'HANDLED' || s === 'COMPLETED') return 'tag tag-green'
+  if (s === 'PROCESSING') return 'tag tag-blue'
   if (s === 'IGNORED') return 'tag tag-red'
   return 'tag tag-orange'
 }
@@ -102,10 +99,11 @@ async function fetchData() {
   loading.value = true
   error.value = ''
   try {
-    const params: any = { page: 1, pageSize: 50 }
+    const params: any = {}
     if (activeStatus.value) params.status = activeStatus.value
     const res = await http.get('/community/resident-reports', { params })
-    list.value = res?.items || res?.data?.items || res || []
+    // 后端返回的是数组（非分页结构），兼容多种解包层级
+    list.value = Array.isArray(res) ? res : (res?.items || res?.data?.items || [])
   } catch(e: any) {
     error.value = e?.message || '加载失败，请稍后重试'
   } finally {
@@ -114,7 +112,7 @@ async function fetchData() {
 }
 
 function viewDetail(item: any) {
-  alert(`标题：${item.title}\n描述：${item.description || '-'}\n类型：${getEventTypeName(item.eventType)}\n状态：${statusLabel(item.status)}\n上报时间：${formatTime(item.createdAt || item.occurredAt)}`)
+  alert(`标题：${item.title}\n描述：${item.content || '-'}\n类型：${getEventTypeName(item.reportType)}\n状态：${statusLabel(item.status)}\n上报人：${item.residentName || '-'}（${item.residentPhone || '-'}）\n所属网格：${item.gridName || '-'}\n上报时间：${formatTime(item.createdAt)}${item.handleResult ? '\n处理结果：' + item.handleResult : ''}`)
 }
 
 async function handleProcess(item: any) {
@@ -132,7 +130,7 @@ async function handleProcess(item: any) {
 async function handleIgnore(item: any) {
   if (!confirm(`确定要忽略上报「${item.title}」吗？`)) return
   try {
-    await http.put(`/community/resident-reports/${item.id}/handle`, { handleResult: '已忽略' })
+    await http.put(`/community/resident-reports/${item.id}/handle`, { handleResult: '已忽略', ignored: 'true' })
     alert('已忽略')
     fetchData()
   } catch(e: any) {
