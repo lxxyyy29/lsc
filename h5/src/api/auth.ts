@@ -292,7 +292,14 @@ export interface H5RegisterPayload {
 }
 
 export async function registerH5(payload: H5RegisterPayload): Promise<void> {
+  // 注册接口位于 /api/registration（非 /api/h5），需要覆盖 baseURL；
+  // 小程序端 uni.request 只接受绝对 URL，相对路径会直接请求失败
+  // #ifdef MP-WEIXIN
+  await http.post<void, void>('/registration/submit', payload, { baseURL: 'https://drone.kfktec.cn:8443/api' })
+  // #endif
+  // #ifndef MP-WEIXIN
   await http.post<void, void>('/registration/submit', payload, { baseURL: '/api' })
+  // #endif
 }
 
 export async function logoutH5() {
