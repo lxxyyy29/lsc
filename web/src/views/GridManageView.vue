@@ -92,6 +92,15 @@
         </div>
       </div>
     </aside>
+
+    <!-- 全局醒目提示（保存失败等错误/成功反馈） -->
+    <transition name="toast">
+      <div v-if="toast.visible" class="page-toast" :class="toast.type">
+        <span class="toast-icon">{{ toast.type === 'error' ? '⛔' : '✔' }}</span>
+        <span class="toast-msg">{{ toast.message }}</span>
+        <button class="toast-close" @click="toast.visible = false">✕</button>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -142,6 +151,15 @@ let moveRafPending = false
 const editing = ref(false)
 const saving = ref(false)
 const tipText = ref('点击左侧网格查看/调整区域；选中后可拖拽顶点或重绘边界')
+
+// 醒目悬浮提示：替代 alert()，错误红色长驻 8 秒、成功绿色 3 秒，均可手动关闭
+const toast = ref({ visible: false, type: 'error' as 'error' | 'success', message: '' })
+let toastTimer: ReturnType<typeof setTimeout> | null = null
+function notify(message: string, type: 'error' | 'success' = 'error') {
+  if (toastTimer) clearTimeout(toastTimer)
+  toast.value = { visible: true, type, message }
+  toastTimer = setTimeout(() => { toast.value.visible = false }, type === 'error' ? 8000 : 3000)
+}
 
 const form = ref<any>({
   id: null,
@@ -544,16 +562,16 @@ function collectRoiJson(): string | null {
 
 async function saveGrid() {
   if (!form.value.gridName?.trim()) {
-    alert('请填写网格名称')
+    notify('请填写网格名称')
     return
   }
   if (drawing.value) {
-    alert('请先完成边界绘制（闭合多边形）')
+    notify('请先完成边界绘制（闭合多边形）')
     return
   }
   const roiJson = collectRoiJson()
   if (!roiJson) {
-    alert('请先在右侧地图上绘制/确认网格边界（至少 3 个点）')
+    notify('请先在右侧地图上绘制/确认网格边界（至少 3 个点）')
     return
   }
   saving.value = true
@@ -571,10 +589,10 @@ async function saveGrid() {
     }
     if (form.value.id) {
       await updateGrid(form.value.id, payload)
-      alert('网格已更新')
+      notify('网格已更新', 'success')
     } else {
       await createGrid(payload)
-      alert('网格已创建')
+      notify('网格已创建', 'success')
     }
     await reloadAll()
     // 定位到新/更新的网格（视野+表单），不改变其样式，保持与同级网格一致
@@ -582,7 +600,7 @@ async function saveGrid() {
     if (target) selectGrid(target, true)
     else resetForm()
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    notify(`保存失败：${e?.message || '服务器内部异常，请稍后重试'}`)
   } finally {
     saving.value = false
   }
@@ -594,13 +612,13 @@ async function removeGrid() {
   if (!window.confirm(`确定删除网格「${g.gridName}」？\n（该网格下有子网格时将无法删除）`)) return
   try {
     await deleteGrid(g.id)
-    alert('网格已删除')
+    notify('网格已删除', 'success')
     selectedId.value = null
     selectedGrid.value = null
     resetForm()
     await reloadAll()
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    notify(`删除失败：${e?.message || '服务器内部异常，请稍后重试'}`)
   }
 }
 
@@ -750,4 +768,48 @@ onMounted(async () => {
 }
 .area-box strong { color: #0f766e; }
 .form-actions { display: flex; gap: 10px; margin-top: 14px; }
+
+/* 全局醒目提示 */
+.page-toast {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 620px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+.page-toast.error {
+  background: #dc2626;
+  color: #fff;
+  border: 1px solid #b91c1c;
+}
+.page-toast.success {
+  background: #059669;
+  color: #fff;
+  border: 1px solid #047857;
+}
+.toast-icon { font-size: 16px; flex-shrink: 0; }
+.toast-msg { flex: 1; word-break: break-all; }
+.toast-close {
+  flex-shrink: 0;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.toast-enter-active, .toast-leave-active { transition: all 0.25s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(-16px); }
 </style>

@@ -85,4 +85,11 @@ public class GridMapper {
                 "SELECT COUNT(*) FROM cmn_grid WHERE parent_id = ?", Long.class, parentId);
         return count != null ? count : 0;
     }
+
+    /** 网格编码是否已被占用（含已停用记录，避免自动编号撞唯一索引） */
+    public boolean existsByCode(String gridCode) {
+        Long count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM cmn_grid WHERE grid_code = ?", Long.class, gridCode);
+        return count != null && count > 0;
+    }
 }
