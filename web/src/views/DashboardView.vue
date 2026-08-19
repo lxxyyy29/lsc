@@ -310,8 +310,8 @@ onMounted(async () => {
       }
       drawSmallGrids(tree)
 
-      // === 事件标记 ===
-      for (const evt of events.value) {
+      // === 事件标记（只展示未归档的活跃事件，避免历史测试/已归档数据污染态势地图） ===
+      for (const evt of events.value.filter(e => !e.archived)) {
         if (!evt.longitude || !evt.latitude) continue
         const color = evt.urgencyLevel === 'RED' ? '#FF4D4F' : evt.urgencyLevel === 'YELLOW' ? '#FAAD14' : '#52C41A'
         const marker = new AMap.Marker({
