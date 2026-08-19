@@ -147,7 +147,8 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { login, registerAdmin } from '../api'
+import { login, registerAdmin, getSession } from '../api'
+import { firstVisiblePath } from '../menu'
 
 const router = useRouter()
 const loading = ref(false)
@@ -185,7 +186,8 @@ async function handleLogin() {
   try {
     await login(form.account, form.password)
     emit('success')
-    router.push('/')
+    // 跳转到该用户第一个有权限的菜单（避免无看板权限的角色落在 / 上）
+    router.push(firstVisiblePath(getSession()))
   } catch (e: any) {
     error.value = e?.message || e || '登录失败，请检查账号密码'
   } finally {

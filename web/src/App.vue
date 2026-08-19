@@ -102,6 +102,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { getSession, login, logout, getMenuBadges, markBadgeRead, changePassword } from './api'
+import { menuGroups, visibleGroupsFor, isSuperAdminSession } from './menu'
 import LoginView from './views/LoginView.vue'
 import NotificationBell from './components/NotificationBell.vue'
 
@@ -143,89 +144,24 @@ async function loadBadges() {
   }
 }
 
-// 分组菜单（大类 → 子功能）：合并单条目组、拆出台账类，减少视觉噪音
-const menuGroups = [
-  {
-    name: '首页概览', icon: 'fas fa-tachometer-alt',
-    items: [
-      { path: '/', name: '全域态势看板' },
-      { path: '/big-screen', name: '综合监管大屏' },
-    ]
-  },
-  {
-    name: '事件工单', icon: 'fas fa-tasks',
-    items: [
-      { path: '/events', name: '事件闭环处置', badgeKey: 'eventsPending' },
-      { path: '/work-orders', name: '工单中心', badgeKey: 'workOrdersPending' },
-      { path: '/audits', name: '审核中心', badgeKey: 'auditsPending' },
-      { path: '/dispatch-rules', name: '智能派单规则' },
-    ]
-  },
-  {
-    name: '网格治理', icon: 'fas fa-map-marked-alt',
-    items: [
-      { path: '/gis', name: 'GIS网格可视化' },
-      { path: '/grid-manage', name: '网格管理' },
-      { path: '/biz-areas', name: '辖区管理' },
-      { path: '/org-members', name: '组织人员', badgeKey: 'pwdResetsPending' },
-    ]
-  },
-  {
-    name: '基础台账', icon: 'fas fa-database',
-    items: [
-      { path: '/population', name: '实有人口库' },
-      { path: '/buildings', name: '房屋/出租屋库' },
-      { path: '/places', name: '场所资源库' },
-      { path: '/ledger', name: '场所台账' },
-    ]
-  },
-  {
-    name: '居民服务', icon: 'fas fa-users',
-    items: [
-      { path: '/resident-reports', name: '居民上报', badgeKey: 'residentReportsPending' },
-      { path: '/repairs', name: '报修管理' },
-      { path: '/policy-resources', name: '政策资源' },
-    ]
-  },
-  {
-    name: '巡查防控', icon: 'fas fa-shield-alt',
-    items: [
-      { path: '/patrol', name: '网格巡查' },
-      { path: '/emergency', name: '应急调度' },
-      { path: '/mosquito', name: '爱卫蚊媒' },
-      { path: '/safety', name: '安全防控' },
-      { path: '/parking', name: '停车管理' },
-      { path: '/vehicle-track', name: '车辆轨迹' },
-    ]
-  },
-  {
-    name: '智慧应用', icon: 'fas fa-helicopter',
-    items: [
-      { path: '/party', name: '智慧党建' },
-      { path: '/drones', name: '无人机管理' },
-      { path: '/video', name: '视频轮巡' },
-    ]
-  },
-  {
-    name: '数据决策', icon: 'fas fa-chart-bar',
-    items: [
-      { path: '/reports', name: '数据报表' },
-      { path: '/assessment', name: '考核研判' },
-      { path: '/trend-alerts', name: '趋势预判预警', badgeKey: 'trendAlerts' },
-      { path: '/audit-logs', name: '审计日志' },
-    ]
-  },
-]
+// 菜单配置统一维护在 ./menu.ts（侧边栏/路由守卫/登录后落地页共用）
+
+// 超管不受菜单权限过滤（防止误操作把菜单全取消后无法进入系统设置恢复）
+const isSuperAdmin = computed(() => isSuperAdminSession(session.value))
+
+// 按当前登录会话的权限过滤菜单：只展示有 web:menu:* 权限的项，空分组整体隐藏
+const visibleGroups = computed(() => visibleGroupsFor(session.value))
 
 // 默认仅展开当前路由所在分组（避免全部展开的视觉噪音）
 const openGroups = ref<string[]>([])
 const searchKey = ref('')
 
-// 搜索过滤后的分组（匹配菜单项名或分组名，组名命中则显示该组全部）
+// 搜索过滤后的分组（先权限过滤再搜索；匹配菜单项名或分组名，组名命中则显示该组全部）
 const filteredGroups = computed(() => {
   const key = searchKey.value.trim().toLowerCase()
-  if (!key) return menuGroups
-  return menuGroups
+  const groups = visibleGroups.value
+  if (!key) return groups
+  return groups
     .map(g => {
       if (g.name.toLowerCase().includes(key)) return g
       const items = g.items.filter(i => i.name.toLowerCase().includes(key))
@@ -235,7 +171,7 @@ const filteredGroups = computed(() => {
 })
 
 // 路由变化时自动展开所在分组
-const activeGroup = computed(() => menuGroups.find(g => g.items.some(i => i.path === route.path))?.name)
+const activeGroup = computed(() => visibleGroups.value.find(g => g.items.some(i => i.path === route.path))?.name)
 watch(() => route.path, () => {
   if (activeGroup.value && !openGroups.value.includes(activeGroup.value)) {
     openGroups.value.push(activeGroup.value)

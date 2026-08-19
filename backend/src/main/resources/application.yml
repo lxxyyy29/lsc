@@ -2,6 +2,9 @@ server:
   port: 8080
   servlet:
     context-path: /api
+    encoding:
+      charset: UTF-8
+      force-response: true
 
 spring:
   flyway:

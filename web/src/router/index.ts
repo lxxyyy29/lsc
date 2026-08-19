@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { getSession } from '../api'
+import { permKeyForPath, isSuperAdminSession, firstVisiblePath } from '../menu'
 
 const routes = [
   { path: '/login', component: () => import('../views/LoginView.vue') },
@@ -30,6 +31,8 @@ const routes = [
   { path: '/vehicle-track', component: () => import('../views/VehicleTrackView.vue') },
   { path: '/assessment', component: () => import('../views/AssessmentView.vue') },
   { path: '/audit-logs', component: () => import('../views/AuditLogView.vue') },
+  { path: '/system-roles', component: () => import('../views/RoleManageView.vue') },
+  { path: '/system-users', component: () => import('../views/UserManageView.vue') },
   // 信息互通（实时聊天）功能暂不启用，保留代码后续开发
   // { path: '/integration', component: () => import('../views/IntegrationView.vue') },
   { path: '/org-members', component: () => import('../views/OrgMemberView.vue') },
@@ -54,7 +57,13 @@ router.beforeEach((to) => {
   }
   // 已登录且访问登录页 → 跳转首页
   if (to.path === '/login' && session?.token) {
-    return '/'
+    return firstVisiblePath(session)
+  }
+  // 菜单权限守卫：无权限的页面直接 URL 访问时重定向到首个可见菜单
+  // （超管豁免；后端 403 仍作为最终兑底，这里避免用户看到"获取失败"报错页）
+  const permKey = permKeyForPath(to.path)
+  if (permKey && !isSuperAdminSession(session) && !(session?.permissionCodes || []).includes(permKey)) {
+    return firstVisiblePath(session)
   }
 })
 
