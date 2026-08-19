@@ -227,6 +227,15 @@ async function reloadAll() {
 
 /* ---------- 地图初始化与网格绘制 ---------- */
 
+/** 层级配色：绘制与增量更新共用，保证样式一致 */
+function gridStyleFor(level: number) {
+  return level === 1
+    ? { fillColor: '#0284c7', strokeColor: '#0284c7', strokeWeight: 3, fillOpacity: 0.08 }
+    : level === 2
+      ? { fillColor: '#f59e0b', strokeColor: '#f59e0b', strokeWeight: 2, fillOpacity: 0.1 }
+      : { fillColor: '#10b981', strokeColor: '#10b981', strokeWeight: 1, fillOpacity: 0.08 }
+}
+
 function clearPolylines() {
   polygons.value.forEach(p => p.setMap(null))
   polygons.value = new Map()
@@ -238,32 +247,65 @@ function clearPolylines() {
 }
 
 function drawAllGrids() {
-  const m = map.value
-  if (!m) return
   const draw = (nodes: GridNode[]) => {
     nodes.forEach(n => {
-      if (n.roiJson) {
-        const coords = safeParse(n.roiJson)
-        if (coords?.length >= 3) {
-          const style = n.gridLevel === 1
-            ? { fillColor: '#0284c7', strokeColor: '#0284c7', strokeWeight: 3, fillOpacity: 0.08 }
-            : n.gridLevel === 2
-              ? { fillColor: '#f59e0b', strokeColor: '#f59e0b', strokeWeight: 2, fillOpacity: 0.1 }
-              : { fillColor: '#10b981', strokeColor: '#10b981', strokeWeight: 1, fillOpacity: 0.08 }
-          const poly = new AMapLib.value.Polygon({ path: coords, zIndex: 5, bubble: true, map: m, ...style })
-          // 绘制/编辑中不响应选中，避免新增网格时误点已有网格导致绘制被打断、已画的点丢失
-          poly.on('click', () => {
-            if (drawing.value || editing.value) return
-            selectGrid(n)
-          })
-          polygons.value.set(n.id, poly)
-          defaultStyles.set(n.id, style)
-        }
-      }
+      styleGridPoly(n)
       if (n.children?.length) draw(n.children)
     })
   }
   draw(gridTree.value)
+}
+
+/** 为单个网格创建/复用多边形（创建时绑定点击选中，绘制/编辑中不响应） */
+function styleGridPoly(n: GridNode) {
+  const m = map.value
+  if (!m) return
+  const coords = n.roiJson ? safeParse(n.roiJson) : null
+  const existing = polygons.value.get(n.id)
+  if (!coords || coords.length < 3) {
+    existing?.setMap(null)
+    polygons.value.delete(n.id)
+    defaultStyles.delete(n.id)
+    return
+  }
+  const style = gridStyleFor(n.gridLevel)
+  if (existing) {
+    existing.setPath(coords)
+    existing.setOptions(style)
+  } else {
+    const poly = new AMapLib.value.Polygon({ path: coords, zIndex: 5, bubble: true, map: m, ...style })
+    // 绘制/编辑中不响应选中，避免新增网格时误点已有网格导致绘制被打断、已画的点丢失
+    poly.on('click', () => {
+      if (drawing.value || editing.value) return
+      selectGrid(n)
+    })
+    polygons.value.set(n.id, poly)
+  }
+  defaultStyles.set(n.id, style)
+}
+
+/** 轻量同步：保存/删除后只拉新树 + 增量更新多边形（setPath），不销毁重建全部覆盖物，交互反馈更快 */
+async function syncTreeLight() {
+  const tree = await getGridTree()
+  gridTree.value = tree || []
+  loadTree()
+  const seen = new Set<number>()
+  const walk = (nodes: GridNode[]) => {
+    nodes.forEach(n => {
+      seen.add(n.id)
+      styleGridPoly(n)
+      if (n.children?.length) walk(n.children)
+    })
+  }
+  walk(gridTree.value)
+  // 已删除网格的多边形从地图上移除
+  for (const [id, poly] of [...polygons.value.entries()]) {
+    if (!seen.has(id)) {
+      poly.setMap(null)
+      polygons.value.delete(id)
+      defaultStyles.delete(id)
+    }
+  }
 }
 
 function safeParse(json?: string): any[] | null {
@@ -275,18 +317,21 @@ function safeParse(json?: string): any[] | null {
   }
 }
 
+// 记录上一次高亮的网格，切换时只刷新新旧两个多边形，避免每次选中全量 setOptions
+let lastHighlightId: number | null = null
+
 function highlight(id: number) {
-  polygons.value.forEach((poly, pid) => {
-    const active = pid === id
-    if (active) {
-      const base = defaultStyles.get(pid) || {}
-      // 选中：保持层级色，仅加深
-      poly.setOptions({ fillColor: base.fillColor, strokeColor: base.strokeColor, fillOpacity: 0.25, strokeWeight: 3, zIndex: 10 })
-    } else {
-      // 非选中：恢复各层级默认样式，不统一覆盖
-      poly.setOptions(defaultStyles.get(pid) || { fillOpacity: 0.06, strokeWeight: 1, zIndex: 5 })
-    }
-  })
+  if (lastHighlightId !== null && lastHighlightId !== id) {
+    const prev = polygons.value.get(lastHighlightId)
+    if (prev) prev.setOptions(defaultStyles.get(lastHighlightId) || { fillOpacity: 0.06, strokeWeight: 1, zIndex: 5 })
+  }
+  const poly = polygons.value.get(id)
+  if (poly) {
+    const base = defaultStyles.get(id) || {}
+    // 选中：保持层级色，仅加深
+    poly.setOptions({ fillColor: base.fillColor, strokeColor: base.strokeColor, fillOpacity: 0.25, strokeWeight: 3, zIndex: 10 })
+  }
+  lastHighlightId = id || null
 }
 
 /* ---------- 网格选择 / 表单 ---------- */
@@ -316,7 +361,8 @@ function selectGrid(g: GridNode, skipHighlight = false) {
   if (!skipHighlight) highlight(g.id)
   const poly = polygons.value.get(g.id)
   if (poly) {
-    map.value.setFitView([poly], false, [80, 80, 80, 80])
+    // immediately=true：视野跳转无动画，选中响应更干脆
+    map.value.setFitView([poly], true, [80, 80, 80, 80])
     setCurrentPolygon(poly)
   } else {
     setCurrentPolygon(null)
@@ -586,8 +632,6 @@ async function saveGrid() {
     return
   }
   saving.value = true
-  // 保存成功后要重新定位到该网格，先记下临时多边形路径，避免未保存拦截误触发
-  const tempPath: any[] | null = (!form.value.id && currentPolygon.value) ? currentPolygon.value.getPath() : null
   try {
     const payload = {
       gridName: form.value.gridName.trim(),
@@ -608,20 +652,12 @@ async function saveGrid() {
       notify('网格已创建', 'success')
       if (created?.id) form.value.id = created.id
     }
-    await reloadAll()
+    // 轻量同步：增量更新多边形而非销毁重建，保存后立即看到最新边界
+    await syncTreeLight()
     // 定位到新/更新的网格（视野+表单），优先用返回的id，其次按名称匹配
     const target = flatTree.value.find(n => (form.value.id && n.id === form.value.id) || n.gridName === payload.gridName)
     if (target) selectGrid(target, true)
-    else {
-      resetForm()
-      // 未定位到目标（如后端未返回id）时，把刚保存的边界临时画回地图，避免视觉上“消失”
-      if (tempPath && tempPath.length >= 3) {
-        setCurrentPolygon(new AMapLib.value.Polygon({
-          path: tempPath, map: map.value,
-          strokeColor: '#0284c7', fillColor: '#0284c7', fillOpacity: 0.2, strokeWeight: 2, zIndex: 11
-        }))
-      }
-    }
+    else resetForm()
   } catch (e: any) {
     notify(`保存失败：${e?.message || '服务器内部异常，请稍后重试'}`)
   } finally {
@@ -640,7 +676,7 @@ async function removeGrid() {
     selectedId.value = null
     selectedGrid.value = null
     resetForm()
-    await reloadAll()
+    await syncTreeLight()
   } catch (e: any) {
     notify(`删除失败：${e?.message || '服务器内部异常，请稍后重试'}`)
   }
@@ -663,7 +699,10 @@ onMounted(async () => {
     viewMode: '2D',
     showIndoorMap: false,
     showBuildingBlock: false,
-    showLabel: true
+    showLabel: true,
+    // 关闭视野变换/缩放动画：拖拽、点击选中等交互响应更直接
+    animateEnable: false,
+    zoomAnimation: false
   })
   await reloadAll()
 })
