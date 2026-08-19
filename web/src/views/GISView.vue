@@ -61,6 +61,14 @@
               <span style="width:12px;height:12px;border-radius:50%;background:#0284c7;opacity:0.7;"></span>
               巡查轨迹
             </label>
+            <!-- 轨迹时间范围：避免历史轨迹堆积重叠占满地图，默认只看近 7 天 -->
+            <div v-if="showTrajectories" style="display:flex;gap:4px;margin:2px 0 0 20px;">
+              <button v-for="opt in rangeOptions" :key="opt.value" @click="trajectoryRange = opt.value"
+                style="padding:2px 7px;font-size:11px;border-radius:10px;border:1px solid #d1d5db;cursor:pointer;"
+                :style="trajectoryRange === opt.value ? 'background:#0284c7;color:#fff;border-color:#0284c7;' : 'background:#fff;color:#6b7280;'">
+                {{ opt.label }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -188,6 +196,143 @@ const showTrajectories = ref(false)
 let heatmapInstance: any = null
 let trajectoryPolylines: any[] = []
 let trajectoryMarkers: any[] = []
+
+// 巡查轨迹时间范围（默认近 7 天，避免历史轨迹堆积重叠）
+const trajectoryRange = ref<'today' | '7d' | '30d' | 'all'>('7d')
+const rangeOptions = [
+  { value: 'today' as const, label: '今天' },
+  { value: '7d' as const, label: '近7天' },
+  { value: '30d' as const, label: '近30天' },
+  { value: 'all' as const, label: '全部' }
+]
+
+/** 根据所选范围计算起始时间；不传结束时间，上限自然取当前时刻 */
+function trajectoryStartDate(): string | undefined {
+  if (trajectoryRange.value === 'all') return undefined
+  const days = trajectoryRange.value === 'today' ? 0 : trajectoryRange.value === '7d' ? 6 : 29
+  const d = new Date()
+  d.setDate(d.getDate() - days)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} 00:00:00`
+}
+
+function clearTrajectories() {
+  for (const p of trajectoryPolylines) p.setMap(null)
+  trajectoryPolylines = []
+  // 热力降级标记（_isHeatmapMarker）与轨迹标记共用数组，只清理轨迹类
+  for (const m of trajectoryMarkers) {
+    if (!m._isHeatmapMarker) m.setMap(null)
+  }
+  trajectoryMarkers = trajectoryMarkers.filter(m => m._isHeatmapMarker)
+}
+
+// ==================== 巡查轨迹（按时间范围拉取，切换范围时清除重绘） ====================
+async function loadTrajectories() {
+  if (!AMapLib || !mapInstance) return
+  clearTrajectories()
+  try {
+    const startDate = trajectoryStartDate()
+    const data: any = await getPatrolTrajectories(startDate ? { startDate } : {})
+    if (!data || !data.length) return
+    const map = mapInstance
+    const colors = ['#0284c7', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
+    let colorIdx = 0
+    for (const track of data) {
+      const coords = track.coords
+      if (!coords || coords.length < 2) continue
+      const color = colors[colorIdx % colors.length]
+      colorIdx++
+
+      // 绘制轨迹线（更细更美观：带白色描边 + 半透明彩色线）
+      // 底层白色描边（加粗）
+      const outline = new AMapLib.Polyline({
+        path: coords,
+        strokeColor: '#ffffff',
+        strokeWeight: 5,
+        strokeOpacity: 0.9,
+        strokeStyle: 'solid',
+        bubble: true,
+        zIndex: 10,
+        map
+      })
+      trajectoryPolylines.push(outline)
+      // 上层彩色细线
+      const polyline = new AMapLib.Polyline({
+        path: coords,
+        strokeColor: color,
+        strokeWeight: 2.5,
+        strokeOpacity: 0.85,
+        strokeStyle: 'solid',
+        bubble: true,
+        zIndex: 11,
+        map
+      })
+      trajectoryPolylines.push(polyline)
+
+      // 起点标记（绿色圆点）
+      const startMarker = new AMapLib.CircleMarker({
+        center: coords[0],
+        radius: 5,
+        fillColor: '#ffffff',
+        fillOpacity: 1,
+        strokeColor: '#52c41a',
+        strokeWeight: 2,
+        zIndex: 20,
+        bubble: true,
+        map
+      })
+      trajectoryMarkers.push(startMarker)
+
+      // 终点标记（红色圆点）
+      const endMarker = new AMapLib.CircleMarker({
+        center: coords[coords.length - 1],
+        radius: 5,
+        fillColor: '#ffffff',
+        fillOpacity: 1,
+        strokeColor: '#ff4d4f',
+        strokeWeight: 2,
+        zIndex: 20,
+        bubble: true,
+        map
+      })
+      trajectoryMarkers.push(endMarker)
+
+      // 轨迹中点标签（显示网格员姓名）
+      const midIdx = Math.floor(coords.length / 2)
+      const midPoint = coords[midIdx]
+      const textLabel = new AMapLib.Text({
+        text: track.userName,
+        position: midPoint,
+        offset: [0, -12],
+        style: {
+          'background-color': color,
+          'color': '#ffffff',
+          'font-size': '11px',
+          'padding': '2px 6px',
+          'border-radius': '10px',
+          'border-width': 0,
+          'white-space': 'nowrap',
+          'opacity': 0.85
+        },
+        zIndex: 25,
+        map
+      })
+      trajectoryMarkers.push(textLabel)
+    }
+    // 图层关闭时新绘制的元素保持隐藏
+    if (!showTrajectories.value) {
+      for (const p of trajectoryPolylines) p.hide()
+      for (const m of trajectoryMarkers) {
+        if (!m._isHeatmapMarker) m.hide()
+      }
+    }
+  } catch (e) {
+    console.warn('轨迹数据加载失败:', e)
+  }
+}
+
+// 切换时间范围时重新拉取并重绘
+watch(trajectoryRange, () => { loadTrajectories() })
 
 const allGrids = computed(() => {
   const result: GridInfo[] = []
@@ -345,104 +490,6 @@ onMounted(async () => {
       }
     } catch (e) {
       console.warn('热力图数据加载失败:', e)
-    }
-  }
-
-  // ==================== 巡查轨迹 ====================
-  const loadTrajectories = async () => {
-    try {
-      const data: any = await getPatrolTrajectories({})
-      if (!data || !data.length) return
-      const colors = ['#0284c7', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
-      let colorIdx = 0
-      for (const track of data) {
-        const coords = track.coords
-        if (!coords || coords.length < 2) continue
-        const color = colors[colorIdx % colors.length]
-        colorIdx++
-
-        // 绘制轨迹线（更细更美观：带白色描边 + 半透明彩色线）
-        // 底层白色描边（加粗）
-        const outline = new AMapLib.Polyline({
-          path: coords,
-          strokeColor: '#ffffff',
-          strokeWeight: 5,
-          strokeOpacity: 0.9,
-          strokeStyle: 'solid',
-          bubble: true,
-          zIndex: 10,
-          map
-        })
-        trajectoryPolylines.push(outline)
-        // 上层彩色细线
-        const polyline = new AMapLib.Polyline({
-          path: coords,
-          strokeColor: color,
-          strokeWeight: 2.5,
-          strokeOpacity: 0.85,
-          strokeStyle: 'solid',
-          bubble: true,
-          zIndex: 11,
-          map
-        })
-        trajectoryPolylines.push(polyline)
-
-        // 起点标记（绿色圆点）
-        const startMarker = new AMapLib.CircleMarker({
-          center: coords[0],
-          radius: 5,
-          fillColor: '#ffffff',
-          fillOpacity: 1,
-          strokeColor: '#52c41a',
-          strokeWeight: 2,
-          zIndex: 20,
-          bubble: true,
-          map
-        })
-        trajectoryMarkers.push(startMarker)
-
-        // 终点标记（红色圆点）
-        const endMarker = new AMapLib.CircleMarker({
-          center: coords[coords.length - 1],
-          radius: 5,
-          fillColor: '#ffffff',
-          fillOpacity: 1,
-          strokeColor: '#ff4d4f',
-          strokeWeight: 2,
-          zIndex: 20,
-          bubble: true,
-          map
-        })
-        trajectoryMarkers.push(endMarker)
-
-        // 轨迹中点标签（显示网格员姓名）
-        const midIdx = Math.floor(coords.length / 2)
-        const midPoint = coords[midIdx]
-        const textLabel = new AMapLib.Text({
-          text: track.userName,
-          position: midPoint,
-          offset: [0, -12],
-          style: {
-            'background-color': color,
-            'color': '#ffffff',
-            'font-size': '11px',
-            'padding': '2px 6px',
-            'border-radius': '10px',
-            'border-width': 0,
-            'white-space': 'nowrap',
-            'opacity': 0.85
-          },
-          zIndex: 25,
-          map
-        })
-        trajectoryMarkers.push(textLabel)
-      }
-      if (!showTrajectories.value) {
-        for (const p of trajectoryPolylines) p.hide()
-        for (const m of trajectoryMarkers) m.hide()
-      }
-    } catch (e) {
-      console.warn('轨迹数据加载失败:', e)
     }
   }
 
