@@ -29,9 +29,9 @@
       <text class="header-count">{{ eventPoints.length }} 个事件</text>
     </view>
 
-    <!-- 定位按钮 -->
+    <!-- 定位按钮：白底蓝字，避免深色圆底遮挡地图 -->
     <view class="locate-btn" @click="locateMe">
-      <text class="locate-icon">📍</text>
+      <view class="locate-icon"></view>
     </view>
 
     <!-- #ifndef MP-WEIXIN -->
@@ -583,7 +583,8 @@ onUnmounted(() => {
   top: 80rpx;
   left: 30rpx;
   right: 30rpx;
-  background: rgba(6, 18, 31, 0.85);
+  /* 半透明底，减少对地图的遮挡 */
+  background: rgba(6, 18, 31, 0.5);
   border-radius: 16rpx;
   padding: 20rpx 30rpx;
   display: flex;
@@ -620,7 +621,7 @@ onUnmounted(() => {
   top: 210rpx;
   left: 30rpx;
   display: flex;
-  background: rgba(6, 18, 31, 0.9);
+  background: rgba(6, 18, 31, 0.5);
   border-radius: 12rpx;
   overflow: hidden;
   z-index: 10;
@@ -657,19 +658,36 @@ onUnmounted(() => {
   position: absolute;
   bottom: 200rpx;
   right: 30rpx;
-  width: 80rpx;
-  height: 80rpx;
-  background: rgba(6, 18, 31, 0.9);
+  width: 64rpx;
+  height: 64rpx;
+  background: rgba(255, 255, 255, 0.92);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.18);
   z-index: 10;
 }
 
+/* CSS 绘制的定位蓝点图标（外圈+圆心），替代带底色 emoji */
 .locate-icon {
-  font-size: 36rpx;
+  position: relative;
+  width: 28rpx;
+  height: 28rpx;
+  border: 3rpx solid #1890ff;
+  border-radius: 50%;
+}
+
+.locate-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10rpx;
+  height: 10rpx;
+  margin: -5rpx 0 0 -5rpx;
+  background: #1890ff;
+  border-radius: 50%;
 }
 
 .zoom-controls {
@@ -685,12 +703,12 @@ onUnmounted(() => {
 .zoom-btn {
   width: 64rpx;
   height: 64rpx;
-  background: rgba(6, 18, 31, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   border-radius: 12rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: #0b2a4a;
   font-size: 36rpx;
   font-weight: 600;
 }
