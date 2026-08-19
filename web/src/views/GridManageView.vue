@@ -14,7 +14,7 @@
           class="tree-node"
           :style="{ paddingLeft: g.depth * 18 + 12 + 'px' }"
           :class="{ active: selectedId === g.id }"
-          @click="selectGrid(g)"
+          @click="onTreeNodeClick(g)"
         >
           <span class="tree-toggle" @click.stop="toggleFold(g.id)">
             {{ g.children?.length ? (foldedIds.has(g.id) ? '▸' : '▾') : '·' }}
@@ -204,6 +204,15 @@ function toggleFold(id: number) {
   flatTree.value = flatten(gridTree.value, 0)
 }
 
+/** 树节点点击：绘制/编辑中拦截切换，防止打断当前绘制导致已画内容丢失 */
+function onTreeNodeClick(g: FlatNode) {
+  if (drawing.value) {
+    notify('正在绘制边界，请先完成绘制或点「取消」后再切换网格', 'error')
+    return
+  }
+  selectGrid(g)
+}
+
 function loadTree() {
   flatTree.value = flatten(gridTree.value, 0)
 }
@@ -242,7 +251,11 @@ function drawAllGrids() {
               ? { fillColor: '#f59e0b', strokeColor: '#f59e0b', strokeWeight: 2, fillOpacity: 0.1 }
               : { fillColor: '#10b981', strokeColor: '#10b981', strokeWeight: 1, fillOpacity: 0.08 }
           const poly = new AMapLib.value.Polygon({ path: coords, zIndex: 5, bubble: true, map: m, ...style })
-          poly.on('click', () => selectGrid(n))
+          // 绘制/编辑中不响应选中，避免新增网格时误点已有网格导致绘制被打断、已画的点丢失
+          poly.on('click', () => {
+            if (drawing.value || editing.value) return
+            selectGrid(n)
+          })
           polygons.value.set(n.id, poly)
           defaultStyles.set(n.id, style)
         }
@@ -406,17 +419,27 @@ function onDrawMapClick(e: any) {
   refreshDrawPreview()
 }
 
-/** 根据顶点数组重绘预览：≥3 点显示半透明预览面，顶点用标记高亮（首点红色提示可点击闭合） */
+/** 根据顶点数组重绘预览：≥3 点显示半透明预览面，顶点用标记高亮（首点红色提示可点击闭合，均可拖动调整） */
 function refreshDrawPreview() {
   const pts = drawPoints.value
   drawVertexMarkers.forEach(mk => mk.setMap(null))
-  drawVertexMarkers = pts.map((p, i) => new AMapLib.value.Marker({
-    position: p,
-    content: `<div style="width:${i === 0 ? '14px' : '10px'};height:${i === 0 ? '14px' : '10px'};border-radius:50%;background:${i === 0 ? '#ef4444' : '#0284c7'};border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.4);"></div>`,
-    offset: new AMapLib.value.Pixel(i === 0 ? -8 : -6, i === 0 ? -8 : -6),
-    zIndex: 20,
-    map: map.value
-  }))
+  drawVertexMarkers = pts.map((p, i) => {
+    const mk = new AMapLib.value.Marker({
+      position: p,
+      content: `<div style="width:${i === 0 ? '14px' : '10px'};height:${i === 0 ? '14px' : '10px'};border-radius:50%;background:${i === 0 ? '#ef4444' : '#0284c7'};border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.4);cursor:move;"></div>`,
+      offset: new AMapLib.value.Pixel(i === 0 ? -8 : -6, i === 0 ? -8 : -6),
+      zIndex: 20,
+      draggable: true,
+      map: map.value
+    })
+    // 拖动顶点：更新对应坐标并重绘预览，绘制中即可微调区域
+    mk.on('dragend', (e: any) => {
+      const pos = e.target.getPosition()
+      drawPoints.value[i] = [pos.getLng(), pos.getLat()]
+      refreshDrawPreview()
+    })
+    return mk
+  })
   if (pts.length >= 3) {
     if (!drawPreviewPoly) {
       drawPreviewPoly = new AMapLib.value.Polygon({
@@ -460,7 +483,11 @@ function finishDraw() {
     strokeColor: '#0284c7', fillColor: '#0284c7', fillOpacity: 0.2, strokeWeight: 2, zIndex: 11
   })
   setCurrentPolygon(poly)
-  tipText.value = '边界绘制完成，可填写右侧信息后保存；不满意可「重绘边界」'
+  // 绘制完成后自动进入顶点编辑模式，可直接拖动白色顶点微调区域（新增网格无 selectedGrid，不走 startEditArea）
+  editing.value = true
+  polyEditor.value = new AMapLib.value.PolyEditor(map.value, poly)
+  polyEditor.value.open()
+  tipText.value = '边界绘制完成，可拖动白色顶点微调区域；满意后填写右侧信息保存，「完成编辑」退出拖动模式'
 }
 function cancelDraw() {
   const prev = selectedGrid.value?.roiJson ? safeParse(selectedGrid.value.roiJson) : null
@@ -544,6 +571,7 @@ function collectRoiJson(): string | null {
 }
 
 async function saveGrid() {
+  if (editing.value) finishEditArea()
   if (!form.value.gridName?.trim()) {
     notify('请填写网格名称')
     return
@@ -603,6 +631,7 @@ async function saveGrid() {
 
 async function removeGrid() {
   if (!selectedGrid.value) return
+  if (editing.value) finishEditArea()
   const g = selectedGrid.value
   if (!window.confirm(`确定删除网格「${g.gridName}」？\n（该网格下有子网格时将无法删除）`)) return
   try {
