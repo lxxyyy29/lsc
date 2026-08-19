@@ -5,7 +5,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
-import java.sql.ResultSet;
 import java.util.List;
 
 @Component
@@ -32,8 +31,8 @@ public class SafetyInspectionMapper {
         e.setRectificationStatus(rs.getString("rectification_status"));
         e.setRemarks(rs.getString("remarks"));
         e.setPhotoUrls(rs.getString("photo_urls"));
-        e.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-        e.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+        e.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
+        e.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
         return e;
     };
 

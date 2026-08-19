@@ -5,8 +5,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 
 @Component
@@ -29,8 +27,8 @@ public class GridMapper {
         entity.setSortOrder(rs.getInt("sort_order"));
         entity.setStatus(rs.getString("status"));
         entity.setRemark(rs.getString("remark"));
-        entity.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-        entity.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+        entity.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
+        entity.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
         return entity;
     };
 

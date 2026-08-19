@@ -2,10 +2,8 @@ package com.changping.platform.modules.drone.service;
 
 import com.changping.platform.common.geo.PointInPolygonUtil;
 import com.changping.platform.modules.drone.entity.WaylineAlgoViolationAreaEntity;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,7 +84,7 @@ public class WaylineAlgoViolationAreaService {
                     entity.setEndPointIndex(rs.getInt("end_point_index"));
                     entity.setViolationAreaId(rs.getLong("violation_area_id"));
                     if (rs.getTimestamp("created_at") != null) {
-                        entity.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+                        entity.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
                     }
                     return entity;
                 },

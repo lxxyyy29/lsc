@@ -4,7 +4,6 @@ import com.changping.platform.modules.community.entity.ResidentReportEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
-import java.sql.ResultSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,10 +29,10 @@ public class ResidentReportMapper {
         e.setHandleResult(rs.getString("handle_result"));
         e.setGridName(rs.getString("grid_name"));
         e.setHandlerUserName(rs.getString("real_name"));
-        e.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+        e.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
         java.sql.Timestamp handledAt = rs.getTimestamp("handled_at");
         e.setHandledAt(handledAt != null ? handledAt.toLocalDateTime() : null);
-        e.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+        e.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
         return e;
     };
 

@@ -1,17 +1,13 @@
 package com.changping.platform.modules.messaging.controller;
 
-import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.model.AuthenticatedUser;
 import com.changping.platform.modules.messaging.dto.SendMessagePayload;
-import com.changping.platform.modules.messaging.entity.MessageEntity;
 import com.changping.platform.modules.messaging.handler.WebSocketAuthHandshakeHandler.WebSocketUserPrincipal;
 import com.changping.platform.modules.messaging.service.MessageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 

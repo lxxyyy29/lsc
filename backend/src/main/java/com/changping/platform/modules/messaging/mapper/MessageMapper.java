@@ -5,9 +5,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
-import java.sql.ResultSet;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +26,7 @@ public class MessageMapper {
         e.setContentType(rs.getString("content_type"));
         Timestamp readAt = rs.getTimestamp("read_at");
         e.setReadAt(readAt != null ? readAt.toLocalDateTime() : null);
-        e.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+        e.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
         return e;
     };
 

@@ -1,6 +1,5 @@
 package com.changping.platform.modules.community.service;
 
-import com.lowagie.text.Chunk;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;

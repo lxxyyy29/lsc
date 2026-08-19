@@ -233,8 +233,8 @@ public class SmartDispatchService {
                     row.put("priority", rs.getInt("priority"));
                     row.put("enabled", rs.getInt("enabled"));
                     row.put("remark", rs.getString("remark"));
-                    row.put("createdAt", String.valueOf(rs.getTimestamp("createdAt").toLocalDateTime()));
-                    row.put("updatedAt", String.valueOf(rs.getTimestamp("updatedAt").toLocalDateTime()));
+                    row.put("createdAt", rs.getTimestamp("createdAt") != null ? String.valueOf(rs.getTimestamp("createdAt").toLocalDateTime()) : null);
+                    row.put("updatedAt", rs.getTimestamp("updatedAt") != null ? String.valueOf(rs.getTimestamp("updatedAt").toLocalDateTime()) : null);
                     return row;
                 });
     }

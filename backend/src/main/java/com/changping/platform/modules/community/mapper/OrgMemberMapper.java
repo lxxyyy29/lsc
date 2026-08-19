@@ -4,7 +4,6 @@ import com.changping.platform.modules.community.entity.OrgMemberEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
-import java.sql.ResultSet;
 import java.util.List;
 
 @Component
@@ -26,8 +25,8 @@ public class OrgMemberMapper {
         e.setStatus(rs.getString("status"));
         e.setRemark(rs.getString("remark"));
         e.setGridName(rs.getString("grid_name"));
-        e.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-        e.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+        e.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
+        e.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
         return e;
     };
 

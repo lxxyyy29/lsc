@@ -5,7 +5,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
-import java.sql.ResultSet;
 import java.util.List;
 
 @Component
@@ -26,8 +25,8 @@ public class LedgerTemplateMapper {
         e.setStatus(rs.getString("status"));
         long cb = rs.getLong("created_by");
         e.setCreatedBy(rs.wasNull() ? null : cb);
-        e.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-        e.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+        e.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
+        e.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
         return e;
     };
 

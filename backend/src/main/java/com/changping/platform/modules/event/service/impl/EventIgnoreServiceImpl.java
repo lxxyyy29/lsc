@@ -9,7 +9,6 @@ import com.changping.platform.modules.event.service.AlarmWorkflowStatusSyncServi
 import com.changping.platform.modules.event.service.EventIgnoreService;
 import com.changping.platform.modules.event.vo.EventIgnoreRecordVo;
 import com.changping.platform.modules.integration.alarm.service.AlarmEventMongoService;
-import java.sql.Timestamp;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;

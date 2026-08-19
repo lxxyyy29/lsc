@@ -1,7 +1,6 @@
 package com.changping.platform.modules.messaging.controller;
 
 import com.changping.platform.common.response.ApiResponse;
-import com.changping.platform.modules.auth.model.AuthenticatedUser;
 import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.messaging.entity.MessageEntity;
