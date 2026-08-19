@@ -36,13 +36,13 @@
           <button class="tool-btn primary" @click="finishDraw">✔ 完成绘制</button>
           <button class="tool-btn" @click="cancelDraw">取消</button>
         </template>
-        <button v-if="editing" class="tool-btn primary" @click="finishEditArea">✔ 完成编辑</button>
-        <button v-if="editing" class="tool-btn" @click="cancelEditArea">取消</button>
+        <button v-if="editing" class="tool-btn primary" @click="finishEditArea">✔ 完成拖拽</button>
+        <button v-if="editing" class="tool-btn" @click="cancelEditArea">取消拖拽（还原）</button>
         <button class="tool-btn danger" :disabled="!selectedGrid || drawing || editing" @click="removeGrid">🗑 删除网格</button>
       </div>
       <div class="map-tip" :class="{ warn: drawing }">
         <template v-if="drawing">⚠ 逐点点击绘制边界（已点 {{ drawPoints.length }} 个点）：双击或点击第一个红点/「完成绘制」闭合；画错了点「撤销上一点」</template>
-        <template v-else-if="editing">正在编辑 {{ selectedGrid?.gridName }} 边界：拖动白色顶点调整，完成后点击「完成编辑」</template>
+        <template v-else-if="editing">正在编辑 {{ selectedGrid?.gridName }} 边界：拖动白色顶点调整，完成后点「完成拖拽」再点右侧「保存网格」</template>
         <template v-else>{{ tipText }}</template>
       </div>
     </main>
@@ -88,7 +88,6 @@
         </div>
         <div class="form-actions">
           <button class="btn-primary" :disabled="saving || drawing" @click="saveGrid">保存网格</button>
-          <button v-if="form.id" class="btn-plain" @click="resetForm">取消编辑</button>
         </div>
       </div>
     </aside>
@@ -534,7 +533,7 @@ function finishDraw() {
   editBackupPath = pts.map(p => [p[0], p[1]])
   polyEditor.value = new AMapLib.value.PolyEditor(map.value, poly)
   polyEditor.value.open()
-  tipText.value = '边界绘制完成，可拖动白色顶点微调区域；满意后填写右侧信息保存，「完成编辑」退出拖动模式'
+  tipText.value = '边界绘制完成，可拖动白色顶点微调区域；满意后填写右侧信息保存，「完成拖拽」退出拖动模式'
 }
 function cancelDraw() {
   const prev = selectedGrid.value?.roiJson ? safeParse(selectedGrid.value.roiJson) : null
@@ -587,7 +586,7 @@ function finishEditArea() {
   editing.value = false
   editBackupPath = null
   updateFormFromPolygon(currentPolygon.value)
-  tipText.value = '边界已更新，点击「保存网格」生效'
+  tipText.value = '拖拽完成，点击右侧「保存网格」后生效'
 }
 
 function cancelEditArea() {
@@ -605,7 +604,7 @@ function cancelEditArea() {
       updateFormFromPolygon(poly)
     }, 0)
   }
-  tipText.value = '已取消编辑，边界已还原'
+  tipText.value = '已取消拖拽，边界已还原'
 }
 
 function startRedraw() {
