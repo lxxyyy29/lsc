@@ -139,15 +139,12 @@ const selectedGrid = ref<GridNode | null>(null)
 const currentPolygon = ref<any>(null)
 const polyEditor = ref<any>(null)
 const drawing = ref(false)
-// 自定义绘制状态：顶点数组 + 预览线/面 + 顶点标记（替代 MouseTool，支持逐点撤销）
+// 自定义绘制状态：顶点数组 + 预览面 + 顶点标记（替代 MouseTool，支持逐点撤销）
 const drawPoints = ref<[number, number][]>([])
-let drawPreviewLine: any = null
 let drawPreviewPoly: any = null
 let drawVertexMarkers: any[] = []
 let mapClickHandler: ((e: any) => void) | null = null
-let mapMoveHandler: ((e: any) => void) | null = null
 let mapDblHandler: (() => void) | null = null
-let moveRafPending = false
 const editing = ref(false)
 const saving = ref(false)
 const tipText = ref('点击左侧网格查看/调整区域；选中后可拖拽顶点或重绘边界')
@@ -385,10 +382,8 @@ function startDraw() {
   drawing.value = true
   drawPoints.value = []
   mapClickHandler = (e: any) => onDrawMapClick(e)
-  mapMoveHandler = (e: any) => onDrawMapMove(e)
   mapDblHandler = () => finishDraw()
   m.on('click', mapClickHandler)
-  m.on('mousemove', mapMoveHandler)
   // dblclick 在 click 之后触发，此时已多加一个重复点，finishDraw 内会自动去重
   m.on('dblclick', mapDblHandler)
   tipText.value = '绘制中：逐点点击地图添加顶点，画错可撤销，双击或点「完成绘制」闭合'
@@ -409,27 +404,6 @@ function onDrawMapClick(e: any) {
   }
   drawPoints.value.push([lng, lat])
   refreshDrawPreview()
-}
-
-/** 鼠标移动时预览“最后一个点 → 光标”的虚线，跟随更直观 */
-function onDrawMapMove(e: any) {
-  if (moveRafPending || !drawPoints.value.length) return
-  moveRafPending = true
-  const lng = e.lnglat.getLng()
-  const lat = e.lnglat.getLat()
-  requestAnimationFrame(() => {
-    moveRafPending = false
-    if (!drawPoints.value.length) return
-    const last = drawPoints.value[drawPoints.value.length - 1]
-    if (!drawPreviewLine) {
-      drawPreviewLine = new AMapLib.value.Polyline({
-        path: [last, [lng, lat]], map: map.value,
-        strokeColor: '#0284c7', strokeWeight: 2, strokeStyle: 'dashed', strokeOpacity: 0.8, zIndex: 12
-      })
-    } else {
-      drawPreviewLine.setPath([last, [lng, lat]])
-    }
-  })
 }
 
 /** 根据顶点数组重绘预览：≥3 点显示半透明预览面，顶点用标记高亮（首点红色提示可点击闭合） */
@@ -505,14 +479,11 @@ function teardownDrawOverlays() {
   const m = map.value
   if (m) {
     if (mapClickHandler) m.off('click', mapClickHandler)
-    if (mapMoveHandler) m.off('mousemove', mapMoveHandler)
     if (mapDblHandler) m.off('dblclick', mapDblHandler)
   }
-  mapClickHandler = mapMoveHandler = mapDblHandler = null
+  mapClickHandler = mapDblHandler = null
   drawVertexMarkers.forEach(mk => mk.setMap(null))
   drawVertexMarkers = []
-  drawPreviewLine?.setMap(null)
-  drawPreviewLine = null
   drawPreviewPoly?.setMap(null)
   drawPreviewPoly = null
   drawPoints.value = []
@@ -658,7 +629,12 @@ onMounted(async () => {
   map.value = new AMapLib.value.Map('gridManageMap', {
     zoom: 13,
     center: [113.939521, 22.971231],
-    mapStyle: 'amap://styles/normal'
+    mapStyle: 'amap://styles/normal',
+    // 性能优化：纯平面绘制场景用 2D 渲染（避开 WebGL 开销），关闭室内图/楼块降低渲染负担
+    viewMode: '2D',
+    showIndoorMap: false,
+    showBuildingBlock: false,
+    showLabel: true
   })
   await reloadAll()
 })

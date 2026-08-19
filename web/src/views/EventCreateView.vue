@@ -81,7 +81,7 @@
       </div>
 
       <div style="display:flex;gap:12px;justify-content:flex-end;">
-        <button @click="$router.back()" style="padding:8px 20px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">取消</button>
+        <button @click="handleCancel" style="padding:8px 20px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">取消</button>
         <button @click="submit" :disabled="loading" style="padding:8px 20px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">
           {{ loading ? '提交中...' : '创建事件' }}
         </button>
@@ -98,6 +98,9 @@ import AMapLoader from '@amap/amap-jsapi-loader'
 import { locateWithFallback } from '../utils/geolocation'
 
 const router = useRouter()
+// embedded=true 时作为弹窗内嵌组件使用（取消/成功后 emit 给父组件，不跳路由）
+const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
+const emit = defineEmits<{ (e: 'cancel'): void; (e: 'created', id: number): void }>()
 const loading = ref(false)
 const grids = ref<any[]>([])
 let mapInstance: any = null
@@ -141,8 +144,12 @@ async function initMap() {
   mapInstance = new AMapLib.Map('eventMap', {
     zoom: 15,
     center: [113.939521, 22.971231],
-    mapStyle: 'amap://styles/normal'
+    mapStyle: 'amap://styles/normal',
+    // 小尺寸选点地图用 2D 渲染，降低开销；弹窗内嵌入时容器尺寸由父级确定，延迟 resize 保证铺满
+    viewMode: '2D',
+    showIndoorMap: false
   })
+  setTimeout(() => mapInstance?.resize(), 100)
 
   // 点击地图事件
   mapInstance.on('click', (e: any) => {
@@ -259,6 +266,14 @@ function locateByIp() {
   })
 }
 
+function handleCancel() {
+  if (props.embedded) {
+    emit('cancel')
+  } else {
+    router.back()
+  }
+}
+
 async function submit() {
   if (!form.value.title || !form.value.eventType || !form.value.occurredAt || !form.value.location) {
     alert('请填写必填字段')
@@ -273,7 +288,11 @@ async function submit() {
       externalEventId: 'EVT-' + Date.now(),
       evidenceReferences: [],
     })
-    router.push(`/events/${result.id}`)
+    if (props.embedded) {
+      emit('created', result.id)
+    } else {
+      router.push(`/events/${result.id}`)
+    }
   } catch (e: any) {
     alert(e?.message || '创建失败')
   } finally {

@@ -24,7 +24,7 @@
           <button v-if="event.currentStatus !== 'CLOSED' && event.currentStatus !== 'IGNORED'" @click="showClose = true" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">关闭事件</button>
           <button v-if="(event.currentStatus === 'CLOSED' || event.currentStatus === 'IGNORED') && !event.archived" @click="handleArchive" style="padding:8px 16px;border:1px solid #6b7280;border-radius:6px;background:#fff;color:#374151;font-size:13px;cursor:pointer;">归档</button>
           <button v-if="event.currentStatus === 'CLOSED'" @click="handleReopen" style="padding:8px 16px;border:1px solid #52c41a;border-radius:6px;background:#fff;color:#52c41a;font-size:13px;cursor:pointer;">重新打开</button>
-          <button @click="$router.back()" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">返回</button>
+          <button @click="handleBack" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">返回</button>
         </div>
       </div>
 
@@ -59,8 +59,8 @@
         </div>
       </div>
 
-      <!-- 派单弹窗 -->
-      <div v-if="showDispatch" class="modal-overlay" @click.self="showDispatch = false">
+      <!-- 派单弹窗（z-index 高于外层详情弹窗，避免嵌套时被遮挡） -->
+      <div v-if="showDispatch" class="modal-overlay" style="z-index:10000;" @click.self="showDispatch = false">
         <div class="modal-box">
           <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">派发工单</h3>
 
@@ -107,7 +107,7 @@
       </div>
 
       <!-- 关闭弹窗 -->
-      <div v-if="showClose" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:1000;">
+      <div v-if="showClose" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:10000;">
         <div style="background:#fff;border-radius:12px;padding:24px;width:400px;max-width:90vw;">
           <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">关闭事件</h3>
           <div style="margin-bottom:16px;">
@@ -134,6 +134,11 @@ import { getEventTypeName } from '../utils/eventTypes'
 
 const route = useRoute()
 const router = useRouter()
+// embedded=true 时作为弹窗内嵌组件：事件 id 由 props 传入，操作变更后 emit 通知父组件刷新列表
+const props = withDefaults(defineProps<{ embedded?: boolean; eventId?: string | number | null }>(), { embedded: false, eventId: null })
+const emit = defineEmits<{ (e: 'close'): void; (e: 'changed'): void }>()
+// 弹窗模式优先用 props 传入的 id，页面模式回退到路由参数
+const eventId = computed(() => props.eventId ?? route.params.id)
 
 const event = ref<any>(null)
 const timeline = ref<any[]>([])
@@ -194,8 +199,8 @@ function statusLabel(status: string) {
 async function loadData() {
   loading.value = true
   try {
-    // 支持数字 id 与字符串 externalEventId 两种路由参数（列表项 id 缺失时用外部事件ID跳转）
-    const idParam = String(route.params.id || '')
+    // 支持数字 id 与字符串 externalEventId 两种参数（列表项 id 缺失时用外部事件ID跳转）
+    const idParam = String(eventId.value || '')
     event.value = await getEventDetail(idParam)
     try {
       // timeline 接口仅支持数字 id，externalEventId 场景下容错为空
@@ -221,18 +226,28 @@ async function loadData() {
   }
 }
 
+function handleBack() {
+  if (props.embedded) {
+    emit('close')
+  } else {
+    router.back()
+  }
+}
+
 async function handleClose() {
   if (!closeReason.value.trim()) { alert('请输入关闭原因'); return }
   try {
-    await closeEvent(Number(route.params.id), closeReason.value)
+    await closeEvent(Number(eventId.value), closeReason.value)
     showClose.value = false
+    emit('changed')
     loadData()
   } catch (e: any) { alert(e?.message || '操作失败') }
 }
 
 async function handleReopen() {
   try {
-    await reopenEvent(Number(route.params.id))
+    await reopenEvent(Number(eventId.value))
+    emit('changed')
     loadData()
   } catch (e: any) { alert(e?.message || '操作失败') }
 }
@@ -240,7 +255,8 @@ async function handleReopen() {
 async function handleArchive() {
   if (!confirm('确认归档该事件？归档后将从活跃视图隐藏。')) return
   try {
-    await archiveEvent(Number(route.params.id))
+    await archiveEvent(Number(eventId.value))
+    emit('changed')
     loadData()
   } catch (e: any) { alert(e?.message || '归档失败') }
 }
@@ -248,11 +264,12 @@ async function handleArchive() {
 async function handleDispatch() {
   if (!dispatchForm.value.assigneeUserId) { alert('请选择受派人员'); return }
   try {
-    await dispatchEvent(Number(route.params.id), {
+    await dispatchEvent(Number(eventId.value), {
       assigneeUserId: dispatchForm.value.assigneeUserId,
       remark: dispatchForm.value.remark
     })
     showDispatch.value = false
+    emit('changed')
     loadData()
   } catch (e: any) { alert(e?.message || '派单失败') }
 }
@@ -262,7 +279,7 @@ watch(showDispatch, async (visible) => {
   if (!visible) return
   dispatchSuggestion.value = null
   try {
-    dispatchSuggestion.value = await getDispatchSuggestion(Number(route.params.id))
+    dispatchSuggestion.value = await getDispatchSuggestion(Number(eventId.value))
     // 推荐人有且当前未选中时，默认选中推荐人
     if (dispatchSuggestion.value?.recommendedUserId && !dispatchForm.value.assigneeUserId) {
       dispatchForm.value.assigneeUserId = dispatchSuggestion.value.recommendedUserId
@@ -276,14 +293,15 @@ watch(showDispatch, async (visible) => {
 async function handleSmartDispatch() {
   if (!confirm('确认按智能推荐自动派单？')) return
   try {
-    await smartDispatchEvent(Number(route.params.id), dispatchForm.value.remark)
+    await smartDispatchEvent(Number(eventId.value), dispatchForm.value.remark)
     showDispatch.value = false
     alert('智能派单成功')
+    emit('changed')
     loadData()
   } catch (e: any) { alert(e?.message || '智能派单失败') }
 }
 
 onMounted(loadData)
-// 详情页内路由参数变化（如从列表/地图跳转不同事件）时重新加载，避免显示旧事件内容
-watch(() => route.params.id, loadData)
+// 事件 id 变化时重新加载（页面模式：路由参数变化；弹窗模式：父组件切换了打开的事件）
+watch(eventId, loadData)
 </script>

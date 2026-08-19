@@ -12,7 +12,7 @@
         <button @click="showPropertyDialog = true" class="btn btn-default">
           <i class="fas fa-building"></i>物业上报
         </button>
-        <button @click="$router.push('/events/create')" class="btn btn-primary">
+        <button @click="showCreateModal = true" class="btn btn-primary">
           <i class="fas fa-plus"></i>创建事件
         </button>
       </div>
@@ -211,15 +211,27 @@
         </div>
       </template>
     </div>
+    <!-- 创建事件弹窗（内嵌创建表单，提交后直接刷新列表） -->
+    <div v-if="showCreateModal" class="modal-overlay" @click.self="showCreateModal = false">
+      <div class="modal-box" style="width:760px;max-width:94vw;max-height:90vh;overflow-y:auto;">
+        <EventCreateView embedded @cancel="showCreateModal = false" @created="onEventCreated" />
+      </div>
+    </div>
+
+    <!-- 事件详情弹窗（列表项点击直达，派单/关闭/归档操作后自动刷新列表） -->
+    <div v-if="detailEventId" class="modal-overlay" @click.self="detailEventId = null">
+      <div class="modal-box" style="width:960px;max-width:96vw;max-height:92vh;overflow-y:auto;">
+        <EventDetailView embedded :event-id="detailEventId" @close="detailEventId = null" @changed="loadData" />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { getEvents, auditEvent, importFrom12345, reportFromProperty } from '../api'
-
-const router = useRouter()
+import EventCreateView from './EventCreateView.vue'
+import EventDetailView from './EventDetailView.vue'
 
 const list = ref<any[]>([])
 const loading = ref(true)
@@ -228,6 +240,16 @@ const page = ref(1)
 const pageSize = 20
 const total = ref(0)
 const totalPages = ref(0)
+
+// 弹窗交互：创建事件与事件详情均不离开列表页
+const showCreateModal = ref(false)
+const detailEventId = ref<string | number | null>(null)
+
+function onEventCreated() {
+  showCreateModal.value = false
+  page.value = 1
+  loadData()
+}
 
 const filters = reactive({
   status: '',
@@ -299,8 +321,7 @@ const displayList = computed(() => {
 })
 
 function goDetail(e: any) {
-  const id = e.id || e.externalEventId
-  router.push(`/events/${id}`)
+  detailEventId.value = e.id || e.externalEventId
 }
 
 async function handleAudit(id: number, action: string) {
