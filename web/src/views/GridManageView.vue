@@ -531,6 +531,7 @@ function finishDraw() {
   setCurrentPolygon(poly)
   // 绘制完成后自动进入顶点编辑模式，可直接拖动白色顶点微调区域（新增网格无 selectedGrid，不走 startEditArea）
   editing.value = true
+  editBackupPath = pts.map(p => [p[0], p[1]])
   polyEditor.value = new AMapLib.value.PolyEditor(map.value, poly)
   polyEditor.value.open()
   tipText.value = '边界绘制完成，可拖动白色顶点微调区域；满意后填写右侧信息保存，「完成编辑」退出拖动模式'
@@ -562,12 +563,18 @@ function teardownDrawOverlays() {
   drawPoints.value = []
 }
 
+// 进入顶点编辑前的原始顶点备份：取消编辑时用它还原（PolyEditor 会实时改写 polygon 路径，不能靠拖动前的引用）
+let editBackupPath: [number, number][] | null = null
+
 function startEditArea() {
   if (!currentPolygon.value || !selectedGrid.value) return
-  if (!currentPolygon.value.getPath?.().length) {
+  const path = currentPolygon.value.getPath?.() || []
+  if (!path.length) {
     tipText.value = '该网格还没有边界，请使用「重绘边界」绘制'
     return
   }
+  // 备份进入编辑时的顶点，取消时还原
+  editBackupPath = path.map((p: any) => [Number(p.lng), Number(p.lat)])
   editing.value = true
   polyEditor.value = new AMapLib.value.PolyEditor(map.value, currentPolygon.value)
   polyEditor.value.open()
@@ -578,6 +585,7 @@ function finishEditArea() {
   polyEditor.value?.close()
   polyEditor.value = null
   editing.value = false
+  editBackupPath = null
   updateFormFromPolygon(currentPolygon.value)
   tipText.value = '边界已更新，点击「保存网格」生效'
 }
@@ -586,15 +594,18 @@ function cancelEditArea() {
   polyEditor.value?.close()
   polyEditor.value = null
   editing.value = false
-  // 重新加载原边界
-  if (selectedGrid.value?.roiJson) {
-    const coords = safeParse(selectedGrid.value.roiJson)
-    if (coords && currentPolygon.value) {
-      currentPolygon.value.setPath(coords)
-      updateFormFromPolygon(currentPolygon.value)
-    }
+  // 优先用进入编辑时的备份，其次用已保存的 roiJson
+  const coords = editBackupPath || (selectedGrid.value?.roiJson ? safeParse(selectedGrid.value.roiJson) : null)
+  editBackupPath = null
+  const poly = currentPolygon.value
+  if (coords && poly) {
+    // PolyEditor.close() 内部对路径的最后同步可能晚于当前时序，延迟一帧还原，避免被拖拽后的路径覆盖回去
+    setTimeout(() => {
+      poly.setPath(coords)
+      updateFormFromPolygon(poly)
+    }, 0)
   }
-  tipText.value = '已取消编辑'
+  tipText.value = '已取消编辑，边界已还原'
 }
 
 function startRedraw() {
