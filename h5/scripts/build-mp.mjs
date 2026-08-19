@@ -86,7 +86,7 @@ function main() {
     tabBar: MP_TAB_BAR,
     globalStyle: {
       navigationBarTextStyle: 'white',
-      navigationBarTitleText: '拔蛟窝智慧网格',
+      navigationBarTitleText: '东莞杰瑞智慧网格治理平台',
       navigationBarBackgroundColor: '#1890ff',
       backgroundColor: '#f5f7fa'
     }

@@ -2,7 +2,7 @@
   <view class="login-page">
     <view class="login-header">
       <text class="logo">🏘️</text>
-      <text class="title">拔蛟窝智慧网格</text>
+      <text class="title">东莞杰瑞智慧网格治理平台</text>
       <text class="subtitle">网格员工作端</text>
     </view>
 

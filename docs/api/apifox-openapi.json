@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "网格社区治理平台 API",
-    "description": "网格社区治理平台后端接口文档 v1.4.0 — 按模块分组，共 336 个接口",
+    "title": "东莞杰瑞智慧网格治理平台 API",
+    "description": "东莞杰瑞智慧网格治理平台后端接口文档 v1.4.0 — 按模块分组，共 336 个接口",
     "version": "1.4.0",
     "contact": {
       "name": "Changping Dev"

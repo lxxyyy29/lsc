@@ -50,7 +50,7 @@
     <view v-if="showAbout" class="mask" @click="showAbout = false">
       <view class="dialog" @click.stop>
         <text class="dialog-title">关于平台</text>
-        <text class="dialog-text">拔蛟窝智慧网格治理平台</text>
+        <text class="dialog-text">东莞杰瑞智慧网格治理平台</text>
         <text class="dialog-text">居民服务端 v1.0</text>
         <text class="dialog-text">发现身边问题，一键上报，共建美好社区</text>
         <button @click="showAbout = false" class="btn-close">确定</button>

@@ -45,7 +45,7 @@
     <div v-if="showAbout" class="mask" @click="showAbout = false">
       <div class="dialog" @click.stop>
         <h3>关于平台</h3>
-        <p>拔蛟窝智慧网格治理平台</p>
+        <p>东莞杰瑞智慧网格治理平台</p>
         <p>居民服务小程序 v1.0</p>
         <p>发现身边问题，一键上报，共建美好社区</p>
         <button @click="showAbout = false" class="btn-close">确定</button>

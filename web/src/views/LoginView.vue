@@ -16,7 +16,7 @@
             <i class="fas fa-city"></i>
           </div>
         </div>
-        <h1 class="login-title">拔蛟窝智慧网格治理平台</h1>
+        <h1 class="login-title">东莞杰瑞智慧网格治理平台</h1>
         <p class="login-subtitle">社区网格数字化治理平台</p>
       </div>
 
@@ -138,7 +138,7 @@
 
       <!-- 底部信息 -->
       <div class="login-footer">
-        <p class="copyright">© 2026 拔蛟窝社区综合治理办公室</p>
+        <p class="copyright">© 2026 东莞杰瑞智慧网格治理平台</p>
       </div>
     </div>
   </div>

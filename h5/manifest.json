@@ -1,8 +1,8 @@
 {
-  "name": "拔蛟窝智慧网格移动端",
+  "name": "东莞杰瑞智慧网格治理平台移动端",
   "vueVersion": "3",
   "appid": "__UNI__DGCP_OA_H5",
-  "description": "拔蛟窝智慧网格移动端 uni-app 工程",
+  "description": "东莞杰瑞智慧网格治理平台移动端 uni-app 工程",
   "versionName": "1.0.0",
   "versionCode": "100",
   "transformPx": false,
@@ -21,7 +21,7 @@
     "usingComponents": true
   },
   "h5": {
-    "title": "拔蛟窝智慧网格移动端",
+    "title": "东莞杰瑞智慧网格治理平台移动端",
     "router": {
       "mode": "hash",
       "base": "/h5/"

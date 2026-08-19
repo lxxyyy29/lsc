@@ -2,7 +2,7 @@
   <div v-if="session?.token" style="height:100vh;display:flex;flex-direction:column;">
     <!-- 顶部导航 -->
     <nav class="top-nav">
-      <h1><i class="fas fa-building"></i>网格社区治理平台</h1>
+      <h1><i class="fas fa-building"></i>东莞杰瑞智慧网格治理平台</h1>
       <div style="display:flex;align-items:center;gap:16px;">
         <router-link to="/help" style="font-size:16px;color:#6b7280;text-decoration:none;padding:6px;" title="帮助中心">
           <i class="fas fa-question-circle"></i>

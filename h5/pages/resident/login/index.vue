@@ -2,7 +2,7 @@
   <view class="login-page" :style="{ paddingTop: statusBarPadding }">
     <view class="login-header">
       <view class="logo">🏘️</view>
-      <text class="title">拔蛟窝智慧网格</text>
+      <text class="title">东莞杰瑞智慧网格治理平台</text>
       <text class="subtitle">居民服务</text>
     </view>
 
