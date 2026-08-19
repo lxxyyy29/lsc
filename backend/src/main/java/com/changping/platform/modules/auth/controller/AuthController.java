@@ -94,6 +94,18 @@ public class AuthController {
     }
 
     /**
+     * @Description //获取当前登录用户的可见菜单树（名称/排序/显隐实时以数据库为准，供侧边栏刷新）
+     * @Param []
+     * @return ApiResponse 菜单树
+     */
+    @GetMapping("/menu-tree")
+    public ApiResponse<java.util.List<com.changping.platform.modules.system.service.SystemPermissionService.PermissionTreeNode>> menuTree() {
+        var current = currentUserService.requireClientType(AuthService.ClientType.WEB);
+        var fresh = authService.loadAuthenticatedUser(current.id(), current.clientType());
+        return ApiResponse.ok(authService.resolveMenuTreeFor(fresh));
+    }
+
+    /**
      * @Author tangxinglin
      * @Description //发送手机号验证码（阿里云短信真实发送，随机 6 位验证码存 Redis 5 分钟）
      * @Date 2026/08/11 18:00

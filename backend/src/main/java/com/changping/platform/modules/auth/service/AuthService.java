@@ -420,6 +420,15 @@ public class AuthService {
     }
 
     /**
+     * @Description //解析指定用户的可见菜单树（供 /auth/menu-tree 实时刷新侧边栏，菜单名称/排序/显隐以数据库为准）
+     * @Param [user 已认证用户]
+     * @return List<SystemPermissionService.PermissionTreeNode> 菜单树
+     */
+    public List<SystemPermissionService.PermissionTreeNode> resolveMenuTreeFor(AuthenticatedUser user) {
+        return resolveMenuTree(user.permissionCodes(), user.clientType());
+    }
+
+    /**
      * @Author tangxinglin
      * @Description //将数据库用户记录和客户端类型转换为已认证用户对象，包含角色码和权限码
      * @Date 2026/04/18 10:05

@@ -22,6 +22,9 @@ import org.springframework.util.StringUtils;
 @Service
 public class SystemRoleService {
 
+    /** 系统固定内置角色：超级管理员/管理员/网格员/居民，不可新增、不可删除 */
+    public static final Set<String> BUILTIN_ROLE_CODES = Set.of("SUPER_ADMIN", "EVENT_OPERATOR", "GRID_WORKER", "PUBLIC");
+
     private final JdbcTemplate jdbcTemplate;
     private final SystemPermissionService systemPermissionService;
 
@@ -124,19 +127,8 @@ public class SystemRoleService {
      */
     @Transactional
     public RoleDetail createRole(CreateRoleRequest request) {
-        validateUpsertRequest(request.roleCode(), request.roleName(), null);
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO sys_role (role_code, role_name, status, remark, created_at, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                    Statement.RETURN_GENERATED_KEYS);
-            statement.setString(1, request.roleCode().trim());
-            statement.setString(2, request.roleName().trim());
-            statement.setString(3, normalizeStatus(request.status()));
-            statement.setString(4, normalizeRemark(request.remark()));
-            return statement;
-        }, keyHolder);
-        return getRoleDetail(extractGeneratedId(keyHolder));
+        // 系统仅保留 4 个内置角色，不提供自定义角色
+        throw new BusinessException("SYSTEM_ROLE_FIXED", "系统采用固定的 4 个内置角色（超级管理员/管理员/网格员/居民），不支持新增角色");
     }
 
     /**
@@ -148,11 +140,16 @@ public class SystemRoleService {
      */
     @Transactional
     public RoleDetail updateRole(Long roleId, UpdateRoleRequest request) {
-        requireRole(roleId);
-        validateUpsertRequest(request.roleCode(), request.roleName(), roleId);
+        RoleRecord existing = requireRole(roleId);
+        // 内置角色的标识固定不可改，仅允许调整名称/备注等信息
+        if (BUILTIN_ROLE_CODES.contains(existing.roleCode())
+                && StringUtils.hasText(request.roleCode())
+                && !existing.roleCode().equals(request.roleCode().trim())) {
+            throw new BusinessException("SYSTEM_ROLE_BUILTIN", "内置角色标识不可修改");
+        }
+        validateUpsertRequest(StringUtils.hasText(request.roleCode()) ? request.roleCode() : existing.roleCode(), request.roleName(), roleId);
         jdbcTemplate.update(
-                "UPDATE sys_role SET role_code = ?, role_name = ?, status = ?, remark = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                request.roleCode().trim(),
+                "UPDATE sys_role SET role_name = ?, status = ?, remark = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                 request.roleName().trim(),
                 normalizeStatus(request.status()),
                 normalizeRemark(request.remark()),
@@ -189,9 +186,9 @@ public class SystemRoleService {
     @Transactional
     public void deleteRole(Long roleId) {
         RoleRecord role = requireRole(roleId);
-        // 内置角色禁止删除，避免删掉超管后系统不可维护
-        if ("SUPER_ADMIN".equals(role.roleCode())) {
-            throw new BusinessException("SYSTEM_ROLE_BUILTIN", "超级管理员角色不可删除");
+        // 4 个内置角色均禁止删除，避免权限体系被破坏
+        if (BUILTIN_ROLE_CODES.contains(role.roleCode())) {
+            throw new BusinessException("SYSTEM_ROLE_BUILTIN", "内置角色（" + role.roleName() + "）不可删除");
         }
         Integer userCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM sys_user_role WHERE role_id = ?", Integer.class, roleId);
@@ -215,6 +212,10 @@ public class SystemRoleService {
             return List.of();
         }
         List<Long> normalizedIds = roleIds.stream().distinct().toList();
+        // 每个账号只允许对应一个角色
+        if (normalizedIds.size() > 1) {
+            throw new BusinessException("VALIDATION_ERROR", "每个账号只能分配一个角色");
+        }
         String placeholders = String.join(",", java.util.Collections.nCopies(normalizedIds.size(), "?"));
         List<Long> existingIds = jdbcTemplate.query(
                 "SELECT id FROM sys_role WHERE id IN (" + placeholders + ") ORDER BY id ASC",

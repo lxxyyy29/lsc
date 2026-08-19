@@ -95,10 +95,6 @@ export async function changePassword(oldPassword: string, newPassword: string) {
   return http.put('/auth/change-password', { oldPassword, newPassword })
 }
 
-export async function getMenuTree() {
-  return http.get('/auth/menu-tree')
-}
-
 export async function getDashboardOverview() {
   return http.get('/community/dashboard/overview')
 }
@@ -756,6 +752,23 @@ export async function assignRolePermissions(id: number, permissionIds: number[])
 /** 权限树（按类型筛选，角色授权用 WEB 端菜单权限） */
 export async function getPermissionTree(permissionType?: string) {
   return http.get('/system/permissions/tree', { params: permissionType ? { permissionType } : {} })
+}
+
+/* ---------- 系统设置：菜单管理 ---------- */
+
+/** 菜单树（当前登录用户可见菜单，侧边栏名称/排序/显隐以数据库为准） */
+export async function getMenuTree() {
+  return http.get('/auth/menu-tree')
+}
+
+/** 全量菜单树（仅超管，菜单管理页编辑用） */
+export async function getSystemMenuTree() {
+  return http.get('/system/menus/tree')
+}
+
+/** 更新菜单项（名称/排序/显隐，需回传完整字段） */
+export async function updateSystemMenu(id: number, data: any) {
+  return http.put(`/system/menus/${id}`, data)
 }
 
 /* ---------- 系统设置：账号管理 ---------- */

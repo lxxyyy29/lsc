@@ -33,6 +33,7 @@ const routes = [
   { path: '/audit-logs', component: () => import('../views/AuditLogView.vue') },
   { path: '/system-roles', component: () => import('../views/RoleManageView.vue') },
   { path: '/system-users', component: () => import('../views/UserManageView.vue') },
+  { path: '/system-menus', component: () => import('../views/MenuManageView.vue') },
   // 信息互通（实时聊天）功能暂不启用，保留代码后续开发
   // { path: '/integration', component: () => import('../views/IntegrationView.vue') },
   { path: '/org-members', component: () => import('../views/OrgMemberView.vue') },

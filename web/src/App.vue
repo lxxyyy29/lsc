@@ -101,7 +101,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { getSession, login, logout, getMenuBadges, markBadgeRead, changePassword } from './api'
+import { getSession, login, logout, getMenuBadges, markBadgeRead, changePassword, getMenuTree } from './api'
 import { menuGroups, visibleGroupsFor, isSuperAdminSession } from './menu'
 import LoginView from './views/LoginView.vue'
 import NotificationBell from './components/NotificationBell.vue'
@@ -149,8 +149,48 @@ async function loadBadges() {
 // 超管不受菜单权限过滤（防止误操作把菜单全取消后无法进入系统设置恢复）
 const isSuperAdmin = computed(() => isSuperAdminSession(session.value))
 
-// 按当前登录会话的权限过滤菜单：只展示有 web:menu:* 权限的项，空分组整体隐藏
-const visibleGroups = computed(() => visibleGroupsFor(session.value))
+// 数据库菜单覆盖（菜单管理页维护）：名称/排序以库为准，已停用的菜单不返回即隐藏；
+// 接口失败时回退 menu.ts 静态配置，保证侧边栏始终可用
+const dbMenuMap = ref<Map<string, { name: string; sortOrder: number }> | null>(null)
+
+async function loadDbMenus() {
+  try {
+    const tree = await getMenuTree()
+    const map = new Map<string, { name: string; sortOrder: number }>()
+    for (const n of (Array.isArray(tree) ? tree : []) as any[]) {
+      if (n?.permissionCode) {
+        map.set(n.permissionCode, { name: n.permissionName || '', sortOrder: n.sortOrder ?? 0 })
+      }
+    }
+    dbMenuMap.value = map
+  } catch (e) {
+    dbMenuMap.value = null
+  }
+}
+
+// 按当前登录会话的权限过滤菜单：只展示有 web:menu:* 权限的项，空分组整体隐藏；
+// 再叠加数据库覆盖（改名/排序/隐藏）
+const visibleGroups = computed(() => {
+  const base = visibleGroupsFor(session.value)
+  const map = dbMenuMap.value
+  if (!map) return base
+  return base
+    .map(g => {
+      const items = g.items
+        .filter(i => !i.permKey || map.has(i.permKey))
+        .map(i => {
+          const override = i.permKey ? map.get(i.permKey) : undefined
+          return override ? { ...i, name: override.name || i.name } : i
+        })
+        .sort((a, b) => {
+          const sa = a.permKey && map.get(a.permKey) ? map.get(a.permKey)!.sortOrder : 0
+          const sb = b.permKey && map.get(b.permKey) ? map.get(b.permKey)!.sortOrder : 0
+          return sa - sb
+        })
+      return { ...g, items }
+    })
+    .filter(g => g.items.length > 0)
+})
 
 // 默认仅展开当前路由所在分组（避免全部展开的视觉噪音）
 const openGroups = ref<string[]>([])
@@ -189,6 +229,7 @@ function toggleGroup(name: string) {
 
 async function onLogin() {
   session.value = getSession()
+  loadDbMenus()
 }
 
 function handleLogout() {
@@ -241,6 +282,7 @@ onMounted(() => {
   document.addEventListener('click', closeUserMenu)
   loadBadges()
   badgeTimer = window.setInterval(loadBadges, 30000)
+  if (session.value?.token) loadDbMenus()
 })
 
 onUnmounted(() => {

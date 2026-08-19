@@ -152,19 +152,36 @@ public class SystemUserService {
     @Transactional
     public UserDetail createUser(CreateUserRequest request) {
         validateCreateRequest(request);
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO sys_user (username, password_hash, real_name, phone, status, role_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                    Statement.RETURN_GENERATED_KEYS);
-            statement.setString(1, request.username().trim());
-            statement.setString(2, passwordEncoder.encode(request.password().trim()));
-            statement.setString(3, request.realName().trim());
-            statement.setString(4, normalizeNullable(request.phone()));
-            statement.setString(5, normalizeStatus(request.status()));
-            return statement;
-        }, keyHolder);
-        Long userId = extractGeneratedId(keyHolder);
+        // 若存在同名软删除记录则复用该行（避免唯一索引冲突），按新账号重建
+        Long softDeletedId = jdbcTemplate.query(
+                "SELECT id FROM sys_user WHERE username = ? AND deleted = 1",
+                rs -> rs.next() ? rs.getLong("id") : null,
+                request.username().trim());
+        Long userId;
+        if (softDeletedId != null) {
+            jdbcTemplate.update(
+                    "UPDATE sys_user SET password_hash = ?, real_name = ?, phone = ?, status = ?, deleted = 0, role_id = NULL, password_version = password_version + 1, created_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    passwordEncoder.encode(request.password().trim()),
+                    request.realName().trim(),
+                    normalizeNullable(request.phone()),
+                    normalizeStatus(request.status()),
+                    softDeletedId);
+            userId = softDeletedId;
+        } else {
+            KeyHolder keyHolder = new GeneratedKeyHolder();
+            jdbcTemplate.update(connection -> {
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO sys_user (username, password_hash, real_name, phone, status, role_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                        Statement.RETURN_GENERATED_KEYS);
+                statement.setString(1, request.username().trim());
+                statement.setString(2, passwordEncoder.encode(request.password().trim()));
+                statement.setString(3, request.realName().trim());
+                statement.setString(4, normalizeNullable(request.phone()));
+                statement.setString(5, normalizeStatus(request.status()));
+                return statement;
+            }, keyHolder);
+            userId = extractGeneratedId(keyHolder);
+        }
         assignRolesInternal(userId, request.roleIds());
         return getUserDetail(userId);
     }
@@ -343,6 +360,10 @@ public class SystemUserService {
         if (!StringUtils.hasText(request.password())) {
             throw new BusinessException("VALIDATION_ERROR", "密码不能为空");
         }
+        // 每个账号必须且只能对应一个角色
+        if (request.roleIds() == null || request.roleIds().size() != 1) {
+            throw new BusinessException("VALIDATION_ERROR", "新增账号时必须且只能选择一个角色");
+        }
         validateUserFields(request.realName(), request.status());
     }
 
@@ -376,8 +397,8 @@ public class SystemUserService {
         }
         Integer count = jdbcTemplate.queryForObject(
                 userId == null
-                        ? "SELECT COUNT(*) FROM sys_user WHERE username = ?"
-                        : "SELECT COUNT(*) FROM sys_user WHERE username = ? AND id <> ?",
+                        ? "SELECT COUNT(*) FROM sys_user WHERE username = ? AND deleted = 0"
+                        : "SELECT COUNT(*) FROM sys_user WHERE username = ? AND id <> ? AND deleted = 0",
                 Integer.class,
                 userId == null ? new Object[]{normalizedUsername} : new Object[]{normalizedUsername, userId});
         if (count != null && count > 0) {

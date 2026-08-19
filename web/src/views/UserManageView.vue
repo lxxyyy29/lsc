@@ -92,10 +92,10 @@
             <option value="DISABLED">停用</option>
           </select>
           <template v-if="!form.id">
-            <label class="form-label">角色</label>
+            <label class="form-label">角色 <span style="color:#ef4444;">*</span> <span style="color:#9ca3af;font-weight:400;font-size:12px;">（每个账号只能选择一个角色）</span></label>
             <div style="display:flex;flex-wrap:wrap;gap:8px;">
               <label v-for="r in roles" :key="r.id" style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
-                <input type="checkbox" :value="r.id" v-model="form.roleIds" />
+                <input type="radio" name="createRole" :value="r.id" v-model="form.roleId" />
                 {{ r.roleName }}
               </label>
             </div>
@@ -109,13 +109,14 @@
       </div>
     </div>
 
-    <!-- 分配角色弹窗 -->
+    <!-- 分配角色弹窗（单选：每个账号只对应一个角色） -->
     <div v-if="showRoles" class="modal-overlay" @click.self="showRoles = false">
       <div class="modal-box" style="width:420px;">
-        <h3 style="margin:0 0 16px;font-size:16px;">分配角色 — {{ roleTarget?.realName || roleTarget?.username }}</h3>
+        <h3 style="margin:0 0 4px;font-size:16px;">分配角色 — {{ roleTarget?.realName || roleTarget?.username }}</h3>
+        <p style="color:#6b7280;font-size:12px;margin:0 0 12px;">每个账号只能归属一个角色，重新选择后将替换原角色</p>
         <div style="display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;">
           <label v-for="r in roles" :key="r.id" style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-            <input type="checkbox" :value="r.id" v-model="checkedRoleIds" />
+            <input type="radio" name="assignRole" :value="r.id" v-model="checkedRoleId" />
             <span style="font-weight:600;">{{ r.roleName }}</span>
             <span v-if="r.remark" style="color:#9ca3af;font-size:11px;">{{ r.remark }}</span>
           </label>
@@ -206,18 +207,18 @@ async function fetchData() {
 /* ---------- 新增/编辑 ---------- */
 const showForm = ref(false)
 const formError = ref('')
-const form = ref<{ id: number | null; username: string; password: string; realName: string; phone: string; status: string; roleIds: number[] }>({
-  id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleIds: []
+const form = ref<{ id: number | null; username: string; password: string; realName: string; phone: string; status: string; roleId: number | null }>({
+  id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null
 })
 
 function openCreate() {
-  form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleIds: [] }
+  form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null }
   formError.value = ''
   showForm.value = true
 }
 
 function openEdit(u: any) {
-  form.value = { id: u.id, username: u.username, password: '', realName: u.realName || '', phone: u.phone || '', status: u.status, roleIds: [] }
+  form.value = { id: u.id, username: u.username, password: '', realName: u.realName || '', phone: u.phone || '', status: u.status, roleId: null }
   formError.value = ''
   showForm.value = true
 }
@@ -229,7 +230,7 @@ async function submitForm() {
   if (!/^1\d{10}$/.test(form.value.phone.trim())) { formError.value = '请输入正确的 11 位手机号（后端必填，移动端登录要用）'; return }
   if (!form.value.id) {
     if (!form.value.password || form.value.password.length < 6) { formError.value = '初始密码至少 6 位'; return }
-    if (!form.value.roleIds.length) { formError.value = '请至少勾选一个角色'; return }
+    if (form.value.roleId == null) { formError.value = '请选择一个角色'; return }
   }
   saving.value = true
   try {
@@ -248,7 +249,7 @@ async function submitForm() {
         realName: form.value.realName.trim(),
         phone: form.value.phone.trim() || undefined,
         status: form.value.status,
-        roleIds: form.value.roleIds
+        roleIds: form.value.roleId == null ? [] : [form.value.roleId]
       })
       notify('账号已创建', 'success')
     }
@@ -278,17 +279,17 @@ async function toggleStatus(u: any) {
   }
 }
 
-/* ---------- 分配角色 ---------- */
+/* ---------- 分配角色（单选） ---------- */
 const showRoles = ref(false)
 const roleTarget = ref<any>(null)
-const checkedRoleIds = ref<number[]>([])
+const checkedRoleId = ref<number | null>(null)
 
 async function openRoles(u: any) {
   roleTarget.value = u
   showRoles.value = true
   try {
     const detail = await getSystemUserDetail(u.id)
-    checkedRoleIds.value = detail?.roleIds || []
+    checkedRoleId.value = detail?.roleIds?.[0] ?? null
   } catch (e: any) {
     notify(`加载角色失败：${e?.message || '服务器异常'}`)
     showRoles.value = false
@@ -297,13 +298,13 @@ async function openRoles(u: any) {
 
 async function submitRoles() {
   if (!roleTarget.value) return
-  if (!checkedRoleIds.value.length) {
-    notify('请至少勾选一个角色')
+  if (checkedRoleId.value == null) {
+    notify('请选择一个角色')
     return
   }
   saving.value = true
   try {
-    await assignUserRoles(roleTarget.value.id, checkedRoleIds.value)
+    await assignUserRoles(roleTarget.value.id, [checkedRoleId.value])
     notify('角色已保存，该用户重新登录后生效', 'success')
     showRoles.value = false
     fetchData()
