@@ -71,8 +71,8 @@
       </table>
     </div>
 
-    <!-- 新增/编辑账号弹窗 -->
-    <div v-if="showForm" class="modal-overlay" @click.self="showForm = false">
+    <!-- 新增/编辑账号弹窗（点遮层不关闭，防止误点丢失已填内容） -->
+    <div v-if="showForm" class="modal-overlay">
       <div class="modal-box" style="width:480px;">
         <h3 style="margin:0 0 16px;font-size:16px;">{{ form.id ? '编辑账号' : '新增账号' }}</h3>
         <div style="display:flex;flex-direction:column;gap:12px;">
@@ -110,7 +110,7 @@
     </div>
 
     <!-- 分配角色弹窗（单选：每个账号只对应一个角色） -->
-    <div v-if="showRoles" class="modal-overlay" @click.self="showRoles = false">
+    <div v-if="showRoles" class="modal-overlay">
       <div class="modal-box" style="width:420px;">
         <h3 style="margin:0 0 4px;font-size:16px;">分配角色 — {{ roleTarget?.realName || roleTarget?.username }}</h3>
         <p style="color:#6b7280;font-size:12px;margin:0 0 12px;">每个账号只能归属一个角色，重新选择后将替换原角色</p>
@@ -129,7 +129,7 @@
     </div>
 
     <!-- 重置密码弹窗 -->
-    <div v-if="showPwd" class="modal-overlay" @click.self="showPwd = false">
+    <div v-if="showPwd" class="modal-overlay">
       <div class="modal-box" style="width:420px;">
         <h3 style="margin:0 0 16px;font-size:16px;">重置密码 — {{ pwdTarget?.realName || pwdTarget?.username }}</h3>
         <div style="display:flex;flex-direction:column;gap:12px;">
@@ -212,7 +212,12 @@ const form = ref<{ id: number | null; username: string; password: string; realNa
 })
 
 function openCreate() {
-  form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null }
+  // 误关后重新打开时保留已填内容；仅当上次是编辑态或内容为空时才重置
+  const f = form.value
+  const dirty = !!(f.username || f.password || f.realName || f.phone || f.roleId != null)
+  if (f.id !== null || !dirty) {
+    form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null }
+  }
   formError.value = ''
   showForm.value = true
 }
@@ -254,6 +259,8 @@ async function submitForm() {
       notify('账号已创建', 'success')
     }
     showForm.value = false
+    // 保存成功后清空表单，避免草稿残留到下次新增
+    form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null }
     fetchData()
   } catch (e: any) {
     formError.value = e?.message || '保存失败，请稍后重试'
