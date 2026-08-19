@@ -99,6 +99,14 @@
                 {{ r.roleName }}
               </label>
             </div>
+            <template v-if="isGridWorkerSelected">
+              <label class="form-label">分配小网格 <span style="color:#9ca3af;font-weight:400;font-size:12px;">（选填；分配后自动联动我的网格/巡查任务/派单）</span></label>
+              <select v-model="form.gridId" class="form-input">
+                <option :value="null">暂不分配（后续可在组织人员管理绑定）</option>
+                <option v-for="g in smallGrids" :key="g.id" :value="g.id">{{ g.gridName }}</option>
+              </select>
+              <p v-if="!smallGrids.length" style="color:#d97706;font-size:12px;margin:0;">⚠️ 暂无小网格，请先在网格管理页添加</p>
+            </template>
           </template>
           <p v-if="formError" style="color:#ef4444;font-size:12px;margin:0;">{{ formError }}</p>
         </div>
@@ -151,7 +159,7 @@ import { ref, computed, onMounted } from 'vue'
 import {
   getSystemUsers, getSystemUserDetail, createSystemUser, updateSystemUser,
   updateSystemUserStatus, assignUserRoles, resetSystemUserPassword, deleteSystemUser,
-  getSystemRoles
+  getSystemRoles, getGridTree
 } from '../api'
 
 const loading = ref(false)
@@ -207,8 +215,33 @@ async function fetchData() {
 /* ---------- 新增/编辑 ---------- */
 const showForm = ref(false)
 const formError = ref('')
-const form = ref<{ id: number | null; username: string; password: string; realName: string; phone: string; status: string; roleId: number | null }>({
-  id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null
+const form = ref<{ id: number | null; username: string; password: string; realName: string; phone: string; status: string; roleId: number | null; gridId: number | null }>({
+  id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null, gridId: null
+})
+
+/* 小网格列表（新增网格员账号时用于一步分配网格） */
+const smallGrids = ref<any[]>([])
+async function loadSmallGrids() {
+  try {
+    const tree: any = await getGridTree()
+    const list: any[] = []
+    const walk = (nodes: any[]) => {
+      for (const n of Array.isArray(nodes) ? nodes : []) {
+        if (n?.gridLevel === 3) list.push(n)
+        if (n?.children) walk(n.children)
+      }
+    }
+    walk(Array.isArray(tree) ? tree : [])
+    smallGrids.value = list
+  } catch (e) {
+    smallGrids.value = []
+  }
+}
+
+/** 当前选中的角色是否为网格员 */
+const isGridWorkerSelected = computed(() => {
+  const role = roles.value.find(r => r.id === form.value.roleId)
+  return role?.roleCode === 'GRID_WORKER'
 })
 
 function openCreate() {
@@ -216,14 +249,15 @@ function openCreate() {
   const f = form.value
   const dirty = !!(f.username || f.password || f.realName || f.phone || f.roleId != null)
   if (f.id !== null || !dirty) {
-    form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null }
+    form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null, gridId: null }
   }
   formError.value = ''
+  loadSmallGrids()
   showForm.value = true
 }
 
 function openEdit(u: any) {
-  form.value = { id: u.id, username: u.username, password: '', realName: u.realName || '', phone: u.phone || '', status: u.status, roleId: null }
+  form.value = { id: u.id, username: u.username, password: '', realName: u.realName || '', phone: u.phone || '', status: u.status, roleId: null, gridId: null }
   formError.value = ''
   showForm.value = true
 }
@@ -254,13 +288,14 @@ async function submitForm() {
         realName: form.value.realName.trim(),
         phone: form.value.phone.trim() || undefined,
         status: form.value.status,
-        roleIds: form.value.roleId == null ? [] : [form.value.roleId]
+        roleIds: form.value.roleId == null ? [] : [form.value.roleId],
+        gridId: isGridWorkerSelected.value ? form.value.gridId : null
       })
-      notify('账号已创建', 'success')
+      notify(form.value.gridId != null && isGridWorkerSelected.value ? '账号已创建，并已绑定网格' : '账号已创建', 'success')
     }
     showForm.value = false
     // 保存成功后清空表单，避免草稿残留到下次新增
-    form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null }
+    form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null, gridId: null }
     fetchData()
   } catch (e: any) {
     formError.value = e?.message || '保存失败，请稍后重试'

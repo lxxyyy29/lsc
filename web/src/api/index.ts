@@ -777,7 +777,7 @@ export async function getSystemUserDetail(id: number) {
   return http.get(`/system/users/${id}`)
 }
 
-export async function createSystemUser(data: { username: string; password: string; realName: string; phone?: string; status?: string; roleIds?: number[] }) {
+export async function createSystemUser(data: { username: string; password: string; realName: string; phone?: string; status?: string; roleIds?: number[]; gridId?: number | null }) {
   return http.post('/system/users', data)
 }
 

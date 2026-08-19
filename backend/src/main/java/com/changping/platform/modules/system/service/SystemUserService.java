@@ -183,7 +183,42 @@ public class SystemUserService {
             userId = extractGeneratedId(keyHolder);
         }
         assignRolesInternal(userId, request.roleIds());
+        // 网格员账号一步绑定所属网格（写入组织人员表，联动我的网格/巡查任务/派单）
+        if (request.gridId() != null) {
+            bindGridToOrgMember(userId, request.realName().trim(), normalizeNullable(request.phone()), request.gridId());
+        }
         return getUserDetail(userId);
+    }
+
+    /**
+     * 将账号与网格绑定到组织人员表 cmn_org_member：
+     * 1. 已有该账号的组织人员记录 → 更新网格；
+     * 2. 存在同名/同手机号但未关联账号的记录（历史手动添加的孤儿记录）→ 补链；
+     * 3. 否则新建一条组织人员记录。
+     */
+    private void bindGridToOrgMember(Long userId, String realName, String phone, Long gridId) {
+        Integer gridExists = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM cmn_grid WHERE id = ?", Integer.class, gridId);
+        if (gridExists == null || gridExists == 0) {
+            throw new BusinessException("VALIDATION_ERROR", "所选网格不存在");
+        }
+        int updated = jdbcTemplate.update(
+                "UPDATE cmn_org_member SET grid_id = ?, updated_at = NOW() WHERE sys_user_id = ?", gridId, userId);
+        if (updated > 0) {
+            return;
+        }
+        // 孤儿记录补链：按姓名/手机号匹配未关联账号的组织人员
+        updated = jdbcTemplate.update(
+                "UPDATE cmn_org_member SET sys_user_id = ?, grid_id = ?, updated_at = NOW() "
+                        + "WHERE sys_user_id IS NULL AND (name = ? OR (phone IS NOT NULL AND phone = ?))",
+                userId, gridId, realName, phone == null ? "" : phone);
+        if (updated > 0) {
+            return;
+        }
+        jdbcTemplate.update(
+                "INSERT INTO cmn_org_member (grid_id, sys_user_id, member_type, name, phone, position, status, remark, created_at, updated_at) "
+                        + "VALUES (?, ?, 'GRID_WORKER', ?, ?, '网格员', 'ACTIVE', '账号创建时分配网格', NOW(), NOW())",
+                gridId, userId, realName, phone);
     }
 
     /**
@@ -525,7 +560,7 @@ public class SystemUserService {
         throw new BusinessException("SYSTEM_USER_CREATE_FAILED", "创建用户失败");
     }
 
-    public record CreateUserRequest(String username, String password, String realName, String phone, String status, List<Long> roleIds) {
+    public record CreateUserRequest(String username, String password, String realName, String phone, String status, List<Long> roleIds, Long gridId) {
     }
 
     public record UpdateUserRequest(String username, String realName, String phone, String status) {
