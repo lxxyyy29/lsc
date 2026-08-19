@@ -726,4 +726,66 @@ export async function completeEmergencyDispatch(id: number) {
   return http.post(`/emergency/dispatches/${id}/complete`)
 }
 
+/* ---------- 系统设置：角色管理 ---------- */
+
+export async function getSystemRoles() {
+  return http.get('/system/roles')
+}
+
+export async function getSystemRoleDetail(id: number) {
+  return http.get(`/system/roles/${id}`)
+}
+
+export async function createSystemRole(data: { roleCode: string; roleName: string; status?: string; remark?: string }) {
+  return http.post('/system/roles', data)
+}
+
+export async function updateSystemRole(id: number, data: { roleCode: string; roleName: string; status?: string; remark?: string }) {
+  return http.put(`/system/roles/${id}`, data)
+}
+
+export async function deleteSystemRole(id: number) {
+  return http.delete(`/system/roles/${id}`)
+}
+
+/** 为角色分配权限（覆盖式；后端只保留 CATALOG/MENU 类型，API 权限不受影响） */
+export async function assignRolePermissions(id: number, permissionIds: number[]) {
+  return http.put(`/system/roles/${id}/permissions`, { permissionIds })
+}
+
+/** 权限树（按类型筛选，角色授权用 WEB 端菜单权限） */
+export async function getPermissionTree(permissionType?: string) {
+  return http.get('/system/permissions/tree', { params: permissionType ? { permissionType } : {} })
+}
+
+/* ---------- 系统设置：账号管理 ---------- */
+
+export async function getSystemUserDetail(id: number) {
+  return http.get(`/system/users/${id}`)
+}
+
+export async function createSystemUser(data: { username: string; password: string; realName: string; phone?: string; status?: string; roleIds?: number[] }) {
+  return http.post('/system/users', data)
+}
+
+export async function updateSystemUser(id: number, data: { username: string; realName: string; phone?: string; status?: string }) {
+  return http.put(`/system/users/${id}`, data)
+}
+
+export async function updateSystemUserStatus(id: number, status: string) {
+  return http.put(`/system/users/${id}/status`, { status })
+}
+
+export async function assignUserRoles(id: number, roleIds: number[]) {
+  return http.put(`/system/users/${id}/roles`, { roleIds })
+}
+
+export async function resetSystemUserPassword(id: number, newPassword: string) {
+  return http.put(`/system/users/${id}/password`, { newPassword })
+}
+
+export async function deleteSystemUser(id: number) {
+  return http.delete(`/system/users/${id}`)
+}
+
 export default http

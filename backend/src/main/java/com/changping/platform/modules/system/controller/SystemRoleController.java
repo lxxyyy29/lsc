@@ -10,6 +10,7 @@ import com.changping.platform.modules.system.service.SystemRoleService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -137,5 +138,18 @@ public class SystemRoleController {
         currentUserService.requireClientType(AuthService.ClientType.WEB);
         permissionGuard.require(PermissionCodes.API_SYSTEM_ROLE_ASSIGN_PERMISSIONS);
         return ApiResponse.ok(systemRoleService.assignPermissions(id, request));
+    }
+
+    /**
+     * @Description //删除角色（内置角色/仍有用户的角色不可删）
+     * @Param [id 角色ID]
+     * @return ApiResponse<Void>
+     */
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> deleteRole(@PathVariable Long id) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_SYSTEM_ROLE_DELETE);
+        systemRoleService.deleteRole(id);
+        return ApiResponse.ok(null);
     }
 }

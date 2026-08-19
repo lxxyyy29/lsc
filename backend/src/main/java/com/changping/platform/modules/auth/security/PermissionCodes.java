@@ -109,6 +109,8 @@ public final class PermissionCodes {
     public static final String API_SYSTEM_ROLE_UPDATE = "api:system:role:update";
     /** 为角色分配权限接口权限 */
     public static final String API_SYSTEM_ROLE_ASSIGN_PERMISSIONS = "api:system:role:assign-permissions";
+
+    public static final String API_SYSTEM_ROLE_DELETE = "api:system:role:delete";
     /** 查看菜单列表接口权限 */
     public static final String API_SYSTEM_MENU_LIST = "api:system:menu:list";
     /** 创建菜单接口权限 */

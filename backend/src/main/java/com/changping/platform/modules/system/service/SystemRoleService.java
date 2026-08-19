@@ -182,6 +182,27 @@ public class SystemRoleService {
     }
 
     /**
+     * @Description //删除角色：内置角色与仍有用户绑定的角色不可删，删除时同步清理角色-权限关联
+     * @Param [roleId 角色ID]
+     * @return void
+     */
+    @Transactional
+    public void deleteRole(Long roleId) {
+        RoleRecord role = requireRole(roleId);
+        // 内置角色禁止删除，避免删掉超管后系统不可维护
+        if ("SUPER_ADMIN".equals(role.roleCode())) {
+            throw new BusinessException("SYSTEM_ROLE_BUILTIN", "超级管理员角色不可删除");
+        }
+        Integer userCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM sys_user_role WHERE role_id = ?", Integer.class, roleId);
+        if (userCount != null && userCount > 0) {
+            throw new BusinessException("SYSTEM_ROLE_IN_USE", "该角色下还有 " + userCount + " 个用户，请先调整用户角色后再删除");
+        }
+        jdbcTemplate.update("DELETE FROM sys_role_permission WHERE role_id = ?", roleId);
+        jdbcTemplate.update("DELETE FROM sys_role WHERE id = ?", roleId);
+    }
+
+    /**
      * @Author tangxinglin
      * @Description //校验角色ID列表合法性，确保所有ID在数据库中存在，返回去重后的ID列表
      * @Date 2026/04/18 10:05
