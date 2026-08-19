@@ -17,6 +17,10 @@
     </div>
 
     <div class="card">
+      <div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;">
+        <input v-model="searchKey" class="form-input" style="width:280px;" placeholder="搜索角色名称 / 标识 / 备注..." />
+        <span v-if="searchKey" style="color:#9ca3af;font-size:12px;">匹配 {{ filteredRoles.length }} / {{ roles.length }} 个角色</span>
+      </div>
       <table class="data-table" style="width:100%;">
         <thead>
           <tr>
@@ -31,8 +35,8 @@
         </thead>
         <tbody>
           <tr v-if="loading"><td colspan="7" style="text-align:center;color:#9ca3af;padding:32px;">加载中...</td></tr>
-          <tr v-else-if="!roles.length"><td colspan="7" style="text-align:center;color:#9ca3af;padding:32px;">暂无角色</td></tr>
-          <tr v-for="r in roles" :key="r.id">
+          <tr v-else-if="!filteredRoles.length"><td colspan="7" style="text-align:center;color:#9ca3af;padding:32px;">{{ searchKey ? '未找到匹配的角色' : '暂无角色' }}</td></tr>
+          <tr v-for="r in filteredRoles" :key="r.id">
             <td style="font-weight:600;">{{ r.roleName }}</td>
             <td>
               <span style="font-size:13px;">{{ roleCodeName(r.roleCode) }}</span>
@@ -123,6 +127,18 @@ import {
 const loading = ref(false)
 const saving = ref(false)
 const roles = ref<any[]>([])
+const searchKey = ref('')
+
+// 按名称/中文释义/英文标识/备注模糊搜索，角色多了可快速定位
+const filteredRoles = computed(() => {
+  const key = searchKey.value.trim().toLowerCase()
+  if (!key) return roles.value
+  return roles.value.filter(r =>
+    (r.roleName || '').toLowerCase().includes(key)
+    || (r.roleCode || '').toLowerCase().includes(key)
+    || roleCodeName(r.roleCode).toLowerCase().includes(key)
+    || (r.remark || '').toLowerCase().includes(key))
+})
 
 // 内置角色标识的中文释义（新建角色未命中时直接显示原标识）
 const ROLE_CODE_NAMES: Record<string, string> = {

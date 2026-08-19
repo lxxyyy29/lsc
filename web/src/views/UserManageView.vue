@@ -17,8 +17,15 @@
     </div>
 
     <div class="card">
-      <div style="margin-bottom:12px;">
+      <div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;">
         <input v-model="searchKey" class="form-input" style="width:260px;" placeholder="搜索姓名 / 账号 / 手机号..." />
+        <select v-model="filterRoleId" class="form-input" style="width:200px;">
+          <option :value="0">全部角色</option>
+          <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.roleName }}</option>
+          <option :value="-1">未分配角色</option>
+        </select>
+        <button v-if="filterRoleId === -1" @click="filterRoleId = 0" class="btn btn-default" style="padding:6px 12px;font-size:12px;">清除筛选</button>
+        <span style="color:#9ca3af;font-size:12px;">共 {{ filteredUsers.length }} 个账号</span>
       </div>
       <table class="data-table" style="width:100%;">
         <thead>
@@ -33,7 +40,7 @@
         </thead>
         <tbody>
           <tr v-if="loading"><td colspan="6" style="text-align:center;color:#9ca3af;padding:32px;">加载中...</td></tr>
-          <tr v-else-if="!filteredUsers.length"><td colspan="6" style="text-align:center;color:#9ca3af;padding:32px;">暂无账号</td></tr>
+          <tr v-else-if="!filteredUsers.length"><td colspan="6" style="text-align:center;color:#9ca3af;padding:32px;">{{ (searchKey || filterRoleId !== 0) ? '未找到匹配的账号' : '暂无账号' }}</td></tr>
           <tr v-for="u in filteredUsers" :key="u.id">
             <td style="font-weight:600;">{{ u.realName || '-' }}</td>
             <td><code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;font-size:12px;">{{ u.username }}</code></td>
@@ -151,6 +158,8 @@ const saving = ref(false)
 const users = ref<any[]>([])
 const roles = ref<any[]>([])
 const searchKey = ref('')
+// 角色筛选：0=全部，-1=未分配角色，其余为角色 id
+const filterRoleId = ref(0)
 
 const toast = ref({ visible: false, type: 'error' as 'error' | 'success', message: '' })
 let toastTimer: ReturnType<typeof setTimeout> | undefined
@@ -163,11 +172,17 @@ function notify(message: string, type: 'error' | 'success' = 'error') {
 
 const filteredUsers = computed(() => {
   const key = searchKey.value.trim().toLowerCase()
-  if (!key) return users.value
-  return users.value.filter(u =>
-    (u.realName || '').toLowerCase().includes(key)
-    || (u.username || '').toLowerCase().includes(key)
-    || (u.phone || '').includes(key))
+  return users.value.filter(u => {
+    if (filterRoleId.value === -1 && (u.roleCodes || []).length > 0) return false
+    if (filterRoleId.value > 0) {
+      const role = roles.value.find(r => r.id === filterRoleId.value)
+      if (role && !(u.roleCodes || []).includes(role.roleCode)) return false
+    }
+    if (!key) return true
+    return (u.realName || '').toLowerCase().includes(key)
+      || (u.username || '').toLowerCase().includes(key)
+      || (u.phone || '').includes(key)
+  })
 })
 
 /** 超管账号禁止删除/停用的兜底判断（角色含 SUPER_ADMIN） */
