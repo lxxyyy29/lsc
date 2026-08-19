@@ -115,8 +115,19 @@ function updateLocationMarker(lat: number, lng: number) {
     latitude: lat,
     longitude: lng,
     iconPath: '../../../static/map-marker.png',
-    width: 30,
-    height: 53
+    // 小地图内用迷你标记，避免大图标遮挡地名标注
+    width: 16,
+    height: 28,
+    label: {
+      content: '当前位置',
+      color: '#ffffff',
+      fontSize: 10,
+      borderRadius: 8,
+      bgColor: 'rgba(30, 64, 110, 0.85)',
+      padding: 3,
+      anchorX: -24,
+      anchorY: 6
+    }
   }]
 }
 
@@ -411,7 +422,7 @@ async function handleSubmit() {
 }
 .resident-report-page .photo-add-icon { font-size: 48rpx; color: #9ca3af; }
 .resident-report-page .location { font-size: 26rpx; color: #6b7280; padding: 16rpx; background: #f9fafb; border-radius: 12rpx; }
-.resident-report-page .location-map { width: 100%; height: 300rpx; border-radius: 12rpx; margin-bottom: 12rpx; }
+.resident-report-page .location-map { width: 100%; height: 380rpx; border-radius: 12rpx; margin-bottom: 12rpx; }
 .resident-report-page .location-text { color: #6b7280; line-height: 1.5; }
 .resident-report-page .location-actions { display: flex; align-items: center; gap: 16rpx; margin-top: 12rpx; }
 .resident-report-page .relocate { color: #1890ff; }

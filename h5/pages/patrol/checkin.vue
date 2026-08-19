@@ -93,8 +93,19 @@ function updateMapMarker(lat: number, lng: number) {
     latitude: lat,
     longitude: lng,
     iconPath: '../../static/map-marker.png',
-    width: 30,
-    height: 53
+    // 小地图（300rpx）内用迷你标记，避免大图标遮挡地名标注
+    width: 16,
+    height: 28,
+    label: {
+      content: '当前位置',
+      color: '#ffffff',
+      fontSize: 10,
+      borderRadius: 8,
+      bgColor: 'rgba(30, 64, 110, 0.85)',
+      padding: 3,
+      anchorX: -24,
+      anchorY: 6
+    }
   }]
 }
 
@@ -267,7 +278,7 @@ onMounted(async () => {
 .label { display: block; font-size: 13px; color: #cfe5fb; margin-bottom: 8px; }
 .picker-text { background: #0a1d33; border-radius: 8px; padding: 10px; color: #eaf5ff; font-size: 14px; }
 .location-text { font-size: 12px; color: #7ea4c8; margin-bottom: 4px; }
-.location-map { width: 100%; height: 300rpx; border-radius: 12rpx; margin-bottom: 8rpx; }
+.location-map { width: 100%; height: 380rpx; border-radius: 12rpx; margin-bottom: 8rpx; }
 .location-actions { display: flex; align-items: center; gap: 12rpx; }
 .link { font-size: 12px; color: #57b9ff; }
 .link-divider { color: #3a5a7a; }
