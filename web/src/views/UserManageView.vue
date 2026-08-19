@@ -84,8 +84,8 @@
           </template>
           <label class="form-label">姓名 <span style="color:#ef4444;">*</span></label>
           <input v-model="form.realName" class="form-input" placeholder="真实姓名" />
-          <label class="form-label">手机号</label>
-          <input v-model="form.phone" class="form-input" placeholder="选填" />
+          <label class="form-label">手机号 <span style="color:#ef4444;">*</span></label>
+          <input v-model="form.phone" class="form-input" placeholder="用于移动端登录与找回密码" />
           <label class="form-label">状态</label>
           <select v-model="form.status" class="form-input">
             <option value="ACTIVE">正常</option>
@@ -226,6 +226,7 @@ async function submitForm() {
   formError.value = ''
   if (!form.value.username.trim()) { formError.value = '请输入登录账号'; return }
   if (!form.value.realName.trim()) { formError.value = '请输入姓名'; return }
+  if (!/^1\d{10}$/.test(form.value.phone.trim())) { formError.value = '请输入正确的 11 位手机号（后端必填，移动端登录要用）'; return }
   if (!form.value.id) {
     if (!form.value.password || form.value.password.length < 6) { formError.value = '初始密码至少 6 位'; return }
     if (!form.value.roleIds.length) { formError.value = '请至少勾选一个角色'; return }

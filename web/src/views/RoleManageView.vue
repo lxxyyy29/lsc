@@ -27,7 +27,7 @@
             <th>角色名称</th>
             <th>角色标识</th>
             <th>用户数</th>
-            <th>权限数</th>
+            <th>菜单权限</th>
             <th>状态</th>
             <th>备注</th>
             <th style="width:230px;">操作</th>
@@ -43,7 +43,10 @@
               <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:11px;color:#9ca3af;margin-left:6px;">{{ r.roleCode }}</code>
             </td>
             <td>{{ r.userCount }}</td>
-            <td>{{ r.permissionCount }}</td>
+            <td>
+              <span v-if="r.webMenuChecked === undefined" style="color:#9ca3af;">-</span>
+              <span v-else>{{ r.webMenuChecked }} / {{ totalMenuPerms }} <span v-if="r.webMenuChecked === 0" style="color:#ef4444;">（未勾选，该角色用户登录后无菜单）</span></span>
+            </td>
             <td>
               <span :style="{ color: r.status === 'ACTIVE' ? '#059669' : '#9ca3af', fontSize: '12px' }">
                 {{ r.status === 'ACTIVE' ? '正常' : '停用' }}
@@ -123,6 +126,10 @@ import {
   getSystemRoles, createSystemRole, updateSystemRole, deleteSystemRole,
   getSystemRoleDetail, assignRolePermissions, getPermissionTree
 } from '../api'
+import { menuGroups } from '../menu'
+
+// 菜单权限总数（与分配弹窗可勾选项一一对应，来自 menu.ts 单一数据源）
+const totalMenuPerms = menuGroups.reduce((n, g) => n + g.items.length, 0)
 
 const loading = ref(false)
 const saving = ref(false)
@@ -169,11 +176,26 @@ async function fetchRoles() {
   try {
     const data = await getSystemRoles()
     roles.value = Array.isArray(data) ? data : []
+    enrichMenuCounts()
   } catch (e: any) {
     notify(`加载角色失败：${e?.message || '服务器异常'}`)
   } finally {
     loading.value = false
   }
+}
+
+// 列表“菜单权限”列口径与分配弹窗一致：只统计该角色实际勾选的 web:menu 权限
+// （permissionCount 含 API 等非菜单权限，直接展示会与弹窗勾选状态对不上）
+async function enrichMenuCounts() {
+  const codes = new Set(menuGroups.flatMap(g => g.items.map(i => (i as any).permKey).filter(Boolean)))
+  await Promise.all(roles.value.map(async (r: any) => {
+    try {
+      const detail = await getSystemRoleDetail(r.id)
+      r.webMenuChecked = (detail?.permissionCodes || []).filter((c: string) => codes.has(c)).length
+    } catch (e) {
+      r.webMenuChecked = undefined
+    }
+  }))
 }
 
 /* ---------- 新增/编辑 ---------- */
