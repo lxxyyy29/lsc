@@ -39,30 +39,43 @@ export const H5_AUTH_STORAGE_KEY = 'dgcp-oa-h5-session'
 
 let memorySession: H5Session | null = null
 
+/** 统一存储抽象：小程序用 wx、H5 优先 localStorage 再退回全局 uni。
+ * 注意：条件编译分支内不能提前 return，否则 TS 会把后续分支判为不可达、丢失类型收窄 */
 function getStorage() {
-  // 小程序端：全局 uni 不存在（uni-app 仅编译期替换 uni.xxx），直接使用微信全局 wx
-  // #ifdef MP-WEIXIN
-  const wxInstance = (globalThis as { wx?: { getStorageSync?: (key: string) => string | null | undefined; setStorageSync?: (key: string, value: string) => void; removeStorageSync?: (key: string) => void } }).wx
-  if (
-    wxInstance &&
-    typeof wxInstance.getStorageSync === 'function' &&
-    typeof wxInstance.setStorageSync === 'function' &&
-    typeof wxInstance.removeStorageSync === 'function'
-  ) {
-    return {
-      getItem(key: string) {
-        const value = wxInstance.getStorageSync?.(key)
-        return typeof value === 'string' ? value : null
-      },
-      setItem(key: string, value: string) {
-        wxInstance.setStorageSync?.(key, value)
-      },
-      removeItem(key: string) {
-        wxInstance.removeStorageSync?.(key)
-      }
-    }
+  type StorageLike = {
+    getItem(key: string): string | null
+    setItem(key: string, value: string): void
+    removeItem(key: string): void
   }
-  return null
+  type SyncStorageLike = {
+    getStorageSync?: (key: string) => string | null | undefined
+    setStorageSync?: (key: string, value: string) => void
+    removeStorageSync?: (key: string) => void
+  }
+  const wrapSync = (instance: SyncStorageLike): StorageLike => ({
+    getItem(key: string) {
+      const value = instance.getStorageSync?.(key)
+      return typeof value === 'string' ? value : null
+    },
+    setItem(key: string, value: string) {
+      instance.setStorageSync?.(key, value)
+    },
+    removeItem(key: string) {
+      instance.removeStorageSync?.(key)
+    }
+  })
+  const isSyncStorage = (instance: SyncStorageLike) =>
+    typeof instance.getStorageSync === 'function' &&
+    typeof instance.setStorageSync === 'function' &&
+    typeof instance.removeStorageSync === 'function'
+
+  let result: StorageLike | null = null
+  // #ifdef MP-WEIXIN
+  // 小程序端：全局 uni 不存在（uni-app 仅编译期替换 uni.xxx），直接使用微信全局 wx
+  const wxInstance = (globalThis as { wx?: SyncStorageLike }).wx
+  if (result === null && wxInstance && isSyncStorage(wxInstance)) {
+    result = wrapSync(wxInstance)
+  }
   // #endif
   // #ifndef MP-WEIXIN
   let localStorageCandidate: Storage | undefined
@@ -72,38 +85,18 @@ function getStorage() {
     // 隐私模式/沙箱环境访问 localStorage 本身就会抛 SecurityError，视为不可用
     localStorageCandidate = undefined
   }
-  if (
-    localStorageCandidate &&
-    typeof localStorageCandidate.getItem === 'function' &&
-    typeof localStorageCandidate.setItem === 'function' &&
-    typeof localStorageCandidate.removeItem === 'function'
-  ) {
-    return localStorageCandidate
+  const localStore = localStorageCandidate
+  if (result === null && localStore && typeof localStore.getItem === 'function') {
+    result = localStore
   }
-
-  const uniInstance = (globalThis as { uni?: { getStorageSync?: (key: string) => string | null | undefined; setStorageSync?: (key: string, value: string) => void; removeStorageSync?: (key: string) => void } }).uni
-  if (
-    uniInstance &&
-    typeof uniInstance.getStorageSync === 'function' &&
-    typeof uniInstance.setStorageSync === 'function' &&
-    typeof uniInstance.removeStorageSync === 'function'
-  ) {
-    return {
-      getItem(key: string) {
-        const value = uniInstance.getStorageSync?.(key)
-        return typeof value === 'string' ? value : null
-      },
-      setItem(key: string, value: string) {
-        uniInstance.setStorageSync?.(key, value)
-      },
-      removeItem(key: string) {
-        uniInstance.removeStorageSync?.(key)
-      }
+  if (result === null) {
+    const uniInstance = (globalThis as { uni?: SyncStorageLike }).uni
+    if (uniInstance && isSyncStorage(uniInstance)) {
+      result = wrapSync(uniInstance)
     }
   }
-
-  return null
   // #endif
+  return result
 }
 
 function isNonEmptyString(value: unknown): value is string {

@@ -20,11 +20,10 @@
 import { computed } from 'vue'
 
 // 运行时双保险：小程序端即使模板条件编译失效也绝不渲染（小程序用原生 tabBar）
+// 先声明再条件赋值避开重复声明的 TS 误报
+let isMpWeixin = false
 // #ifdef MP-WEIXIN
-const isMpWeixin = true
-// #endif
-// #ifndef MP-WEIXIN
-const isMpWeixin = false
+isMpWeixin = true
 // #endif
 
 const props = defineProps<{

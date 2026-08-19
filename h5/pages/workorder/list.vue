@@ -150,7 +150,7 @@ function urgencyWeight(level: string): number {
 }
 
 function sortByUrgency(items: WorkOrderItem[]): WorkOrderItem[] {
-  return [...items].sort((a, b) => urgencyWeight(a.urgencyLevel) - urgencyWeight(b.urgencyLevel))
+  return [...items].sort((a, b) => urgencyWeight(a.urgencyLevel ?? '') - urgencyWeight(b.urgencyLevel ?? ''))
 }
 
 const allGroups = computed<WorkOrderGroup[]>(() => {

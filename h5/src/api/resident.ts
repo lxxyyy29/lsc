@@ -27,17 +27,26 @@ interface ApiResponse<T> {
 }
 
 /** 获取 uni 全局对象（H5 运行时 window.uni 可能是空占位对象，需检查方法再调用；小程序用微信全局 wx） */
-function getUni() {
+/** 平台全局对象（小程序为 wx，H5 为全局 uni）：统一类型声明供存储/导航/提示共用 */
+type ResidentUniLike = {
+  reLaunch?: (options: { url: string }) => void
+  showToast?: (options: { title: string; icon?: string; duration?: number }) => void
+  getStorageSync?: (key: string) => unknown
+  setStorageSync?: (key: string, value: unknown) => void
+  removeStorageSync?: (key: string) => void
+}
+
+function getUni(): ResidentUniLike | undefined {
+  // 条件编译分支内不提前 return，避免 TS 把后续分支判为不可达、丢失类型收窄
+  let ref: ResidentUniLike | undefined
   // #ifdef MP-WEIXIN
-  const wxInstance = (globalThis as { wx?: { reLaunch?: unknown; showToast?: unknown } }).wx
-  if (wxInstance && typeof wxInstance.reLaunch === 'function') return wxInstance
-  return undefined
+  ref = (globalThis as { wx?: ResidentUniLike }).wx
   // #endif
   // #ifndef MP-WEIXIN
-  const globalUni = (globalThis as { uni?: { reLaunch?: unknown; showToast?: unknown } }).uni
-  if (globalUni && typeof globalUni.reLaunch === 'function') return globalUni
-  return undefined
+  ref = (globalThis as { uni?: ResidentUniLike }).uni
   // #endif
+  if (!ref || typeof ref.reLaunch !== 'function') return undefined
+  return ref
 }
 
 // ==================== 会话存储（平台兼容） ====================
@@ -45,7 +54,7 @@ function getUni() {
 function getStorageValue(): string {
   const uni = getUni()
   try {
-    if (uni) return String(uni.getStorageSync(RESIDENT_AUTH_STORAGE_KEY) || '')
+    if (uni) return String(uni.getStorageSync?.(RESIDENT_AUTH_STORAGE_KEY) || '')
     return localStorage.getItem(RESIDENT_AUTH_STORAGE_KEY) || ''
   } catch {
     return ''
@@ -56,7 +65,7 @@ function setStorageValue(value: string) {
   const uni = getUni()
   try {
     if (uni) {
-      uni.setStorageSync(RESIDENT_AUTH_STORAGE_KEY, value)
+      uni.setStorageSync?.(RESIDENT_AUTH_STORAGE_KEY, value)
     } else {
       localStorage.setItem(RESIDENT_AUTH_STORAGE_KEY, value)
     }
@@ -69,7 +78,7 @@ function removeStorageValue() {
   const uni = getUni()
   try {
     if (uni) {
-      uni.removeStorageSync(RESIDENT_AUTH_STORAGE_KEY)
+      uni.removeStorageSync?.(RESIDENT_AUTH_STORAGE_KEY)
     } else {
       localStorage.removeItem(RESIDENT_AUTH_STORAGE_KEY)
     }
@@ -111,7 +120,7 @@ function handleResident401() {
   clearResidentSession()
   const uni = getUni()
   if (uni) {
-    uni.reLaunch({ url: '/pages/role-select/index' })
+    uni.reLaunch?.({ url: '/pages/role-select/index' })
   }
 }
 
@@ -140,9 +149,7 @@ function translateError(msg: string): string {
 
 function showErrorToast(message: string) {
   const uni = getUni()
-  if (uni?.showToast) {
-    uni.showToast({ title: message, icon: 'none', duration: 2500 })
-  }
+  uni?.showToast?.({ title: message, icon: 'none', duration: 2500 })
 }
 
 // #ifndef MP-WEIXIN
@@ -197,7 +204,7 @@ function createResidentHttpClient(config?: AxiosRequestConfig): AxiosInstance {
 
 const residentClient = createResidentHttpClient()
 
-async function request<T>(method: 'get' | 'post' | 'put' | 'delete', url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+async function requestAxios<T>(method: 'get' | 'post' | 'put' | 'delete', url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
   return (residentClient as any)[method](url, data, config) as Promise<T>
 }
 // #endif
@@ -247,9 +254,20 @@ function uniRequest<T>(method: UniRequestMethod, url: string, data?: unknown, co
   })
 }
 
-function request<T>(method: UniRequestMethod, url: string, data?: unknown, config?: { silent?: boolean }): Promise<T> {
-  return uniRequest<T>(method, url, data, config)
+function requestUni<T>(method: 'get' | 'post' | 'put' | 'delete', url: string, data?: unknown, config?: { silent?: boolean }): Promise<T> {
+  // uni.request 要求大写 method，此处统一转换（兼修复小写 method 导致小程序请求失败的隐患）
+  return uniRequest<T>(method.toUpperCase() as UniRequestMethod, url, data, config)
 }
+// #endif
+
+// 统一 request 入口：H5 用 axios、小程序用 uni.request（条件编译拆分实现，let 赋值避开重复定义）
+type ResidentRequestFn = <T = unknown>(method: 'get' | 'post' | 'put' | 'delete', url: string, data?: unknown, config?: { silent?: boolean }) => Promise<T>
+let request: ResidentRequestFn
+// #ifndef MP-WEIXIN
+request = requestAxios as ResidentRequestFn
+// #endif
+// #ifdef MP-WEIXIN
+request = requestUni as ResidentRequestFn
 // #endif
 
 // ==================== 认证 ====================
@@ -300,8 +318,8 @@ export async function rateEvent(eventId: number | string, data: { rating: number
 
 // ==================== 居民互动 ====================
 
-export async function getResidentActivities(): Promise<unknown> {
-  return request('get', '/resident/activities')
+export async function getResidentActivities(): Promise<any[]> {
+  return request<any[]>('get', '/resident/activities')
 }
 
 export async function signupActivity(activityId: number): Promise<unknown> {
@@ -317,8 +335,8 @@ export async function checkinActivity(activityId: number): Promise<unknown> {
   return request('post', `/resident/activities/${activityId}/checkin`, {})
 }
 
-export async function getResidentPolicies(): Promise<unknown> {
-  return request('get', '/resident/policy-resources')
+export async function getResidentPolicies(): Promise<any[]> {
+  return request<any[]>('get', '/resident/policy-resources')
 }
 
 export async function getMyPoints(): Promise<unknown> {
@@ -329,8 +347,8 @@ export async function submitRepair(data: Record<string, unknown>): Promise<unkno
   return request('post', '/resident/repairs', data)
 }
 
-export async function getMyRepairs(): Promise<unknown> {
-  return request('get', '/resident/repairs')
+export async function getMyRepairs(): Promise<any[]> {
+  return request<any[]>('get', '/resident/repairs')
 }
 
 export async function getRepairDetail(id: number): Promise<unknown> {
@@ -351,7 +369,7 @@ export async function getEmergencyNoticeDetail(id: number | string): Promise<any
 
 // #ifndef MP-WEIXIN
 /** H5：上传 File 对象（multipart/form-data），返回含完整访问 URL 的文件信息 */
-export async function uploadMedia(file: File, businessType = 'PUBLIC_REPORT'): Promise<{ fileUrl?: string; url?: string }> {
+async function uploadMediaH5(file: File, businessType = 'PUBLIC_REPORT'): Promise<{ fileUrl?: string; url?: string }> {
   const form = new FormData()
   form.append('file', file)
   form.append('businessType', businessType)
@@ -364,7 +382,7 @@ export async function uploadMedia(file: File, businessType = 'PUBLIC_REPORT'): P
 
 // #ifdef MP-WEIXIN
 /** 小程序：上传本地临时文件路径，返回含完整访问 URL 的文件信息 */
-export async function uploadMedia(filePath: string, businessType = 'PUBLIC_REPORT'): Promise<{ fileUrl?: string; url?: string }> {
+async function uploadMediaMp(filePath: string, businessType = 'PUBLIC_REPORT'): Promise<{ fileUrl?: string; url?: string }> {
   const session = getResidentSession()
   const headers: Record<string, string> = {}
   if (session?.token) {
@@ -393,4 +411,13 @@ export async function uploadMedia(filePath: string, businessType = 'PUBLIC_REPOR
     })
   })
 }
+// #endif
+
+// 统一导出：H5 传 File、小程序传临时文件路径（let 赋值避开重复导出的 TS 误报）
+export let uploadMedia: (fileOrPath: File | string, businessType?: string) => Promise<{ fileUrl?: string; url?: string }>
+// #ifndef MP-WEIXIN
+uploadMedia = uploadMediaH5 as typeof uploadMedia
+// #endif
+// #ifdef MP-WEIXIN
+uploadMedia = uploadMediaMp as typeof uploadMedia
 // #endif

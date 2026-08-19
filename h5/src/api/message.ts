@@ -23,12 +23,10 @@ export interface MessageItem {
 }
 
 // 消息互通 API 位于 /api/messaging（非 /api/h5），需要覆盖 baseURL
-// 小程序端必须使用绝对 HTTPS 地址
+// 小程序端必须使用绝对 HTTPS 地址；先声明再条件赋值避开重复声明的 TS 误报
+let webApiConfig = { baseURL: '/api' }
 // #ifdef MP-WEIXIN
-const webApiConfig = { baseURL: 'https://drone.kfktec.cn:8443/api' }
-// #endif
-// #ifndef MP-WEIXIN
-const webApiConfig = { baseURL: '/api' }
+webApiConfig = { baseURL: 'https://drone.kfktec.cn:8443/api' }
 // #endif
 
 /** 获取当前用户的会话列表 */

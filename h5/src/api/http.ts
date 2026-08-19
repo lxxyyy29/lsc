@@ -55,16 +55,19 @@ function resolveApiBaseUrl() {
  */
 function handle401(responseCode?: string) {
   clearH5Session()
-  // 小程序端：全局 uni 不存在，使用微信全局 wx
+  // 小程序端：全局 uni 不存在，使用微信全局 wx；先声明再条件赋值避开重复声明的 TS 误报
+  let uniRef: { reLaunch?: (options: { url: string }) => void; showModal?: (options: Record<string, unknown>) => void } | undefined
   // #ifdef MP-WEIXIN
-  const uniRef = (globalThis as { wx?: { reLaunch?: unknown; showModal?: unknown } }).wx
+  uniRef = (globalThis as { wx?: typeof uniRef }).wx
   // #endif
   // #ifndef MP-WEIXIN
   // 通过 globalThis 获取全局 uni（uni-app 编译期不会替换 globalThis 访问），
   // H5 运行时 window.uni 可能为空占位对象，需检查 reLaunch 方法再调用
-  const uniRef = (globalThis as { uni?: { reLaunch?: unknown; showModal?: unknown } }).uni
+  uniRef = (globalThis as { uni?: typeof uniRef }).uni
   // #endif
   if (!uniRef || typeof uniRef.reLaunch !== 'function') return
+  // 先提取方法引用：闭包（showModal success）内 TS 类型收窄不会保留
+  const launch = uniRef.reLaunch
   const isPasswordChanged = responseCode === 'AUTH_PASSWORD_CHANGED'
   if (isPasswordChanged) {
     if (typeof uniRef.showModal !== 'function') return
@@ -74,24 +77,24 @@ function handle401(responseCode?: string) {
       showCancel: false,
       confirmText: '去登录',
       success() {
-        uniRef.reLaunch({ url: '/pages/role-select/index' })
+        launch({ url: '/pages/role-select/index' })
       }
     })
   } else {
-    uniRef.reLaunch({ url: '/pages/role-select/index' })
+    launch({ url: '/pages/role-select/index' })
   }
 }
 
 function showErrorToast(message: string) {
+  let uniRef: { showToast?: (options: { title: string; icon: string; duration: number }) => void } | undefined
   // #ifdef MP-WEIXIN
-  const uniRef = (globalThis as { wx?: { showToast?: unknown } }).wx
+  uniRef = (globalThis as { wx?: typeof uniRef }).wx
   // #endif
   // #ifndef MP-WEIXIN
-  const uniRef = typeof uni !== 'undefined' ? uni : (globalThis as any).uni
+  // H5 运行时 window.uni 可能为空占位对象，后续调用前已做存在性检查
+  uniRef = (globalThis as { uni?: typeof uniRef }).uni
   // #endif
-  if (uniRef?.showToast) {
-    uniRef.showToast({ title: message, icon: 'none', duration: 2500 })
-  }
+  uniRef?.showToast?.({ title: message, icon: 'none', duration: 2500 })
 }
 
 // #ifndef MP-WEIXIN
@@ -287,13 +290,15 @@ function createUniHttpClient(): HttpLikeClient {
 
 // #endif
 
+// 默认导出 http：小程序环境为 uni.request 实现，其他环境为 axios 实现
+// 用条件赋值避开两处 export 同名变量的 TS 重复声明误报
+let http: HttpLikeClient
 // #ifdef MP-WEIXIN
 // 微信小程序环境：uni.request 实现
-const uniHttp = createUniHttpClient()
-export { uniHttp as http }
+http = createUniHttpClient()
 // #endif
-
 // #ifndef MP-WEIXIN
-// 默认导出 axios 版本（非微信小程序环境）
-export { axiosHttp as http }
+// axios 版本（非微信小程序环境）
+http = axiosHttp
 // #endif
+export { http }

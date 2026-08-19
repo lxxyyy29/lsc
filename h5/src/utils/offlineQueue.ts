@@ -34,23 +34,29 @@ const MAX_RETRY = 5
 const RETRY_INTERVAL = 30_000
 
 /** 获取 uni 全局对象(H5 运行时 window.uni 可能是空占位对象,需检查方法再调用) */
-function getUni() {
+type OfflineUniLike = {
+  getStorageSync?: (key: string) => unknown
+  setStorageSync?: (key: string, value: unknown) => void
+  onNetworkStatusChange?: (callback: (res: { isConnected: boolean }) => void) => void
+}
+
+function getUni(): OfflineUniLike | undefined {
+  // 条件编译分支内不提前 return，避免 TS 把后续分支判为不可达、丢失类型收窄
+  let ref: OfflineUniLike | undefined
   // #ifdef MP-WEIXIN
-  const wxInstance = (globalThis as { wx?: { getStorageSync?: unknown; setStorageSync?: unknown; onNetworkStatusChange?: unknown } }).wx
-  if (wxInstance && typeof wxInstance.getStorageSync === 'function') return wxInstance
-  return undefined
+  ref = (globalThis as { wx?: OfflineUniLike }).wx
   // #endif
   // #ifndef MP-WEIXIN
-  const globalUni = (globalThis as { uni?: { getStorageSync?: unknown; setStorageSync?: unknown; onNetworkStatusChange?: unknown } }).uni
-  if (globalUni && typeof globalUni.getStorageSync === 'function') return globalUni
-  return undefined
+  ref = (globalThis as { uni?: OfflineUniLike }).uni
   // #endif
+  if (!ref || typeof ref.getStorageSync !== 'function') return undefined
+  return ref
 }
 
 function readQueue(): OfflineTask[] {
   const uni = getUni()
   try {
-    const raw = uni ? String(uni.getStorageSync(STORAGE_KEY) || '') : localStorage.getItem(STORAGE_KEY) || ''
+    const raw = uni ? String(uni.getStorageSync?.(STORAGE_KEY) || '') : localStorage.getItem(STORAGE_KEY) || ''
     if (!raw) return []
     const parsed = JSON.parse(raw)
     return Array.isArray(parsed) ? parsed : []
@@ -63,7 +69,7 @@ function writeQueue(tasks: OfflineTask[]) {
   const uni = getUni()
   try {
     if (uni) {
-      uni.setStorageSync(STORAGE_KEY, JSON.stringify(tasks))
+      uni.setStorageSync?.(STORAGE_KEY, JSON.stringify(tasks))
     } else {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
     }
@@ -151,7 +157,7 @@ export async function flushOfflineQueue(): Promise<{ success: number; failed: nu
 
 /** 手动重试:重置失败任务为待同步后立即同步 */
 export async function retryOfflineQueue(): Promise<{ success: number; failed: number }> {
-  const tasks = readQueue().map((t) => (t.status === 'failed' ? { ...t, status: 'pending', errorCount: 0 } : t))
+  const tasks = readQueue().map((t) => (t.status === 'failed' ? { ...t, status: 'pending' as const, errorCount: 0 } : t))
   writeQueue(tasks)
   return flushOfflineQueue()
 }

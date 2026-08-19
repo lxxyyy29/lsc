@@ -161,7 +161,9 @@ function addPhoto() {
     sizeType: ['compressed'],
     sourceType: ['album', 'camera'],
     success: (res) => {
-      res.tempFilePaths.forEach((path) => uploadByPath(path))
+      // tempFilePaths 部分环境下类型为 string | string[]，统一转数组再遍历
+      const paths = Array.isArray(res.tempFilePaths) ? res.tempFilePaths : [res.tempFilePaths]
+      paths.forEach((path: string) => uploadByPath(path))
     }
   })
   // #endif
@@ -180,7 +182,7 @@ async function onFilesSelected(e: Event) {
   if (!files.length) return
   const remain = 3 - photos.value.length
   for (const file of files.slice(0, remain)) {
-    const item = { url: URL.createObjectURL(file) }
+    const item: { url: string; uploadedUrl?: string } = { url: URL.createObjectURL(file) }
     photos.value.push(item)
     uploading.value = true
     try {
@@ -200,7 +202,7 @@ async function onFilesSelected(e: Event) {
 // #ifdef MP-WEIXIN
 async function uploadByPath(filePath: string) {
   if (photos.value.length >= 3 || uploading.value) return
-  const item = { url: filePath }
+  const item: { url: string; uploadedUrl?: string } = { url: filePath }
   photos.value.push(item)
   uploading.value = true
   try {

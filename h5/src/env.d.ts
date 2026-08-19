@@ -18,6 +18,11 @@ interface ImportMeta {
   readonly env: ImportMetaEnv
 }
 
+// uni-app 构建时静态替换 process.env.UNI_PLATFORM；此处仅提供类型声明避免 TS 报错
+declare const process: {
+  env: Record<string, string | undefined>
+}
+
 declare const uni: {
   request?: (options: {
     url: string

@@ -65,12 +65,13 @@ function locateByBrowser(): Promise<LocateResult> {
 
 function locateByUni(): Promise<LocateResult> {
   return new Promise((resolve, reject) => {
-    // 小程序端：全局 uni 不存在，使用微信全局 wx
+    // 小程序端：全局 uni 不存在，使用微信全局 wx；先声明再条件赋值避开重复声明的 TS 误报
+    let uniRef: { getLocation?: unknown } | undefined
     // #ifdef MP-WEIXIN
-    const uniRef = (globalThis as { wx?: { getLocation?: unknown } }).wx
+    uniRef = (globalThis as { wx?: typeof uniRef }).wx
     // #endif
     // #ifndef MP-WEIXIN
-    const uniRef = (globalThis as { uni?: { getLocation?: unknown } }).uni
+    uniRef = (globalThis as { uni?: typeof uniRef }).uni
     // #endif
     if (!uniRef || typeof uniRef.getLocation !== 'function') {
       reject(new Error('uni 定位不可用'))
