@@ -371,10 +371,12 @@ public class AuthService {
      * @return void
      */
     private void enforceEntryPermission(ClientType clientType, List<String> permissionCodes) {
+        // WEB 准入：拥有任一非 H5 的菜单权限即可——兼容老式 menu:* 与新版 web:menu:*
+        // （超管在角色管理页新建角色只能勾选 web:menu:*，若只认 menu:* 会导致新角色账号无法登录）
         boolean allowed = clientType == ClientType.WEB
                 ? permissionCodes.stream().anyMatch(permissionCode -> permissionCode != null
-                        && permissionCode.startsWith("menu:")
-                        && !permissionCode.startsWith(H5_MENU_PREFIX))
+                        && ((permissionCode.startsWith("menu:") && !permissionCode.startsWith(H5_MENU_PREFIX))
+                                || permissionCode.startsWith("web:menu:")))
                 : permissionCodes.stream().anyMatch(H5_ENTRY_PERMISSIONS::contains);
         if (!allowed) {
             throw new BusinessException(
