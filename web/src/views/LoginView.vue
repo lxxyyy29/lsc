@@ -17,7 +17,7 @@
           </div>
         </div>
         <h1 class="login-title">拔蛟窝智慧网格治理平台</h1>
-        <p class="login-subtitle">Grid Community Governance Platform</p>
+        <p class="login-subtitle">社区网格数字化治理平台</p>
       </div>
 
       <!-- 登录表单 -->

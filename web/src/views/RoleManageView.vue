@@ -21,7 +21,7 @@
         <thead>
           <tr>
             <th>角色名称</th>
-            <th>权限字符</th>
+            <th>角色标识</th>
             <th>用户数</th>
             <th>权限数</th>
             <th>状态</th>
@@ -34,7 +34,10 @@
           <tr v-else-if="!roles.length"><td colspan="7" style="text-align:center;color:#9ca3af;padding:32px;">暂无角色</td></tr>
           <tr v-for="r in roles" :key="r.id">
             <td style="font-weight:600;">{{ r.roleName }}</td>
-            <td><code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;font-size:12px;">{{ r.roleCode }}</code></td>
+            <td>
+              <span style="font-size:13px;">{{ roleCodeName(r.roleCode) }}</span>
+              <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:11px;color:#9ca3af;margin-left:6px;">{{ r.roleCode }}</code>
+            </td>
             <td>{{ r.userCount }}</td>
             <td>{{ r.permissionCount }}</td>
             <td>
@@ -60,8 +63,8 @@
       <div class="modal-box" style="width:480px;">
         <h3 style="margin:0 0 16px;font-size:16px;">{{ form.id ? '编辑角色' : '新增角色' }}</h3>
         <div style="display:flex;flex-direction:column;gap:12px;">
-          <label class="form-label">角色编码 <span style="color:#ef4444;">*</span></label>
-          <input v-model="form.roleCode" class="form-input" placeholder="如 OPS_ADMIN" :disabled="!!form.id && form.roleCode === 'SUPER_ADMIN'" />
+          <label class="form-label">角色标识 <span style="color:#ef4444;">*</span></label>
+          <input v-model="form.roleCode" class="form-input" placeholder="如 OPS_ADMIN（仅限大写英文与下划线，用于系统识别）" :disabled="!!form.id && form.roleCode === 'SUPER_ADMIN'" />
           <label class="form-label">角色名称 <span style="color:#ef4444;">*</span></label>
           <input v-model="form.roleName" class="form-input" placeholder="如 运营管理员" />
           <label class="form-label">状态</label>
@@ -121,6 +124,21 @@ const loading = ref(false)
 const saving = ref(false)
 const roles = ref<any[]>([])
 
+// 内置角色标识的中文释义（新建角色未命中时直接显示原标识）
+const ROLE_CODE_NAMES: Record<string, string> = {
+  SUPER_ADMIN: '超级管理员',
+  EVENT_OPERATOR: '事件专员',
+  AUDITOR: '审核员',
+  DISPATCHER: '派单员',
+  H5_WORKER: '移动端处置人员',
+  H5_VERIFIER: '移动端核查人员',
+  GRID_WORKER: '网格员',
+  PUBLIC: '普通群众'
+}
+function roleCodeName(code: string) {
+  return ROLE_CODE_NAMES[code] || code
+}
+
 const toast = ref({ visible: false, type: 'error' as 'error' | 'success', message: '' })
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -163,7 +181,7 @@ function openEdit(r: any) {
 
 async function submitForm() {
   formError.value = ''
-  if (!form.value.roleCode.trim()) { formError.value = '请输入角色编码'; return }
+  if (!form.value.roleCode.trim()) { formError.value = '请输入角色标识'; return }
   if (!form.value.roleName.trim()) { formError.value = '请输入角色名称'; return }
   saving.value = true
   try {

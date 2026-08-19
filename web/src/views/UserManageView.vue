@@ -110,7 +110,7 @@
           <label v-for="r in roles" :key="r.id" style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
             <input type="checkbox" :value="r.id" v-model="checkedRoleIds" />
             <span style="font-weight:600;">{{ r.roleName }}</span>
-            <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:11px;color:#6b7280;">{{ r.roleCode }}</code>
+            <span v-if="r.remark" style="color:#9ca3af;font-size:11px;">{{ r.remark }}</span>
           </label>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
