@@ -697,14 +697,15 @@ onUnmounted(() => {
 
 .event-detail {
   position: absolute;
-  bottom: 0;
+  /* 上移避开底部 tabBar（110rpx）+ 安全区，防止卡片被遮挡截断 */
+  bottom: calc(120rpx + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   background: rgba(6, 18, 31, 0.95);
-  border-radius: 24rpx 24rpx 0 0;
+  border-radius: 24rpx;
   padding: 30rpx;
   backdrop-filter: blur(10rpx);
-  z-index: 10;
+  z-index: 20;
 }
 
 .event-header {
