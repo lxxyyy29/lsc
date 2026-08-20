@@ -355,16 +355,6 @@ export async function getRepairDetail(id: number): Promise<unknown> {
   return request('get', `/resident/repairs/${id}`)
 }
 
-// ==================== 应急公告（居民只读） ====================
-
-export async function getEmergencyNotices(params?: { page?: number; size?: number }): Promise<any> {
-  return request('get', '/mp/emergency/dispatches', { params: { page: 1, size: 20, ...params } })
-}
-
-export async function getEmergencyNoticeDetail(id: number | string): Promise<any> {
-  return request('get', `/mp/emergency/dispatches/${id}`)
-}
-
 // ==================== 图片上传 ====================
 
 // #ifndef MP-WEIXIN

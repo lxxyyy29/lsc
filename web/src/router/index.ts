@@ -1,8 +1,8 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
 import { getSession } from '../api'
 import { permKeyForPath, isSuperAdminSession, firstVisiblePath } from '../menu'
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   { path: '/login', component: () => import('../views/LoginView.vue') },
   { path: '/', component: () => import('../views/DashboardView.vue') },
   { path: '/gis', component: () => import('../views/GISView.vue') },
@@ -23,12 +23,8 @@ const routes = [
   { path: '/processes', component: () => import('../views/ProcessView.vue') },
   { path: '/reports', component: () => import('../views/ReportsView.vue') },
   { path: '/patrol', component: () => import('../views/PatrolView.vue') },
-  { path: '/emergency', component: () => import('../views/EmergencyView.vue') },
-  { path: '/mosquito', component: () => import('../views/MosquitoView.vue') },
-  { path: '/safety', component: () => import('../views/SafetyView.vue') },
   { path: '/party', component: () => import('../views/PartyView.vue') },
   { path: '/parking', component: () => import('../views/ParkingView.vue') },
-  { path: '/vehicle-track', component: () => import('../views/VehicleTrackView.vue') },
   { path: '/assessment', component: () => import('../views/AssessmentView.vue') },
   { path: '/audit-logs', component: () => import('../views/AuditLogView.vue') },
   { path: '/system-roles', component: () => import('../views/RoleManageView.vue') },
@@ -39,10 +35,11 @@ const routes = [
   { path: '/org-members', component: () => import('../views/OrgMemberView.vue') },
   { path: '/biz-areas', component: () => import('../views/BizAreaView.vue') },
   { path: '/resident-reports', component: () => import('../views/ResidentReportView.vue') },
-  { path: '/repairs', component: () => import('../views/RepairView.vue') },
   { path: '/policy-resources', component: () => import('../views/PolicyResourceView.vue') },
   { path: '/help', component: () => import('../views/HelpView.vue') },
   { path: '/big-screen', component: () => import('../views/BigScreenView.vue') },
+  // 已下线路由（应急调度/安全防控/车辆轨迹/报修管理等）兑底：直接访问时重定向到首页
+  { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
 const router = createRouter({

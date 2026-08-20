@@ -183,18 +183,6 @@ public final class PermissionCodes {
     /** 管理视频监控点位（增删改/转流）接口权限 */
     public static final String API_VIDEO_CAMERA_MANAGE = "api:video:camera:manage";
 
-    /** 查看应急调度指令接口权限 */
-    public static final String API_EMERGENCY_DISPATCH_VIEW = "api:emergency:dispatch:view";
-    /** 发起/完成应急调度指令接口权限 */
-    public static final String API_EMERGENCY_DISPATCH_MANAGE = "api:emergency:dispatch:manage";
-    /** 应急调度回执反馈接口权限 */
-    public static final String API_EMERGENCY_RECEIPT_FEEDBACK = "api:emergency:receipt:feedback";
-    /** H5 查看应急调度指令接口权限 */
-    public static final String API_H5_EMERGENCY_VIEW = "api:h5:emergency:view";
-    /** H5 应急调度回执反馈接口权限 */
-    public static final String API_H5_EMERGENCY_FEEDBACK = "api:h5:emergency:feedback";
-    /** 居民小程序：应急公告只读查看 */
-    public static final String API_MP_EMERGENCY_VIEW = "api:mp:emergency:view";
     /** H5 查看站内通知接口权限 */
     public static final String API_H5_NOTIFICATION_VIEW = "api:h5:notification:view";
 
@@ -224,20 +212,8 @@ public final class PermissionCodes {
     public static final String API_AUDIT_LOG_VIEW = "api:audit-log:view";
     /** 审计日志回滚接口权限 */
     public static final String API_AUDIT_LOG_ROLLBACK = "api:audit-log:rollback";
-    /** 停车管理查看接口权限 */
-    public static final String API_PARKING_VIEW = "api:parking:view";
-    /** 停车管理操作接口权限 */
-    public static final String API_PARKING_MANAGE = "api:parking:manage";
-    /** 车辆轨迹追踪查看接口权限 */
-    public static final String API_VEHICLE_TRACK_VIEW = "api:vehicle:track:view";
     /** 考核研判查看接口权限 */
     public static final String API_ASSESSMENT_VIEW = "api:assessment:view";
-    /** 安全防控菜单权限 */
-    public static final String MENU_SAFETY_INSPECTION = "menu:safety:inspection";
-    /** 安全防控查看接口权限 */
-    public static final String API_SAFETY_VIEW = "api:safety:view";
-    /** 安全防控管理接口权限 */
-    public static final String API_SAFETY_MANAGE = "api:safety:manage";
     /** 智慧党建菜单权限 */
     public static final String MENU_PARTY_VIEW = "menu:party:view";
     /** 智慧党建查看接口权限 */
@@ -250,10 +226,6 @@ public final class PermissionCodes {
     public static final String API_PARTY_DELIBER_VIEW = "api:party:deliber:view";
     /** 政策推送接口权限 */
     public static final String API_PARTY_POLICY_PUSH = "api:party:policy:push";
-    /** 便民报修查看接口权限 */
-    public static final String API_REPAIR_VIEW = "api:repair:view";
-    /** 便民报修管理接口权限 */
-    public static final String API_REPAIR_MANAGE = "api:repair:manage";
 
     /** 业务管理目录权限 */
     public static final String CATALOG_BIZ = "catalog:biz";

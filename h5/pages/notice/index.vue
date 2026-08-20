@@ -19,7 +19,7 @@
     <view v-else-if="!items.length" class="empty-card">
       <text class="empty-emoji">🔔</text>
       <text class="empty-title">暂无通知</text>
-      <text class="empty-sub">应急调度指令、预警提醒会推送到这里</text>
+      <text class="empty-sub">政策推送、预警提醒会通知到这里</text>
     </view>
 
     <!-- 通知列表 -->
@@ -43,8 +43,8 @@
           <view v-if="item.level === 'URGENT'" class="level-tag level-tag--urgent">
             <text class="level-tag-text">紧急</text>
           </view>
-          <view v-if="item.type === 'EMERGENCY'" class="level-tag level-tag--emergency">
-            <text class="level-tag-text">应急指令</text>
+          <view v-if="item.type === 'POLICY'" class="level-tag level-tag--policy">
+            <text class="level-tag-text">政策推送</text>
           </view>
           <text class="notice-go">查看详情 ›</text>
         </view>
@@ -115,9 +115,9 @@ async function openNotice(item: NoticeItem) {
   } catch (e) {
     /* 标记失败不阻塞跳转 */
   }
-  // 应急指令通知 → 跳转指令详情
-  if (item.relatedType === 'EMERGENCY' && item.relatedId) {
-    navigateToPath(`/pages/emergency/detail?id=${item.relatedId}`)
+  // 政策推送通知 → 跳转政策详情页
+  if (item.relatedType === 'POLICY' && item.relatedId) {
+    navigateToPath(`/pages/resident/policies/index?id=${item.relatedId}`)
   }
 }
 
@@ -267,10 +267,12 @@ onReachBottom(loadMore)
 
 .level-tag--urgent { background: #fee2e2; }
 .level-tag--emergency { background: #fef3c7; }
+.level-tag--policy { background: #e0f2fe; }
 
 .level-tag-text { font-size: 20rpx; color: #b91c1c; }
 
 .level-tag--emergency .level-tag-text { color: #b45309; }
+.level-tag--policy .level-tag-text { color: #0369a1; }
 
 .notice-go {
   margin-left: auto;

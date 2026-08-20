@@ -69,4 +69,13 @@ public class PolicyResourceController {
         permissionGuard.require(PermissionCodes.API_EVENT_CREATE);
         return ApiResponse.ok(policyResourceService.findMatchingPeople(id));
     }
+
+    /**
+     * 定向推送：将政策以站内通知推送给匹配人群中的居民账号
+     */
+    @PostMapping("/{id}/push")
+    public ApiResponse<Map<String, Object>> push(@PathVariable Long id) {
+        permissionGuard.require(PermissionCodes.API_EVENT_CREATE);
+        return ApiResponse.ok(policyResourceService.pushToResidents(id));
+    }
 }

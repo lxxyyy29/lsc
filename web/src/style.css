@@ -85,6 +85,26 @@ input, select, textarea {
 .filter-bar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
 .filter-bar select, .filter-bar input { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; outline: none; }
 .filter-bar select:focus, .filter-bar input:focus { border-color: #0284c7; }
+/* 统一筛选控件尺寸：各页面搜索栏/下拉/日期一律使用以下类，保证宽高一致 */
+.filter-input { width: 200px; height: 36px; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; outline: none; background: #fff; color: #1f2937; transition: border-color 0.2s; }
+.filter-select { width: 160px; height: 36px; padding: 0 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; outline: none; background: #fff; color: #1f2937; transition: border-color 0.2s; }
+.filter-input:focus, .filter-select:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2,132,199,0.1); }
+.filter-action { height: 36px; padding: 0 18px; border: none; border-radius: 6px; background: #0284c7; color: #fff; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; }
+.filter-action:hover { background: #0369a1; }
+.filter-action.ghost { background: #fff; color: #374151; border: 1px solid #d1d5db; }
+.filter-action.ghost:hover { border-color: #0284c7; color: #0284c7; background: #fff; }
+.filter-action.warn { background: #fff7ed; color: #b45309; border: 1px solid #f59e0b; }
+.filter-action.warn:hover { background: #ffedd5; color: #92400e; }
+
+/* 日期范围选择器：开始日期 ~ 结束日期 一体化容器（贴合系统浅色主题） */
+.date-range { display: inline-flex; align-items: center; height: 36px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s; }
+.date-range:focus-within { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2,132,199,0.1); }
+.date-range .date-field { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; }
+.date-range .date-field i { font-size: 13px; color: #9ca3af; }
+.date-range input[type="date"] { border: none; outline: none; font-size: 13px; color: #1f2937; background: transparent; width: 128px; height: 34px; }
+.date-range .date-sep { color: #9ca3af; font-size: 13px; padding: 0 2px; flex-shrink: 0; }
+.date-range .date-clear { border: none; background: transparent; color: #9ca3af; cursor: pointer; font-size: 12px; padding: 0 10px; height: 100%; }
+.date-range .date-clear:hover { color: #dc2626; }
 
 /* ===== 分组按钮 ===== */
 .filter-btn { padding: 8px 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; color: #374151; font-size: 13px; cursor: pointer; transition: all 0.2s; }

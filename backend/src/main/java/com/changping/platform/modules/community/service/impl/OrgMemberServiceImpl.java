@@ -33,6 +33,12 @@ public class OrgMemberServiceImpl implements OrgMemberService {
     @Override
     public boolean delete(Long id) { return mapper.deleteById(id) > 0; }
 
+    @Override
+    public List<OrgMemberEntity> leaderCandidates() { return mapper.findLeaderCandidates(); }
+
+    @Override
+    public int assignLeader(List<Long> memberIds, Long leaderId) { return mapper.assignLeader(memberIds, leaderId); }
+
     private void fillDefaultPosition(OrgMemberEntity e) {
         if (e.getPosition() != null && !e.getPosition().isBlank()) {
             return;

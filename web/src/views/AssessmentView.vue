@@ -213,8 +213,8 @@
         <p v-else style="text-align:center;padding:30px;color:#9ca3af;font-size:13px;">暂无预警，治理态势良好 ✓</p>
       </div>
 
-      <!-- 巡查覆盖率 + 隐患整改率 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <!-- 巡查覆盖率 -->
+      <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:20px;">
         <div class="card">
           <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">巡查覆盖率</h3>
           <div style="text-align:center;margin-bottom:12px;">
@@ -224,19 +224,6 @@
           <div style="height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;">
             <div :style="{width: patrolCoverage.coverageRate || '0%', height:'100%', background:'#1890ff', borderRadius:'4px'}"></div>
           </div>
-        </div>
-        <div class="card">
-          <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">隐患整改率</h3>
-          <div style="text-align:center;margin-bottom:12px;">
-            <p style="font-size:32px;font-weight:800;color:#52c41a;">{{ rectificationRate.rectificationRate || '0%' }}</p>
-            <p style="font-size:12px;color:#6b7280;">已整改 {{ rectificationRate.rectified || 0 }} / {{ rectificationRate.totalInspections || 0 }}</p>
-          </div>
-          <div style="height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;">
-            <div :style="{width: rectificationRate.rectificationRate || '0%', height:'100%', background:'#52c41a', borderRadius:'4px'}"></div>
-          </div>
-          <p style="font-size:11px;color:#ff4d4f;margin-top:8px;text-align:center;" v-if="rectificationRate.pending">
-            待整改：{{ rectificationRate.pending }}
-          </p>
         </div>
       </div>
 
@@ -290,7 +277,6 @@ const ratingStats = ref<any>({})
 const monthlyReport = ref<any>({})
 const trendAlerts = ref<any[]>([])
 const patrolCoverage = ref<any>({})
-const rectificationRate = ref<any>({})
 
 function getPct(val: number, total: number) {
   if (!total) return 0
@@ -304,15 +290,14 @@ function getMonthPct(val: number) {
 
 onMounted(async () => {
   try {
-    const [overviewRes, timeRes, workersRes, ratingRes, monthlyRes, alertRes, patrolRes, rectRes] = await Promise.all([
+    const [overviewRes, timeRes, workersRes, ratingRes, monthlyRes, alertRes, patrolRes] = await Promise.all([
       http.get('/assessment/overview'),
       http.get('/assessment/response-time'),
       http.get('/assessment/worker-performance'),
       http.get('/assessment/rating-stats').catch(() => ({})),
       http.get('/assessment/monthly-report').catch(() => ({})),
       http.get('/assessment/trend-alert').catch(() => ([])),
-      http.get('/assessment/patrol-coverage').catch(() => ({})),
-      http.get('/assessment/rectification-rate').catch(() => ({}))
+      http.get('/assessment/patrol-coverage').catch(() => ({}))
     ])
     overview.value = overviewRes || {}
     responseTime.value = timeRes || {}
@@ -321,7 +306,6 @@ onMounted(async () => {
     monthlyReport.value = monthlyRes || {}
     trendAlerts.value = alertRes || []
     patrolCoverage.value = patrolRes || {}
-    rectificationRate.value = rectRes || {}
   } catch (e) {
     console.error(e)
   } finally {

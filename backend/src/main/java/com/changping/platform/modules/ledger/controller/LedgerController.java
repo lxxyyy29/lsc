@@ -116,7 +116,7 @@ public class LedgerController {
     /** 台账类型中文名 */
     private static final Map<String, String> TYPE_NAMES = Map.of(
             "EVENT", "事件", "POPULATION", "人口", "BUILDING", "房屋",
-            "MERCHANT", "商户", "PATROL", "巡查", "SAFETY", "安全");
+            "MERCHANT", "商户", "PATROL", "巡查");
 
     /** 各台账类型的导出列:{字段名, 中文表头} */
     private static final Map<String, String[][]> TYPE_COLUMNS = Map.of(
@@ -138,11 +138,7 @@ public class LedgerController {
                     {"fire_risk_level", "消防风险等级"}, {"grid_name", "网格"}, {"created_at", "创建时间"}},
             "PATROL", new String[][]{
                     {"grid_name", "网格"}, {"patrol_type", "巡查类型"}, {"content", "巡查内容"},
-                    {"status", "状态"}, {"created_at", "创建时间"}},
-            "SAFETY", new String[][]{
-                    {"merchant_name", "商户名称"}, {"fire_risk_level", "消防风险等级"},
-                    {"safety_status", "安全状态"}, {"rectification_status", "整改状态"},
-                    {"inspection_date", "检查日期"}, {"remarks", "备注"}});
+                    {"status", "状态"}, {"created_at", "创建时间"}});
 
     /** 导出台账枚举值→中文映射(仅命中字典才翻译,否则保留原值) */
     private static final Map<String, Map<String, String>> VALUE_LABELS = Map.of(
@@ -169,11 +165,7 @@ public class LedgerController {
                     "AI_CAMERA", "AI 摄像头", "H5_APP", "移动端", "WEB", "管理端", "H5", "移动端"),
             "patrol_type", Map.of("NORMAL", "日常巡查", "GRID", "网格巡查", "SPECIAL", "专项巡查"),
             "household_type", Map.of("LOCAL", "本地户籍", "FLOATING", "流动人口"),
-            "fire_risk_level", Map.of("LOW", "低", "MEDIUM", "中", "HIGH", "高"),
-            "safety_status", Map.of("NORMAL", "正常", "ABNORMAL", "异常"),
-            "rectification_status", Map.of(
-                    "PENDING", "待整改", "RECTIFYING", "整改中", "RECTIFIED", "已整改",
-                    "NOT_REQUIRED", "无需整改", "NORMAL", "正常"));
+            "fire_risk_level", Map.of("LOW", "低", "MEDIUM", "中", "HIGH", "高"));
 
     /** 把导出数据中的枚举值翻译为中文 */
     private static List<Map<String, Object>> translateValues(List<Map<String, Object>> data) {

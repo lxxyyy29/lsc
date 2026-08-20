@@ -1,5 +1,5 @@
 <template>
-  <div class="grid-manage-page">
+  <div class="grid-manage-page" :class="{ 'no-form': !formVisible }">
     <!-- 左：网格树 -->
     <aside class="tree-panel">
       <div class="panel-header">
@@ -47,9 +47,12 @@
       </div>
     </main>
 
-    <!-- 右：表单 -->
-    <aside class="form-panel">
-      <div class="panel-header"><h2>{{ form.id ? '编辑网格' : '新增网格' }}</h2></div>
+    <!-- 右：表单（仅点击「新增网格」或选中网格编辑时显示，默认隐藏避免遮挡地图） -->
+    <aside v-if="formVisible" class="form-panel">
+      <div class="panel-header">
+        <h2>{{ form.id ? '编辑网格' : '新增网格' }}</h2>
+        <button class="form-close" title="收起表单" @click="closeForm">✕</button>
+      </div>
       <div class="form-body">
         <div class="field">
           <label>网格名称 *</label>
@@ -104,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { getGridTree, createGrid, updateGrid, deleteGrid } from '../api'
 
@@ -146,6 +149,16 @@ let mapClickHandler: ((e: any) => void) | null = null
 let mapDblHandler: (() => void) | null = null
 const editing = ref(false)
 const saving = ref(false)
+// 右侧表单默认隐藏：仅点击「新增网格」或选中网格进入编辑时才弹出，避免空表单遮挡地图
+const formVisible = ref(false)
+watch(formVisible, () => {
+  // 布局变化后地图容器宽度变了，需要 resize 才能铺满
+  nextTick(() => setTimeout(() => map.value?.resize(), 60))
+})
+function closeForm() {
+  if (drawing.value) cancelDraw()
+  formVisible.value = false
+}
 const tipText = ref('点击左侧网格查看/调整区域；选中后可拖拽顶点或重绘边界')
 
 // 醒目悬浮提示：替代 alert()，错误红色长驻 8 秒、成功绿色 3 秒，均可手动关闭
@@ -357,6 +370,7 @@ function selectGrid(g: GridNode, skipHighlight = false) {
   selectedId.value = g.id
   selectedGrid.value = g
   fillForm(g)
+  formVisible.value = true
   if (!skipHighlight) highlight(g.id)
   const poly = polygons.value.get(g.id)
   if (poly) {
@@ -404,6 +418,7 @@ function updateFormFromPolygon(poly: any) {
 async function startCreate() {
   if (editing.value) finishEditArea()
   if (!form.value.id && roiPoints.value >= 3 && !confirmLeaveUnsaved()) return
+  formVisible.value = true
   selectedId.value = null
   selectedGrid.value = null
   highlight(0)
@@ -726,6 +741,20 @@ onMounted(async () => {
   height: calc(100vh - 140px);
   min-height: 520px;
 }
+/* 表单隐藏时地图占据右侧全部空间 */
+.grid-manage-page.no-form { grid-template-columns: 280px 1fr; }
+.form-close {
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+.form-close:hover { background: #fee2e2; color: #dc2626; }
 .panel-header {
   display: flex;
   align-items: center;

@@ -5,12 +5,12 @@
 
     <div class="card">
       <!-- 筛选栏 -->
-      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
-        <select v-model="filters.tableName" @change="page = 1; loadData()" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+      <div class="filter-bar" style="margin-bottom:16px;">
+        <select v-model="filters.tableName" class="filter-select" @change="page = 1; loadData()">
           <option value="">全部模块</option>
           <option v-for="t in tables" :key="t" :value="t">{{ moduleLabel(t) }}</option>
         </select>
-        <select v-model="filters.operationType" @change="page = 1; loadData()" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+        <select v-model="filters.operationType" class="filter-select" @change="page = 1; loadData()">
           <option value="">全部操作</option>
           <option value="CREATE">新增</option>
           <option value="UPDATE">修改</option>
@@ -18,13 +18,13 @@
           <option value="APPROVE">审批</option>
           <option value="ROLLBACK">回滚</option>
         </select>
-        <input v-model="filters.recordId" placeholder="记录ID" @keyup.enter="page = 1; loadData()" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;width:100px;" />
-        <input v-model="filters.operatorName" placeholder="操作人" @keyup.enter="page = 1; loadData()" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;width:100px;" />
-        <input v-model="filters.startTime" type="datetime-local" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
+        <input v-model="filters.recordId" class="filter-input" placeholder="记录ID" @keyup.enter="page = 1; loadData()" />
+        <input v-model="filters.operatorName" class="filter-input" placeholder="操作人" @keyup.enter="page = 1; loadData()" />
+        <input v-model="filters.startTime" type="datetime-local" class="filter-input" />
         <span style="color:#9ca3af;font-size:12px;">至</span>
-        <input v-model="filters.endTime" type="datetime-local" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
-        <button @click="page = 1; loadData()" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">查询</button>
-        <button @click="resetFilters" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#f9fafb;font-size:13px;cursor:pointer;color:#6b7280;">重置</button>
+        <input v-model="filters.endTime" type="datetime-local" class="filter-input" />
+        <button @click="page = 1; loadData()" class="filter-action"><i class="fas fa-search"></i>查询</button>
+        <button @click="resetFilters" class="filter-action ghost">重置</button>
       </div>
 
       <!-- 加载中 -->

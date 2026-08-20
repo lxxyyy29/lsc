@@ -51,6 +51,34 @@ public class PopulationMapper {
                 ROW_MAPPER);
     }
 
+    /**
+     * 台账条件查询：姓名/电话/地址模糊搜索 + 户籍类型/网格精确筛选，JOIN 带出网格名称
+     */
+    public List<PopulationEntity> search(String keyword, String householdType, Long gridId) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT p.*, g.grid_name FROM cmn_population p LEFT JOIN cmn_grid g ON g.id = p.grid_id WHERE p.status = 'ACTIVE'");
+        java.util.List<Object> params = new java.util.ArrayList<>();
+        if (keyword != null && !keyword.isBlank()) {
+            String like = "%" + keyword.trim() + "%";
+            sql.append(" AND (p.name LIKE ? OR p.phone LIKE ? OR p.address LIKE ? OR p.id_card LIKE ? OR p.building_no LIKE ?)");
+            params.add(like); params.add(like); params.add(like); params.add(like); params.add(like);
+        }
+        if (householdType != null && !householdType.isBlank()) {
+            sql.append(" AND p.household_type = ?");
+            params.add(householdType);
+        }
+        if (gridId != null) {
+            sql.append(" AND p.grid_id = ?");
+            params.add(gridId);
+        }
+        sql.append(" ORDER BY p.id DESC");
+        return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
+            PopulationEntity e = ROW_MAPPER.mapRow(rs, rowNum);
+            e.setGridName(rs.getString("grid_name"));
+            return e;
+        }, params.toArray());
+    }
+
     public PopulationEntity findById(Long id) {
         return jdbcTemplate.queryForObject(
                 "SELECT * FROM cmn_population WHERE id = ?",

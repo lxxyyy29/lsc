@@ -57,8 +57,6 @@ public class LedgerService {
                 return getMerchantData(filters);
             case "PATROL":
                 return getPatrolData(filters);
-            case "SAFETY":
-                return getSafetyData(filters);
             default:
                 return new ArrayList<>();
         }
@@ -115,17 +113,6 @@ public class LedgerService {
         List<Object> params = new ArrayList<>();
         applyFilter(sql, params, filters);
         sql.append(" ORDER BY pr.created_at DESC LIMIT 500");
-        return templateMapper.getJdbc().queryForList(sql.toString(), params.toArray());
-    }
-
-    private List<Map<String, Object>> getSafetyData(Map<String, String> filters) {
-        StringBuilder sql = new StringBuilder(
-            "SELECT m.merchant_name, si.fire_risk_level, si.safety_status, " +
-            "si.rectification_status, si.inspection_date, si.remarks " +
-            "FROM biz_safety_inspection si LEFT JOIN biz_merchant m ON m.id = si.merchant_id WHERE 1=1");
-        List<Object> params = new ArrayList<>();
-        applyFilter(sql, params, filters);
-        sql.append(" ORDER BY si.inspection_date DESC LIMIT 500");
         return templateMapper.getJdbc().queryForList(sql.toString(), params.toArray());
     }
 

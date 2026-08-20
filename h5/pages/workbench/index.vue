@@ -182,8 +182,7 @@ const shortcutCards = computed(() =>
 const displayOrders = computed(() => latestOrders.value.slice(0, 5))
 const managementShortcuts = computed<ManagementShortcut[]>(() => {
   const items: ManagementShortcut[] = []
-  // 应急调度指令（接收/反馈）与消息通知（全员可用，接口层鉴权）
-  items.push({ key: 'emergency', label: '应急指令', to: '/pages/emergency/dispatches', icon: 'notifications' })
+  // 消息通知（全员可用，接口层鉴权）
   items.push({ key: 'notices', label: '消息通知', to: '/pages/notice/index', icon: 'chat' })
   if (hasMenuPermission('menu:h5:merchant:view')) {
     items.push({ key: 'merchants', label: '商户管理', to: '/merchants', icon: 'briefcase' })

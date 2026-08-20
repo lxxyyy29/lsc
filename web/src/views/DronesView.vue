@@ -58,8 +58,8 @@
     <div v-if="activeTab === 'jobs'" class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <h3 style="font-size:14px;font-weight:600;">巡检任务</h3>
-        <div style="display:flex;gap:8px;">
-          <select v-model="jobStatusFilter" @change="loadData" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select v-model="jobStatusFilter" class="filter-select" style="width:120px;" @change="loadData">
             <option :value="undefined">全部状态</option>
             <option :value="0">待执行</option>
             <option :value="1">执行中</option>
@@ -68,7 +68,7 @@
             <option :value="4">已取消</option>
             <option :value="5">执行失败</option>
           </select>
-          <button @click="showCreateJob = true" style="padding:4px 10px;border:1px solid #1890ff;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;">
+          <button @click="showCreateJob = true" class="filter-action">
             <i class="fas fa-plus"></i> 创建任务
           </button>
         </div>

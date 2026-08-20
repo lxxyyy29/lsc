@@ -43,6 +43,32 @@ public class OrgMemberController {
         requireOrgMemberPermission();
         return ApiResponse.ok(service.detail(id));
     }
+
+    /**
+     * 组长候选人（职务含组长/网格长或社区领导）
+     */
+    @GetMapping("/leader-candidates")
+    public ApiResponse<List<OrgMemberEntity>> leaderCandidates() {
+        requireOrgMemberPermission();
+        return ApiResponse.ok(service.leaderCandidates());
+    }
+
+    /**
+     * 网格员划分：将选中成员批量划入某组长名下（leaderId 为 null 表示取消划分）
+     */
+    @PostMapping("/assign")
+    public ApiResponse<Integer> assign(@RequestBody Map<String, Object> body) {
+        requireOrgMemberPermission();
+        Object leaderIdRaw = body.get("leaderId");
+        Long leaderId = leaderIdRaw == null ? null : Long.valueOf(String.valueOf(leaderIdRaw));
+        @SuppressWarnings("unchecked")
+        List<Object> rawIds = (List<Object>) body.get("memberIds");
+        if (rawIds == null || rawIds.isEmpty()) {
+            return ApiResponse.ok(0);
+        }
+        List<Long> memberIds = rawIds.stream().map(o -> Long.valueOf(String.valueOf(o))).toList();
+        return ApiResponse.ok(service.assignLeader(memberIds, leaderId));
+    }
     @PostMapping
     public ApiResponse<Boolean> create(@RequestBody OrgMemberEntity entity) {
         requireOrgMemberPermission();

@@ -44,17 +44,17 @@
     </div>
 
     <!-- 操作栏 -->
-    <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;">
-      <button @click="generateTasks" :disabled="loading" style="padding:8px 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">
-        <i class="fas fa-sync" style="margin-right:4px;"></i>生成本周任务
+    <div class="filter-bar">
+      <button @click="generateTasks" :disabled="loading" class="filter-action">
+        <i class="fas fa-sync"></i>生成本周任务
       </button>
-      <button @click="markOverdue" :disabled="loading" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">
-        <i class="fas fa-exclamation" style="margin-right:4px;"></i>标记超期
+      <button @click="markOverdue" :disabled="loading" class="filter-action ghost">
+        <i class="fas fa-exclamation"></i>标记超期
       </button>
-      <button @click="remindUpcoming" :disabled="loading" style="padding:8px 16px;border:1px solid #f59e0b;border-radius:6px;background:#fff7ed;color:#b45309;font-size:13px;cursor:pointer;">
-        <i class="fas fa-bell" style="margin-right:4px;"></i>到期未巡提醒
+      <button @click="remindUpcoming" :disabled="loading" class="filter-action warn">
+        <i class="fas fa-bell"></i>到期未巡提醒
       </button>
-      <select v-model="filterStatus" @change="loadTasks" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+      <select v-model="filterStatus" class="filter-select" @change="loadTasks">
         <option value="">全部状态</option>
         <option value="PENDING">待巡查</option>
         <option value="COMPLETED">已完成</option>
@@ -107,14 +107,14 @@
           <i class="fas fa-route" style="color:#1890ff;margin-right:6px;"></i>巡查轨迹地图
         </h3>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <select v-model="trackUser" style="padding:5px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+          <select v-model="trackUser" class="filter-select" style="width:140px;">
             <option value="">全部网格员</option>
             <option v-for="u in userList" :key="u.id" :value="u.id">{{ u.name }}</option>
           </select>
           <div style="display:flex;gap:4px;">
             <button v-for="opt in rangeOptions" :key="opt.value" @click="trackRange = opt.value"
-              style="padding:4px 10px;font-size:12px;border-radius:14px;border:1px solid #d1d5db;cursor:pointer;"
-              :style="trackRange === opt.value ? 'background:#1890ff;color:#fff;border-color:#1890ff;' : 'background:#fff;color:#6b7280;'">
+              style="height:32px;padding:0 12px;font-size:12px;border-radius:16px;border:1px solid #d1d5db;cursor:pointer;"
+              :style="trackRange === opt.value ? 'background:#0284c7;color:#fff;border-color:#0284c7;' : 'background:#fff;color:#6b7280;'">
               {{ opt.label }}
             </button>
           </div>

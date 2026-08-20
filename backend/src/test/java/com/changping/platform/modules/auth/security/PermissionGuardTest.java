@@ -38,10 +38,10 @@ class PermissionGuardTest {
 
     @Test
     void hasAnyIgnoresBlankPermissionsAndRequiresAtLeastOneMatch() {
-        AuthenticatedUserContextHolder.set(user("WEB", List.of(PermissionCodes.API_PARKING_VIEW)));
+        AuthenticatedUserContextHolder.set(user("WEB", List.of(PermissionCodes.API_AUDIT_LOG_VIEW)));
 
-        assertTrue(permissionGuard.hasAny(null, "", PermissionCodes.API_PARKING_VIEW));
-        assertFalse(permissionGuard.hasAny(null, "", PermissionCodes.API_PARKING_MANAGE));
+        assertTrue(permissionGuard.hasAny(null, "", PermissionCodes.API_AUDIT_LOG_VIEW));
+        assertFalse(permissionGuard.hasAny(null, "", PermissionCodes.API_AUDIT_LOG_ROLLBACK));
     }
 
     @Test

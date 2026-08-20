@@ -203,86 +203,6 @@ export async function handleTrendAlert(id: number, remark: string) {
   return http.post(`/trend-alerts/${id}/handle`, { remark })
 }
 
-// ==================== 爱卫/蚊媒管控（孳生地红黄绿+消杀+卫生监测） ====================
-
-export async function getMosquitoSites(params?: { status?: string; level?: string; page?: number; size?: number }) {
-  return http.get('/community/mosquito/sites', { params })
-}
-
-export async function getMosquitoSiteStatistics() {
-  return http.get('/community/mosquito/sites/statistics')
-}
-
-export async function createMosquitoSite(data: any) {
-  return http.post('/community/mosquito/sites', data)
-}
-
-export async function updateMosquitoSite(id: number, data: any) {
-  return http.put(`/community/mosquito/sites/${id}`, data)
-}
-
-export async function eliminateMosquitoSite(id: number) {
-  return http.post(`/community/mosquito/sites/${id}/eliminate`)
-}
-
-export async function deleteMosquitoSite(id: number) {
-  return http.delete(`/community/mosquito/sites/${id}`)
-}
-
-export async function getMosquitoDisinfections(params?: { siteId?: number; page?: number; size?: number }) {
-  return http.get('/community/mosquito/disinfections', { params })
-}
-
-export async function createMosquitoDisinfection(data: any) {
-  return http.post('/community/mosquito/disinfections', data)
-}
-
-export async function deleteMosquitoDisinfection(id: number) {
-  return http.delete(`/community/mosquito/disinfections/${id}`)
-}
-
-export async function getMosquitoMonitors(params?: { page?: number; size?: number }) {
-  return http.get('/community/mosquito/monitors', { params })
-}
-
-export async function getMosquitoMonitorStatistics() {
-  return http.get('/community/mosquito/monitors/statistics')
-}
-
-export async function createMosquitoMonitor(data: any) {
-  return http.post('/community/mosquito/monitors', data)
-}
-
-export async function updateMosquitoMonitor(id: number, data: any) {
-  return http.put(`/community/mosquito/monitors/${id}`, data)
-}
-
-export async function deleteMosquitoMonitor(id: number) {
-  return http.delete(`/community/mosquito/monitors/${id}`)
-}
-
-// ===== 爱卫蚊媒 - 检测设备接入（设备台账 + 监测数据流） =====
-
-export async function getMosquitoDevices(params?: { page?: number; size?: number }) {
-  return http.get('/community/mosquito/devices', { params })
-}
-
-export async function getMosquitoDeviceData(params?: { siteId?: number; deviceNo?: string; metricType?: string; page?: number; size?: number }) {
-  return http.get('/community/mosquito/device-data', { params })
-}
-
-export async function getMosquitoDeviceTrend(params?: { siteId?: number; deviceNo?: string; metricType?: string; hours?: number }) {
-  return http.get('/community/mosquito/device-data/trend', { params })
-}
-
-export async function getMosquitoDeviceStatistics() {
-  return http.get('/community/mosquito/device-data/statistics')
-}
-
-export async function simulateMosquitoDeviceData(days = 3) {
-  return http.post('/community/mosquito/device-data/simulate', { days })
-}
-
 export async function archiveEvent(id: number) {
   return http.post(`/events/${id}/archive`)
 }
@@ -689,37 +609,6 @@ export async function getVideoRecordDates(id: number) {
 
 export async function getVideoRecords(id: number, date: string) {
   return http.get(`/video/cameras/${id}/records`, { params: { date } })
-}
-
-// ==================== 应急会商/一键多方联合调度 ====================
-
-export async function getEmergencyMeta() {
-  return http.get('/emergency/dispatches/meta')
-}
-
-export async function getEmergencyDispatches(params?: {
-  status?: string
-  level?: string
-  page?: number
-  size?: number
-}) {
-  return http.get('/emergency/dispatches', { params })
-}
-
-export async function getEmergencyDispatchDetail(id: number) {
-  return http.get(`/emergency/dispatches/${id}`)
-}
-
-export async function createEmergencyDispatch(data: Record<string, any>) {
-  return http.post('/emergency/dispatches', data)
-}
-
-export async function feedbackEmergencyReceipt(id: number, data: { status: string; feedback?: string }) {
-  return http.post(`/emergency/dispatches/${id}/receipt`, data)
-}
-
-export async function completeEmergencyDispatch(id: number) {
-  return http.post(`/emergency/dispatches/${id}/complete`)
 }
 
 /* ---------- 系统设置：角色管理 ---------- */

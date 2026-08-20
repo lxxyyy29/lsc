@@ -263,36 +263,6 @@ public class AssessmentController {
         return ApiResponse.ok(result);
     }
 
-    /**
-     * 隐患整改率：已整改 / 总隐患（基于安全巡查）
-     */
-    @GetMapping("/rectification-rate")
-    public ApiResponse<Map<String, Object>> rectificationRate() {
-        requireAssessmentPermission();
-        Map<String, Object> result = new HashMap<>();
-
-        Long totalInspections = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_safety_inspection", Long.class);
-        // 已整改 = safety_status 为 RECTIFIED 或类似状态
-        Long rectified = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_safety_inspection WHERE safety_status IN ('RECTIFIED','VERIFIED','CLOSED')", Long.class);
-        // 待整改
-        Long pending = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_safety_inspection WHERE safety_status IN ('PENDING','OVERDUE','UNRECTIFIED')", Long.class);
-        long ti = totalInspections != null ? totalInspections : 0;
-        long rf = rectified != null ? rectified : 0;
-        result.put("totalInspections", ti);
-        result.put("rectified", rf);
-        result.put("pending", pending != null ? pending : 0);
-        result.put("rectificationRate", ti > 0 ? Math.round(rf * 100.0 / ti) + "%" : "0%");
-
-        // 按整改状态分布
-        List<Map<String, Object>> statusDist = jdbcTemplate.queryForList(
-                "SELECT safety_status as status, COUNT(*) as count FROM biz_safety_inspection GROUP BY safety_status");
-        result.put("statusDistribution", statusDist);
-
-        return ApiResponse.ok(result);
-    }
-
     private void requireAssessmentPermission() {
         currentUserService.requireClientType(AuthService.ClientType.WEB);
         permissionGuard.require(PermissionCodes.API_ASSESSMENT_VIEW);

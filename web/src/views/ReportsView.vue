@@ -5,18 +5,18 @@
 
     <!-- 时间筛选 -->
     <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;gap:8px;align-items:center;">
-        <select v-model="timeRange" @change="loadData" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;">
+      <div class="filter-bar" style="margin-bottom:0;">
+        <select v-model="timeRange" class="filter-select" @change="loadData">
           <option value="today">今日</option>
           <option value="week">本周</option>
           <option value="month">本月</option>
           <option value="quarter">本季度</option>
           <option value="year">本年</option>
         </select>
-        <button @click="loadData" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;">
+        <button @click="loadData" class="filter-action ghost">
           <i class="fas fa-sync"></i> 刷新
         </button>
-        <button @click="exportData" style="padding:4px 10px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;">
+        <button @click="exportData" class="filter-action">
           <i class="fas fa-download"></i> 导出报表
         </button>
       </div>

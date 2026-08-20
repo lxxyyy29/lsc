@@ -9,5 +9,4 @@ public interface ResidentReportService {
     ResidentReportEntity findByCode(String queryCode);
     ResidentReportEntity findById(Long id);
     boolean create(ResidentReportEntity entity);
-    boolean handleReport(Long id, Long handlerUserId, String handleResult, boolean ignored);
 }

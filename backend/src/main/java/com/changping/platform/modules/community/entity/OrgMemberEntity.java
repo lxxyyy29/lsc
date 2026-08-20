@@ -30,8 +30,15 @@ public class OrgMemberEntity {
 
     private String remark;
 
+    /** 所属组长（cmn_org_member.id），用于网格员划分 */
+    private Long leaderId;
+
     @TableField(exist = false)
     private String gridName;
+
+    /** 组长姓名（查询时 JOIN 填充，非表字段） */
+    @TableField(exist = false)
+    private String leaderName;
 
     @TableField(fill = com.baomidou.mybatisplus.annotation.FieldFill.INSERT)
     private LocalDateTime createdAt;

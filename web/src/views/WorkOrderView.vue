@@ -41,8 +41,8 @@
 
     <!-- 筛选栏 -->
     <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;gap:8px;align-items:center;">
-        <select v-model="statusFilter" @change="loadData" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;">
+      <div class="filter-bar" style="margin-bottom:0;">
+        <select v-model="statusFilter" class="filter-select" @change="loadData">
           <option value="">全部状态</option>
           <option value="WAITING_ACCEPT">待接单</option>
           <option value="PROCESSING">处理中</option>
@@ -52,14 +52,14 @@
           <option value="COMPLETED">已完成</option>
           <option value="CLOSED">已关闭</option>
         </select>
-        <select v-model="urgencyFilter" @change="loadData" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;">
+        <select v-model="urgencyFilter" class="filter-select" @change="loadData">
           <option value="">全部紧急度</option>
           <option value="RED">🔴 紧急</option>
           <option value="YELLOW">🟡 重点</option>
           <option value="GREEN">🟢 一般</option>
         </select>
-        <input v-model="searchKey" placeholder="搜索工单号/事件标题..." style="flex:1;padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;outline:none;" @keyup.enter="loadData" />
-        <button @click="loadData" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;">
+        <input v-model="searchKey" class="filter-input" placeholder="搜索工单号/事件标题..." @keyup.enter="loadData" />
+        <button @click="loadData" class="filter-action">
           <i class="fas fa-search"></i> 搜索
         </button>
       </div>

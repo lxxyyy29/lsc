@@ -5,9 +5,8 @@
 
     <!-- 搜索框 -->
     <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;gap:8px;align-items:center;">
-        <i class="fas fa-search" style="color:#9ca3af;"></i>
-        <input v-model="searchKey" placeholder="搜索问题关键词..." style="flex:1;border:none;outline:none;font-size:14px;" />
+      <div class="filter-bar" style="margin-bottom:0;">
+        <input v-model="searchKey" class="filter-input" style="width:320px;" placeholder="🔍 搜索问题关键词..." />
       </div>
     </div>
 

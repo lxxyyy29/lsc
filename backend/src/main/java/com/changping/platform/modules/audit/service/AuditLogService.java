@@ -24,9 +24,7 @@ public class AuditLogService {
             "cmn_patrol_task",
             "cmn_resident_report",
             "biz_event",
-            "biz_work_order",
-            "biz_parking_space",
-            "biz_parking_violation");
+            "biz_work_order");
 
     private final AuditLogMapper mapper;
     private final ObjectMapper objectMapper;

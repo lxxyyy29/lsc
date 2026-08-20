@@ -16,8 +16,8 @@
     </div>
 
     <div class="card">
-      <div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;">
-        <input v-model="searchKey" class="form-input" style="width:280px;" placeholder="搜索角色名称 / 标识 / 备注..." />
+      <div class="filter-bar">
+        <input v-model="searchKey" class="filter-input" placeholder="搜索角色名称 / 标识 / 备注..." />
         <span v-if="searchKey" style="color:#9ca3af;font-size:12px;">匹配 {{ filteredRoles.length }} / {{ roles.length }} 个角色</span>
       </div>
       <table class="data-table" style="width:100%;">

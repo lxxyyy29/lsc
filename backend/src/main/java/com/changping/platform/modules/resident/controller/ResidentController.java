@@ -7,6 +7,8 @@ import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.community.entity.PolicyResourceEntity;
 import com.changping.platform.modules.community.service.PolicyResourceService;
+import com.changping.platform.modules.event.service.EventService;
+import com.changping.platform.modules.event.vo.EventDetailVo;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -27,18 +29,21 @@ public class ResidentController {
     private final JdbcTemplate jdbcTemplate;
     private final CurrentUserService currentUserService;
     private final PolicyResourceService policyResourceService;
+    private final EventService eventService;
 
     /**
      * @Author tangxinglin
-     * @Description //构造函数，注入 JDBC 模板、当前用户服务与政策资源服务
+     * @Description //构造函数，注入 JDBC 模板、当前用户服务、政策资源服务与事件服务
      * @Date 2026/08/07 15:00
      */
     public ResidentController(JdbcTemplate jdbcTemplate,
                               CurrentUserService currentUserService,
-                              PolicyResourceService policyResourceService) {
+                              PolicyResourceService policyResourceService,
+                              EventService eventService) {
         this.jdbcTemplate = jdbcTemplate;
         this.currentUserService = currentUserService;
         this.policyResourceService = policyResourceService;
+        this.eventService = eventService;
     }
 
     /**
@@ -251,6 +256,15 @@ public class ResidentController {
             "VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING')",
             reporterName, reporterPhone, userId, repairType, title, description, address);
         Long id = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        // 报修统一归口至事件闭环处理中心：自动生成事件，派单处置一律走事件中心，报修单仅做记录凭证
+        try {
+            String eventDescription = "报修类型：" + repairType + (description != null && !description.isBlank() ? "\n" + description : "");
+            EventDetailVo event = eventService.reportFromResident(title, eventDescription, "REPAIR", address,
+                    reporterName, reporterPhone, userId, null, null);
+            jdbcTemplate.update("UPDATE biz_repair_request SET event_id = ? WHERE id = ?", event.id(), id);
+        } catch (Exception e) {
+            // 建事件失败不回滚报修记录，避免阻断居民提交；由管理员在事件中心补录
+        }
         return ApiResponse.ok(id);
     }
 

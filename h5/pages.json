@@ -141,20 +141,6 @@
       }
     },
     {
-      "path": "pages/emergency/dispatches",
-      "style": {
-        "navigationStyle": "default",
-        "navigationBarTitleText": "应急指令"
-      }
-    },
-    {
-      "path": "pages/emergency/detail",
-      "style": {
-        "navigationStyle": "default",
-        "navigationBarTitleText": "指令详情"
-      }
-    },
-    {
       "path": "pages/volunteer/index",
       "style": {
         "navigationStyle": "default",
@@ -224,12 +210,6 @@
     },
     {
       "path": "pages/resident/mine/index",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/resident/emergency/index",
       "style": {
         "navigationStyle": "custom"
       }

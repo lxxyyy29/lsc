@@ -115,7 +115,7 @@
     <div class="card">
       <!-- 筛选栏 -->
       <div class="filter-bar">
-        <select v-model="filters.status" class="form-select" style="width:auto;">
+        <select v-model="filters.status" class="filter-select">
           <option value="">全部状态</option>
           <option value="PENDING_AUDIT">待审核</option>
           <option value="IN_AUDIT">审核中</option>
@@ -124,15 +124,25 @@
           <option value="CLOSED">已关闭</option>
           <option value="IGNORED">已忽略</option>
         </select>
-        <select v-model="filters.urgencyLevel" class="form-select" style="width:auto;">
+        <select v-model="filters.urgencyLevel" class="filter-select">
           <option value="">全部紧急程度</option>
           <option value="GREEN">一般（绿）</option>
           <option value="YELLOW">重点（黄）</option>
           <option value="RED">紧急（红）</option>
         </select>
-        <input v-model="filters.startDate" type="date" class="form-input" style="width:auto;" />
-        <input v-model="filters.endDate" type="date" class="form-input" style="width:auto;" />
-        <button @click="loadData" class="btn btn-primary">查询</button>
+        <!-- 一体化日期范围：开始日期 ~ 结束日期 -->
+        <div class="date-range">
+          <span class="date-field">
+            <i class="fas fa-calendar"></i>
+            <input v-model="filters.startDate" type="date" placeholder="开始日期" />
+          </span>
+          <span class="date-sep">~</span>
+          <span class="date-field">
+            <input v-model="filters.endDate" type="date" placeholder="结束日期" />
+          </span>
+          <button v-if="filters.startDate || filters.endDate" type="button" class="date-clear" title="清除日期" @click="filters.startDate = ''; filters.endDate = ''">✕</button>
+        </div>
+        <button @click="loadData" class="filter-action"><i class="fas fa-search"></i> 查询</button>
         <label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#6b7280;margin-left:8px;white-space:nowrap;">
           <input type="checkbox" v-model="showArchived" @change="loadData" /> 显示已归档
         </label>

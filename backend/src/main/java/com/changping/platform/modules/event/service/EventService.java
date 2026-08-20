@@ -51,6 +51,23 @@ public interface EventService {
                                     String reporterName, String propertyName);
 
     /**
+     * 居民上报统一归口：居民上报/报修提交时自动生成事件进入闭环，来源标记为 RESIDENT
+     * @param title 标题
+     * @param description 描述
+     * @param eventType 事件类型
+     * @param location 地点
+     * @param reporterName 上报人姓名
+     * @param reporterPhone 上报人电话
+     * @param reporterUserId 上报人账号ID（可为 null）
+     * @param longitude 经度（可为 null）
+     * @param latitude 纬度（可为 null）
+     * @return 新建的事件详情
+     */
+    EventDetailVo reportFromResident(String title, String description, String eventType, String location,
+                                     String reporterName, String reporterPhone, Long reporterUserId,
+                                     java.math.BigDecimal longitude, java.math.BigDecimal latitude);
+
+    /**
      * @Author tangxinglin
      * @Description //根据主键ID获取事件详情
      * @Date 2026/04/18 10:00

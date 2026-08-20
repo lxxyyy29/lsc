@@ -44,6 +44,10 @@ public class PopulationEntity {
 
     private String remark;
 
+    /** 关联网格名称（查询时 JOIN 填充，非表字段） */
+    @TableField(exist = false)
+    private String gridName;
+
     @TableField(fill = com.baomidou.mybatisplus.annotation.FieldFill.INSERT)
     private LocalDateTime createdAt;
 

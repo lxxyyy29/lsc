@@ -1,25 +1,24 @@
 package com.changping.platform.modules.community.controller;
 
 import com.changping.platform.common.response.ApiResponse;
-import com.changping.platform.modules.auth.model.AuthenticatedUser;
-import com.changping.platform.modules.auth.service.AuthService;
-import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.community.entity.ResidentReportEntity;
 import com.changping.platform.modules.community.service.ResidentReportService;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * 居民上报记录控制器：仅提供只读记录查询。
+ * 居民上报已统一归口至事件闭环处理中心，提交时自动生成事件，
+ * 处置与派单一律通过事件中心进行，本模块不再提供直接处置操作。
+ */
 @RestController
 @RequestMapping("/community/resident-reports")
 public class ResidentReportController {
 
     private final ResidentReportService service;
-    private final CurrentUserService currentUserService;
 
-    public ResidentReportController(ResidentReportService service, CurrentUserService currentUserService) {
+    public ResidentReportController(ResidentReportService service) {
         this.service = service;
-        this.currentUserService = currentUserService;
     }
 
     @GetMapping
@@ -40,13 +39,5 @@ public class ResidentReportController {
     @PostMapping
     public ApiResponse<Boolean> create(@RequestBody ResidentReportEntity entity) {
         return ApiResponse.ok(service.create(entity));
-    }
-
-    @PutMapping("/{id}/handle")
-    public ApiResponse<Boolean> handle(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        AuthenticatedUser user = currentUserService.requireClientType(AuthService.ClientType.WEB);
-        String handleResult = body.getOrDefault("handleResult", "已处理");
-        boolean ignored = "true".equalsIgnoreCase(body.getOrDefault("ignored", "false"));
-        return ApiResponse.ok(service.handleReport(id, user.id(), handleResult, ignored));
     }
 }

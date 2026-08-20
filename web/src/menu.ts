@@ -53,7 +53,6 @@ export const menuGroups: MenuGroup[] = [
     name: '居民服务', icon: 'fas fa-users',
     items: [
       { path: '/resident-reports', name: '居民上报', badgeKey: 'residentReportsPending', permKey: 'web:menu:resident-reports' },
-      { path: '/repairs', name: '报修管理', permKey: 'web:menu:repairs' },
       { path: '/policy-resources', name: '政策资源', permKey: 'web:menu:policy-resources' },
     ]
   },
@@ -61,11 +60,7 @@ export const menuGroups: MenuGroup[] = [
     name: '巡查防控', icon: 'fas fa-shield-alt',
     items: [
       { path: '/patrol', name: '网格巡查', permKey: 'web:menu:patrol' },
-      { path: '/emergency', name: '应急调度', permKey: 'web:menu:emergency' },
-      { path: '/mosquito', name: '爱卫蚊媒', permKey: 'web:menu:mosquito' },
-      { path: '/safety', name: '安全防控', permKey: 'web:menu:safety' },
       { path: '/parking', name: '停车管理', permKey: 'web:menu:parking' },
-      { path: '/vehicle-track', name: '车辆轨迹', permKey: 'web:menu:vehicle-track' },
     ]
   },
   {

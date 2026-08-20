@@ -1,7 +1,7 @@
 <template>
   <div>
-    <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">居民上报管理</h2>
-    <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">查看和处理居民随手拍上报的问题</p>
+    <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">居民上报记录</h2>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">居民上报统一归口至事件闭环处理中心，本页仅作记录查看，处置派单请在事件中心操作</p>
 
     <!-- 状态筛选 -->
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
@@ -24,33 +24,28 @@
       </div>
       <template v-else>
         <table class="table">
-          <thead><tr><th>标题</th><th>类型</th><th>上报时间</th><th>状态</th><th>操作</th></tr></thead>
+          <thead><tr><th>标题</th><th>类型</th><th>上报人</th><th>上报时间</th><th>关联事件</th><th>状态</th><th>操作</th></tr></thead>
           <tbody>
             <tr v-for="item in list" :key="item.id">
               <td>{{ item.title }}</td>
               <td><span class="tag tag-blue">{{ getEventTypeName(item.reportType) }}</span></td>
+              <td>{{ item.residentName || '-' }}</td>
               <td>{{ formatTime(item.createdAt) }}</td>
+              <td>
+                <a v-if="item.eventId" href="javascript:void(0)" @click="goEvent(item)"
+                   style="color:#0284c7;font-size:12px;text-decoration:none;">
+                  <i class="fas fa-link"></i> 查看事件
+                </a>
+                <span v-else style="color:#9ca3af;font-size:12px;">历史记录</span>
+              </td>
               <td>
                 <span :class="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
               </td>
               <td>
-                <div style="display:flex;gap:6px;">
-                  <button @click="viewDetail(item)"
-                    style="padding:4px 12px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#374151;">
-                    详情
-                  </button>
-                  <button v-if="item.status === 'PENDING'" @click="handleProcess(item)"
-                    style="padding:4px 12px;border:none;border-radius:4px;background:#0284c7;color:#fff;font-size:12px;cursor:pointer;">
-                    处理
-                  </button>
-                  <button v-if="item.status === 'PENDING'" @click="handleIgnore(item)"
-                    style="padding:4px 12px;border:1px solid #ff4d4f;border-radius:4px;background:#fff;color:#ff4d4f;font-size:12px;cursor:pointer;">
-                    忽略
-                  </button>
-                  <span v-if="item.status === 'HANDLED' || item.status === 'COMPLETED'" style="color:#059669;font-size:12px;line-height:24px;">
-                    已处理
-                  </span>
-                </div>
+                <button @click="viewDetail(item)"
+                  style="padding:4px 12px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#374151;">
+                  详情
+                </button>
               </td>
             </tr>
           </tbody>
@@ -63,8 +58,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import http from '../api'
 import { getEventTypeName } from '../utils/eventTypes'
+
+const router = useRouter()
 
 const statusTabs = [
   { key: '', label: '全部' },
@@ -115,27 +113,9 @@ function viewDetail(item: any) {
   alert(`标题：${item.title}\n描述：${item.content || '-'}\n类型：${getEventTypeName(item.reportType)}\n状态：${statusLabel(item.status)}\n上报人：${item.residentName || '-'}（${item.residentPhone || '-'}）\n所属网格：${item.gridName || '-'}\n上报时间：${formatTime(item.createdAt)}${item.handleResult ? '\n处理结果：' + item.handleResult : ''}`)
 }
 
-async function handleProcess(item: any) {
-  const remark = prompt('请输入处理备注：', '已处理')
-  if (remark === null) return
-  try {
-    await http.put(`/community/resident-reports/${item.id}/handle`, { handleResult: remark || '已处理' })
-    alert('处理成功')
-    fetchData()
-  } catch(e: any) {
-    alert(e?.message || '处理失败')
-  }
-}
-
-async function handleIgnore(item: any) {
-  if (!confirm(`确定要忽略上报「${item.title}」吗？`)) return
-  try {
-    await http.put(`/community/resident-reports/${item.id}/handle`, { handleResult: '已忽略', ignored: 'true' })
-    alert('已忽略')
-    fetchData()
-  } catch(e: any) {
-    alert(e?.message || '操作失败')
-  }
+// 跳转到归口生成的事件详情，处置派单在事件中心完成
+function goEvent(item: any) {
+  router.push('/events/' + item.eventId)
 }
 
 onMounted(fetchData)

@@ -167,6 +167,29 @@ public class EventServiceImpl implements EventService {
         return vo;
     }
 
+    @Override
+    @Transactional
+    public EventDetailVo reportFromResident(String title, String description, String eventType, String location,
+                                            String reporterName, String reporterPhone, Long reporterUserId,
+                                            java.math.BigDecimal longitude, java.math.BigDecimal latitude) {
+        String externalId = "RESIDENT-" + System.currentTimeMillis();
+        CreateEventRequest request = new CreateEventRequest(
+                externalId, "PUBLIC", "RESIDENT_REPORT",
+                eventType != null && !eventType.isBlank() ? eventType : "OTHER", title, description,
+                java.time.LocalDateTime.now(),
+                location != null && !location.isBlank() ? location : "拔蛟窝社区",
+                longitude, latitude, java.util.List.of());
+        EventDetailVo vo = createEvent(request);
+        // 来源标记为 RESIDENT，记录上报人信息，便于“我的上报”与事件详情追溯
+        jdbcTemplate.update("UPDATE biz_event SET report_source = 'RESIDENT', report_user_id = ?, report_user_name = ?, report_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                reporterUserId, reporterName, reporterPhone, vo.id());
+        jdbcTemplate.update(
+                "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at, updated_at) VALUES (?, ?, ?, 'RESIDENT_REPORT', '系统', ?, NOW(), NOW())",
+                vo.id(), EventStatus.PENDING_AUDIT.name(), EventStatus.PENDING_AUDIT.name(),
+                "居民上报统一归口，上报人：" + (reporterName != null ? reporterName : "匿名"));
+        return vo;
+    }
+
     /**
      * @Author tangxinglin
      * @Description //根据主键ID获取事件详情，优先从MongoDB取数据并与MySQL合并，降级为仅MySQL数据

@@ -72,10 +72,16 @@ function policyTypeLabel(t: string) {
   return map[t] || t || '政策'
 }
 
-async function loadData() {
+async function loadData(query?: Record<string, string | undefined>) {
   loading.value = true
   try {
     policies.value = await getResidentPolicies() || []
+    // 从通知跳转进入时携带政策 ID，自动打开对应详情
+    const targetId = query?.id ? Number(query.id) : null
+    if (targetId) {
+      const target = policies.value.find((p: any) => Number(p.id) === targetId)
+      if (target) selected.value = target
+    }
   } catch (e) {
     console.error('加载失败:', e)
   } finally {
@@ -87,7 +93,7 @@ function showDetail(p: any) {
   selected.value = p
 }
 
-onLoad(loadData)
+onLoad((query) => loadData(query))
 </script>
 
 <style scoped>

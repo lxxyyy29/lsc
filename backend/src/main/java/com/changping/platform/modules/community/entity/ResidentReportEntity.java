@@ -38,6 +38,9 @@ public class ResidentReportEntity {
 
     private String queryCode;
 
+    /** 归口生成的事件 ID（居民上报统一进入事件闭环处理中心） */
+    private Long eventId;
+
     private String status;
 
     private Long handlerUserId;

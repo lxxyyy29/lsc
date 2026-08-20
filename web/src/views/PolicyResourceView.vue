@@ -5,7 +5,7 @@
         <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">政策资源库</h2>
         <p style="font-size:13px;color:#6b7280;">低保、养老、救助、医保、惠民政策，支撑政策找人</p>
       </div>
-      <button @click="openCreate" style="padding:8px 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">
+      <button @click="openCreate" class="filter-action">
         <i class="fas fa-plus"></i> 新增政策
       </button>
     </div>
@@ -52,6 +52,7 @@
             <td style="font-size:12px;">{{ item.publishDate || '-' }}</td>
             <td>
               <button @click="openMatchPeople(item)" style="padding:4px 10px;border:1px solid #52c41a;border-radius:4px;background:#fff;color:#52c41a;font-size:12px;cursor:pointer;margin-right:4px;">政策找人</button>
+              <button @click="openPush(item)" style="padding:4px 10px;border:1px solid #0284c7;border-radius:4px;background:#fff;color:#0284c7;font-size:12px;cursor:pointer;margin-right:4px;">定向推送</button>
               <button @click="openEdit(item)" style="padding:4px 10px;border:1px solid #1890ff;border-radius:4px;background:#fff;color:#1890ff;font-size:12px;cursor:pointer;margin-right:4px;">编辑</button>
               <button @click="toggleStatus(item)" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;">
                 {{ item.status === 'ACTIVE' ? '停用' : '启用' }}
@@ -129,7 +130,10 @@
           </table>
         </div>
         <p v-else style="text-align:center;padding:40px;color:#9ca3af;">未匹配到符合条件的人群</p>
-        <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+        <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:16px;">
+          <button @click="pushPolicy" :disabled="pushing || !matchingPeople.length" class="btn btn-primary">
+            {{ pushing ? '推送中...' : '定向推送到居民端' }}
+          </button>
           <button @click="showMatchDialog = false" class="btn btn-default">关闭</button>
         </div>
       </div>
@@ -248,6 +252,27 @@ async function openMatchPeople(item: any) {
     matchingPeople.value = []
   }
   showMatchDialog.value = true
+}
+
+// 定向推送：先展示匹配人数，确认后推送站内通知到居民端
+const pushing = ref(false)
+async function openPush(item: any) {
+  await openMatchPeople(item)
+}
+async function pushPolicy() {
+  if (!matchingPolicy.value) return
+  const total = matchingPeople.value.length
+  if (!confirm(`政策「${matchingPolicy.value.title}」共匹配 ${total} 人，\n将向其中有居民账号的人发送站内通知，确认推送吗？`)) return
+  pushing.value = true
+  try {
+    const res: any = await http.post(`/community/policy-resources/${matchingPolicy.value.id}/push`)
+    alert(res?.message || '推送完成')
+    showMatchDialog.value = false
+  } catch (e: any) {
+    alert('推送失败：' + (e?.message || '请稍后重试'))
+  } finally {
+    pushing.value = false
+  }
 }
 
 onMounted(loadList)

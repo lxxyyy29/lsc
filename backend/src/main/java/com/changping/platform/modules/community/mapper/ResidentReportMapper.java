@@ -25,6 +25,8 @@ public class ResidentReportMapper {
         e.setLongitude(rs.getBigDecimal("longitude"));
         e.setLatitude(rs.getBigDecimal("latitude"));
         e.setQueryCode(rs.getString("query_code"));
+        long eventId = rs.getLong("event_id");
+        e.setEventId(rs.wasNull() ? null : eventId);
         e.setStatus(rs.getString("status"));
         e.setHandleResult(rs.getString("handle_result"));
         e.setGridName(rs.getString("grid_name"));
@@ -75,10 +77,10 @@ public class ResidentReportMapper {
         return results.isEmpty() ? null : results.get(0);
     }
 
-    public void updateHandle(Long id, Long handlerUserId, String handleResult, String status) {
+    public void updateEventId(Long id, Long eventId) {
         jdbcTemplate.update(
-            "UPDATE cmn_resident_report SET handler_user_id = ?, handle_result = ?, status = ?, handled_at = NOW(), updated_at = NOW() WHERE id = ?",
-            handlerUserId, handleResult, status, id);
+            "UPDATE cmn_resident_report SET event_id = ?, updated_at = NOW() WHERE id = ?",
+            eventId, id);
     }
 
     public Long insert(ResidentReportEntity e) {

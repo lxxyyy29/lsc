@@ -29,11 +29,6 @@
         <text class="menu-text">我的上报</text>
         <text class="arrow">›</text>
       </view>
-      <view class="menu-item" @click="goEmergency">
-        <text class="menu-icon">📢</text>
-        <text class="menu-text">应急公告</text>
-        <text class="arrow">›</text>
-      </view>
       <view class="menu-item" @click="showAbout = true">
         <text class="menu-icon">ℹ️</text>
         <text class="menu-text">关于平台</text>
@@ -79,10 +74,6 @@ const completedCount = ref(0)
 function goHistory() {
   // 保留导航栈，避免返回时直接退出小程序
   uni.navigateTo({ url: '/pages/resident/history/index' })
-}
-
-function goEmergency() {
-  uni.navigateTo({ url: '/pages/resident/emergency/index' })
 }
 
 function handleLogout() {

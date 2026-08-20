@@ -17,14 +17,14 @@
     </div>
 
     <div class="card">
-      <div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;">
-        <input v-model="searchKey" class="form-input" style="width:260px;" placeholder="搜索姓名 / 账号 / 手机号..." />
-        <select v-model="filterRoleId" class="form-input" style="width:200px;">
+      <div class="filter-bar">
+        <input v-model="searchKey" class="filter-input" placeholder="搜索姓名 / 账号 / 手机号..." />
+        <select v-model="filterRoleId" class="filter-select">
           <option :value="0">全部角色</option>
           <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.roleName }}</option>
           <option :value="-1">未分配角色</option>
         </select>
-        <button v-if="filterRoleId === -1" @click="filterRoleId = 0" class="btn btn-default" style="padding:6px 12px;font-size:12px;">清除筛选</button>
+        <button v-if="filterRoleId === -1" @click="filterRoleId = 0" class="filter-action ghost">清除筛选</button>
         <span style="color:#9ca3af;font-size:12px;">共 {{ filteredUsers.length }} 个账号</span>
       </div>
       <table class="data-table" style="width:100%;">

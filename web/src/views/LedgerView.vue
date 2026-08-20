@@ -66,7 +66,7 @@ const loading = ref(false)
 function typeIcon(type: string) {
   const map: Record<string, string> = {
     EVENT: 'fa-clipboard-list', POPULATION: 'fa-users', BUILDING: 'fa-building',
-    MERCHANT: 'fa-store', PATROL: 'fa-walking', SAFETY: 'fa-shield-alt'
+    MERCHANT: 'fa-store', PATROL: 'fa-walking'
   }
   return map[type] || 'fa-file'
 }

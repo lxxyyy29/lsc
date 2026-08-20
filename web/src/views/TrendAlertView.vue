@@ -51,13 +51,13 @@
     </div>
 
     <!-- 筛选 -->
-    <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;">
-      <select v-model="filterStatus" @change="loadAlerts" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+    <div class="filter-bar">
+      <select v-model="filterStatus" class="filter-select" @change="loadAlerts">
         <option value="">全部状态</option>
         <option value="OPEN">待处理</option>
         <option value="HANDLED">已处理</option>
       </select>
-      <select v-model="filterDimension" @change="loadAlerts" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+      <select v-model="filterDimension" class="filter-select" @change="loadAlerts">
         <option value="">全部维度</option>
         <option value="EVENT_TYPE">类型频发</option>
         <option value="ADDRESS">反复投诉</option>
