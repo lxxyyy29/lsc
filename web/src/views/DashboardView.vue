@@ -1,170 +1,603 @@
 <template>
-  <!-- 大屏容器：地图为绝对主角，统计面板全部悬浮在地图上（负 margin 抵消主内容区 padding） -->
+  <!-- 全域态势感知大屏 v4：沉浸式指挥中心 HUD · 浅色科技风 -->
   <div ref="screenRef" class="dash-screen">
-    <!-- 地图主体 -->
-    <div id="gisMap" class="dash-map"></div>
+    <!-- 背景装饰：浅色渐变 + 极细网格 + 柔光 -->
+    <div class="bg-decor">
+      <div class="bg-grid"></div>
+      <div class="bg-glow bg-glow-1"></div>
+      <div class="bg-glow bg-glow-2"></div>
+    </div>
 
-    <!-- 错误提示（悬浮顶部中央） -->
+    <!-- 地图主体 -->
+    <div id="gisMap" class="dash-map" @mousemove="onMapMouseMove" @mouseleave="crosshair.visible = false"></div>
+
+    <!-- 十字准星线（hover 网格时显示） -->
+    <div v-if="crosshair.visible" class="crosshair-v" :style="{ left: crosshair.x + 'px' }"></div>
+    <div v-if="crosshair.visible" class="crosshair-h" :style="{ top: crosshair.y + 'px' }"></div>
+
+    <!-- ============ 超窄顶部状态栏（48px） ============ -->
+    <header class="topbar">
+      <div class="topbar-brand">
+        <span class="brand-dot" :class="isLive ? 'live' : 'demo'"></span>
+        <i class="fas fa-satellite-dish"></i>
+        <span class="brand-text">智慧网格 · 全域态势感知一张图</span>
+      </div>
+      <div class="topbar-sub">一屏观全域 · 以图管格 · 以格管人</div>
+      <div class="topbar-right">
+        <span class="tb-status" :class="isLive ? 'live' : 'demo'">
+          <i class="fas fa-circle"></i>{{ isLive ? '实时数据' : '演示数据' }}
+        </span>
+        <div class="tb-clock">
+          <span class="tb-time">{{ clock.time }}</span>
+          <span class="tb-date">{{ clock.date }} {{ week }}</span>
+        </div>
+        <button class="tb-btn" @click="toggleFullscreen" :title="isFullscreen ? '退出全屏' : '全屏'">
+          <i :class="isFullscreen ? 'fas fa-compress' : 'fas fa-expand'"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ============ 左侧 Dock 工具栏（图标导航，点击展开内容面板） ============ -->
+    <div class="left-dock">
+      <div class="dock-logo"><i class="fas fa-th-large"></i></div>
+      <button v-for="t in leftTabs" :key="t.key" class="dock-btn"
+              :class="{ active: !layerPanel && leftTab === t.key, quiet: !leftOpen }"
+              @click="toggleDock(t.key)">
+        <i :class="t.icon"></i><span>{{ t.label }}</span>
+      </button>
+      <div class="dock-divider"></div>
+      <button class="dock-btn" :class="{ active: layerPanel }" @click="toggleLayerDock">
+        <i class="fas fa-layer-group"></i><span>图层</span>
+      </button>
+    </div>
+
+    <!-- ============ 左侧内容面板（dom 常驻，class 控制显隐，图表不丢失） ============ -->
+    <aside class="left-widget glass-panel" :class="{ open: leftOpen }">
+      <div class="widget-head">
+        <span class="widget-title">
+          <i class="fas" :class="layerPanel ? 'fa-layer-group' : (leftTabs.find(t => t.key === leftTab)?.icon || 'fa-chart-pie')"></i>
+          {{ layerPanel ? '图层控制' : (leftTabs.find(t => t.key === leftTab)?.label || '数据总览') }}
+        </span>
+        <button class="widget-fold" @click="leftOpen = !leftOpen"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="tab-body">
+        <!-- 图层面板 -->
+        <div v-if="layerPanel" class="tab-pane">
+          <div class="panel-tools">
+            <span class="pt-title"><i class="fas fa-layer-group"></i>地图图层</span>
+            <label class="pt-row">
+              <input type="checkbox" v-model="layerState.grids" @change="toggleLayers" />
+              <span class="pt-switch"><i></i></span>
+              <span class="pt-label">网格</span>
+            </label>
+            <label class="pt-row">
+              <input type="checkbox" v-model="layerState.events" @change="toggleLayers" />
+              <span class="pt-switch"><i></i></span>
+              <span class="pt-label">事件点</span>
+            </label>
+            <label class="pt-row">
+              <input type="checkbox" v-model="layerState.heatmap" @change="toggleLayers" />
+              <span class="pt-switch"><i></i></span>
+              <span class="pt-label">热力图</span>
+            </label>
+            <label class="pt-row">
+              <input type="checkbox" v-model="layerState.labels" @change="toggleLabels" />
+              <span class="pt-switch"><i></i></span>
+              <span class="pt-label">标注</span>
+            </label>
+          </div>
+          <div class="grid-legend">
+            <span class="gl-title"><i class="fas fa-shield-alt"></i>网格预警</span>
+            <span class="gl-item"><i style="background:#0284c7"></i>平稳</span>
+            <span class="gl-item"><i style="background:#22c55e"></i>一般</span>
+            <span class="gl-item"><i style="background:#f59e0b"></i>重点</span>
+            <span class="gl-item"><i style="background:#ef4444"></i>紧急</span>
+          </div>
+        </div>
+        <!-- 分级概览 -->
+        <div v-show="!layerPanel && leftTab === 'ring'" class="tab-pane">
+          <div id="chartRing" class="chart-ring"></div>
+          <div class="ring-legend">
+            <div class="legend-row" v-for="lv in levelRows" :key="lv.key"
+                 :class="{ dim: ringFilter && ringFilter !== lv.key }"
+                 @click="toggleRingFilter(lv.key)">
+              <span class="legend-dot" :style="{ background: lv.color, boxShadow: `0 0 6px ${lv.color}` }"></span>
+              <span class="legend-name">{{ lv.name }}</span>
+              <div class="legend-track"><i :style="{ width: lv.pct + '%', background: lv.color }"></i></div>
+              <span class="legend-num">{{ lv.count }}</span>
+            </div>
+          </div>
+          <div class="grid-legend">
+            <span class="gl-title"><i class="fas fa-shield-alt"></i>网格预警</span>
+            <span class="gl-item"><i style="background:#0284c7"></i>平稳</span>
+            <span class="gl-item"><i style="background:#22c55e"></i>一般</span>
+            <span class="gl-item"><i style="background:#f59e0b"></i>重点</span>
+            <span class="gl-item"><i style="background:#ef4444"></i>紧急</span>
+          </div>
+          <p class="filter-hint" v-if="ringFilter">
+            <i class="fas fa-filter"></i> 已筛选「{{ levelRows.find(l => l.key === ringFilter)?.name }}」
+            <button @click="ringFilter = ''">清除</button>
+          </p>
+        </div>
+        <!-- 7 日趋势 -->
+        <div v-show="!layerPanel && leftTab === 'trend'" class="tab-pane">
+          <div class="pane-sub"><i class="fas fa-chart-line"></i> 近 7 日事件趋势</div>
+          <div id="chartTrend" class="chart-trend"></div>
+        </div>
+        <!-- 人口排名 -->
+        <div v-show="!layerPanel && leftTab === 'rank'" class="tab-pane">
+          <div class="pane-sub"><i class="fas fa-users"></i> 网格人口 TOP8</div>
+          <div id="chartRank" class="chart-rank"></div>
+          <p v-if="!hasPopulation" class="panel-empty">暂无人口数据</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============ 右侧实时事件时间轴面板（垂直时间线） ============ -->
+    <aside class="timeline-panel glass-panel" :class="{ open: rightOpen }">
+      <div class="panel-head-r">
+        <span class="panel-title"><i class="fas fa-bolt"></i>实时事件流</span>
+        <span class="panel-count">{{ filteredEvents.length }}/{{ events.length }}</span>
+      </div>
+      <div class="filter-chips">
+        <button v-for="c in urgencyChips" :key="c.key"
+                class="chip" :class="{ active: eventFilter === c.key }"
+                :style="eventFilter === c.key ? { borderColor: c.color, color: c.color, background: c.bg } : {}"
+                @click="eventFilter = c.key">
+          {{ c.label }}
+        </button>
+      </div>
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input v-model="eventSearch" placeholder="搜索事件标题..." />
+      </div>
+      <div class="timeline-list">
+        <div v-for="evt in filteredEvents" :key="evt.id" class="tl-item"
+             :class="{ active: selectedEvent?.id === evt.id }" @click="focusEvent(evt)">
+          <div class="tl-axis">
+            <span class="tl-dot" :style="{ background: urgencyColor(evt.urgencyLevel), boxShadow: `0 0 0 3px ${urgencyBg(evt.urgencyLevel)}` }"></span>
+            <span class="tl-line"></span>
+          </div>
+          <div class="tl-card" :style="{ borderLeftColor: urgencyColor(evt.urgencyLevel) }">
+            <div class="tl-top">
+              <span class="evt-tag" :style="{ background: urgencyBg(evt.urgencyLevel), color: urgencyColor(evt.urgencyLevel) }">
+                {{ urgencyText(evt.urgencyLevel) }}
+              </span>
+              <span class="tl-time"><i class="far fa-clock"></i>{{ formatTime(evt.createdAt).slice(11) }}</span>
+            </div>
+            <p class="event-title">{{ evt.title }}</p>
+            <p class="event-meta">
+              <i class="fas" :class="statusIcon(evt.currentStatus)"></i>
+              {{ statusLabel(evt.currentStatus) }}
+            </p>
+          </div>
+        </div>
+        <p v-if="!filteredEvents.length" class="panel-empty">无匹配事件</p>
+      </div>
+      <div class="tl-foot">
+        <button class="tl-fold" @click="rightOpen = !rightOpen">
+          <i :class="rightOpen ? 'fas fa-chevron-right' : 'fas fa-chevron-left'"></i>
+          <span v-if="rightOpen">收起面板</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ============ 底部 Dock（系统状态 + KPI + 滚动动态） ============ -->
+    <div class="dock-bar">
+      <div class="dock-left">
+        <span class="dk-status" :class="isLive ? 'live' : 'demo'">
+          <i class="fas fa-circle"></i>{{ isLive ? '实时' : '演示' }}
+        </span>
+        <span class="dk-sys"><i class="fas fa-broadcast-tower"></i>系统正常</span>
+        <span class="dk-sys"><i class="fas fa-server"></i>5 接口在线</span>
+        <span class="dk-sys urgent" v-if="(overview.eventRed || 0) > 0">
+          <i class="fas fa-fire"></i>紧急 {{ overview.eventRed }}
+        </span>
+        <div class="dock-spark">
+          <span class="ds-label">今日事件</span>
+          <b class="ds-num" :style="{ color: total > 10 ? '#ef4444' : '#0284c7' }">{{ total }}</b>
+          <div class="ds-chart" id="spark-bottom"></div>
+        </div>
+      </div>
+      <div class="dock-kpis">
+        <div class="dk-pill" v-for="k in kpiList" :key="k.key">
+          <i :class="k.icon" :style="{ color: k.color }"></i>
+          <b>{{ k.value }}<em v-if="k.unit">{{ k.unit }}</em></b>
+          <span>{{ k.label }}</span>
+        </div>
+      </div>
+      <div class="dock-ticker">
+        <span class="ticker-label"><i class="fas fa-bullhorn"></i>动态</span>
+        <div class="ticker-view">
+          <div class="ticker-run">
+            <span v-for="e in events" :key="'a' + e.id" class="ticker-item">
+              <i class="fas fa-circle" :style="{ color: urgencyColor(e.urgencyLevel) }"></i>{{ e.title }}
+            </span>
+            <span v-for="e in events" :key="'b' + e.id" class="ticker-item">
+              <i class="fas fa-circle" :style="{ color: urgencyColor(e.urgencyLevel) }"></i>{{ e.title }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 地图控制按钮组（右下角，避开 Dock） ============ -->
+    <div class="map-controls">
+      <button class="mc-btn" @click="mapZoom(1)" title="放大"><i class="fas fa-plus"></i></button>
+      <button class="mc-btn" @click="mapZoom(-1)" title="缩小"><i class="fas fa-minus"></i></button>
+      <button class="mc-btn" :class="{ active: is3D }" @click="toggleView3D" :title="is3D ? '切换 2D' : '切换 3D'"><i class="fas fa-cube"></i></button>
+      <button class="mc-btn" @click="mapReset" title="重置视角"><i class="fas fa-compass"></i></button>
+      <button class="mc-btn" @click="flyRandom" title="巡检"><i class="fas fa-route"></i></button>
+    </div>
+
+    <!-- ============ 网格详情 HUD 弹窗（地图中央） ============
+         glass-panel 自身开关由 selectedGrid 控制(v-if),display 时按下面规则定位:
+           · 实时事件流展开  → right: 366px (16 距右 + 330 宽 + 20 间距)
+           · 实时事件流收起  → right:  80px (16 距右 +  44 宽 + 20 间距,与 tl-fold 保持 20px)
+    -->
+    <transition name="hud">
+      <div v-if="selectedGrid" class="grid-hud glass-panel"
+           :class="{ 'is-open': rightOpen, 'is-folded': !rightOpen }">
+        <button class="hud-close" @click="selectedGrid = null"><i class="fas fa-times"></i></button>
+        <div class="hud-head">
+          <div class="hud-urgency" v-if="gridUrgencyOf(selectedGrid)" :style="{ background: urgencyColor(gridUrgencyOf(selectedGrid)) }"></div>
+          <h3>{{ selectedGrid.gridName }}</h3>
+          <span class="hud-level">{{
+            selectedGrid.gridLevel === 2 ? '二级 · 大网格' :
+            selectedGrid.gridLevel === 3 ? '三级 · 小网格' : '一级 · 社区'
+          }}</span>
+        </div>
+        <div class="hud-grid">
+          <div class="hud-cell" v-if="gridUrgencyOf(selectedGrid)">
+            <i class="fas fa-exclamation-triangle" :style="{ color: urgencyColor(gridUrgencyOf(selectedGrid)) }"></i>
+            <span>预警级别</span>
+            <b :style="{ color: urgencyColor(gridUrgencyOf(selectedGrid)) }">{{ urgencyText(gridUrgencyOf(selectedGrid)) }}</b>
+          </div>
+          <div class="hud-cell">
+            <i class="fas fa-user-shield"></i><span>负责人</span><b>{{ selectedGrid.managerName || '-' }}</b>
+          </div>
+          <div class="hud-cell">
+            <i class="fas fa-expand-arrows-alt"></i><span>面积</span><b>{{ selectedGrid.area || '-' }} km²</b>
+          </div>
+          <div class="hud-cell" v-if="selectedGrid.populationCount">
+            <i class="fas fa-users"></i><span>人口</span><b>{{ selectedGrid.populationCount }} 人</b>
+          </div>
+          <div class="hud-cell">
+            <i class="fas fa-circle" :style="{ color: selectedGrid.status === 'ACTIVE' ? '#16a34a' : '#dc2626', fontSize: '8px' }"></i>
+            <span>状态</span><b>{{ selectedGrid.status === 'ACTIVE' ? '启用中' : '已停用' }}</b>
+          </div>
+          <div class="hud-cell" v-if="selectedGrid.children?.length">
+            <i class="fas fa-sitemap"></i><span>子网格</span><b>{{ selectedGrid.children.length }} 个</b>
+          </div>
+        </div>
+        <div class="hud-events" v-if="gridEvents(selectedGrid).length">
+          <div class="he-title"><i class="fas fa-bolt"></i> 网格内事件 ({{ gridEvents(selectedGrid).length }})</div>
+          <div class="he-item" v-for="e in gridEvents(selectedGrid)" :key="e.id" @click="focusEvent(e)">
+            <span class="he-tag" :style="{ background: urgencyColor(e.urgencyLevel) }"></span>
+            <span class="he-text">{{ e.title }}</span>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- ============ 事件详情气泡（右下角） ============ -->
+    <transition name="pop">
+      <div v-if="selectedEvent" class="event-pop glass-panel">
+        <button class="pop-close" @click="selectedEvent = null"><i class="fas fa-times"></i></button>
+        <div class="pop-top">
+          <span class="evt-tag" :style="{ background: urgencyBg(selectedEvent.urgencyLevel), color: urgencyColor(selectedEvent.urgencyLevel) }">
+            {{ urgencyText(selectedEvent.urgencyLevel) }}
+          </span>
+          <span class="pop-status">{{ statusLabel(selectedEvent.currentStatus) }}</span>
+        </div>
+        <p class="pop-title">{{ selectedEvent.title }}</p>
+        <div class="pop-meta">
+          <span v-if="selectedEvent.address"><i class="fas fa-map-marker-alt"></i> {{ selectedEvent.address }}</span>
+          <span v-if="selectedEvent.createdAt"><i class="fas fa-clock"></i> {{ formatTime(selectedEvent.createdAt) }}</span>
+        </div>
+        <p v-if="selectedEvent.description" class="pop-desc">{{ selectedEvent.description }}</p>
+        <button class="pop-btn" @click="goEventDetail(selectedEvent)">
+          查看详情 <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+    </transition>
+
+    <!-- 悬停提示 -->
+    <div v-if="hoverInfo.visible" class="hover-tip" :style="{ left: hoverInfo.x + 'px', top: hoverInfo.y + 'px' }">
+      {{ hoverInfo.name }}
+    </div>
+
+    <!-- 错误提示 -->
     <div v-if="loadError" class="dash-error">
       <i class="fas fa-exclamation-circle"></i>
       <span>数据加载异常：{{ loadError }}</span>
     </div>
-
-    <!-- 顶部悬浮栏：标题 + KPI + 全屏按钮 -->
-    <div class="dash-top">
-      <div class="dash-title-box">
-        <h2><i class="fas fa-satellite-dish"></i> 全域态势看板</h2>
-        <p>一屏观全域 · 以图管格 · 以格管人<span class="dash-time">{{ currentTime }}</span></p>
-      </div>
-      <div class="dash-kpis">
-        <div class="kpi">
-          <p class="kpi-num">{{ communityArea }}<span class="kpi-unit">km²</span></p>
-          <p class="kpi-name"><i class="fas fa-map"></i> 社区面积</p>
-        </div>
-        <div class="kpi">
-          <p class="kpi-num">{{ overview.largeGridCount || 6 }}</p>
-          <p class="kpi-name"><i class="fas fa-layer-group"></i> 大网格</p>
-        </div>
-        <div class="kpi">
-          <p class="kpi-num">{{ overview.smallGridCount || 12 }}</p>
-          <p class="kpi-name"><i class="fas fa-th"></i> 小网格</p>
-        </div>
-        <div class="kpi">
-          <p class="kpi-num">{{ overview.eventTotal || 0 }}</p>
-          <p class="kpi-name"><i class="fas fa-exclamation-triangle"></i> 事件总数</p>
-        </div>
-        <div class="kpi kpi-danger">
-          <p class="kpi-num">{{ overview.eventRed || 0 }}</p>
-          <p class="kpi-name"><i class="fas fa-fire"></i> 紧急事件</p>
-        </div>
-      </div>
-      <button class="dash-fullscreen-btn" @click="toggleFullscreen" :title="isFullscreen ? '退出全屏' : '全屏看地图'">
-        <i :class="isFullscreen ? 'fas fa-compress' : 'fas fa-expand'"></i>
-        {{ isFullscreen ? '退出全屏' : '全屏' }}
-      </button>
-    </div>
-
-    <!-- 左侧悬浮面板：三色分级 + 网格人口排名 -->
-    <div class="dash-left">
-      <div class="glass-panel">
-        <h3><i class="fas fa-chart-pie"></i> 三色分级</h3>
-        <div class="level-row" v-for="lv in levelRows" :key="lv.key">
-          <span class="level-dot" :style="{ background: lv.color }"></span>
-          <span class="level-name">{{ lv.name }}</span>
-          <div class="level-track"><div class="level-fill" :style="{ width: lv.pct + '%', background: lv.color }"></div></div>
-          <span class="level-count">{{ lv.count }}</span>
-        </div>
-      </div>
-      <div class="glass-panel">
-        <h3><i class="fas fa-users"></i> 网格人口排名</h3>
-        <div id="chartPopulation" style="height:190px;"></div>
-        <p v-if="!hasPopulation" class="panel-empty">暂无人口数据</p>
-      </div>
-    </div>
-
-    <!-- 右侧悬浮面板：最新事件（点击可在地图上定位并查看详情） -->
-    <div class="dash-right">
-      <div class="glass-panel events-panel">
-        <h3><i class="fas fa-bolt"></i> 最新事件 <span class="events-count">{{ events.length }}</span></h3>
-        <div class="events-list">
-          <div v-for="evt in events" :key="evt.id" class="event-item"
-               :class="{ active: selectedEvent?.id === evt.id }" @click="focusEvent(evt)">
-            <span class="tag" :class="evt.urgencyLevel === 'RED' ? 'tag-red' : evt.urgencyLevel === 'YELLOW' ? 'tag-orange' : 'tag-green'">
-              {{ evt.urgencyLevel === 'RED' ? '紧急' : evt.urgencyLevel === 'YELLOW' ? '重点' : '一般' }}
-            </span>
-            <div class="event-text">
-              <p class="event-title">{{ evt.title }}</p>
-              <p class="event-meta">{{ statusLabel(evt.currentStatus) }} · {{ formatTime(evt.createdAt) }}</p>
-            </div>
-            <i v-if="evt.longitude && evt.latitude" class="fas fa-crosshairs event-locate"></i>
-          </div>
-          <p v-if="!events.length" class="panel-empty">暂无事件</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- 事件详情悬浮卡片（点击地图事件点 / 列表项后弹出） -->
-    <div v-if="selectedEvent" class="event-popup glass-panel">
-      <div class="popup-head">
-        <span class="tag" :class="selectedEvent.urgencyLevel === 'RED' ? 'tag-red' : selectedEvent.urgencyLevel === 'YELLOW' ? 'tag-orange' : 'tag-green'">
-          {{ selectedEvent.urgencyLevel === 'RED' ? '紧急' : selectedEvent.urgencyLevel === 'YELLOW' ? '重点' : '一般' }}
-        </span>
-        <span class="popup-status">{{ statusLabel(selectedEvent.currentStatus) }}</span>
-        <button class="popup-close" @click="selectedEvent = null">&times;</button>
-      </div>
-      <p class="popup-title">{{ selectedEvent.title }}</p>
-      <div class="popup-meta">
-        <div v-if="selectedEvent.address"><i class="fas fa-map-marker-alt"></i> {{ selectedEvent.address }}</div>
-        <div v-if="selectedEvent.createdAt"><i class="fas fa-clock"></i> {{ formatTime(selectedEvent.createdAt) }}</div>
-      </div>
-      <p v-if="selectedEvent.description" class="popup-desc">{{ selectedEvent.description }}</p>
-      <button class="popup-detail-btn" @click="goEventDetail(selectedEvent)">
-        <i class="fas fa-arrow-right"></i> 查看详情
-      </button>
-    </div>
-
-    <!-- 网格选中信息面板（点击网格弹出） -->
-    <div v-if="selectedGrid" class="grid-popup glass-panel">
-      <div class="popup-head">
-        <span class="popup-grid-name">{{ selectedGrid.gridName }}</span>
-        <button class="popup-close" @click="selectedGrid = null">&times;</button>
-      </div>
-      <div class="popup-meta">
-        <div><i class="fas fa-sitemap"></i> {{ selectedGrid.gridLevel === 2 ? '二级网格（大网格）' : '三级网格（小网格）' }}</div>
-        <div><i class="fas fa-user"></i> 负责人：{{ selectedGrid.managerName || '-' }}</div>
-        <div>
-          <i class="fas fa-circle" :style="{ color: selectedGrid.status === 'ACTIVE' ? '#52c41a' : '#f5222d', fontSize: '8px' }"></i>
-          {{ selectedGrid.status === 'ACTIVE' ? '启用中' : '已停用' }}
-          <template v-if="selectedGrid.area"> · {{ selectedGrid.area }} km²</template>
-        </div>
-      </div>
-    </div>
-
-    <!-- 悬停提示框 -->
-    <div v-if="hoverInfo.visible" class="hover-tip" :style="{ left: hoverInfo.x + 'px', top: hoverInfo.y + 'px' }">
-      {{ hoverInfo.name }}
-    </div>
   </div>
 </template>
-
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, computed, reactive, watchEffect, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { getDashboardOverview, getGridStats, getGridTree, getEvents } from '../api'
+import { getDashboardOverview, getGridStats, getGridTree, getEvents, getBigScreenData } from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import * as echarts from 'echarts'
 
 const router = useRouter()
 
+/* ================================================================
+ * 数据说明（预留接口）：
+ *  - 概览 KPI：GET /community/dashboard/overview
+ *  - 大屏聚合数据（可选）：GET /community/dashboard/big-screen
+ *  - 网格统计（人口排名）：GET /community/dashboard/grid-stats
+ *  - 网格树（地图多边形）：GET /community/grids/tree
+ *  - 事件列表：GET /events?page=1&size=20
+ *  - 近 7 日趋势：可用 GET /events/statistics 或 big-screen 提供
+ *  所有接口失败或为空时自动回退到内置演示数据，保证大屏始终完整可用。
+ * ================================================================ */
+
+// ==================== 网格预警色（大网格只描边/淡填充，小网格实填充） ====================
+// 大网格：仅作为背景参考层，几乎透明，避免染透小网格
+const GRID_STYLE: Record<string, { fill: string; fillOpacity: number; hoverOpacity: number; stroke: string }> = {
+  RED:    { fill: '#ef4444', fillOpacity: 0.03, hoverOpacity: 0.08, stroke: '#ef4444' },
+  YELLOW: { fill: '#f59e0b', fillOpacity: 0.03, hoverOpacity: 0.08, stroke: '#f59e0b' },
+  GREEN:  { fill: '#22c55e', fillOpacity: 0.02, hoverOpacity: 0.06, stroke: '#22c55e' },
+  NONE:   { fill: '#0284c7', fillOpacity: 0.02, hoverOpacity: 0.06, stroke: '#0284c7' }
+}
+// 小网格：前景层，颜色实，确保盖住大网格底色且自身颜色一致
+const GRID_STYLE_SMALL: Record<string, { fill: string; fillOpacity: number; hoverOpacity: number; stroke: string }> = {
+  RED:    { fill: '#ef4444', fillOpacity: 0.20, hoverOpacity: 0.32, stroke: '#ef4444' },
+  YELLOW: { fill: '#f59e0b', fillOpacity: 0.20, hoverOpacity: 0.32, stroke: '#f59e0b' },
+  GREEN:  { fill: '#22c55e', fillOpacity: 0.16, hoverOpacity: 0.26, stroke: '#22c55e' },
+  NONE:   { fill: '#0284c7', fillOpacity: 0.22, hoverOpacity: 0.32, stroke: '#0284c7' }
+}
+
+/** 射线法判断点是否在多边形内 */
+function pointInPolygon(pt: [number, number], poly: number[][]): boolean {
+  let inside = false
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i]
+    const [xj, yj] = poly[j]
+    const hit = (yi > pt[1]) !== (yj > pt[1]) &&
+      pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi) + xi
+    if (hit) inside = !inside
+  }
+  return inside
+}
+
+/** 依据网格内事件计算紧急度 */
+function computeGridUrgency(coords: number[][], evts: any[]): string {
+  let lv = ''
+  for (const e of evts) {
+    if (e.longitude == null || e.latitude == null) continue
+    if (!pointInPolygon([e.longitude, e.latitude], coords)) continue
+    if (e.urgencyLevel === 'RED') return 'RED'
+    if (e.urgencyLevel === 'YELLOW') lv = 'YELLOW'
+    else if (!lv) lv = 'GREEN'
+  }
+  return lv
+}
+
+/** 网格预警级别 */
+function gridUrgencyOf(grid: any): string {
+  if (!grid) return ''
+  if (grid.urgencyLevel) return grid.urgencyLevel
+  try {
+    const coords = JSON.parse(grid.roiJson)
+    if (Array.isArray(coords) && coords.length >= 3) return computeGridUrgency(coords, events.value)
+  } catch (e) {}
+  return ''
+}
+
+/** 网格内的事件列表 */
+function gridEvents(grid: any): any[] {
+  if (!grid?.roiJson) return []
+  try {
+    const coords = JSON.parse(grid.roiJson)
+    if (!Array.isArray(coords) || coords.length < 3) return []
+    return events.value.filter((e: any) =>
+      e.longitude != null && e.latitude != null && pointInPolygon([e.longitude, e.latitude], coords))
+  } catch (e) { return [] }
+}
+
+// ==================== 演示数据兜底 ====================
+const MOCK_CENTER: [number, number] = [113.9395, 22.9712]
+
+function rectRoi(cx: number, cy: number, w: number, h: number): number[][] {
+  return [[cx - w, cy - h], [cx + w, cy - h], [cx + w, cy + h], [cx - w, cy + h], [cx - w, cy - h]]
+}
+
+function buildMockTree(): any[] {
+  const [cx, cy] = MOCK_CENTER
+  const cw = 0.014, ch = 0.02
+  const gw = (2 * cw) / 3, gh = (2 * ch) / 3
+  const cos = Math.cos(22.97 * Math.PI / 180)
+  const area = (w: number, h: number) => +(w * h * 111 * 111 * cos).toFixed(2)
+  const bigs: any[] = []
+  const pops = [3260, 2840, 2980, 2510, 3420, 2190, 1870, 2630, 1740]
+  const demoLv = ['RED', 'GREEN', 'YELLOW', 'YELLOW', 'RED', 'GREEN', 'GREEN', 'YELLOW', 'RED']
+  let idx = 1
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      const bx = cx - cw + gw / 2 + c * gw
+      const by = cy - ch + gh / 2 + r * gh
+      const sw = gw / 2
+      const kids: any[] = []
+      for (let k = 0; k < 2; k++) {
+        const sx = bx - gw / 2 + sw / 2 + k * sw
+        kids.push({
+          id: 1000 + idx * 2 + k, gridLevel: 3,
+          gridName: `第 ${idx} 网格-${k + 1} 区`,
+          area: area(sw, gh),
+          roiJson: JSON.stringify(rectRoi(sx, by, sw / 2, gh / 2)),
+          managerName: `网格员-${idx}${k + 1}`, status: 'ACTIVE'
+        })
+      }
+      bigs.push({
+        id: 900 + idx, gridLevel: 2,
+        gridName: `第 ${idx} 网格`, area: area(gw, gh),
+        roiJson: JSON.stringify(rectRoi(bx, by, gw / 2, gh / 2)),
+        managerName: `网格长-${idx}`, status: 'ACTIVE', populationCount: pops[idx - 1],
+        urgencyLevel: demoLv[idx - 1],
+        children: kids
+      })
+      idx++
+    }
+  }
+  return [{
+    id: 1, gridLevel: 1, gridName: '示范社区', area: area(2 * cw, 2 * ch),
+    roiJson: JSON.stringify(rectRoi(cx, cy, cw, ch)),
+    managerName: '社区书记', status: 'ACTIVE', children: bigs
+  }]
+}
+
+const MOCK_OVERVIEW = { largeGridCount: 9, smallGridCount: 18, eventTotal: 36, eventRed: 3, eventYellow: 9, eventGreen: 24, communityArea: 3.4 }
+
+function buildMockEvents(): any[] {
+  const at = (h: number) => new Date(Date.now() - h * 3600e3).toISOString()
+  return [
+    { id: 1001, title: '东城路 23 号占道经营影响通行', urgencyLevel: 'YELLOW', currentStatus: 'WAITING_DISPATCH', longitude: 113.9428, latitude: 22.9748, address: '东城路 23 号门口', createdAt: at(0.6), description: '商贩占用机动车道摆摊，造成早高峰拥堵，已现场劝离一次，需网格员跟进复查。' },
+    { id: 1002, title: '幸福里小区 3 栋飞线充电', urgencyLevel: 'RED', currentStatus: 'AUDIT_APPROVED', longitude: 113.9352, latitude: 22.9731, address: '幸福里小区 3 栋', createdAt: at(2.1), description: '业主从 6 楼私拉电线为电动车充电，存在火灾隐患，已通知物业并上报。' },
+    { id: 1003, title: '中心公园休闲椅损坏', urgencyLevel: 'GREEN', currentStatus: 'CLOSED', longitude: 113.9401, latitude: 22.9679, address: '中心公园东门', createdAt: at(5.5), description: '公园东门两处休闲椅木板断裂，已安排维修更换。' },
+    { id: 1004, title: '文明路井盖缺失', urgencyLevel: 'RED', currentStatus: 'PENDING_AUDIT', longitude: 113.9456, latitude: 22.9696, address: '文明路与新风路交叉口', createdAt: at(8.0), description: '雨水井盖破损缺失，夜间通行存在安全隐患，需立即围蔽处理。' },
+    { id: 1005, title: '阳光花园垃圾分类点满溢', urgencyLevel: 'YELLOW', currentStatus: 'DISPATCHED_TO_WORK_ORDER', longitude: 113.9378, latitude: 22.9688, address: '阳光花园北门', createdAt: at(12.0), description: '垃圾未及时清运，气味影响周边居民，已派单环卫。' },
+    { id: 1006, title: '夜市摊贩噪音扰民投诉', urgencyLevel: 'YELLOW', currentStatus: 'IN_AUDIT', longitude: 113.9431, latitude: 22.9719, address: '滨河夜市', createdAt: at(16.0), description: '夜间摊贩高音喇叭扰民，多名居民通过 12345 反映。' },
+    { id: 1007, title: '老旧小区楼道杂物堆积', urgencyLevel: 'GREEN', currentStatus: 'CLOSED', longitude: 113.9382, latitude: 22.9756, address: '新安里小区 2 栋', createdAt: at(22.0), description: '楼道堆放纸箱杂物，已联合物业清理完毕。' },
+    { id: 1008, title: '施工工地扬尘污染', urgencyLevel: 'GREEN', currentStatus: 'IGNORED', longitude: 113.9447, latitude: 22.9762, address: '东城路与文明路工地', createdAt: at(30.0), description: '工地未按规定洒水降尘，经核实已安装喷淋设备。' }
+  ]
+}
+
+function mockTrend() {
+  const days: string[] = []
+  const base = [4, 6, 5, 8, 7, 9, 6]
+  for (let i = 0; i < 7; i++) {
+    const d = new Date()
+    d.setDate(d.getDate() - (6 - i))
+    days.push(`${d.getMonth() + 1}/${d.getDate()}`)
+  }
+  return { days, values: base }
+}
+
+// ==================== 状态 ====================
 const overview = ref<any>({})
 const events = ref<any[]>([])
 const loadError = ref('')
-const communityArea = ref('2.50')
+const areaRaw = ref(MOCK_OVERVIEW.communityArea)
 const allGrids = ref<any[]>([])
 const hasPopulation = ref(false)
+const isLive = ref(false)
 
-// 保存实例引用以便销毁
 let mapInstance: any = null
-let chartInstance: any = null
+let chartRing: any = null
+let chartTrend: any = null
+let chartRank: any = null
+let chartSparkBottom: any = null
+let heatLayer: any = null
 let hoverId = 0
 let clockTimer: number | undefined
+let resizeHandler: (() => void) | null = null
+let gridPolygonList: any[] = []
+let eventMarkerList: any[] = []
+let labelMarkerList: any[] = []
 
 const screenRef = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
-const currentTime = ref('')
+const clock = reactive({ time: '--:--:--', date: '---- -- --' })
+const week = ref('')
 
 const hoverInfo = reactive({ visible: false, x: 0, y: 0, name: '', id: 0 })
 const selectedGrid = ref<any>(null)
 const selectedEvent = ref<any>(null)
 
-const total = computed(() => (overview.value.eventGreen || 0) + (overview.value.eventYellow || 0) + (overview.value.eventRed || 0))
-const pctOf = (n: number) => total.value ? (n / total.value * 100) : 0
-const levelRows = computed(() => [
-  { key: 'green', name: '一般', color: '#52C41A', count: overview.value.eventGreen || 0, pct: pctOf(overview.value.eventGreen || 0) },
-  { key: 'yellow', name: '重点', color: '#FAAD14', count: overview.value.eventYellow || 0, pct: pctOf(overview.value.eventYellow || 0) },
-  { key: 'red', name: '紧急', color: '#FF4D4F', count: overview.value.eventRed || 0, pct: pctOf(overview.value.eventRed || 0) }
+// ==================== 差异化交互状态 ====================
+const leftOpen = ref(true)
+const rightOpen = ref(true)
+const leftTab = ref<'ring' | 'trend' | 'rank'>('ring')
+const leftTabs = [
+  { key: 'ring', label: '分级', icon: 'fas fa-chart-pie' },
+  { key: 'trend', label: '趋势', icon: 'fas fa-chart-line' },
+  { key: 'rank', label: '人口', icon: 'fas fa-users' }
+] as const
+
+const eventFilter = ref<'ALL' | 'RED' | 'YELLOW' | 'GREEN'>('ALL')
+const eventSearch = ref('')
+const urgencyChips = [
+  { key: 'ALL', label: '全部', color: '#0284c7', bg: 'rgba(2,132,199,0.08)' },
+  { key: 'RED', label: '紧急', color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
+  { key: 'YELLOW', label: '重点', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
+  { key: 'GREEN', label: '一般', color: '#22c55e', bg: 'rgba(34,197,94,0.08)' }
+] as const
+
+const ringFilter = ref('')
+const layerState = reactive({ grids: true, events: true, heatmap: false, labels: false })
+const crosshair = reactive({ visible: false, x: 0, y: 0 })
+const is3D = ref(true) // 3D 视角开关
+
+// ==================== KPI 数字滚动 ====================
+function useCount(target: () => number, duration = 1000) {
+  const display = ref(0)
+  let raf = 0
+  watchEffect(() => {
+    const end = Number(target()) || 0
+    cancelAnimationFrame(raf)
+    const from = display.value
+    const t0 = performance.now()
+    const step = (t: number) => {
+      const p = Math.min((t - t0) / duration, 1)
+      const e = 1 - Math.pow(1 - p, 3)
+      display.value = Math.round(from + (end - from) * e)
+      if (p < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+  })
+  return display
+}
+
+const largeGridNum = useCount(() => overview.value.largeGridCount || MOCK_OVERVIEW.largeGridCount)
+const smallGridNum = useCount(() => overview.value.smallGridCount || MOCK_OVERVIEW.smallGridCount)
+const eventTotalNum = useCount(() => overview.value.eventTotal || MOCK_OVERVIEW.eventTotal)
+const redEventNum = useCount(() => overview.value.eventRed || MOCK_OVERVIEW.eventRed)
+const fmtArea = computed(() => (Number(areaRaw.value) || 0).toFixed(2))
+
+const kpiList = computed(() => [
+  { key: 'area', icon: 'fas fa-map', color: '#0284c7', label: '社区面积', value: fmtArea.value, unit: 'km²', spark: false },
+  { key: 'large', icon: 'fas fa-layer-group', color: '#0284c7', label: '大网格', value: largeGridNum.value, unit: '', spark: false },
+  { key: 'small', icon: 'fas fa-th', color: '#0284c7', label: '小网格', value: smallGridNum.value, unit: '', spark: false },
+  { key: 'total', icon: 'fas fa-exclamation-triangle', color: '#0284c7', label: '事件总数', value: eventTotalNum.value, unit: '', spark: true },
+  { key: 'red', icon: 'fas fa-fire', color: '#ef4444', label: '紧急事件', value: redEventNum.value, unit: '', spark: false }
 ])
 
+// ==================== 三色分级 ====================
+const total = computed(() =>
+  (overview.value.eventGreen || 0) + (overview.value.eventYellow || 0) + (overview.value.eventRed || 0))
+const pctOf = (n: number) => total.value ? (n / total.value * 100) : 0
+const levelRows = computed(() => [
+  { key: 'green', name: '一般', color: '#22c55e', count: overview.value.eventGreen || 0, pct: pctOf(overview.value.eventGreen || 0) },
+  { key: 'yellow', name: '重点', color: '#f59e0b', count: overview.value.eventYellow || 0, pct: pctOf(overview.value.eventYellow || 0) },
+  { key: 'red', name: '紧急', color: '#ef4444', count: overview.value.eventRed || 0, pct: pctOf(overview.value.eventRed || 0) }
+])
+
+// ==================== 事件筛选 ====================
+const filteredEvents = computed(() => {
+  let list = events.value
+  if (eventFilter.value !== 'ALL') {
+    list = list.filter((e: any) => e.urgencyLevel === eventFilter.value)
+  }
+  if (eventSearch.value.trim()) {
+    const kw = eventSearch.value.trim().toLowerCase()
+    list = list.filter((e: any) => (e.title || '').toLowerCase().includes(kw))
+  }
+  return list
+})
+
+// ==================== 工具函数 ====================
+function urgencyText(lv: string) {
+  return lv === 'RED' ? '紧急' : lv === 'YELLOW' ? '重点' : '一般'
+}
+function urgencyColor(lv: string) {
+  return lv === 'RED' ? '#ef4444' : lv === 'YELLOW' ? '#f59e0b' : '#22c55e'
+}
+function urgencyBg(lv: string) {
+  return lv === 'RED' ? 'rgba(239,68,68,0.12)' : lv === 'YELLOW' ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)'
+}
 function statusLabel(status: string) {
   const map: Record<string, string> = {
     PENDING_AUDIT: '待审核', IN_AUDIT: '审核中', AUDIT_APPROVED: '已通过', AUDIT_REJECTED: '已驳回',
@@ -172,456 +605,978 @@ function statusLabel(status: string) {
   }
   return map[status] || status || '未知'
 }
-
+function statusIcon(status: string) {
+  const map: Record<string, string> = {
+    PENDING_AUDIT: 'fa-hourglass-half', IN_AUDIT: 'fa-spinner', AUDIT_APPROVED: 'fa-check-circle',
+    AUDIT_REJECTED: 'fa-times-circle', WAITING_DISPATCH: 'fa-paper-plane',
+    DISPATCHED_TO_WORK_ORDER: 'fa-tools', CLOSED: 'fa-check-double', IGNORED: 'fa-eye-slash'
+  }
+  return map[status] || 'fa-info-circle'
+}
 function formatTime(t: string) {
   if (!t) return ''
   return t.replace('T', ' ').slice(0, 16)
 }
-
 function goEventDetail(evt: any) {
   router.push('/events/' + (evt.id || evt.externalEventId))
 }
-
-// 点击事件（列表或地图标记）：弹出详情卡片并把地图视野移到事件点
 function focusEvent(evt: any) {
   selectedEvent.value = evt
   if (mapInstance && evt.longitude && evt.latitude) {
-    mapInstance.setCenter([evt.longitude, evt.latitude])
+    mapInstance.setZoomAndCenter(15, [evt.longitude, evt.latitude])
   }
 }
 
-// 全屏切换：对整个大屏容器启用浏览器全屏，切换后地图重新计算尺寸
+// ==================== 环形筛选 ====================
+function toggleRingFilter(key: string) {
+  ringFilter.value = ringFilter.value === key ? '' : key
+  renderRing()
+}
+
+// ==================== 全屏 ====================
 async function toggleFullscreen() {
   try {
-    if (!document.fullscreenElement) {
-      await screenRef.value?.requestFullscreen()
-    } else {
-      await document.exitFullscreen()
-    }
-  } catch (e) {
-    // 部分浏览器/iframe 环境不支持全屏 API，静默降级
-  }
+    if (!document.fullscreenElement) await screenRef.value?.requestFullscreen()
+    else await document.exitFullscreen()
+  } catch (e) {}
 }
-
 function onFullscreenChange() {
   isFullscreen.value = !!document.fullscreenElement
-  // 容器尺寸变化后让地图重新铺满
-  setTimeout(() => mapInstance?.resize?.(), 100)
+  setTimeout(() => {
+    mapInstance?.resize?.()
+    chartRing?.resize?.(); chartTrend?.resize?.(); chartRank?.resize?.(); chartSparkBottom?.resize?.()
+  }, 120)
 }
 
+// ==================== 时钟 ====================
 function tickClock() {
   const d = new Date()
   const p = (n: number) => String(n).padStart(2, '0')
-  currentTime.value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+  clock.time = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+  clock.date = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+  week.value = '周' + '日一二三四五六'[d.getDay()]
 }
 
+// ==================== 地图控制 ====================
+function mapZoom(delta: number) {
+  if (!mapInstance) return
+  mapInstance.setZoom(mapInstance.getZoom() + delta)
+}
+function mapReset() {
+  if (!mapInstance) return
+  mapInstance.setZoomAndCenter(14, MOCK_CENTER)
+  mapInstance.setPitch(45)
+  mapInstance.setRotation(-20)
+}
+function toggleView3D() {
+  if (!mapInstance) return
+  is3D.value = !is3D.value
+  mapInstance.setPitch(is3D.value ? 45 : 0)
+  if (is3D.value) mapInstance.setRotation(-20)
+}
+function flyRandom() {
+  if (!mapInstance || !events.value.length) return
+  const evt = events.value[Math.floor(Math.random() * events.value.length)]
+  if (evt.longitude && evt.latitude) {
+    mapInstance.setZoomAndCenter(16, [evt.longitude, evt.latitude])
+    selectedEvent.value = evt
+  }
+}
+
+// ==================== 十字准星 ====================
+function onMapMouseMove(e: MouseEvent) {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  crosshair.x = e.clientX - rect.left
+  crosshair.y = e.clientY - rect.top
+}
+
+// ==================== 图层切换 ====================
+function toggleLayers() {
+  if (!mapInstance) return
+  for (const p of gridPolygonList) {
+    if (layerState.grids) p.show()
+    else p.hide()
+  }
+  for (const m of eventMarkerList) {
+    if (layerState.events) m.show()
+    else m.hide()
+  }
+  // 热力图
+  if (layerState.heatmap) {
+    const AMap = (window as any).AMap
+    const HeatMapCls = AMap?.HeatMap || AMap?.Heatmap
+    if (!HeatMapCls) {
+      console.warn('[热力图] AMap.HeatMap 插件未加载')
+      layerState.heatmap = false
+      return
+    }
+    if (!heatLayer) {
+      heatLayer = new HeatMapCls(mapInstance, {
+        radius: 38,
+        opacity: [0.2, 0.75],
+        gradient: { 0.15: '#0284c7', 0.45: '#facc15', 0.7: '#f97316', 1: '#dc2626' }
+      })
+    }
+    const data = events.value
+      .filter((e: any) => e.longitude != null && e.latitude != null)
+      .map((e: any) => ({
+        lng: +e.longitude,
+        lat: +e.latitude,
+        count: e.urgencyLevel === 'RED' ? 25 : e.urgencyLevel === 'YELLOW' ? 18 : 10
+      }))
+    if (data.length) {
+      heatLayer.setDataSet({ data, max: 80 })
+      heatLayer.show()
+    } else {
+      heatLayer.hide()
+    }
+  } else if (heatLayer) {
+    heatLayer.hide()
+  }
+}
+function toggleLabels() {
+  if (!mapInstance) return
+  for (const m of labelMarkerList) {
+    if (layerState.labels) m.show()
+    else m.hide()
+  }
+}
+
+// ==================== 地图初始化 ====================
+async function initMap(tree: any[]) {
+  try {
+    ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
+    const AMap = await AMapLoader.load({ key: '5e00e01d2d2b6ca9e1eed533a15572e4', version: '2.0', plugins: ['AMap.Polygon', 'AMap.Marker', 'AMap.Text', 'AMap.HeatMap'] })
+    mapInstance = new AMap.Map('gisMap', {
+      zoom: 14, center: MOCK_CENTER,
+      viewMode: '3D',           // 3D 视图模式
+      pitch: 45,                // 俯仰角 45°
+      rotation: -20,            // 旋转 -20°
+      mapStyle: 'amap://styles/normal',
+      features: ['bg', 'road', 'building', 'building3D'],
+      expandZoomRange: true,
+      zooms: [3, 20]
+    })
+    const map = mapInstance
+
+    // 社区轮廓（level 1）：虚线描边，不填充（差异化：虚线 vs 当前实线）
+    const drawCommunity = (nodes: any[]) => {
+      for (const node of nodes) {
+        if (node.gridLevel === 1 && node.roiJson) {
+          try {
+            const coords = JSON.parse(node.roiJson)
+            if (Array.isArray(coords) && coords.length >= 3) {
+              const p = new AMap.Polygon({
+                path: coords, fillColor: '#0284c7', fillOpacity: 0,
+                strokeColor: '#0284c7', strokeWeight: 1.5, strokeStyle: 'dashed',
+                strokeDasharray: [8, 6], strokeOpacity: 0.7, zIndex: 1, bubble: true, map
+              })
+              gridPolygonList.push(p)
+            }
+          } catch (e) {}
+        }
+        if (node.children) drawCommunity(node.children)
+      }
+    }
+
+    // 大网格（level 2）：渐变透色填充 + 实色描边（差异化：实色边 vs 白边）
+    const drawLarge = (nodes: any[]) => {
+      for (const grid of nodes) {
+        if (grid.gridLevel === 2 && grid.roiJson) {
+          try {
+            const coords = JSON.parse(grid.roiJson)
+            if (Array.isArray(coords) && coords.length >= 3) {
+              const lv = grid.urgencyLevel || computeGridUrgency(coords, events.value)
+              const st = GRID_STYLE[lv] || GRID_STYLE.NONE
+              const lvText = lv ? urgencyText(lv) : '平稳'
+              const myId = ++hoverId
+              const polygon = new AMap.Polygon({
+                path: coords, fillColor: st.fill, fillOpacity: st.fillOpacity,
+                strokeColor: st.stroke, strokeWeight: 1.5, strokeOpacity: 0.85,
+                zIndex: 5, bubble: false, map
+              })
+              gridPolygonList.push(polygon)
+              polygon.on('mouseover', (e: any) => {
+                polygon.setOptions({ fillOpacity: st.hoverOpacity, strokeWeight: 2.5, zIndex: 20 })
+                crosshair.visible = true
+                const px = map.lngLatToContainer(e.lnglat)
+                crosshair.x = px.getX(); crosshair.y = px.getY()
+                hoverInfo.visible = true; hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
+                hoverInfo.name = `${grid.gridName} · ${grid.area} km² · ${lvText}`
+                hoverInfo.id = myId
+              })
+              polygon.on('mousemove', (e: any) => {
+                const px = map.lngLatToContainer(e.lnglat)
+                crosshair.x = px.getX(); crosshair.y = px.getY()
+                hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
+              })
+              polygon.on('mouseout', () => {
+                if (hoverInfo.id !== myId) return
+                polygon.setOptions({ fillOpacity: st.fillOpacity, strokeWeight: 1.5, zIndex: 5 })
+                crosshair.visible = false
+                hoverInfo.visible = false
+              })
+              polygon.on('click', () => {
+                selectedGrid.value = grid
+                if (grid.roiJson) {
+                  const c = JSON.parse(grid.roiJson)
+                  map.setBounds(new AMap.Bounds(c[0], c[2]))
+                }
+              })
+
+              // 标注（默认隐藏）
+              if (grid.gridName) {
+                let cx = 0, cy = 0
+                for (const [x, y] of coords) { cx += x; cy += y }
+                cx /= coords.length; cy /= coords.length
+                const label = new AMap.Text({
+                  position: [cx, cy], text: grid.gridName, anchor: 'center',
+                  style: { 'background': 'rgba(255,255,255,0.9)', 'border': '1px solid rgba(2,132,199,0.3)',
+                    'border-radius': '4px', 'padding': '2px 6px', 'font-size': '11px', 'color': '#075985' },
+                  map
+                })
+                label.hide()
+                labelMarkerList.push(label)
+              }
+            }
+          } catch (e) {}
+        }
+        if (grid.children) drawLarge(grid.children)
+      }
+    }
+
+    // 小网格（level 3）：点线描边 + 按紧急度透色填充
+    const drawSmall = (nodes: any[]) => {
+      for (const grid of nodes) {
+        if (grid.gridLevel === 3 && grid.roiJson) {
+          try {
+            const coords = JSON.parse(grid.roiJson)
+            if (Array.isArray(coords) && coords.length >= 3) {
+              const lv = grid.urgencyLevel || computeGridUrgency(coords, events.value)
+              const st = GRID_STYLE_SMALL[lv] || GRID_STYLE_SMALL.NONE
+              const lvText = lv ? urgencyText(lv) : '平稳'
+              const myId = ++hoverId
+              const polygon = new AMap.Polygon({
+                path: coords, fillColor: st.fill, fillOpacity: st.fillOpacity,
+                strokeColor: st.stroke, strokeWeight: 1.2, strokeStyle: 'dotted',
+                strokeOpacity: 0.85, zIndex: 5, bubble: false, map
+              })
+              gridPolygonList.push(polygon)
+              polygon.on('mouseover', (e: any) => {
+                polygon.setOptions({ fillOpacity: st.hoverOpacity, strokeWeight: 1.8, strokeOpacity: 1, zIndex: 20 })
+                crosshair.visible = true
+                const px = map.lngLatToContainer(e.lnglat)
+                crosshair.x = px.getX(); crosshair.y = px.getY()
+                hoverInfo.visible = true; hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
+                hoverInfo.name = `${grid.gridName} · ${grid.area} km² · ${lvText}`
+                hoverInfo.id = myId
+              })
+              polygon.on('mousemove', (e: any) => {
+                const px = map.lngLatToContainer(e.lnglat)
+                crosshair.x = px.getX(); crosshair.y = px.getY()
+                hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
+              })
+              polygon.on('mouseout', () => {
+                if (hoverInfo.id !== myId) return
+                polygon.setOptions({ fillOpacity: st.fillOpacity, strokeWeight: 1.2, strokeOpacity: 0.85, zIndex: 5 })
+                crosshair.visible = false
+                hoverInfo.visible = false
+              })
+              polygon.on('click', () => { selectedGrid.value = grid })
+            }
+          } catch (e) {}
+        }
+        if (grid.children) drawSmall(grid.children)
+      }
+    }
+
+    drawCommunity(tree)
+    drawLarge(tree)
+    drawSmall(tree)
+
+    // 事件标记：六边形脉冲（差异化：六边形 vs 圆形波纹）
+    for (const evt of events.value) {
+      if (!evt.longitude || !evt.latitude) continue
+      const color = urgencyColor(evt.urgencyLevel)
+      const marker = new AMap.Marker({
+        position: [evt.longitude, evt.latitude], zIndex: 12,
+        content: `<div class="evt-hex" style="--hc:${color}">
+          <span class="hex-pulse"></span><span class="hex-pulse hp2"></span>
+          <span class="hex-core"></span></div>`,
+        offset: new AMap.Pixel(-10, -10), map, extData: evt
+      })
+      eventMarkerList.push(marker)
+      marker.on('mouseover', (e: any) => {
+        const px = map.lngLatToContainer(e.lnglat)
+        hoverInfo.visible = true; hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
+        hoverInfo.name = evt.title || '事件'; hoverInfo.id = ++hoverId
+      })
+      marker.on('mousemove', (e: any) => {
+        const px = map.lngLatToContainer(e.lnglat)
+        hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
+      })
+      marker.on('mouseout', () => { hoverInfo.visible = false })
+      marker.on('click', () => { selectedEvent.value = evt })
+    }
+  } catch (e: any) {
+    loadError.value = '地图初始化失败: ' + (e?.message || e)
+  }
+}
+
+// ==================== 图表 ====================
+function renderRing() {
+  const el = document.getElementById('chartRing')
+  if (!el) return
+  if (!chartRing) chartRing = echarts.init(el)
+  const filterKey = ringFilter.value
+  const data = levelRows.value.map((lv: any) => ({
+    value: lv.count, name: lv.name, itemStyle: {
+      color: lv.color,
+      opacity: filterKey && filterKey !== lv.key ? 0.2 : 1
+    }
+  }))
+  chartRing.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { show: false },
+    graphic: [
+      { type: 'text', left: 'center', top: '32%', style: { text: '事件总数', fill: '#94a3b8', fontSize: 11, textAlign: 'center' } },
+      { type: 'text', left: 'center', top: '42%', style: { text: String(total.value), fill: '#0284c7', fontSize: 24, fontWeight: 700, textAlign: 'center' } }
+    ],
+    series: [{
+      type: 'pie', radius: ['52%', '74%'], center: ['50%', '50%'],
+      avoidLabelOverlap: false, silent: true,
+      itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+      label: { show: false }, data
+    }]
+  })
+}
+
+function renderTrend(days: string[], values: number[]) {
+  const el = document.getElementById('chartTrend')
+  if (!el || el.offsetWidth === 0 || el.offsetHeight === 0) return
+  if (!chartTrend) chartTrend = echarts.init(el)
+  const maxIdx = values.indexOf(Math.max(...values))
+  chartTrend.setOption({
+    backgroundColor: 'transparent',
+    grid: { left: 8, right: 14, top: 16, bottom: 6, containLabel: true },
+    tooltip: { trigger: 'axis', backgroundColor: '#fff', borderColor: '#e2e8f0', textStyle: { color: '#334155', fontSize: 12 } },
+    xAxis: {
+      type: 'category', data: days, boundaryGap: false,
+      axisLine: { lineStyle: { color: '#cbd5e1' } }, axisTick: { show: false },
+      axisLabel: { color: '#64748b', fontSize: 10 }
+    },
+    yAxis: { type: 'value', minInterval: 1, axisLabel: { color: '#94a3b8', fontSize: 10 }, splitLine: { lineStyle: { color: '#eef2f7' } } },
+    series: [{
+      type: 'line', data: values, smooth: true, symbol: 'circle', symbolSize: 5,
+      lineStyle: { color: '#0284c7', width: 2.5, shadowColor: 'rgba(2,132,199,0.3)', shadowBlur: 6 },
+      itemStyle: { color: '#0284c7', borderColor: '#fff', borderWidth: 1.5 },
+      areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(2,132,199,0.22)' }, { offset: 1, color: 'rgba(2,132,199,0.01)' }]) },
+      markPoint: {
+        data: [{ coord: [maxIdx, values[maxIdx]], value: values[maxIdx] }],
+        symbolSize: 36, itemStyle: { color: '#0284c7' },
+        label: { color: '#fff', fontSize: 10 }
+      }
+    }]
+  })
+}
+
+function renderRank(ranking: any[]) {
+  const el = document.getElementById('chartRank')
+  if (!el || el.offsetWidth === 0 || el.offsetHeight === 0) return
+  if (!chartRank) chartRank = echarts.init(el)
+  const top = ranking.slice(0, 8).reverse()
+  chartRank.setOption({
+    backgroundColor: 'transparent',
+    grid: { left: 70, right: 34, top: 8, bottom: 6 },
+    xAxis: { type: 'value', axisLabel: { color: '#94a3b8', fontSize: 10 }, splitLine: { lineStyle: { color: '#eef2f7' } } },
+    yAxis: {
+      type: 'category', data: top.map((r: any) => r.gridName),
+      axisLabel: { color: '#475569', fontSize: 11 }, axisLine: { lineStyle: { color: '#e2e8f0' } }, axisTick: { show: false }
+    },
+    series: [{
+      type: 'bar', barWidth: 10, data: top.map((r: any) => r.populationCount),
+      itemStyle: { borderRadius: [0, 5, 5, 0], color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: 'rgba(2,132,199,0.2)' }, { offset: 1, color: '#0284c7' }]) },
+      label: { show: true, position: 'right', color: '#334155', fontSize: 10 },
+      animationDelay: (idx: number) => idx * 80
+    }]
+  })
+}
+
+function renderSparkBottom() {
+  const el = document.getElementById('spark-bottom')
+  if (!el) return
+  if (!chartSparkBottom) chartSparkBottom = echarts.init(el)
+  const t = mockTrend()
+  chartSparkBottom.setOption({
+    backgroundColor: 'transparent',
+    grid: { left: 0, right: 0, top: 2, bottom: 0 },
+    xAxis: { type: 'category', show: false, data: t.days, boundaryGap: false },
+    yAxis: { type: 'value', show: false, min: 0, max: Math.max(...t.values) + 2 },
+    series: [{
+      type: 'line', data: t.values, smooth: true, symbol: 'none',
+      lineStyle: { color: '#0284c7', width: 1.5 },
+      areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(2,132,199,0.25)' }, { offset: 1, color: 'rgba(2,132,199,0)' }]) }
+    }]
+  })
+}
+
+function renderCharts(stats: any) {
+  renderRing()
+  const trend = mockTrend()
+  renderTrend(trend.days, trend.values)
+  if (stats?.populationRanking?.length) {
+    hasPopulation.value = true
+    renderRank(stats.populationRanking)
+  }
+  renderSparkBottom()
+}
+
+// ==================== 数据加载 ====================
+async function loadData() {
+  const errors: string[] = []
+  let anyLive = false
+
+  try {
+    const data = await getDashboardOverview()
+    if (data && Object.keys(data).length) {
+      overview.value = data
+      if (data.communityArea) areaRaw.value = Number(data.communityArea)
+      anyLive = true
+    }
+  } catch (e: any) { errors.push('概览: ' + (e?.message || e)) }
+
+  try {
+    const big = await getBigScreenData()
+    if (big && typeof big === 'object') {
+      overview.value = { ...overview.value, ...big }
+      if (big.communityArea) areaRaw.value = Number(big.communityArea)
+      anyLive = true
+    }
+  } catch (e) {}
+
+  let stats: any = {}
+  try {
+    const s = await getGridStats()
+    if (s) stats = s
+    anyLive = true
+  } catch (e: any) { errors.push('网格统计: ' + (e?.message || e)) }
+
+  let tree: any[] = []
+  try {
+    const t = await getGridTree()
+    if (Array.isArray(t) && t.length) tree = t
+  } catch (e: any) { errors.push('网格树: ' + (e?.message || e)) }
+  if (!tree.length) tree = buildMockTree()
+
+  try {
+    const r = await getEvents()
+    if (r?.items?.length) { events.value = r.items; anyLive = true }
+  } catch (e: any) { errors.push('事件: ' + (e?.message || e)) }
+  if (!events.value.length) events.value = buildMockEvents()
+
+  isLive.value = anyLive
+  if (errors.length && !anyLive) loadError.value = errors.join('；')
+
+  allGrids.value = []
+  const flatten = (nodes: any[]) => {
+    for (const n of nodes) { allGrids.value.push(n); if (n.children) flatten(n.children) }
+  }
+  flatten(tree)
+  const community = allGrids.value.find((g: any) => g.gridLevel === 1)
+  if (community?.area && !anyLive) areaRaw.value = Number(community.area)
+
+  return { tree, stats }
+}
+
+// ==================== 生命周期 ====================
 onMounted(async () => {
   tickClock()
   clockTimer = window.setInterval(tickClock, 1000)
   document.addEventListener('fullscreenchange', onFullscreenChange)
+  resizeHandler = () => { chartRing?.resize?.(); chartTrend?.resize?.(); chartRank?.resize?.(); chartSparkBottom?.resize?.() }
+  window.addEventListener('resize', resizeHandler)
 
-  const errors: string[] = []
-
-  try { overview.value = await getDashboardOverview() } catch (e: any) { errors.push('概览数据加载失败: ' + (e?.message || e)) }
-  let stats: any = {}
-  try { stats = await getGridStats() } catch (e: any) { errors.push('网格统计加载失败: ' + (e?.message || e)) }
-  let tree: any = []
-  try {
-    tree = await getGridTree()
-    // 提取所有网格计算面积
-    const flatten = (nodes: any[]) => {
-      for (const n of nodes) {
-        allGrids.value.push(n)
-        if (n.children) flatten(n.children)
-      }
-    }
-    flatten(tree)
-    const community = allGrids.value.find((g: any) => g.gridLevel === 1)
-    if (community?.area) communityArea.value = community.area.toFixed(2)
-  } catch (e: any) { errors.push('网格树加载失败: ' + (e?.message || e)) }
-  try {
-    const evtResult = await getEvents()
-    events.value = evtResult.items || []
-  } catch (e: any) {
-    errors.push('事件列表加载失败: ' + (e?.message || e))
-  }
-
-  if (errors.length) {
-    loadError.value = errors.join('；')
-  }
-
-  // Init map (only if tree data available and gisMap element exists)
-  if (tree && tree.length > 0) {
-    try {
-      ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
-      const AMap = await AMapLoader.load({ key: '5e00e01d2d2b6ca9e1eed533a15572e4', version: '2.0', plugins: ['AMap.Polygon', 'AMap.Marker'] })
-      // 标准底图 + 平台主色系网格，与系统整体白色调保持一致
-      mapInstance = new AMap.Map('gisMap', { zoom: 14, center: [113.939521, 22.971231], mapStyle: 'amap://styles/normal' })
-      const map = mapInstance
-
-      // 第一步：绘制社区底图（level 1）
-      const drawCommunityOutline = (nodes: any[]) => {
-        for (const node of nodes) {
-          if (node.gridLevel === 1 && node.roiJson) {
-            try {
-              const coords = JSON.parse(node.roiJson)
-              if (Array.isArray(coords) && coords.length >= 3) {
-                const polygon = new AMap.Polygon({
-                  path: coords, fillColor: '#0284c7', fillOpacity: 0.08,
-                  strokeColor: '#0284c7', strokeWeight: 2, strokeStyle: 'solid', zIndex: 1, map
-                })
-                polygon.setOptions({ bubble: true })
-              }
-            } catch (e) {}
-          }
-          if (node.children) drawCommunityOutline(node.children)
-        }
-      }
-      drawCommunityOutline(tree)
-
-      // 第二步：绘制大网格（level 2）
-      const drawLargeGrids = (nodes: any[]) => {
-        for (const grid of nodes) {
-          if (grid.gridLevel === 2 && grid.roiJson) {
-            try {
-              const coords = JSON.parse(grid.roiJson)
-              if (Array.isArray(coords) && coords.length >= 3) {
-                const baseFillColor = '#f59e0b'
-                const myId = ++hoverId
-                const polygon = new AMap.Polygon({
-                  path: coords, fillColor: baseFillColor, fillOpacity: 0.35,
-                  strokeColor: '#ffffff', strokeWeight: 2, zIndex: 5, bubble: false, map
-                })
-                polygon.on('mouseover', (e: any) => {
-                  polygon.setOptions({ fillOpacity: 0.55, zIndex: 20 })
-                  const px = map.lngLatToContainer(e.lnglat)
-                  hoverInfo.visible = true; hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
-                  hoverInfo.name = `${grid.gridName} · ${grid.area} km²`
-                  hoverInfo.id = myId
-                })
-                polygon.on('mousemove', (e: any) => {
-                  const px = map.lngLatToContainer(e.lnglat)
-                  hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
-                })
-                polygon.on('mouseout', () => {
-                  if (hoverInfo.id !== myId) return
-                  polygon.setOptions({ fillOpacity: 0.35, zIndex: 5 })
-                  hoverInfo.visible = false
-                })
-                polygon.on('click', () => { selectedGrid.value = grid })
-              }
-            } catch (e) {}
-          }
-          if (grid.children) drawLargeGrids(grid.children)
-        }
-      }
-      drawLargeGrids(tree)
-
-      // 第三步：绘制小网格（level 3）
-      const drawSmallGrids = (nodes: any[]) => {
-        for (const grid of nodes) {
-          if (grid.gridLevel === 3 && grid.roiJson) {
-            try {
-              const coords = JSON.parse(grid.roiJson)
-              if (Array.isArray(coords) && coords.length >= 3) {
-                const baseFillColor = '#10b981'
-                const myId = ++hoverId
-                const polygon = new AMap.Polygon({
-                  path: coords, fillColor: baseFillColor, fillOpacity: 0.30,
-                  strokeColor: '#ffffff', strokeWeight: 1, zIndex: 5, bubble: false, map
-                })
-                polygon.on('mouseover', (e: any) => {
-                  polygon.setOptions({ fillOpacity: 0.5, zIndex: 20 })
-                  const px = map.lngLatToContainer(e.lnglat)
-                  hoverInfo.visible = true; hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
-                  hoverInfo.name = `${grid.gridName} · ${grid.area} km²`
-                  hoverInfo.id = myId
-                })
-                polygon.on('mousemove', (e: any) => {
-                  const px = map.lngLatToContainer(e.lnglat)
-                  hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
-                })
-                polygon.on('mouseout', () => {
-                  if (hoverInfo.id !== myId) return
-                  polygon.setOptions({ fillOpacity: 0.30, zIndex: 5 })
-                  hoverInfo.visible = false
-                })
-                polygon.on('click', () => { selectedGrid.value = grid })
-              }
-            } catch (e) {}
-          }
-          if (grid.children) drawSmallGrids(grid.children)
-        }
-      }
-      drawSmallGrids(tree)
-
-      // === 事件标记（只展示未归档的活跃事件）：悬停放大、点击弹出详情卡片 ===
-      for (const evt of events.value.filter(e => !e.archived)) {
-        if (!evt.longitude || !evt.latitude) continue
-        const color = evt.urgencyLevel === 'RED' ? '#FF4D4F' : evt.urgencyLevel === 'YELLOW' ? '#FAAD14' : '#52C41A'
-        const dotHtml = (size: number, border: number, glow: number) =>
-          `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:${border}px solid #fff;box-shadow:0 0 ${glow}px ${color};cursor:pointer;transition:all 0.2s;"></div>`
-        const marker = new AMap.Marker({
-          position: [evt.longitude, evt.latitude],
-          zIndex: 10,
-          content: dotHtml(12, 2, 6),
-          offset: new AMap.Pixel(-6, -6),
-          map,
-          extData: evt
-        })
-        marker.on('mouseover', (e: any) => {
-          const px = map.lngLatToContainer(e.lnglat)
-          hoverInfo.visible = true
-          hoverInfo.x = px.getX()
-          hoverInfo.y = px.getY()
-          hoverInfo.name = evt.title || '事件'
-          hoverInfo.id = ++hoverId
-          marker.setContent(dotHtml(16, 3, 12))
-          marker.setOffset(new AMap.Pixel(-8, -8))
-        })
-        marker.on('mousemove', (e: any) => {
-          const px = map.lngLatToContainer(e.lnglat)
-          hoverInfo.x = px.getX()
-          hoverInfo.y = px.getY()
-        })
-        marker.on('mouseout', () => {
-          hoverInfo.visible = false
-          marker.setContent(dotHtml(12, 2, 6))
-          marker.setOffset(new AMap.Pixel(-6, -6))
-        })
-        // 地图可交互事件：点击点位弹出事件详情卡片
-        marker.on('click', () => {
-          selectedEvent.value = evt
-        })
-      }
-    } catch (e: any) {
-      if (!errors.length || !errors.some(msg => msg.includes('地图'))) {
-        errors.push('地图初始化失败: ' + (e?.message || e))
-      }
-      loadError.value = errors.join('；')
-    }
-  }
-
-  // Chart (only if stats available and chart element exists)
-  const chartEl = document.getElementById('chartPopulation')
-  if (stats && stats.populationRanking && stats.populationRanking.length && chartEl) {
-    try {
-      const ranking = stats.populationRanking || []
-      hasPopulation.value = true
-      chartInstance = echarts.init(chartEl)
-      chartInstance.setOption({
-        backgroundColor: 'transparent',
-        grid: { left: 78, right: 30, top: 8, bottom: 8 },
-        xAxis: {
-          type: 'value',
-          axisLabel: { color: '#9ca3af', fontSize: 10 },
-          splitLine: { lineStyle: { color: '#e5e7eb' } }
-        },
-        yAxis: {
-          type: 'category', data: ranking.map((r: any) => r.gridName).reverse(),
-          axisLabel: { color: '#374151', fontSize: 11 },
-          axisLine: { lineStyle: { color: '#e5e7eb' } }
-        },
-        series: [{
-          type: 'bar', barWidth: 12,
-          data: ranking.map((r: any) => r.populationCount).reverse(),
-          itemStyle: {
-            borderRadius: [0, 6, 6, 0],
-            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-              { offset: 0, color: 'rgba(2,132,199,0.35)' },
-              { offset: 1, color: '#0284c7' }
-            ])
-          },
-          label: { show: true, position: 'right', color: '#374151', fontSize: 10 }
-        }]
-      })
-    } catch (e: any) {
-      errors.push('图表初始化失败: ' + (e?.message || e))
-      loadError.value = errors.join('；')
-    }
-  }
+  const { tree, stats } = await loadData()
+  await initMap(tree)
+  renderCharts(stats)
 })
 
 onUnmounted(() => {
   if (clockTimer) window.clearInterval(clockTimer)
   document.removeEventListener('fullscreenchange', onFullscreenChange)
-  if (mapInstance) {
-    mapInstance.destroy()
-    mapInstance = null
+  if (resizeHandler) window.removeEventListener('resize', resizeHandler)
+  if (mapInstance) { mapInstance.destroy(); mapInstance = null }
+  ;[chartRing, chartTrend, chartRank, chartSparkBottom].forEach(c => { if (c) { c.dispose(); c = null } })
+})
+
+// 标签切换时重渲染图表
+watch(leftTab, async (v) => {
+  await nextTick()
+  if (v === 'ring') { renderRing(); setTimeout(() => chartRing?.resize?.(), 50) }
+  else if (v === 'trend') {
+    const t = mockTrend(); renderTrend(t.days, t.values)
+    setTimeout(() => chartTrend?.resize?.(), 50)
   }
-  if (chartInstance) {
-    chartInstance.dispose()
-    chartInstance = null
+  else if (v === 'rank' && hasPopulation.value) {
+    const stats = await getGridStats().catch(() => null)
+    if (stats?.populationRanking?.length) { renderRank(stats.populationRanking); setTimeout(() => chartRank?.resize?.(), 50) }
   }
 })
-</script>
 
+// ==================== v4 差异化交互：左侧 Dock 工具栏 ====================
+const layerPanel = ref(false)
+
+function toggleDock(key: 'ring' | 'trend' | 'rank') {
+  if (leftOpen.value && !layerPanel.value && leftTab.value === key) {
+    leftOpen.value = false
+    return
+  }
+  leftOpen.value = true
+  layerPanel.value = false
+  leftTab.value = key
+}
+function toggleLayerDock() {
+  if (leftOpen.value && layerPanel.value) {
+    leftOpen.value = false
+    return
+  }
+  layerPanel.value = true
+  leftOpen.value = true
+}
+</script>
 <style scoped>
-/* ============ 大屏容器：地图铺满整个主内容区 ============ */
+/* ================= 大屏容器 ================= */
 .dash-screen {
-  position: relative;
-  margin: -24px; /* 抵消 main-content 的 padding，让地图成为真正主角 */
-  height: calc(100vh - 56px);
-  overflow: hidden;
-  background: #eef3f8;
+  position: relative; margin: -24px; height: calc(100vh - 56px); overflow: hidden;
+  background: linear-gradient(165deg, #eef4fa 0%, #f8fafc 45%, #eef4fa 100%);
 }
 .dash-screen:fullscreen { height: 100vh; }
-.dash-map { width: 100%; height: 100%; }
+.dash-map { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; }
 
-/* ============ 半透明悬浮面板通用样式（白色调） ============ */
+/* ================= 背景装饰 ================= */
+.bg-decor { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.bg-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(2,132,199,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(2,132,199,0.04) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.5), transparent 80%);
+  mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.5), transparent 80%);
+}
+.bg-glow { position: absolute; border-radius: 50%; filter: blur(90px); }
+.bg-glow-1 { width: 520px; height: 520px; background: rgba(2,132,199,0.08); top: -160px; left: 32%; }
+.bg-glow-2 { width: 460px; height: 460px; background: rgba(56,189,248,0.08); bottom: -150px; right: 6%; }
+
+/* ================= 十字准星 ================= */
+.crosshair-v, .crosshair-h { position: absolute; z-index: 6; pointer-events: none; }
+.crosshair-v {
+  width: 1px; top: 48px; bottom: 64px;
+  background: linear-gradient(180deg, transparent, rgba(2,132,199,0.35) 20%, rgba(2,132,199,0.35) 80%, transparent);
+}
+.crosshair-h {
+  height: 1px; left: 0; right: 0;
+  background: linear-gradient(90deg, transparent, rgba(2,132,199,0.35) 15%, rgba(2,132,199,0.35) 85%, transparent);
+}
+
+/* ================= 顶部栏（48px） ================= */
+.topbar {
+  position: absolute; top: 0; left: 0; right: 0; height: 48px; z-index: 30;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.4) 70%, transparent 100%);
+  border-bottom: 1px solid rgba(2,132,199,0.08);
+}
+.topbar-brand { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+.brand-dot { width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
+.brand-dot.live { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.6); }
+.brand-dot.demo { background: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,0.6); }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.topbar-brand i { color: #0284c7; font-size: 16px; }
+.brand-text { font-size: 15px; font-weight: 700; color: #0f172a; letter-spacing: 1px; }
+.topbar-sub { font-size: 11px; color: #64748b; letter-spacing: 2px; pointer-events: auto; }
+.topbar-right { display: flex; align-items: center; gap: 12px; pointer-events: auto; }
+.tb-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; padding: 3px 10px; border-radius: 12px;
+  background: rgba(255,255,255,0.85); border: 1px solid rgba(2,132,199,0.16); color: #64748b;
+}
+.tb-status i { font-size: 7px; }
+.tb-status.live i { color: #22c55e; }
+.tb-status.demo i { color: #f59e0b; }
+.tb-clock { text-align: right; }
+.tb-time { font-size: 16px; font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums; line-height: 1; }
+.tb-date { font-size: 10px; color: #64748b; display: block; margin-top: 2px; }
+.tb-btn {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.88); border: 1px solid rgba(2,132,199,0.20); border-radius: 8px;
+  color: #0284c7; font-size: 13px; cursor: pointer; transition: all 0.2s;
+}
+.tb-btn:hover { background: #0284c7; color: #fff; }
+
+/* ================= 玻璃面板通用 ================= */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(2, 132, 199, 0.12);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
-  color: #334155;
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(2,132,199,0.12); border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(15,23,42,0.09); color: #334155;
 }
-.glass-panel h3 {
-  font-size: 13px; font-weight: 600; margin: 0 0 12px; color: #0284c7;
-  display: flex; align-items: center; gap: 6px;
-}
-.panel-empty { font-size: 12px; color: #94a3b8; text-align: center; padding: 16px 0; margin: 0; }
+.panel-empty { font-size: 12px; color: #94a3b8; text-align: center; padding: 18px 0; margin: 0; }
 
-/* ============ 顶部悬浮栏 ============ */
-.dash-top {
-  position: absolute; top: 14px; left: 16px; right: 16px; z-index: 20;
-  display: flex; align-items: center; gap: 14px; pointer-events: none;
+/* ================= 左侧 Dock 工具栏 ================= */
+.left-dock {
+  position: absolute; left: 16px; top: 96px; z-index: 24;
+  display: flex; flex-direction: column; gap: 4px; padding: 8px 6px;
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(2,132,199,0.14); border-radius: 14px;
+  box-shadow: 0 8px 26px rgba(15,23,42,0.08); pointer-events: auto;
 }
-.dash-title-box {
-  pointer-events: auto;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(2, 132, 199, 0.12);
-  border-radius: 12px; padding: 10px 18px; flex-shrink: 0;
+.dock-logo {
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #0284c7, #0ea5e9); border-radius: 10px; color: #fff; font-size: 15px;
+  box-shadow: 0 4px 12px rgba(2,132,199,0.35); margin-bottom: 2px;
 }
-.dash-title-box h2 {
-  margin: 0; font-size: 18px; font-weight: 700; color: #0f172a; letter-spacing: 1px;
-  display: flex; align-items: center; gap: 8px;
+.dock-btn {
+  width: 40px; padding: 6px 0 5px; border: none; border-radius: 9px; background: none;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-size: 10px; color: #64748b; cursor: pointer; transition: all 0.18s;
 }
-.dash-title-box h2 i { color: #0284c7; }
-.dash-title-box p { margin: 2px 0 0; font-size: 11px; color: #64748b; }
-.dash-time { margin-left: 10px; color: #0284c7; font-variant-numeric: tabular-nums; }
+.dock-btn i { font-size: 14px; }
+.dock-btn:hover { background: rgba(2,132,199,0.07); color: #0284c7; }
+.dock-btn.active {
+  background: rgba(2,132,199,0.12); color: #0284c7; font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(2,132,199,0.22);
+}
+.dock-btn.quiet { opacity: 0.45; }
+.dock-btn.quiet.active { opacity: 1; }
+.dock-divider { height: 1px; background: rgba(2,132,199,0.12); margin: 2px 2px; }
 
-.dash-kpis {
-  pointer-events: auto;
-  display: flex; gap: 10px; flex: 1; justify-content: center; flex-wrap: wrap;
+/* ================= 左侧内容面板 ================= */
+.left-widget {
+  position: absolute; left: 76px; top: 96px; width: 302px; max-height: calc(100vh - 176px); z-index: 24;
+  display: flex; flex-direction: column; overflow: hidden;
+  opacity: 0; transform: translateX(-18px); pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s ease;
 }
-.kpi {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(2, 132, 199, 0.12);
-  border-radius: 10px; padding: 8px 16px; min-width: 108px; text-align: center;
+.left-widget.open { opacity: 1; transform: translateX(0); pointer-events: auto; }
+.widget-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px 10px; border-bottom: 1px solid rgba(2,132,199,0.10); flex-shrink: 0;
 }
-.kpi-num { margin: 0; font-size: 22px; font-weight: 700; color: #0f172a; line-height: 1.2; }
-.kpi-unit { font-size: 11px; color: #64748b; margin-left: 3px; font-weight: 400; }
-.kpi-name { margin: 2px 0 0; font-size: 11px; color: #64748b; }
-.kpi-name i { margin-right: 4px; color: #0284c7; }
-.kpi-danger .kpi-num { color: #dc2626; }
-.kpi-danger .kpi-name i { color: #dc2626; }
+.widget-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #075985; }
+.widget-title i { color: #0284c7; }
+.widget-fold {
+  width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  border: none; background: rgba(2,132,199,0.06); border-radius: 7px;
+  color: #94a3b8; font-size: 12px; cursor: pointer; transition: all 0.18s;
+}
+.widget-fold:hover { background: rgba(2,132,199,0.14); color: #0284c7; }
+.tab-body { flex: 0 1 auto; overflow-y: auto; padding: 12px 14px; min-height: 0; }
+.tab-body::-webkit-scrollbar { width: 4px; }
+.tab-body::-webkit-scrollbar-thumb { background: rgba(2,132,199,0.22); border-radius: 2px; }
+.tab-pane { display: flex; flex-direction: column; gap: 8px; }
+.pane-sub {
+  font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 5px;
+  padding: 6px 10px; border-radius: 8px; background: rgba(241,245,249,0.7);
+}
+.pane-sub i { color: #0284c7; }
 
-.dash-fullscreen-btn {
-  pointer-events: auto; flex-shrink: 0;
-  display: flex; align-items: center; gap: 6px;
-  background: rgba(2, 132, 199, 0.10);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(2, 132, 199, 0.30);
-  border-radius: 10px; color: #0284c7; font-size: 13px;
-  padding: 10px 16px; cursor: pointer; transition: all 0.2s;
+/* 图层开关 */
+.panel-tools {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px;
+  padding: 10px 12px; border-radius: 12px;
+  background: rgba(241,245,249,0.75); border: 1px solid rgba(2,132,199,0.08);
 }
-.dash-fullscreen-btn:hover { background: rgba(2, 132, 199, 0.18); }
+.pt-title { font-size: 11px; font-weight: 600; color: #075985; display: inline-flex; align-items: center; gap: 4px; width: 100%; margin-bottom: 2px; }
+.pt-title i { color: #0284c7; font-size: 10px; }
+.pt-row { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-size: 11px; color: #475569; }
+.pt-row input { display: none; }
+.pt-switch {
+  width: 26px; height: 13px; border-radius: 7px; background: #cbd5e1; position: relative; transition: background 0.2s; flex-shrink: 0;
+}
+.pt-switch i { position: absolute; top: 1px; left: 1px; width: 11px; height: 11px; border-radius: 50%; background: #fff; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.pt-row input:checked ~ .pt-switch { background: #0284c7; }
+.pt-row input:checked ~ .pt-switch i { left: 14px; }
+.pt-label { white-space: nowrap; }
 
-/* ============ 左侧悬浮面板 ============ */
-.dash-left {
-  position: absolute; left: 16px; top: 92px; bottom: 16px; z-index: 15;
-  width: 280px; display: flex; flex-direction: column; gap: 12px;
+/* 网格预警图例 */
+.grid-legend {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  padding: 8px 10px; border-radius: 10px;
+  background: rgba(241,245,249,0.6); border: 1px solid rgba(2,132,199,0.08); font-size: 10px; color: #64748b;
 }
-.dash-left .glass-panel { padding: 14px 16px; }
-.level-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 12px; }
-.level-row:last-child { margin-bottom: 0; }
-.level-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.level-name { width: 30px; color: #475569; flex-shrink: 0; }
-.level-track { flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-.level-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
-.level-count { width: 28px; text-align: right; font-weight: 600; color: #0f172a; }
+.gl-title { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; color: #075985; }
+.gl-title i { color: #0284c7; font-size: 10px; }
+.gl-item { display: inline-flex; align-items: center; gap: 3px; }
+.gl-item i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 
-/* ============ 右侧悬浮面板：最新事件 ============ */
-.dash-right {
-  position: absolute; right: 16px; top: 92px; bottom: 16px; z-index: 15; width: 300px;
+/* 环形图 + 图例 */
+.chart-ring { height: 168px; margin: 2px 0; }
+.ring-legend { display: flex; flex-direction: column; gap: 9px; }
+.legend-row {
+  display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;
+  padding: 3px 4px; border-radius: 8px; transition: background 0.15s;
 }
-.events-panel { padding: 14px 16px; height: 100%; display: flex; flex-direction: column; }
-.events-count {
-  margin-left: 4px; background: #e0f2fe; color: #0284c7;
-  font-size: 11px; border-radius: 8px; padding: 0 7px; line-height: 16px;
+.legend-row:hover { background: rgba(2,132,199,0.05); }
+.legend-row.dim { opacity: 0.35; }
+.legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.legend-name { width: 30px; color: #475569; flex-shrink: 0; font-size: 11px; }
+.legend-track { flex: 1; height: 6px; background: #eef2f7; border-radius: 3px; overflow: hidden; }
+.legend-track i { display: block; height: 100%; border-radius: 3px; transition: width 0.5s; }
+.legend-num { width: 22px; text-align: right; font-weight: 600; color: #0f172a; font-size: 11px; }
+.filter-hint {
+  font-size: 11px; color: #0284c7; display: flex; align-items: center; gap: 6px;
+  padding: 4px 8px; background: rgba(2,132,199,0.06); border-radius: 8px;
 }
-.events-list { flex: 1; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
-.events-list::-webkit-scrollbar { width: 4px; }
-.events-list::-webkit-scrollbar-thumb { background: rgba(2,132,199,0.25); border-radius: 2px; }
-.event-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 8px; border-radius: 8px; cursor: pointer; transition: background 0.15s;
-  border-bottom: 1px solid #f1f5f9;
-}
-.event-item:hover { background: rgba(2, 132, 199, 0.06); }
-.event-item.active { background: rgba(2, 132, 199, 0.12); }
-.event-text { flex: 1; min-width: 0; }
-.event-title {
-  margin: 0; font-size: 12.5px; color: #0f172a;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.event-meta { margin: 2px 0 0; font-size: 10.5px; color: #94a3b8; }
-.event-locate { color: rgba(2, 132, 199, 0.7); font-size: 11px; flex-shrink: 0; }
+.filter-hint button { border: none; background: none; color: #ef4444; cursor: pointer; font-size: 11px; margin-left: auto; }
 
-/* ============ 事件详情悬浮卡片 ============ */
-.event-popup {
-  position: absolute; z-index: 30; left: 50%; bottom: 26px; transform: translateX(-50%);
-  width: 420px; max-width: calc(100% - 32px); padding: 14px 18px;
-}
-.popup-head { display: flex; align-items: center; gap: 8px; }
-.popup-status { font-size: 11px; color: #64748b; }
-.popup-close {
-  margin-left: auto; border: none; background: none; color: #94a3b8;
-  font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1;
-}
-.popup-close:hover { color: #0f172a; }
-.popup-title { margin: 8px 0 8px; font-size: 15px; font-weight: 600; color: #0f172a; }
-.popup-meta { font-size: 12px; color: #475569; display: flex; flex-direction: column; gap: 4px; }
-.popup-meta i { width: 14px; color: #0284c7; }
-.popup-desc {
-  margin: 8px 0 0; font-size: 12px; color: #64748b; line-height: 1.6;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
-.popup-detail-btn {
-  margin-top: 12px; width: 100%; padding: 8px 0; border: none; border-radius: 8px;
-  background: #0284c7; color: #fff; font-size: 13px; cursor: pointer; transition: background 0.2s;
-}
-.popup-detail-btn:hover { background: #0369a1; }
+/* 趋势/排名 */
+.chart-trend { height: 300px; }
+.chart-rank { height: 300px; }
 
-/* ============ 网格选中面板 ============ */
-.grid-popup {
-  position: absolute; z-index: 25; top: 92px; left: 50%; transform: translateX(-50%);
-  padding: 12px 18px; min-width: 240px;
+/* ================= 右侧时间轴面板 ================= */
+.timeline-panel {
+  position: absolute; right: 16px; top: 96px; width: 330px; height: 460px; max-height: calc(100vh - 176px); z-index: 24;
+  display: flex; flex-direction: column; overflow: hidden;
+  opacity: 0; transform: translateX(18px); pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s ease;
 }
-.popup-grid-name { font-size: 14px; font-weight: 700; color: #0f172a; }
+.timeline-panel.open { opacity: 1; transform: translateX(0); pointer-events: auto; }
+/* 收起时收缩为悬浮圆钮，保留展开入口 */
+.timeline-panel:not(.open) {
+  width: 44px; height: 44px; opacity: 1; transform: none; pointer-events: auto;
+  justify-content: center; align-items: center; overflow: visible;
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(2,132,199,0.18); border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.10);
+}
+.timeline-panel:not(.open) .panel-head-r,
+.timeline-panel:not(.open) .filter-chips,
+.timeline-panel:not(.open) .search-box,
+.timeline-panel:not(.open) .timeline-list { display: none; }
+.timeline-panel:not(.open) .tl-foot { padding: 0; }
+.timeline-panel:not(.open) .tl-fold {
+  border: none; background: none; padding: 0; width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  color: #0284c7; font-size: 12px;
+}
+.timeline-panel:not(.open) .tl-fold:hover { background: rgba(2,132,199,0.08); color: #0284c7; }
+.panel-head-r { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px 8px; flex-shrink: 0; }
+.panel-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #075985; padding-left: 8px; border-left: 3px solid #0284c7; }
+.panel-title i { color: #0284c7; }
+.panel-count { font-size: 11px; color: #94a3b8; }
+.filter-chips { display: flex; gap: 6px; padding: 0 14px 10px; flex-wrap: wrap; flex-shrink: 0; }
+.chip {
+  padding: 4px 12px; border-radius: 12px; border: 1px solid #e2e8f0; background: rgba(255,255,255,0.8);
+  font-size: 11px; color: #64748b; cursor: pointer; transition: all 0.2s;
+}
+.chip:hover { border-color: rgba(2,132,199,0.4); }
+.chip.active { font-weight: 600; }
+.search-box { margin: 0 14px 10px; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 10px; background: #f1f5f9; border: 1px solid #e2e8f0; flex-shrink: 0; }
+.search-box i { color: #94a3b8; font-size: 11px; }
+.search-box input { border: none; background: none; outline: none; flex: 1; font-size: 12px; color: #334155; }
 
-/* ============ 悬停提示（浅色地图上保持深底白字，确保可读） ============ */
+/* 垂直时间轴 */
+.timeline-list { flex: 1; overflow-y: auto; padding: 2px 14px 8px; min-height: 0; }
+.timeline-list::-webkit-scrollbar { width: 4px; }
+.timeline-list::-webkit-scrollbar-thumb { background: rgba(2,132,199,0.25); border-radius: 2px; }
+.tl-item { display: flex; gap: 10px; }
+.tl-axis { display: flex; flex-direction: column; align-items: center; width: 14px; flex-shrink: 0; padding-top: 4px; }
+.tl-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; z-index: 1;
+  transition: transform 0.18s;
+}
+.tl-item:hover .tl-dot { transform: scale(1.35); }
+.tl-line { flex: 1; width: 2px; margin: 3px 0 -3px; background: linear-gradient(180deg, rgba(2,132,199,0.22), rgba(2,132,199,0.05)); }
+.tl-item:last-child .tl-line { display: none; }
+.tl-card {
+  flex: 1; min-width: 0; margin-bottom: 10px; padding: 8px 10px; border-radius: 10px;
+  background: rgba(255,255,255,0.75); border: 1px solid #eef2f7; border-left-width: 3px;
+  cursor: pointer; transition: all 0.18s;
+}
+.tl-card:hover { background: rgba(2,132,199,0.05); transform: translateX(-2px); box-shadow: 0 4px 14px rgba(2,132,199,0.08); }
+.tl-item.active .tl-card { background: rgba(2,132,199,0.08); border-color: rgba(2,132,199,0.25); }
+.tl-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 3px; }
+.evt-tag { flex-shrink: 0; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; line-height: 1.3; }
+.tl-time { font-size: 10px; color: #94a3b8; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.event-title { margin: 0; font-size: 12px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-meta { margin: 2px 0 0; font-size: 10px; color: #94a3b8; display: flex; align-items: center; gap: 4px; }
+.event-meta i { font-size: 9px; }
+.tl-foot { flex-shrink: 0; padding: 8px 14px 12px; text-align: center; }
+.tl-fold {
+  border: 1px solid rgba(2,132,199,0.18); background: rgba(255,255,255,0.7); color: #0284c7;
+  font-size: 11px; padding: 5px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+}
+.tl-fold:hover { background: #0284c7; color: #fff; }
+
+/* ================= 底部 Dock ================= */
+.dock-bar {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 64px; z-index: 26;
+  display: flex; align-items: center; gap: 14px; padding: 0 14px;
+  background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(2,132,199,0.12);
+  box-shadow: 0 -6px 24px rgba(15,23,42,0.05); pointer-events: none;
+}
+.dock-left { display: flex; align-items: center; gap: 10px; pointer-events: auto; flex-shrink: 0; }
+.dk-status {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
+  padding: 5px 12px; border-radius: 12px; background: rgba(241,245,249,0.8);
+  border: 1px solid rgba(2,132,199,0.14); color: #64748b;
+}
+.dk-status i { font-size: 7px; }
+.dk-status.live i { color: #22c55e; }
+.dk-status.demo i { color: #f59e0b; }
+.dk-sys { font-size: 11px; color: #64748b; display: inline-flex; align-items: center; gap: 4px; }
+.dk-sys i { color: #0284c7; font-size: 10px; }
+.dk-sys.urgent { color: #dc2626; }
+.dk-sys.urgent i { color: #ef4444; }
+.dock-spark { display: flex; align-items: center; gap: 6px; padding-left: 10px; border-left: 1px solid #e2e8f0; }
+.ds-label { font-size: 11px; color: #64748b; }
+.ds-num { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ds-chart { width: 60px; height: 20px; }
+
+.dock-kpis { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; pointer-events: auto; }
+.dk-pill {
+  display: flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 11px;
+  background: rgba(241,245,249,0.75); border: 1px solid rgba(2,132,199,0.10);
+  transition: transform 0.18s, box-shadow 0.18s; white-space: nowrap;
+}
+.dk-pill:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(2,132,199,0.12); }
+.dk-pill i { font-size: 13px; }
+.dk-pill b { font-size: 15px; font-weight: 700; color: #0f172a; font-variant-numeric: tabular-nums; }
+.dk-pill b em { font-size: 9px; color: #64748b; font-style: normal; margin-left: 2px; font-weight: 400; }
+.dk-pill span { font-size: 10px; color: #64748b; }
+
+.dock-ticker { width: 30%; display: flex; align-items: center; gap: 8px; pointer-events: auto; min-width: 0; }
+.ticker-label {
+  font-size: 11px; font-weight: 600; color: #075985; display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+}
+.ticker-label i { color: #0284c7; }
+.ticker-view { flex: 1; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
+.ticker-run { display: inline-flex; gap: 34px; white-space: nowrap; animation: tickerMove 42s linear infinite; }
+.ticker-run:hover { animation-play-state: paused; }
+@keyframes tickerMove { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.ticker-item { font-size: 11px; color: #64748b; display: inline-flex; align-items: center; gap: 5px; }
+.ticker-item i { font-size: 7px; flex-shrink: 0; }
+
+/* ================= 地图控制按钮组 ================= */
+.map-controls {
+  position: absolute; right: 16px; bottom: 80px; z-index: 22;
+  display: flex; flex-direction: column; gap: 6px; pointer-events: auto;
+}
+.mc-btn {
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(2,132,199,0.18); border-radius: 9px;
+  color: #0284c7; font-size: 13px; cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.06);
+}
+.mc-btn:hover { background: #0284c7; color: #fff; transform: scale(1.05); }
+.mc-btn.active { background: #0284c7; color: #fff; border-color: #0284c7; box-shadow: 0 2px 12px rgba(2,132,199,0.35); }
+
+/* ================= 网格详情 HUD 弹窗（地图上方，与事件流顶部对齐） =================
+   定位策略：glass-panel 自身开关（selectedGrid v-if）打开时，按事件流开关自动让位：
+     · .is-open   → 事件流展开  → right: 366px (16 距右 + 330 宽 + 20 间距)
+     · .is-folded → 事件流收起  → right:  80px (16 距右 +  44 宽 + 20 间距，与 tl-fold 保持 20px)
+*/
+.grid-hud {
+  position: absolute; z-index: 42; top: 96px; right: 366px;
+  width: 320px; max-width: calc(100% - 40px); padding: 16px 18px;
+  transition: right 0.28s ease, opacity 0.28s ease, transform 0.28s ease;
+}
+.grid-hud.is-folded { right: 80px; }
+.hud-close {
+  position: absolute; top: 10px; right: 10px; border: none; background: none; color: #94a3b8;
+  font-size: 14px; cursor: pointer; padding: 4px;
+}
+.hud-close:hover { color: #0f172a; }
+.hud-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.hud-urgency { width: 4px; height: 28px; border-radius: 2px; flex-shrink: 0; }
+.hud-head h3 { margin: 0; font-size: 16px; font-weight: 700; color: #0f172a; }
+.hud-level { font-size: 11px; color: #94a3b8; padding: 2px 8px; border-radius: 4px; background: rgba(2,132,199,0.08); }
+.hud-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.hud-cell {
+  display: flex; flex-direction: column; gap: 3px; padding: 9px 11px; border-radius: 10px;
+  background: rgba(241,245,249,0.7); border: 1px solid rgba(2,132,199,0.08);
+}
+.hud-cell i { font-size: 12px; color: #0284c7; }
+.hud-cell span { font-size: 10px; color: #94a3b8; }
+.hud-cell b { font-size: 12px; color: #0f172a; font-weight: 600; }
+.hud-events { margin-top: 12px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
+.he-title { font-size: 11px; font-weight: 600; color: #075985; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+.he-title i { color: #0284c7; }
+.he-item { display: flex; align-items: center; gap: 6px; padding: 4px 0; cursor: pointer; font-size: 11px; }
+.he-item:hover { color: #0284c7; }
+.he-tag { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.he-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #475569; }
+
+/* ================= 事件详情气泡（右下角） ================= */
+.event-pop {
+  position: absolute; z-index: 40; right: 20px; bottom: 80px; width: 380px;
+  max-width: calc(100% - 32px); padding: 14px 16px;
+}
+.pop-close {
+  position: absolute; top: 10px; right: 10px; border: none; background: none; color: #94a3b8;
+  font-size: 14px; cursor: pointer; padding: 4px;
+}
+.pop-close:hover { color: #0f172a; }
+.pop-top { display: flex; align-items: center; gap: 8px; }
+.pop-status { font-size: 11px; color: #64748b; }
+.pop-title { margin: 8px 0 0; font-size: 14px; font-weight: 600; color: #0f172a; }
+.pop-meta { font-size: 11px; color: #475569; display: flex; gap: 12px; margin-top: 4px; flex-wrap: wrap; }
+.pop-meta i { color: #0284c7; margin-right: 2px; }
+.pop-desc { margin: 8px 0 0; font-size: 11px; color: #64748b; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pop-btn {
+  margin-top: 10px; width: 100%; padding: 7px 0; border: none; border-radius: 9px;
+  background: #0284c7; color: #fff; font-size: 12px; cursor: pointer; transition: background 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.pop-btn:hover { background: #0369a1; }
+
+/* ================= 悬停提示 ================= */
 .hover-tip {
-  position: absolute; z-index: 40; transform: translate(-50%, calc(-100% - 14px));
-  background: rgba(15, 23, 42, 0.88); color: #fff; padding: 6px 12px; border-radius: 6px;
-  font-size: 12px; font-weight: 600; pointer-events: none; white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(15,23,42,0.25);
+  position: absolute; z-index: 45; transform: translate(-50%, calc(-100% - 12px));
+  background: rgba(15,23,42,0.88); color: #fff; padding: 5px 11px; border-radius: 6px;
+  font-size: 11px; font-weight: 600; pointer-events: none; white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(15,23,42,0.2);
 }
 
-/* ============ 错误提示 ============ */
+/* ================= 错误提示 ================= */
 .dash-error {
-  position: absolute; z-index: 50; top: 86px; left: 50%; transform: translateX(-50%);
-  background: rgba(254, 226, 226, 0.92); backdrop-filter: blur(8px);
-  border: 1px solid rgba(220, 38, 38, 0.25); border-radius: 8px;
+  position: absolute; z-index: 50; top: 56px; left: 50%; transform: translateX(-50%);
+  background: rgba(254,226,226,0.94); backdrop-filter: blur(8px);
+  border: 1px solid rgba(220,38,38,0.25); border-radius: 8px;
   color: #b91c1c; font-size: 12px; padding: 8px 16px; max-width: 70%;
   display: flex; align-items: center; gap: 8px;
 }
 
-/* 标签在悬浮面板上的适配 */
-.event-popup .tag, .event-item .tag { flex-shrink: 0; }
+/* ================= 过渡动画 ================= */
+.hud-enter-active, .hud-leave-active { transition: opacity 0.25s, transform 0.25s, right 0.28s ease; }
+.hud-enter-from, .hud-leave-to { opacity: 0; transform: translateY(10px) scale(0.96); }
+.pop-enter-active, .pop-leave-active { transition: opacity 0.25s, transform 0.25s; }
+.pop-enter-from, .pop-leave-to { opacity: 0; transform: translateY(16px); }
+</style>
+
+<style>
+/* 六边形事件标记（非 scoped，marker content 动态注入） */
+.evt-hex { position: relative; width: 20px; height: 20px; cursor: pointer; }
+.hex-core {
+  position: absolute; left: 50%; top: 50%; width: 10px; height: 10px;
+  margin: -5px 0 0 -5px; z-index: 2;
+  background: var(--hc, #0284c7);
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 5px rgba(15,23,42,0.3);
+}
+.hex-pulse {
+  position: absolute; left: 50%; top: 50%; width: 10px; height: 10px;
+  margin: -5px 0 0 -5px; border-radius: 2px;
+  background: var(--hc, #0284c7); opacity: 0.35;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  animation: hexPing 1.8s ease-out infinite;
+}
+.hex-pulse.hp2 { animation-delay: 0.6s; }
+@keyframes hexPing {
+  0% { transform: scale(1); opacity: 0.40; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
 </style>
