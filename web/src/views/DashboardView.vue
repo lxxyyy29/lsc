@@ -85,6 +85,11 @@
               <span class="pt-switch"><i></i></span>
               <span class="pt-label">标注</span>
             </label>
+            <label class="pt-row">
+              <input type="checkbox" v-model="layerState.satellite" @change="toggleLayers" />
+              <span class="pt-switch"><i></i></span>
+              <span class="pt-label">卫星影像</span>
+            </label>
           </div>
           <div class="grid-legend">
             <span class="gl-title"><i class="fas fa-shield-alt"></i>网格预警</span>
@@ -495,8 +500,11 @@ let hoverId = 0
 let clockTimer: number | undefined
 let resizeHandler: (() => void) | null = null
 let gridPolygonList: any[] = []
-let eventMarkerList: any[] = []
 let labelMarkerList: any[] = []
+let evtLabelsLayer: any = null      // 非紧急事件高性能图层（LabelsLayer）
+let redPulseMarkers: any[] = []     // 红色紧急事件保留 DOM 脉冲动画
+let clusterMarkerList: any[] = []   // 缩小级别聚合气泡
+let gridBoundsMap = new Map<string, any>()  // 网格 id → 全顶点 Bounds
 
 const screenRef = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
@@ -527,7 +535,7 @@ const urgencyChips = [
 ] as const
 
 const ringFilter = ref('')
-const layerState = reactive({ grids: true, events: true, heatmap: false, labels: false })
+const layerState = reactive({ grids: true, events: true, heatmap: false, labels: false, satellite: false })
 const crosshair = reactive({ visible: false, x: 0, y: 0 })
 const is3D = ref(true) // 3D 视角开关
 
@@ -598,6 +606,52 @@ function urgencyColor(lv: string) {
 function urgencyBg(lv: string) {
   return lv === 'RED' ? 'rgba(239,68,68,0.12)' : lv === 'YELLOW' ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)'
 }
+
+/** requestAnimationFrame 节流：高频 mousemove 每帧最多执行一次 */
+function rafThrottle<T extends (...args: any[]) => void>(fn: T): T {
+  let pending = false
+  let lastArgs: any[] = []
+  return ((...args: any[]) => {
+    lastArgs = args
+    if (pending) return
+    pending = true
+    requestAnimationFrame(() => { pending = false; fn(...lastArgs) })
+  }) as T
+}
+
+/** 六边形事件图标（SVG data URI，供 LabelsLayer 批量渲染） */
+function hexIconUri(color: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">` +
+    `<polygon points="11,1.8 19,6.4 19,15.6 11,20.2 3,15.6 3,6.4" fill="${color}" fill-opacity="0.25"/>` +
+    `<circle cx="11" cy="11" r="4.2" fill="${color}" stroke="#ffffff" stroke-width="1.6"/></svg>`
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
+}
+const HEX_ICON: Record<string, string> = {
+  RED: hexIconUri('#ef4444'), YELLOW: hexIconUri('#f59e0b'), GREEN: hexIconUri('#22c55e')
+}
+
+/** 缩放级别聚合阈值：低于此值显示聚合气泡 */
+const CLUSTER_ZOOM = 13.5
+
+/** 由多边形全顶点计算包围盒（修复非矩形网格点击视野偏移） */
+function boundsOfPath(AMap: any, coords: number[][]): any {
+  let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity
+  for (const [lng, lat] of coords) {
+    if (lng < minLng) minLng = lng
+    if (lat < minLat) minLat = lat
+    if (lng > maxLng) maxLng = lng
+    if (lat > maxLat) maxLat = lat
+  }
+  return new AMap.Bounds([minLng, minLat], [maxLng, maxLat])
+}
+
+/** hover 坐标更新统一节流入口（网格/事件点共用） */
+const throttledHoverMove = rafThrottle((e: any) => {
+  if (!mapInstance) return
+  const px = mapInstance.lngLatToContainer(e.lnglat)
+  crosshair.x = px.getX(); crosshair.y = px.getY()
+  hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
+})
 function statusLabel(status: string) {
   const map: Record<string, string> = {
     PENDING_AUDIT: '待审核', IN_AUDIT: '审核中', AUDIT_APPROVED: '已通过', AUDIT_REJECTED: '已驳回',
@@ -672,7 +726,7 @@ function toggleView3D() {
   if (!mapInstance) return
   is3D.value = !is3D.value
   mapInstance.setPitch(is3D.value ? 45 : 0)
-  if (is3D.value) mapInstance.setRotation(-20)
+  mapInstance.setRotation(0)
 }
 function flyRandom() {
   if (!mapInstance || !events.value.length) return
@@ -697,10 +751,8 @@ function toggleLayers() {
     if (layerState.grids) p.show()
     else p.hide()
   }
-  for (const m of eventMarkerList) {
-    if (layerState.events) m.show()
-    else m.hide()
-  }
+  // 事件层统一调度：缩小显示聚合气泡、放大展开单点
+  syncClusterVisibility()
   // 热力图
   if (layerState.heatmap) {
     const AMap = (window as any).AMap
@@ -733,6 +785,59 @@ function toggleLayers() {
   } else if (heatLayer) {
     heatLayer.hide()
   }
+  // 卫星影像图层
+  toggleSatellite()
+}
+
+let satelliteLayer: any = null
+let roadNetLayer: any = null
+/** 卫星影像层：卫星底图 + 路网标注叠加，关闭后恢复矢量底图 */
+function toggleSatellite() {
+  if (!mapInstance) return
+  const AMap = (window as any).AMap
+  if (layerState.satellite) {
+    if (!satelliteLayer) {
+      satelliteLayer = new AMap.TileLayer.Satellite()
+      roadNetLayer = new AMap.TileLayer.RoadNet()
+    }
+    mapInstance.add([satelliteLayer, roadNetLayer])
+  } else if (satelliteLayer) {
+    mapInstance.remove([satelliteLayer, roadNetLayer])
+  }
+}
+
+/** 重建缩放级别聚合气泡（按约 2km 网格单元分组） */
+function rebuildClusters(AMap: any) {
+  for (const m of clusterMarkerList) m.setMap(null)
+  clusterMarkerList = []
+  if (!mapInstance) return
+  const groups = new Map<string, { x: number; y: number; n: number; red: boolean }>()
+  for (const evt of events.value) {
+    if (!evt.longitude || !evt.latitude) continue
+    const key = `${Math.round(+evt.longitude / 0.02)}_${Math.round(+evt.latitude / 0.02)}`
+    const g = groups.get(key)
+    if (g) { g.x += +evt.longitude; g.y += +evt.latitude; g.n += 1; if (evt.urgencyLevel === 'RED') g.red = true }
+    else groups.set(key, { x: +evt.longitude, y: +evt.latitude, n: 1, red: evt.urgencyLevel === 'RED' })
+  }
+  for (const g of groups.values()) {
+    const m = new AMap.Marker({
+      position: [g.x / g.n, g.y / g.n], zIndex: 14, bubble: true,
+      content: `<div class="evt-cluster${g.red ? ' hot' : ''}">${g.n}</div>`,
+      offset: new AMap.Pixel(-18, -18), map: mapInstance
+    })
+    m.on('click', () => { mapInstance.setZoomAndCenter(CLUSTER_ZOOM + 0.6, m.getPosition()) })
+    clusterMarkerList.push(m)
+  }
+}
+
+/** 按缩放级别与图层开关同步事件单点/聚合气泡的可见性 */
+function syncClusterVisibility() {
+  if (!mapInstance) return
+  const clustered = mapInstance.getZoom() < CLUSTER_ZOOM
+  const showPoints = layerState.events && !clustered
+  if (evtLabelsLayer) { showPoints ? evtLabelsLayer.show() : evtLabelsLayer.hide() }
+  for (const m of redPulseMarkers) { showPoints ? m.show() : m.hide() }
+  for (const m of clusterMarkerList) { (layerState.events && clustered) ? m.show() : m.hide() }
 }
 function toggleLabels() {
   if (!mapInstance) return
@@ -746,14 +851,14 @@ function toggleLabels() {
 async function initMap(tree: any[]) {
   try {
     ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
-    const AMap = await AMapLoader.load({ key: '5e00e01d2d2b6ca9e1eed533a15572e4', version: '2.0', plugins: ['AMap.Polygon', 'AMap.Marker', 'AMap.Text', 'AMap.HeatMap'] })
+    const AMap = await AMapLoader.load({ key: '5e00e01d2d2b6ca9e1eed533a15572e4', version: '2.0', plugins: ['AMap.Polygon', 'AMap.Marker', 'AMap.Text', 'AMap.HeatMap', 'AMap.LabelsLayer', 'AMap.TileLayer'] })
     mapInstance = new AMap.Map('gisMap', {
       zoom: 14, center: MOCK_CENTER,
       viewMode: '3D',           // 3D 视图模式
       pitch: 45,                // 俯仰角 45°
-      rotation: -20,            // 旋转 -20°
+      rotation: 0,              // 正向朝上，避免旋转造成方位辨识困难
       mapStyle: 'amap://styles/normal',
-      features: ['bg', 'road', 'building', 'building3D'],
+      features: ['bg', 'road'], // 底图降噪：去掉建筑/POI 文字，让网格着色与事件点成为主角
       expandZoomRange: true,
       zooms: [3, 20]
     })
@@ -805,11 +910,7 @@ async function initMap(tree: any[]) {
                 hoverInfo.name = `${grid.gridName} · ${grid.area} km² · ${lvText}`
                 hoverInfo.id = myId
               })
-              polygon.on('mousemove', (e: any) => {
-                const px = map.lngLatToContainer(e.lnglat)
-                crosshair.x = px.getX(); crosshair.y = px.getY()
-                hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
-              })
+              polygon.on('mousemove', (e: any) => throttledHoverMove(e))
               polygon.on('mouseout', () => {
                 if (hoverInfo.id !== myId) return
                 polygon.setOptions({ fillOpacity: st.fillOpacity, strokeWeight: 1.5, zIndex: 5 })
@@ -818,10 +919,7 @@ async function initMap(tree: any[]) {
               })
               polygon.on('click', () => {
                 selectedGrid.value = grid
-                if (grid.roiJson) {
-                  const c = JSON.parse(grid.roiJson)
-                  map.setBounds(new AMap.Bounds(c[0], c[2]))
-                }
+                map.setBounds(boundsOfPath(AMap, coords))
               })
 
               // 标注（默认隐藏）
@@ -871,11 +969,7 @@ async function initMap(tree: any[]) {
                 hoverInfo.name = `${grid.gridName} · ${grid.area} km² · ${lvText}`
                 hoverInfo.id = myId
               })
-              polygon.on('mousemove', (e: any) => {
-                const px = map.lngLatToContainer(e.lnglat)
-                crosshair.x = px.getX(); crosshair.y = px.getY()
-                hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
-              })
+              polygon.on('mousemove', (e: any) => throttledHoverMove(e))
               polygon.on('mouseout', () => {
                 if (hoverInfo.id !== myId) return
                 polygon.setOptions({ fillOpacity: st.fillOpacity, strokeWeight: 1.2, strokeOpacity: 0.85, zIndex: 5 })
@@ -894,30 +988,49 @@ async function initMap(tree: any[]) {
     drawLarge(tree)
     drawSmall(tree)
 
-    // 事件标记：六边形脉冲（差异化：六边形 vs 圆形波纹）
+    // 事件标记：红色紧急保留 DOM 六边形脉冲动画（数量少）；其余走 LabelsLayer GPU 批量渲染
+    evtLabelsLayer = new AMap.LabelsLayer({ zooms: [3, 20], zIndex: 12, collision: false, animation: false })
+    map.add(evtLabelsLayer)
+    const plainMarkers: any[] = []
     for (const evt of events.value) {
       if (!evt.longitude || !evt.latitude) continue
-      const color = urgencyColor(evt.urgencyLevel)
-      const marker = new AMap.Marker({
-        position: [evt.longitude, evt.latitude], zIndex: 12,
-        content: `<div class="evt-hex" style="--hc:${color}">
-          <span class="hex-pulse"></span><span class="hex-pulse hp2"></span>
-          <span class="hex-core"></span></div>`,
-        offset: new AMap.Pixel(-10, -10), map, extData: evt
-      })
-      eventMarkerList.push(marker)
-      marker.on('mouseover', (e: any) => {
-        const px = map.lngLatToContainer(e.lnglat)
-        hoverInfo.visible = true; hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
-        hoverInfo.name = evt.title || '事件'; hoverInfo.id = ++hoverId
-      })
-      marker.on('mousemove', (e: any) => {
-        const px = map.lngLatToContainer(e.lnglat)
-        hoverInfo.x = px.getX(); hoverInfo.y = px.getY()
-      })
-      marker.on('mouseout', () => { hoverInfo.visible = false })
-      marker.on('click', () => { selectedEvent.value = evt })
+      if (evt.urgencyLevel === 'RED') {
+        const marker = new AMap.Marker({
+          position: [evt.longitude, evt.latitude], zIndex: 13,
+          content: `<div class="evt-hex" style="--hc:${urgencyColor('RED')}">
+            <span class="hex-pulse"></span><span class="hex-pulse hp2"></span>
+            <span class="hex-core"></span></div>`,
+          offset: new AMap.Pixel(-10, -10), map, extData: evt
+        })
+        redPulseMarkers.push(marker)
+        marker.on('mouseover', (e: any) => {
+          hoverInfo.visible = true; throttledHoverMove(e)
+          hoverInfo.name = evt.title || '事件'; hoverInfo.id = ++hoverId
+        })
+        marker.on('mousemove', (e: any) => throttledHoverMove(e))
+        marker.on('mouseout', () => { hoverInfo.visible = false })
+        marker.on('click', () => { selectedEvent.value = evt })
+      } else {
+        const lm = new AMap.LabelMarker({
+          position: [evt.longitude, evt.latitude], zIndex: 12, extData: evt,
+          icon: { image: HEX_ICON[evt.urgencyLevel] || HEX_ICON.GREEN, size: [22, 22], anchor: 'center' }
+        })
+        lm.on('mouseover', (e: any) => {
+          hoverInfo.visible = true; throttledHoverMove(e)
+          hoverInfo.name = evt.title || '事件'; hoverInfo.id = ++hoverId
+        })
+        lm.on('mousemove', (e: any) => throttledHoverMove(e))
+        lm.on('mouseout', () => { hoverInfo.visible = false })
+        lm.on('click', () => { selectedEvent.value = evt })
+        plainMarkers.push(lm)
+      }
     }
+    evtLabelsLayer.add(plainMarkers)
+
+    // 缩放级别聚合：缩小显示数量气泡、放大展开单点
+    rebuildClusters(AMap)
+    map.on('zoomchange', syncClusterVisibility)
+    syncClusterVisibility()
   } catch (e: any) {
     loadError.value = '地图初始化失败: ' + (e?.message || e)
   }
@@ -1579,4 +1692,14 @@ function toggleLayerDock() {
   0% { transform: scale(1); opacity: 0.40; }
   100% { transform: scale(3.5); opacity: 0; }
 }
+
+/* 缩放级别聚合气泡 */
+.evt-cluster {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(2,132,199,0.85); color: #fff; font-size: 13px; font-weight: 700;
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: 0 2px 10px rgba(2,132,199,0.45); cursor: pointer;
+}
+.evt-cluster.hot { background: rgba(239,68,68,0.88); box-shadow: 0 2px 12px rgba(239,68,68,0.5); }
 </style>
