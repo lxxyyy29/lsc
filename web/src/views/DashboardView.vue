@@ -801,8 +801,12 @@ function toggleSatellite() {
       roadNetLayer = new AMap.TileLayer.RoadNet()
     }
     mapInstance.add([satelliteLayer, roadNetLayer])
+    // 隐藏矢量建筑层，避免白灰色建筑块叠加遮挡卫星影像
+    mapInstance.setFeatures(['bg', 'road'])
   } else if (satelliteLayer) {
     mapInstance.remove([satelliteLayer, roadNetLayer])
+    // 恢复 3D 立体建筑
+    mapInstance.setFeatures(['bg', 'road', 'building', 'building3D'])
   }
 }
 
