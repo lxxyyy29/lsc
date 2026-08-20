@@ -207,29 +207,6 @@ export async function archiveEvent(id: number) {
   return http.post(`/events/${id}/archive`)
 }
 
-export async function importFrom12345(data: {
-  title: string
-  description?: string
-  eventType?: string
-  location?: string
-  reporterName?: string
-  reporterPhone?: string
-  externalNo?: string
-}) {
-  return http.post('/events/12345-import', data)
-}
-
-export async function reportFromProperty(data: {
-  title: string
-  description?: string
-  eventType?: string
-  location?: string
-  propertyName?: string
-  reporterName?: string
-}) {
-  return http.post('/events/property-report', data)
-}
-
 export async function getEventTimeline(id: number | string) {
   return http.get(`/events/${id}/timeline`)
 }
@@ -688,6 +665,58 @@ export async function resetSystemUserPassword(id: number, newPassword: string) {
 
 export async function deleteSystemUser(id: number) {
   return http.delete(`/system/users/${id}`)
+}
+
+// ---------------- 系统字典 ----------------
+export interface DictType {
+  id: number
+  dictCode: string
+  dictName: string
+  status: string
+  remark: string | null
+  itemCount: number
+}
+
+export interface DictItem {
+  id: number
+  dictCode: string
+  itemValue: string
+  itemLabel: string
+  sortOrder: number
+  status: string
+  remark: string | null
+}
+
+export async function getDictTypes() {
+  return http.get<DictType[]>('/system/dicts')
+}
+
+export async function getDictItems(code: string, activeOnly = false) {
+  return http.get<DictItem[]>(`/system/dicts/${code}/items`, { params: { activeOnly } })
+}
+
+export async function createDictType(data: { dictCode: string; dictName: string; status?: string; remark?: string }) {
+  return http.post('/system/dicts', data)
+}
+
+export async function updateDictType(id: number, data: { dictName: string; status?: string; remark?: string }) {
+  return http.put(`/system/dicts/${id}`, data)
+}
+
+export async function deleteDictType(id: number) {
+  return http.delete(`/system/dicts/${id}`)
+}
+
+export async function createDictItem(code: string, data: { itemValue: string; itemLabel: string; sortOrder?: number; status?: string; remark?: string }) {
+  return http.post(`/system/dicts/${code}/items`, data)
+}
+
+export async function updateDictItem(itemId: number, data: { itemValue?: string; itemLabel?: string; sortOrder?: number; status?: string; remark?: string }) {
+  return http.put(`/system/dicts/items/${itemId}`, data)
+}
+
+export async function deleteDictItem(itemId: number) {
+  return http.delete(`/system/dicts/items/${itemId}`)
 }
 
 export default http

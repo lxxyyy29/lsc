@@ -108,6 +108,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getAudits, auditEvent } from '../api'
+import { showMessage } from '../utils/message'
 
 const loading = ref(false)
 const audits = ref<any[]>([])
@@ -154,10 +155,10 @@ async function auditAction(audit: any, action: string) {
   if (remark === null) return
   try {
     await auditEvent(audit.id, action, remark?.trim() || undefined)
-    alert(action === 'pass' ? '已通过，事件进入待派单' : '已驳回')
+    showMessage(action === 'pass' ? '已通过，事件进入待派单' : '已驳回')
     await loadData()
   } catch (e: any) {
-    alert(e.message || '审核操作失败')
+    showMessage(e.message || '审核操作失败')
   }
 }
 

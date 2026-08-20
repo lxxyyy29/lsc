@@ -129,6 +129,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getTrendAlerts, getTrendAlertStatistics, scanTrendAlerts, handleTrendAlert } from '../api'
+import { showMessage } from '../utils/message'
 
 const alerts = ref<any[]>([])
 const stats = ref<any>({})
@@ -152,7 +153,7 @@ async function loadAlerts() {
     total.value = res?.total || 0
     stats.value = await getTrendAlertStatistics() || {}
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    showMessage(e?.message || '加载失败')
   }
 }
 
@@ -160,10 +161,10 @@ async function handleScan() {
   scanning.value = true
   try {
     const created = await scanTrendAlerts()
-    alert(`扫描完成，新生成 ${created || 0} 条预警`)
+    showMessage(`扫描完成，新生成 ${created || 0} 条预警`)
     await loadAlerts()
   } catch (e: any) {
-    alert(e?.message || '扫描失败')
+    showMessage(e?.message || '扫描失败')
   } finally {
     scanning.value = false
   }
@@ -181,7 +182,7 @@ async function handleSubmit() {
     showHandle.value = false
     await loadAlerts()
   } catch (e: any) {
-    alert(e?.message || '处理失败')
+    showMessage(e?.message || '处理失败')
   }
 }
 

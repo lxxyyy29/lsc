@@ -30,6 +30,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/system-roles', component: () => import('../views/RoleManageView.vue') },
   { path: '/system-users', component: () => import('../views/UserManageView.vue') },
   { path: '/system-menus', component: () => import('../views/MenuManageView.vue') },
+  { path: '/system-dicts', component: () => import('../views/DictManageView.vue') },
   // 信息互通（实时聊天）功能暂不启用，保留代码后续开发
   // { path: '/integration', component: () => import('../views/IntegrationView.vue') },
   { path: '/org-members', component: () => import('../views/OrgMemberView.vue') },

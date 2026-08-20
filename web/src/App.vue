@@ -105,6 +105,7 @@ import { getSession, login, logout, getMenuBadges, markBadgeRead, changePassword
 import { menuGroups, visibleGroupsFor, isSuperAdminSession } from './menu'
 import LoginView from './views/LoginView.vue'
 import NotificationBell from './components/NotificationBell.vue'
+import { showMessage } from './utils/message'
 
 const session = ref(getSession())
 const route = useRoute()
@@ -264,7 +265,7 @@ async function submitPwdChange() {
     await changePassword(pwdForm.oldPassword, pwdForm.newPassword)
     showPwdModal.value = false
     // 密码修改后存量令牌全部失效，直接退出引导用新密码重新登录
-    alert('密码修改成功，请使用新密码重新登录')
+    showMessage('密码修改成功，请使用新密码重新登录')
     handleLogout()
   } catch (e: any) {
     pwdError.value = e?.message || '修改失败，请稍后重试'

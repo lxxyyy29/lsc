@@ -163,6 +163,7 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { getAllPatrolTasks, getPatrolTaskStatistics, generatePatrolTasks, markOverduePatrolTasks, getPatrolRecords, remindUpcomingPatrolTasks } from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
+import { showMessage } from '../utils/message'
 
 const tasks = ref<any[]>([])
 const records = ref<any[]>([])
@@ -332,32 +333,32 @@ async function generateTasks() {
   try {
     const count = await generatePatrolTasks()
     if (count > 0) {
-      alert(`成功生成 ${count} 个巡查任务`)
+      showMessage(`成功生成 ${count} 个巡查任务`)
     } else {
-      alert('本周巡查任务已存在，无需重复生成')
+      showMessage('本周巡查任务已存在，无需重复生成')
     }
     loadTasks()
   } catch (e: any) {
-    alert(e?.message || '生成失败')
+    showMessage(e?.message || '生成失败')
   }
 }
 
 async function markOverdue() {
   try {
     const count = await markOverduePatrolTasks()
-    alert(`标记了 ${count} 个超期任务`)
+    showMessage(`标记了 ${count} 个超期任务`)
     loadTasks()
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    showMessage(e?.message || '操作失败')
   }
 }
 
 async function remindUpcoming() {
   try {
     const count = await remindUpcomingPatrolTasks()
-    alert(`已发送 ${count} 条到期未巡提醒`)
+    showMessage(`已发送 ${count} 条到期未巡提醒`)
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    showMessage(e?.message || '操作失败')
   }
 }
 

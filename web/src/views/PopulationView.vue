@@ -151,6 +151,7 @@ import { ref, reactive, onMounted } from 'vue'
 import http from '../api'
 import { getHouseholdTypeName } from '../utils/eventTypes'
 import ImportDialog from '../components/ImportDialog.vue'
+import { showMessage } from '../utils/message'
 
 const householdTypes = [
   { value: 'LOCAL', label: '本地户籍' },
@@ -239,7 +240,7 @@ function openEdit(p: any) {
 }
 
 async function handleSubmit() {
-  if (!form.value.name.trim()) { alert('请输入姓名'); return }
+  if (!form.value.name.trim()) { showMessage('请输入姓名'); return }
   saving.value = true
   try {
     const payload: any = { ...form.value }
@@ -247,15 +248,15 @@ async function handleSubmit() {
     if (!payload.gridId) payload.gridId = null
     if (form.value.id) {
       await http.put(`/community/population/${form.value.id}`, payload)
-      alert('保存成功')
+      showMessage('保存成功')
     } else {
       await http.post('/community/population', payload)
-      alert('添加成功')
+      showMessage('添加成功')
     }
     showForm.value = false
     await fetchData()
   } catch(e: any) {
-    alert(e?.message || '操作失败')
+    showMessage(e?.message || '操作失败')
   } finally {
     saving.value = false
   }
@@ -265,10 +266,10 @@ async function handleDelete(p: any) {
   if (!confirm(`确定删除人员「${p.name}」吗？删除后不可恢复。`)) return
   try {
     await http.delete(`/community/population/${p.id}`)
-    alert('删除成功')
+    showMessage('删除成功')
     fetchData()
   } catch(e: any) {
-    alert(e?.message || '删除失败')
+    showMessage(e?.message || '删除失败')
   }
 }
 
@@ -284,7 +285,7 @@ async function exportData() {
       headers: { Authorization: `Bearer ${session.token}` }
     })
     if (!res.ok) {
-      alert(res.status === 401 ? '登录已过期，请重新登录' : '导出失败，请稍后重试')
+      showMessage(res.status === 401 ? '登录已过期，请重新登录' : '导出失败，请稍后重试')
       return
     }
     const blob = await res.blob()
@@ -296,7 +297,7 @@ async function exportData() {
     URL.revokeObjectURL(url)
   } catch (e) {
     console.error(e)
-    alert('导出失败，请检查网络')
+    showMessage('导出失败，请检查网络')
   }
 }
 

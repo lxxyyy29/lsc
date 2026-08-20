@@ -200,6 +200,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import http from '../api'
 import { getAuditLogs, getAuditLogDiff, previewAuditLogRollback, rollbackAuditLog } from '../api'
+import { showMessage } from '../utils/message'
 
 const items = ref<any[]>([])
 const tables = ref<string[]>([])
@@ -370,10 +371,10 @@ async function confirmRollback() {
 async function doRollback(id: number) {
   try {
     await rollbackAuditLog(id)
-    alert('回滚成功')
+    showMessage('回滚成功')
     loadData()
   } catch (e: any) {
-    alert(e?.message || '回滚失败')
+    showMessage(e?.message || '回滚失败')
   }
 }
 

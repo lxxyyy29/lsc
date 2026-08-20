@@ -235,6 +235,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import http, { syncGridWorkersToOrgMembers, hasPermission } from '../api'
+import { showMessage } from '../utils/message'
 
 // 注册审批仅超级管理员可见（后端同样校验 api:system:user:create）
 const canApprove = hasPermission('api:system:user:create')
@@ -303,34 +304,34 @@ async function openAssign() {
   try {
     leaderCandidates.value = await http.get('/community/org-members/leader-candidates') || []
   } catch(e: any) {
-    alert('加载组长候选人失败：' + (e?.message || '未知错误'))
+    showMessage('加载组长候选人失败：' + (e?.message || '未知错误'))
     return
   }
   showAssign.value = true
 }
 async function handleAssign() {
-  if (!assignLeaderId.value) { alert('请先选择组长'); return }
-  if (!assignChecked.value.length) { alert('请勾选要划分的属下网格员'); return }
+  if (!assignLeaderId.value) { showMessage('请先选择组长'); return }
+  if (!assignChecked.value.length) { showMessage('请勾选要划分的属下网格员'); return }
   const leader = leaderCandidates.value.find(l => l.id === assignLeaderId.value)
   if (!confirm(`确认将选中的 ${assignChecked.value.length} 名成员划入组长「${leader?.name}」名下吗？`)) return
   try {
     await http.post('/community/org-members/assign', { leaderId: assignLeaderId.value, memberIds: assignChecked.value })
-    alert('划分成功')
+    showMessage('划分成功')
     showAssign.value = false
     await fetchData()
   } catch(e: any) {
-    alert(e?.message || '划分失败')
+    showMessage(e?.message || '划分失败')
   }
 }
 async function unassignOne(m: any) {
   if (!confirm(`确认取消「${m.name}」与组长「${m.leaderName}」的划分关系吗？`)) return
   try {
     await http.post('/community/org-members/assign', { leaderId: null, memberIds: [m.id] })
-    alert('已取消划分')
+    showMessage('已取消划分')
     await fetchData()
     if (showAssign.value) await openAssign()
   } catch(e: any) {
-    alert(e?.message || '操作失败')
+    showMessage(e?.message || '操作失败')
   }
 }
 
@@ -338,10 +339,10 @@ async function handleSync() {
   if (!confirm('将系统用户中的网格员同步到组织人员表，继续吗？')) return
   try {
     const res: any = await syncGridWorkersToOrgMembers()
-    alert(res?.message || '同步完成')
+    showMessage(res?.message || '同步完成')
     await fetchData()
   } catch(e: any) {
-    alert('同步失败：' + (e?.message || '未知错误'))
+    showMessage('同步失败：' + (e?.message || '未知错误'))
   }
 }
 
@@ -384,11 +385,11 @@ async function approvePwdReset(row: any) {
   if (!confirm(`确认将 ${row.real_name || row.account} 的密码重置为手机号后 6 位吗？`)) return
   try {
     const res: any = await http.post(`/password-reset/${row.id}/approve`)
-    alert(`已重置成功！\n新密码：${res?.newPassword}\n\n请通过电话/微信告知用户本人，提醒其登录后自行修改`)
+    showMessage(`已重置成功！\n新密码：${res?.newPassword}\n\n请通过电话/微信告知用户本人，提醒其登录后自行修改`, 'success', 8000)
     await fetchPwdResets()
     await fetchData()
   } catch (e: any) {
-    alert('重置失败：' + (e?.message || '请稍后重试'))
+    showMessage('重置失败：' + (e?.message || '请稍后重试'))
   }
 }
 
@@ -397,11 +398,11 @@ async function rejectPwdReset(row: any) {
   if (remark === null) return
   try {
     await http.post(`/password-reset/${row.id}/reject`, { remark })
-    alert('已驳回')
+    showMessage('已驳回')
     await fetchPwdResets()
     await fetchData()
   } catch (e: any) {
-    alert('驳回失败：' + (e?.message || '请稍后重试'))
+    showMessage('驳回失败：' + (e?.message || '请稍后重试'))
   }
 }
 
@@ -417,7 +418,7 @@ async function fetchPending() {
 
 async function approveReg(row: any) {
   await http.post(`/registration/${row.id}/approve`, { remark: '审批通过', memberType: approvalTypes.value[row.id] || 'GRID_WORKER' })
-  alert(row.regSource === 'WEB' ? '已通过，账号已获得普通管理员权限，可登录 web 管理端' : '已通过，用户已分配网格员身份并可登录 H5 端')
+  showMessage(row.regSource === 'WEB' ? '已通过，账号已获得普通管理员权限，可登录 web 管理端' : '已通过，用户已分配网格员身份并可登录 H5 端')
   delete approvalTypes.value[row.id]
   await fetchPending()
   await fetchData()
@@ -427,7 +428,7 @@ async function rejectReg(row: any) {
   const remark = prompt('拒绝原因：')
   if (remark === null) return
   await http.post(`/registration/${row.id}/reject`, { remark })
-  alert('已拒绝')
+  showMessage('已拒绝')
   await fetchPending()
   await fetchData()
 }
@@ -463,28 +464,28 @@ async function handleDelete(item: any) {
   if (!confirm(`确定要删除网格员「${item.name}」吗？`)) return
   try {
     await http.delete(`/community/org-members/${item.id}`)
-    alert('删除成功')
+    showMessage('删除成功')
     fetchData()
   } catch(e: any) {
-    alert(e?.message || '删除失败')
+    showMessage(e?.message || '删除失败')
   }
 }
 
 async function handleSubmit() {
-  if (!form.value.name) { alert('请输入姓名'); return }
-  if (form.value.memberType === 'GRID_WORKER' && !form.value.gridId) { alert('请选择所属小网格'); return }
+  if (!form.value.name) { showMessage('请输入姓名'); return }
+  if (form.value.memberType === 'GRID_WORKER' && !form.value.gridId) { showMessage('请选择所属小网格'); return }
   try {
     if (showEdit.value && form.value.id) {
       await http.put(`/community/org-members/${form.value.id}`, form.value)
-      alert('保存成功')
+      showMessage('保存成功')
     } else {
       await http.post('/community/org-members', form.value)
-      alert('添加成功')
+      showMessage('添加成功')
     }
     closeModal()
     await fetchData()
   } catch(e: any) {
-    alert(e?.message || '操作失败')
+    showMessage(e?.message || '操作失败')
   }
 }
 

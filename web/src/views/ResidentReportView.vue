@@ -61,6 +61,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import http from '../api'
 import { getEventTypeName } from '../utils/eventTypes'
+import { showMessage } from '../utils/message'
 
 const router = useRouter()
 
@@ -110,7 +111,7 @@ async function fetchData() {
 }
 
 function viewDetail(item: any) {
-  alert(`标题：${item.title}\n描述：${item.content || '-'}\n类型：${getEventTypeName(item.reportType)}\n状态：${statusLabel(item.status)}\n上报人：${item.residentName || '-'}（${item.residentPhone || '-'}）\n所属网格：${item.gridName || '-'}\n上报时间：${formatTime(item.createdAt)}${item.handleResult ? '\n处理结果：' + item.handleResult : ''}`)
+  showMessage(`标题：${item.title}\n描述：${item.content || '-'}\n类型：${getEventTypeName(item.reportType)}\n状态：${statusLabel(item.status)}\n上报人：${item.residentName || '-'}（${item.residentPhone || '-'}）\n所属网格：${item.gridName || '-'}\n上报时间：${formatTime(item.createdAt)}${item.handleResult ? '\n处理结果：' + item.handleResult : ''}`, 'info', 8000)
 }
 
 // 跳转到归口生成的事件详情，处置派单在事件中心完成

@@ -121,6 +121,10 @@ public final class PermissionCodes {
     public static final String API_SYSTEM_MENU_DELETE = "api:system:menu:delete";
     /** 查看权限列表接口权限 */
     public static final String API_SYSTEM_PERMISSION_LIST = "api:system:permission:list";
+    /** 查看字典/字典项接口权限（下拉选项读取也走此权限） */
+    public static final String API_SYSTEM_DICT_LIST = "api:system:dict:list";
+    /** 字典增删改接口权限 */
+    public static final String API_SYSTEM_DICT_MANAGE = "api:system:dict:manage";
 
     /** 无人机目录权限 */
     public static final String CATALOG_DRONE = "catalog:drone";

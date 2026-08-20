@@ -101,6 +101,7 @@
 import { ref, computed } from 'vue'
 
 import { previewImport, executeImport } from '../api'
+import { showMessage } from '../utils/message'
 
 const props = defineProps<{
   visible: boolean
@@ -177,7 +178,7 @@ async function handlePreview() {
     previewData.value = await previewImport(props.type, selectedFile.value, 10)
     step.value = 2
   } catch (e: any) {
-    alert(e?.message || '文件解析失败')
+    showMessage(e?.message || '文件解析失败')
   } finally {
     loading.value = false
   }
@@ -191,7 +192,7 @@ async function handleExecute() {
     step.value = 3
     emit('success')
   } catch (e: any) {
-    alert(e?.message || '导入失败')
+    showMessage(e?.message || '导入失败')
   } finally {
     loading.value = false
   }

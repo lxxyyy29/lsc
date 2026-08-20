@@ -84,6 +84,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getDispatchRules, createDispatchRule, updateDispatchRule, deleteDispatchRule } from '../api'
+import { showMessage } from '../utils/message'
 
 const rules = ref<any[]>([])
 const showForm = ref(false)
@@ -93,7 +94,7 @@ async function loadRules() {
   try {
     rules.value = await getDispatchRules() || []
   } catch (e: any) {
-    alert(e?.message || '加载规则失败')
+    showMessage(e?.message || '加载规则失败')
   }
 }
 
@@ -108,8 +109,8 @@ function openEdit(r: any) {
 }
 
 async function handleSave() {
-  if (!form.value.eventType?.trim()) { alert('请填写事件类型'); return }
-  if (!form.value.targetRoleCode) { alert('请选择目标角色'); return }
+  if (!form.value.eventType?.trim()) { showMessage('请填写事件类型'); return }
+  if (!form.value.targetRoleCode) { showMessage('请选择目标角色'); return }
   try {
     const payload = {
       eventType: form.value.eventType.trim(),
@@ -126,7 +127,7 @@ async function handleSave() {
     showForm.value = false
     await loadRules()
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    showMessage(e?.message || '保存失败')
   }
 }
 
@@ -136,7 +137,7 @@ async function handleDelete(r: any) {
     await deleteDispatchRule(r.id)
     await loadRules()
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    showMessage(e?.message || '删除失败')
   }
 }
 

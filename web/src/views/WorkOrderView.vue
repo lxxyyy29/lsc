@@ -162,6 +162,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import http, { getWorkOrders, confirmCloseWorkOrder, rejectCloseWorkOrder } from '../api'
+import { showMessage } from '../utils/message'
 
 const loading = ref(false)
 const orders = ref<any[]>([])
@@ -249,14 +250,14 @@ async function confirmClose(order: any) {
     selectedOrder.value = null
     loadData()
   } catch (e: any) {
-    alert(e.message || '确认关闭失败')
+    showMessage(e.message || '确认关闭失败')
   }
 }
 
 async function rejectClose(order: any) {
   if (!order) return
   if (!closeRemark.value.trim()) {
-    alert('驳回时必须填写原因')
+    showMessage('驳回时必须填写原因')
     return
   }
   try {
@@ -264,7 +265,7 @@ async function rejectClose(order: any) {
     selectedOrder.value = null
     loadData()
   } catch (e: any) {
-    alert(e.message || '驳回失败')
+    showMessage(e.message || '驳回失败')
   }
 }
 

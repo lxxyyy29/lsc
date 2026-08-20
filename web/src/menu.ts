@@ -86,6 +86,7 @@ export const menuGroups: MenuGroup[] = [
       { path: '/system-roles', name: '角色管理', permKey: 'web:menu:system-roles' },
       { path: '/system-users', name: '账号管理', permKey: 'web:menu:system-users' },
       { path: '/system-menus', name: '菜单管理', permKey: 'web:menu:system-menus' },
+      { path: '/system-dicts', name: '字典管理', permKey: 'web:menu:system-dicts' },
     ]
   },
 ]

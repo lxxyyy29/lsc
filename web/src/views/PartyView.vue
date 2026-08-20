@@ -443,6 +443,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import http from '../api'
+import { showMessage } from '../utils/message'
 
 const tabs = [
   { key: 'household', label: '党员联户' },
@@ -533,41 +534,41 @@ async function loadPolicyOptions() {
 async function recordVisit(id: number) {
   try {
     await http.post(`/party/households/${id}/visit`, {})
-    alert('走访记录成功！')
+    showMessage('走访记录成功！')
     await loadHouseholds()
   } catch (e: any) {
-    alert('走访失败：' + (e?.message || '未知错误'))
+    showMessage('走访失败：' + (e?.message || '未知错误'))
   }
 }
 async function signupActivity(id: number) {
   try {
     await http.post(`/party/activities/${id}/signup`, { userId: 1 })
-    alert('报名成功！')
+    showMessage('报名成功！')
     await loadActivities()
   } catch (e: any) {
-    alert('报名失败：' + (e?.message || '未知错误'))
+    showMessage('报名失败：' + (e?.message || '未知错误'))
   }
 }
 async function submitHousehold() {
-  try { await http.post('/party/households', householdForm.value); showAddHousehold.value = false; loadHouseholds() } catch (e: any) { alert(e?.message) }
+  try { await http.post('/party/households', householdForm.value); showAddHousehold.value = false; loadHouseholds() } catch (e: any) { showMessage(e?.message) }
 }
 async function submitActivity() {
-  try { await http.post('/party/activities', activityForm.value); showAddActivity.value = false; loadActivities() } catch (e: any) { alert(e?.message) }
+  try { await http.post('/party/activities', activityForm.value); showAddActivity.value = false; loadActivities() } catch (e: any) { showMessage(e?.message) }
 }
 async function submitMeeting() {
-  try { await http.post('/party/meetings', meetingForm.value); showAddMeeting.value = false; loadMeetings() } catch (e: any) { alert(e?.message) }
+  try { await http.post('/party/meetings', meetingForm.value); showAddMeeting.value = false; loadMeetings() } catch (e: any) { showMessage(e?.message) }
 }
 async function submitTask() {
-  try { await http.post('/party/tasks', taskForm.value); showAddTask.value = false; loadTasks() } catch (e: any) { alert(e?.message) }
+  try { await http.post('/party/tasks', taskForm.value); showAddTask.value = false; loadTasks() } catch (e: any) { showMessage(e?.message) }
 }
 async function acceptTask(id: number) {
-  try { await http.post(`/party/tasks/${id}/accept`, { memberId: 1 }); loadTasks() } catch (e: any) { alert(e?.message) }
+  try { await http.post(`/party/tasks/${id}/accept`, { memberId: 1 }); loadTasks() } catch (e: any) { showMessage(e?.message) }
 }
 async function completeTask(id: number) {
-  try { await http.post(`/party/tasks/${id}/complete`, {}); loadTasks() } catch (e: any) { alert(e?.message) }
+  try { await http.post(`/party/tasks/${id}/complete`, {}); loadTasks() } catch (e: any) { showMessage(e?.message) }
 }
 async function submitDeliberation() {
-  try { await http.post('/party/deliberations', deliberationForm.value); showAddDeliberation.value = false; loadDeliberations() } catch (e: any) { alert(e?.message) }
+  try { await http.post('/party/deliberations', deliberationForm.value); showAddDeliberation.value = false; loadDeliberations() } catch (e: any) { showMessage(e?.message) }
 }
 function openVoteModal(d: any) {
   votingDeliberation.value = d
@@ -578,27 +579,27 @@ async function submitVote() {
   try {
     await http.post(`/party/deliberations/${votingDeliberation.value.id}/vote`, voteForm.value)
     showVoteModal.value = false
-    alert('投票成功！')
+    showMessage('投票成功！')
     loadDeliberations()
-  } catch (e: any) { alert(e?.message) }
+  } catch (e: any) { showMessage(e?.message) }
 }
 async function closeDeliberation(id: number) {
-  try { await http.post(`/party/deliberations/${id}/close`, {}); loadDeliberations() } catch (e: any) { alert(e?.message) }
+  try { await http.post(`/party/deliberations/${id}/close`, {}); loadDeliberations() } catch (e: any) { showMessage(e?.message) }
 }
 async function submitPush() {
   try {
     const res = await http.post('/party/policy-push', pushForm.value)
     showPushModal.value = false
-    alert(`推送成功！覆盖 ${res?.pushCount || 0} 人次`)
+    showMessage(`推送成功！覆盖 ${res?.pushCount || 0} 人次`)
     loadPolicyPushes()
-  } catch (e: any) { alert(e?.message) }
+  } catch (e: any) { showMessage(e?.message) }
 }
 async function generateAssessment() {
   try {
     const count = await http.post('/party/assessments/generate', { month: assessmentMonth.value })
-    alert(`已生成 ${count} 条考核记录`)
+    showMessage(`已生成 ${count} 条考核记录`)
     loadAssessments()
-  } catch (e: any) { alert(e?.message) }
+  } catch (e: any) { showMessage(e?.message) }
 }
 
 onMounted(() => {

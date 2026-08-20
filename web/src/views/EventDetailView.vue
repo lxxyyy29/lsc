@@ -131,6 +131,7 @@ import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getSystemUsers, archiveEvent, getDispatchSuggestion, smartDispatchEvent } from '../api'
 import { getEventTypeName } from '../utils/eventTypes'
+import { showMessage } from '../utils/message'
 
 const route = useRoute()
 const router = useRouter()
@@ -235,13 +236,13 @@ function handleBack() {
 }
 
 async function handleClose() {
-  if (!closeReason.value.trim()) { alert('请输入关闭原因'); return }
+  if (!closeReason.value.trim()) { showMessage('请输入关闭原因'); return }
   try {
     await closeEvent(Number(eventId.value), closeReason.value)
     showClose.value = false
     emit('changed')
     loadData()
-  } catch (e: any) { alert(e?.message || '操作失败') }
+  } catch (e: any) { showMessage(e?.message || '操作失败') }
 }
 
 async function handleReopen() {
@@ -249,7 +250,7 @@ async function handleReopen() {
     await reopenEvent(Number(eventId.value))
     emit('changed')
     loadData()
-  } catch (e: any) { alert(e?.message || '操作失败') }
+  } catch (e: any) { showMessage(e?.message || '操作失败') }
 }
 
 async function handleArchive() {
@@ -258,11 +259,11 @@ async function handleArchive() {
     await archiveEvent(Number(eventId.value))
     emit('changed')
     loadData()
-  } catch (e: any) { alert(e?.message || '归档失败') }
+  } catch (e: any) { showMessage(e?.message || '归档失败') }
 }
 
 async function handleDispatch() {
-  if (!dispatchForm.value.assigneeUserId) { alert('请选择受派人员'); return }
+  if (!dispatchForm.value.assigneeUserId) { showMessage('请选择受派人员'); return }
   try {
     await dispatchEvent(Number(eventId.value), {
       assigneeUserId: dispatchForm.value.assigneeUserId,
@@ -271,7 +272,7 @@ async function handleDispatch() {
     showDispatch.value = false
     emit('changed')
     loadData()
-  } catch (e: any) { alert(e?.message || '派单失败') }
+  } catch (e: any) { showMessage(e?.message || '派单失败') }
 }
 
 // 打开派单弹窗时加载智能推荐
@@ -295,10 +296,10 @@ async function handleSmartDispatch() {
   try {
     await smartDispatchEvent(Number(eventId.value), dispatchForm.value.remark)
     showDispatch.value = false
-    alert('智能派单成功')
+    showMessage('智能派单成功')
     emit('changed')
     loadData()
-  } catch (e: any) { alert(e?.message || '智能派单失败') }
+  } catch (e: any) { showMessage(e?.message || '智能派单失败') }
 }
 
 onMounted(loadData)

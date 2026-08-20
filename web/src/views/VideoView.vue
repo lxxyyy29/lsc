@@ -227,6 +227,7 @@ import {
   updateVideoCamera, deleteVideoCamera, getVideoCameraStream, getGridTree, getSession,
   getVideoRecordDates, getVideoRecords
 } from '../api'
+import { showMessage } from '../utils/message'
 
 interface Camera {
   id: number
@@ -389,7 +390,7 @@ function togglePatrol() {
   } else {
     const pool = patrolPool.value
     if (pool.length === 0) {
-      alert('没有可轮巡的点位(需在线且转流就绪)')
+      showMessage('没有可轮巡的点位(需在线且转流就绪)')
       return
     }
     // 从当前点位或第一路开始
@@ -431,9 +432,9 @@ function syncGridName() {
 }
 
 async function saveCamera() {
-  if (!form.value.cameraName?.trim()) { alert('请填写点位名称'); return }
-  if (!form.value.deviceNo?.trim()) { alert('请填写设备编号'); return }
-  if (!form.value.streamUrl?.trim()) { alert('请填写视频流地址'); return }
+  if (!form.value.cameraName?.trim()) { showMessage('请填写点位名称'); return }
+  if (!form.value.deviceNo?.trim()) { showMessage('请填写设备编号'); return }
+  if (!form.value.streamUrl?.trim()) { showMessage('请填写视频流地址'); return }
   try {
     if (form.value.id) {
       await updateVideoCamera(form.value.id, form.value)
@@ -444,7 +445,7 @@ async function saveCamera() {
     await loadCameras()
     await loadStats()
   } catch (e: any) {
-    alert(e?.response?.data?.message || '保存失败')
+    showMessage(e?.response?.data?.message || '保存失败')
   }
 }
 
@@ -515,7 +516,7 @@ async function playRecord(r: { file: string; startTime: string; duration: number
       await v.play().catch(() => { })
     }
   } catch (e) {
-    alert('录像加载失败: ' + (e as Error).message)
+    showMessage('录像加载失败: ' + (e as Error).message)
     recordFile.value = ''
   }
 }

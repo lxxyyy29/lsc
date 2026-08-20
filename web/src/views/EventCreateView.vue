@@ -72,15 +72,12 @@
       <div style="margin-bottom:16px;">
         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">上报来源</label>
         <select v-model="form.reportSource" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
-          <option value="GRID_MEMBER">网格员上报</option>
-          <option value="RESIDENT">居民上报</option>
-          <option value="12345">12345转办</option>
-          <option value="PROPERTY">物业上报</option>
-          <option value="AI_CAMERA">AI监控抓拍</option>
+          <option v-for="opt in reportSourceOptions" :key="opt.itemValue" :value="opt.itemValue">{{ opt.itemLabel }}</option>
         </select>
       </div>
 
-      <div style="display:flex;gap:12px;justify-content:flex-end;">
+      <!-- 操作栏吸底：弹窗内滚动时始终保持在可视区右下角 -->
+      <div style="display:flex;gap:12px;justify-content:flex-end;position:sticky;bottom:0;background:#fff;padding-top:12px;margin-top:16px;border-top:1px solid #f3f4f6;">
         <button @click="handleCancel" style="padding:8px 20px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">取消</button>
         <button @click="submit" :disabled="loading" style="padding:8px 20px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">
           {{ loading ? '提交中...' : '创建事件' }}
@@ -93,9 +90,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createEvent, getGridTree } from '../api'
+import { createEvent, getGridTree, getDictItems } from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { locateWithFallback } from '../utils/geolocation'
+import { showMessage } from '../utils/message'
 
 const router = useRouter()
 // embedded=true 时作为弹窗内嵌组件使用（取消/成功后 emit 给父组件，不跳路由）
@@ -103,6 +101,16 @@ const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: fa
 const emit = defineEmits<{ (e: 'cancel'): void; (e: 'created', id: number): void }>()
 const loading = ref(false)
 const grids = ref<any[]>([])
+
+// 上报来源字典驱动（event_report_source），接口不可用时兜底内置列表
+const FALLBACK_REPORT_SOURCES = [
+  { itemValue: 'GRID_MEMBER', itemLabel: '网格员上报' },
+  { itemValue: 'RESIDENT', itemLabel: '居民上报' },
+  { itemValue: '12345', itemLabel: '12345转办' },
+  { itemValue: 'PROPERTY', itemLabel: '物业上报' },
+  { itemValue: 'AI_CAMERA', itemLabel: 'AI监控抓拍' },
+]
+const reportSourceOptions = ref<{ itemValue: string; itemLabel: string }[]>(FALLBACK_REPORT_SOURCES)
 let mapInstance: any = null
 let markerInstance: any = null
 let AMapLib: any = null
@@ -123,6 +131,10 @@ const form = ref({
 onMounted(async () => {
   try {
     grids.value = await getGridTree() || []
+  } catch (e) {}
+  try {
+    const items: any = await getDictItems('event_report_source', true)
+    if (Array.isArray(items) && items.length) reportSourceOptions.value = items
   } catch (e) {}
   await initMap()
 })
@@ -214,7 +226,7 @@ function locateMe() {
     if (!res.precise) mapInstance?.setZoom(12)
     reverseGeocode(res.longitude, res.latitude)
     if (!res.precise) {
-      alert(`精确定位不可用，已定位到 ${res.sourceText}，可拖动地图标记修正`)
+      showMessage(`精确定位不可用，已定位到 ${res.sourceText}，可拖动地图标记修正`)
     }
   }).catch(() => {
     // 兼容旧逻辑：工具全部失败时再试一次 AMap.Geolocation 插件
@@ -241,7 +253,7 @@ function locateByAmapPlugin() {
       }
     })
   } catch {
-    alert('定位失败，请手动在地图上选择位置')
+    showMessage('定位失败，请手动在地图上选择位置')
   }
 }
 
@@ -259,9 +271,9 @@ function locateByIp() {
       mapInstance.setCenter([lng, lat])
       mapInstance.setZoom(12)
       reverseGeocode(lng, lat)
-      alert(`精确定位不可用，已定位到 ${result.city || '当前城市'} 大致位置，可拖动地图标记修正`)
+      showMessage(`精确定位不可用，已定位到 ${result.city || '当前城市'} 大致位置，可拖动地图标记修正`)
     } else {
-      alert('定位失败，请手动在地图上选择位置')
+      showMessage('定位失败，请手动在地图上选择位置')
     }
   })
 }
@@ -276,7 +288,7 @@ function handleCancel() {
 
 async function submit() {
   if (!form.value.title || !form.value.eventType || !form.value.occurredAt || !form.value.location) {
-    alert('请填写必填字段')
+    showMessage('请填写必填字段')
     return
   }
   loading.value = true
@@ -294,7 +306,7 @@ async function submit() {
       router.push(`/events/${result.id}`)
     }
   } catch (e: any) {
-    alert(e?.message || '创建失败')
+    showMessage(e?.message || '创建失败')
   } finally {
     loading.value = false
   }

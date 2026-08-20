@@ -144,6 +144,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import http from '../api'
+import { showMessage } from '../utils/message'
 
 const POLICY_TYPES = [
   { value: '', label: '全部' },
@@ -220,7 +221,7 @@ function openEdit(item: any) {
 }
 
 async function submitForm() {
-  if (!form.value.title.trim()) { alert('请填写标题'); return }
+  if (!form.value.title.trim()) { showMessage('请填写标题'); return }
   try {
     if (editing.value) {
       await http.put(`/community/policy-resources/${editing.value.id}`, form.value)
@@ -230,7 +231,7 @@ async function submitForm() {
     showDialog.value = false
     loadList()
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    showMessage(e?.message || '操作失败')
   }
 }
 
@@ -239,7 +240,7 @@ async function toggleStatus(item: any) {
     await http.put(`/community/policy-resources/${item.id}`, { ...item, status: item.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE' })
     loadList()
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    showMessage(e?.message || '操作失败')
   }
 }
 
@@ -266,10 +267,10 @@ async function pushPolicy() {
   pushing.value = true
   try {
     const res: any = await http.post(`/community/policy-resources/${matchingPolicy.value.id}/push`)
-    alert(res?.message || '推送完成')
+    showMessage(res?.message || '推送完成')
     showMatchDialog.value = false
   } catch (e: any) {
-    alert('推送失败：' + (e?.message || '请稍后重试'))
+    showMessage('推送失败：' + (e?.message || '请稍后重试'))
   } finally {
     pushing.value = false
   }

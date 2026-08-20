@@ -56,6 +56,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import http from '../api'
+import { showMessage } from '../utils/message'
 
 const templates = ref<any[]>([])
 const selectedTemplate = ref<any>(null)
@@ -108,7 +109,7 @@ async function exportData() {
       headers: { Authorization: `Bearer ${session.token}` }
     })
     if (!res.ok) {
-      alert(res.status === 401 ? '登录已过期,请重新登录' : '导出失败,请稍后重试')
+      showMessage(res.status === 401 ? '登录已过期,请重新登录' : '导出失败,请稍后重试')
       return
     }
     const blob = await res.blob()
@@ -123,7 +124,7 @@ async function exportData() {
     URL.revokeObjectURL(url)
   } catch (e) {
     console.error(e)
-    alert('导出失败,请检查网络')
+    showMessage('导出失败,请检查网络')
   }
 }
 
