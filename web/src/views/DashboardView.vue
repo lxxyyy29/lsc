@@ -858,7 +858,7 @@ async function initMap(tree: any[]) {
       pitch: 45,                // 俯仰角 45°
       rotation: 0,              // 正向朝上，避免旋转造成方位辨识困难
       mapStyle: 'amap://styles/normal',
-      features: ['bg', 'road'], // 底图降噪：去掉建筑/POI 文字，让网格着色与事件点成为主角
+      features: ['bg', 'road', 'building', 'building3D'], // 保留 3D 立体建筑，仅隐藏 POI 文字标注降噪
       expandZoomRange: true,
       zooms: [3, 20]
     })
