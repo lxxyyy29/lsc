@@ -38,6 +38,43 @@ export function getEventTypeName(type: string): string {
   return EVENT_TYPES[type] || EVENT_TYPES[type.toUpperCase()] || type;
 }
 
+/**
+ * 上报来源码值→中文（与字典 event_report_source 标签保持一致）
+ */
+const REPORT_SOURCE_LABELS: Record<string, string> = {
+  '12345': '12345转办',
+  AI_CAMERA: '智能监控抓拍',
+  GRID_MEMBER: '网格员上报',
+  PROPERTY: '物业上报',
+  RESIDENT: '居民上报',
+}
+
+export function getReportSourceName(source: string): string {
+  if (!source) return '-'
+  return REPORT_SOURCE_LABELS[source] || source
+}
+
+/**
+ * 来源系统码值→中文
+ */
+const SOURCE_SYSTEM_LABELS: Record<string, string> = {
+  THIRD_PARTY_DRONE: '无人机平台',
+  'grid-platform': '网格平台',
+  GRID_PLATFORM: '网格平台',
+  'resident-app': '居民端',
+  '12345-hotline': '12345热线',
+  'ai-monitor': '智能监控',
+  PUBLIC_REPORT: '公众上报',
+  WEB: '管理端',
+  H5_APP: '居民端',
+  H5: '居民端',
+}
+
+export function getSourceSystemName(system: string): string {
+  if (!system) return '-'
+  return SOURCE_SYSTEM_LABELS[system] || system
+}
+
 // 户籍类型中英文映射
 export const HOUSEHOLD_TYPES: Record<string, string> = {
   LOCAL: '本地户籍',

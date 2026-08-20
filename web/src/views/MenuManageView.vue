@@ -131,8 +131,8 @@ async function fetchMenus() {
 const groups = computed(() => {
   const map = new Map<string, MenuNode[]>()
   for (const n of nodes.value) {
-    const m = (n.remark || '').match(/^Web菜单-(.+)$/)
-    const name = m ? m[1] : '其他'
+    // remark 存储的即为分组名（V104 清洗后已去掉 "Web菜单-" 前缀）
+    const name = (n.remark || '').trim() || '其他'
     if (!map.has(name)) map.set(name, [])
     map.get(name)!.push(n)
   }

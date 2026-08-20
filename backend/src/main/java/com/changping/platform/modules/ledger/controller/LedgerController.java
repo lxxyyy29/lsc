@@ -162,7 +162,7 @@ public class LedgerController {
                     Map.entry("NORMAL", "正常"), Map.entry("PENDING", "待处理")),
             "report_source", Map.of(
                     "RESIDENT", "居民上报", "GRID_MEMBER", "网格员", "12345", "12345 热线",
-                    "AI_CAMERA", "AI 摄像头", "H5_APP", "移动端", "WEB", "管理端", "H5", "移动端"),
+                    "AI_CAMERA", "智能摄像头", "H5_APP", "移动端", "WEB", "管理端", "H5", "移动端"),
             "patrol_type", Map.of("NORMAL", "日常巡查", "GRID", "网格巡查", "SPECIAL", "专项巡查"),
             "household_type", Map.of("LOCAL", "本地户籍", "FLOATING", "流动人口"),
             "fire_risk_level", Map.of("LOW", "低", "MEDIUM", "中", "HIGH", "高"));

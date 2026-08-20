@@ -37,8 +37,8 @@
             <div><span style="color:#9ca3af;">发生时间：</span>{{ event.occurredAt || '-' }}</div>
             <div><span style="color:#9ca3af;">事发地点：</span>{{ event.location || '-' }}</div>
             <div><span style="color:#9ca3af;">所属网格：</span>{{ event.gridName || '-' }}</div>
-            <div><span style="color:#9ca3af;">上报人：</span>{{ event.reportSource || '-' }}</div>
-            <div><span style="color:#9ca3af;">来源系统：</span>{{ event.sourceSystem || '-' }}</div>
+            <div><span style="color:#9ca3af;">上报人：</span>{{ getReportSourceName(event.reportSource) }}</div>
+            <div><span style="color:#9ca3af;">来源系统：</span>{{ getSourceSystemName(event.sourceSystem) }}</div>
             <div v-if="event.description" style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6;"><span style="color:#9ca3af;">详细描述：</span><br/>{{ event.description }}</div>
           </div>
         </div>
@@ -130,7 +130,7 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getSystemUsers, archiveEvent, getDispatchSuggestion, smartDispatchEvent } from '../api'
-import { getEventTypeName } from '../utils/eventTypes'
+import { getEventTypeName, getReportSourceName, getSourceSystemName } from '../utils/eventTypes'
 import { showMessage } from '../utils/message'
 
 const route = useRoute()
