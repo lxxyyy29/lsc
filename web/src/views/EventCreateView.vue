@@ -108,7 +108,7 @@ const FALLBACK_REPORT_SOURCES = [
   { itemValue: 'RESIDENT', itemLabel: '居民上报' },
   { itemValue: '12345', itemLabel: '12345转办' },
   { itemValue: 'PROPERTY', itemLabel: '物业上报' },
-  { itemValue: 'AI_CAMERA', itemLabel: 'AI监控抓拍' },
+  { itemValue: 'AI_CAMERA', itemLabel: '智能监控抓拍' },
 ]
 const reportSourceOptions = ref<{ itemValue: string; itemLabel: string }[]>(FALLBACK_REPORT_SOURCES)
 let mapInstance: any = null
