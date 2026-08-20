@@ -285,7 +285,7 @@ function onFullscreenChange() {
   setTimeout(() => mapInstance?.resize?.(), 100)
 }
 
-// 初始化监管地图：深色底图 + 社区/网格轮廓 + 可交互事件点位
+// 初始化监管地图：标准底图 + 社区/网格轮廓 + 可交互事件点位
 async function initMap() {
   let tree: any[] = []
   let activeEvents: any[] = []
@@ -301,7 +301,7 @@ async function initMap() {
   try {
     ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
     const AMap = await AMapLoader.load({ key: '5e00e01d2d2b6ca9e1eed533a15572e4', version: '2.0', plugins: ['AMap.Polygon', 'AMap.Marker'] })
-    mapInstance = new AMap.Map('bsMap', { zoom: 14, center: [113.939521, 22.971231], mapStyle: 'amap://styles/dark' })
+    mapInstance = new AMap.Map('bsMap', { zoom: 14, center: [113.939521, 22.971231], mapStyle: 'amap://styles/normal' })
     const map = mapInstance
 
     // 绘制网格轮廓（社区底图 + 大网格 + 小网格），纯展示不抢事件交互
@@ -312,10 +312,10 @@ async function initMap() {
             const coords = JSON.parse(node.roiJson)
             if (Array.isArray(coords) && coords.length >= 3) {
               const style = node.gridLevel === 1
-                ? { fill: '#38bdf8', fillOpacity: 0.05, stroke: '#38bdf8', weight: 2 }
+                ? { fill: '#0284c7', fillOpacity: 0.08, stroke: '#0284c7', weight: 2 }
                 : node.gridLevel === 2
-                  ? { fill: '#f59e0b', fillOpacity: 0.28, stroke: '#fbbf24', weight: 2 }
-                  : { fill: '#10b981', fillOpacity: 0.24, stroke: '#34d399', weight: 1 }
+                  ? { fill: '#f59e0b', fillOpacity: 0.35, stroke: '#ffffff', weight: 2 }
+                  : { fill: '#10b981', fillOpacity: 0.30, stroke: '#ffffff', weight: 1 }
               new AMap.Polygon({
                 path: coords, fillColor: style.fill, fillOpacity: style.fillOpacity,
                 strokeColor: style.stroke, strokeWeight: style.weight,
@@ -399,8 +399,8 @@ onUnmounted(() => {
   margin: -24px; /* 抵消 main-content 的 padding，让地图成为真正主角 */
   height: calc(100vh - 56px);
   overflow: hidden;
-  background: #06121f;
-  color: #e2e8f0;
+  background: #eef3f8;
+  color: #334155;
 }
 .bs-screen:fullscreen { height: 100vh; }
 .bs-map { width: 100%; height: 100%; }
@@ -408,27 +408,27 @@ onUnmounted(() => {
 .bs-loading {
   position: absolute; inset: 0; z-index: 60;
   display: flex; align-items: center; justify-content: center;
-  color: #7dd3fc; font-size: 16px; gap: 10px;
+  color: #0284c7; font-size: 16px; gap: 10px;
 }
 
-/* ============ 玻璃拟态面板通用样式 ============ */
+/* ============ 半透明悬浮面板通用样式（白色调） ============ */
 .glass-panel {
-  background: rgba(8, 20, 38, 0.68);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(120, 180, 255, 0.16);
+  border: 1px solid rgba(2, 132, 199, 0.12);
   border-radius: 12px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
 }
 .chart-card { padding: 12px 16px; }
 .chart-title {
-  font-size: 13px; font-weight: 600; margin: 0 0 10px; color: #7dd3fc;
+  font-size: 13px; font-weight: 600; margin: 0 0 10px; color: #0284c7;
   display: flex; align-items: center; gap: 6px;
 }
-.panel-empty { font-size: 12px; color: rgba(255,255,255,0.4); text-align: center; padding: 14px 0; margin: 0; }
+.panel-empty { font-size: 12px; color: #94a3b8; text-align: center; padding: 14px 0; margin: 0; }
 .scroll-area { max-height: 190px; overflow-y: auto; }
 .scroll-area::-webkit-scrollbar { width: 4px; }
-.scroll-area::-webkit-scrollbar-thumb { background: rgba(120,180,255,0.25); border-radius: 2px; }
+.scroll-area::-webkit-scrollbar-thumb { background: rgba(2,132,199,0.25); border-radius: 2px; }
 
 /* ============ 顶部悬浮栏 ============ */
 .bs-topbar {
@@ -437,19 +437,19 @@ onUnmounted(() => {
   padding: 10px 22px; white-space: nowrap;
 }
 .bs-topbar h1 {
-  margin: 0; font-size: 19px; font-weight: 700; color: #fff; letter-spacing: 2px;
+  margin: 0; font-size: 19px; font-weight: 700; color: #0f172a; letter-spacing: 2px;
   display: flex; align-items: center; gap: 10px;
 }
-.bs-topbar h1 i { color: #38bdf8; }
-.bs-time { font-size: 13px; color: rgba(255,255,255,0.6); font-variant-numeric: tabular-nums; }
+.bs-topbar h1 i { color: #0284c7; }
+.bs-time { font-size: 13px; color: #64748b; font-variant-numeric: tabular-nums; }
 .bs-fullscreen-btn {
   display: flex; align-items: center; gap: 6px;
-  background: rgba(24, 144, 255, 0.28);
-  border: 1px solid rgba(120, 180, 255, 0.4);
-  border-radius: 8px; color: #fff; font-size: 13px;
+  background: rgba(2, 132, 199, 0.10);
+  border: 1px solid rgba(2, 132, 199, 0.30);
+  border-radius: 8px; color: #0284c7; font-size: 13px;
   padding: 7px 14px; cursor: pointer; transition: all 0.2s;
 }
-.bs-fullscreen-btn:hover { background: rgba(24, 144, 255, 0.5); }
+.bs-fullscreen-btn:hover { background: rgba(2, 132, 199, 0.18); }
 
 /* ============ KPI 悬浮指标条 ============ */
 .bs-kpis {
@@ -465,21 +465,21 @@ onUnmounted(() => {
   width: 38px; height: 38px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;
 }
-.kpi-value { margin: 0; font-size: 21px; font-weight: 700; color: #fff; line-height: 1.1; }
-.kpi-label { margin: 2px 0 0; font-size: 11px; color: rgba(255,255,255,0.6); }
+.kpi-value { margin: 0; font-size: 21px; font-weight: 700; color: #0f172a; line-height: 1.1; }
+.kpi-label { margin: 2px 0 0; font-size: 11px; color: #64748b; }
 
-.kpi-blue { border-left: 3px solid #38bdf8; }
-.kpi-blue .kpi-icon { background: rgba(56,189,248,0.18); color: #38bdf8; }
-.kpi-green { border-left: 3px solid #34d399; }
-.kpi-green .kpi-icon { background: rgba(52,211,153,0.18); color: #34d399; }
-.kpi-orange { border-left: 3px solid #fbbf24; }
-.kpi-orange .kpi-icon { background: rgba(251,191,36,0.18); color: #fbbf24; }
-.kpi-purple { border-left: 3px solid #a78bfa; }
-.kpi-purple .kpi-icon { background: rgba(167,139,250,0.18); color: #a78bfa; }
-.kpi-cyan { border-left: 3px solid #22d3ee; }
-.kpi-cyan .kpi-icon { background: rgba(34,211,238,0.18); color: #22d3ee; }
-.kpi-red { border-left: 3px solid #f87171; }
-.kpi-red .kpi-icon { background: rgba(248,113,113,0.18); color: #f87171; }
+.kpi-blue { border-left: 3px solid #0284c7; }
+.kpi-blue .kpi-icon { background: #e0f2fe; color: #0284c7; }
+.kpi-green { border-left: 3px solid #059669; }
+.kpi-green .kpi-icon { background: #d1fae5; color: #059669; }
+.kpi-orange { border-left: 3px solid #d97706; }
+.kpi-orange .kpi-icon { background: #fef3c7; color: #d97706; }
+.kpi-purple { border-left: 3px solid #7c3aed; }
+.kpi-purple .kpi-icon { background: #ede9fe; color: #7c3aed; }
+.kpi-cyan { border-left: 3px solid #0891b2; }
+.kpi-cyan .kpi-icon { background: #cffafe; color: #0891b2; }
+.kpi-red { border-left: 3px solid #dc2626; }
+.kpi-red .kpi-icon { background: #fee2e2; color: #dc2626; }
 
 /* ============ 左右悬浮列 ============ */
 .bs-col {
@@ -495,47 +495,47 @@ onUnmounted(() => {
 .urgency-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; }
 .urgency-bar-row:last-child { margin-bottom: 0; }
 .urgency-label { width: 34px; flex-shrink: 0; }
-.urgency-green { color: #34d399; }
-.urgency-yellow { color: #fbbf24; }
-.urgency-red { color: #f87171; }
-.urgency-bar-track { flex: 1; height: 9px; background: rgba(255,255,255,0.08); border-radius: 5px; overflow: hidden; }
-.bar-green { background: linear-gradient(90deg, rgba(52,211,153,0.4), #34d399); }
-.bar-yellow { background: linear-gradient(90deg, rgba(251,191,36,0.4), #fbbf24); }
-.bar-red { background: linear-gradient(90deg, rgba(248,113,113,0.4), #f87171); }
+.urgency-green { color: #059669; }
+.urgency-yellow { color: #d97706; }
+.urgency-red { color: #dc2626; }
+.urgency-bar-track { flex: 1; height: 9px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
+.bar-green { background: linear-gradient(90deg, rgba(5,150,105,0.4), #059669); }
+.bar-yellow { background: linear-gradient(90deg, rgba(217,119,6,0.4), #d97706); }
+.bar-red { background: linear-gradient(90deg, rgba(220,38,38,0.4), #dc2626); }
 .urgency-bar-fill { height: 100%; border-radius: 5px; transition: width 0.4s; }
-.urgency-count { width: 30px; text-align: right; font-weight: 600; color: #fff; }
+.urgency-count { width: 30px; text-align: right; font-weight: 600; color: #0f172a; }
 
 /* ============ 事件类型 TOP8 ============ */
 .type-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; font-size: 12px; }
 .type-bar-row:last-child { margin-bottom: 0; }
 .type-rank {
   width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0;
-  background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6);
+  background: #f1f5f9; color: #64748b;
   font-size: 11px; display: flex; align-items: center; justify-content: center;
 }
-.type-rank.top3 { background: rgba(24,144,255,0.35); color: #7dd3fc; font-weight: 700; }
-.type-label { width: 74px; flex-shrink: 0; color: rgba(255,255,255,0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.type-bar-track { flex: 1; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+.type-rank.top3 { background: #e0f2fe; color: #0284c7; font-weight: 700; }
+.type-label { width: 74px; flex-shrink: 0; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.type-bar-track { flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
 .type-bar-fill {
   height: 100%; border-radius: 4px; transition: width 0.4s;
-  background: linear-gradient(90deg, rgba(24,144,255,0.35), #1890ff);
+  background: linear-gradient(90deg, rgba(2,132,199,0.35), #0284c7);
 }
-.type-count { width: 26px; text-align: right; font-weight: 600; color: #fff; }
+.type-count { width: 26px; text-align: right; font-weight: 600; color: #0f172a; }
 
 /* ============ 最新工单 ============ */
 .wo-row {
   display: flex; align-items: center; gap: 8px; padding: 7px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 11.5px;
+  border-bottom: 1px solid #f1f5f9; font-size: 11.5px;
 }
 .wo-row:last-child { border-bottom: none; }
-.wo-no { color: #7dd3fc; font-variant-numeric: tabular-nums; }
+.wo-no { color: #0284c7; font-variant-numeric: tabular-nums; }
 .wo-status { border-radius: 4px; padding: 1px 6px; font-size: 10.5px; flex-shrink: 0; }
-.status-waiting_accept { background: rgba(251,191,36,0.18); color: #fbbf24; }
-.status-processing { background: rgba(24,144,255,0.22); color: #7dd3fc; }
-.status-waiting_close_confirm { background: rgba(167,139,250,0.2); color: #a78bfa; }
-.status-completed, .status-closed { background: rgba(52,211,153,0.18); color: #34d399; }
-.wo-assignee { flex: 1; color: rgba(255,255,255,0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wo-time { color: rgba(255,255,255,0.45); flex-shrink: 0; }
+.status-waiting_accept { background: #fef3c7; color: #d97706; }
+.status-processing { background: #e0f2fe; color: #0284c7; }
+.status-waiting_close_confirm { background: #ede9fe; color: #7c3aed; }
+.status-completed, .status-closed { background: #d1fae5; color: #059669; }
+.wo-assignee { flex: 1; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wo-time { color: #94a3b8; flex-shrink: 0; }
 
 /* ============ 7 天趋势 ============ */
 .trend-bars {
@@ -545,30 +545,30 @@ onUnmounted(() => {
 .trend-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
 .trend-bar {
   width: 70%; border-radius: 4px 4px 0 0; position: relative; min-height: 6px;
-  background: linear-gradient(180deg, #38bdf8, rgba(24,144,255,0.35));
+  background: linear-gradient(180deg, #0284c7, rgba(2,132,199,0.35));
 }
 .trend-value {
   position: absolute; top: -17px; left: 50%; transform: translateX(-50%);
-  font-size: 10px; color: #7dd3fc; font-weight: 600;
+  font-size: 10px; color: #0284c7; font-weight: 600;
 }
-.trend-date { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 5px; }
+.trend-date { font-size: 10px; color: #94a3b8; margin-top: 5px; }
 
 /* ============ 网格事件排名 ============ */
 .rank-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; font-size: 12px; }
 .rank-row:last-child { margin-bottom: 0; }
 .rank-num {
   width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0;
-  background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6);
+  background: #f1f5f9; color: #64748b;
   font-size: 11px; display: flex; align-items: center; justify-content: center;
 }
-.rank-num.top3 { background: rgba(251,191,36,0.3); color: #fbbf24; font-weight: 700; }
-.rank-name { width: 84px; flex-shrink: 0; color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rank-track { flex: 1; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+.rank-num.top3 { background: #fef3c7; color: #d97706; font-weight: 700; }
+.rank-name { width: 84px; flex-shrink: 0; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rank-track { flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
 .rank-fill {
   height: 100%; border-radius: 4px; transition: width 0.4s;
-  background: linear-gradient(90deg, rgba(251,191,36,0.4), #fbbf24);
+  background: linear-gradient(90deg, rgba(245,158,11,0.4), #f59e0b);
 }
-.rank-count { width: 26px; text-align: right; font-weight: 600; color: #fff; }
+.rank-count { width: 26px; text-align: right; font-weight: 600; color: #0f172a; }
 
 /* ============ 事件详情悬浮卡片 ============ */
 .event-popup {
@@ -577,33 +577,33 @@ onUnmounted(() => {
 }
 .popup-head { display: flex; align-items: center; gap: 8px; }
 .popup-tag { border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
-.tag-red { background: rgba(248,113,113,0.2); color: #f87171; }
-.tag-orange { background: rgba(251,191,36,0.2); color: #fbbf24; }
-.tag-green { background: rgba(52,211,153,0.2); color: #34d399; }
-.popup-status { font-size: 11px; color: rgba(255,255,255,0.6); }
+.tag-red { background: #fee2e2; color: #dc2626; }
+.tag-orange { background: #fef3c7; color: #d97706; }
+.tag-green { background: #d1fae5; color: #059669; }
+.popup-status { font-size: 11px; color: #64748b; }
 .popup-close {
-  margin-left: auto; border: none; background: none; color: rgba(255,255,255,0.5);
+  margin-left: auto; border: none; background: none; color: #94a3b8;
   font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1;
 }
-.popup-close:hover { color: #fff; }
-.popup-title { margin: 8px 0; font-size: 15px; font-weight: 600; color: #fff; }
-.popup-meta { font-size: 12px; color: rgba(255,255,255,0.65); display: flex; flex-direction: column; gap: 4px; }
-.popup-meta i { width: 14px; color: #7dd3fc; }
+.popup-close:hover { color: #0f172a; }
+.popup-title { margin: 8px 0; font-size: 15px; font-weight: 600; color: #0f172a; }
+.popup-meta { font-size: 12px; color: #475569; display: flex; flex-direction: column; gap: 4px; }
+.popup-meta i { width: 14px; color: #0284c7; }
 .popup-desc {
-  margin: 8px 0 0; font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.6;
+  margin: 8px 0 0; font-size: 12px; color: #64748b; line-height: 1.6;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .popup-detail-btn {
   margin-top: 12px; width: 100%; padding: 8px 0; border: none; border-radius: 8px;
-  background: #1890ff; color: #fff; font-size: 13px; cursor: pointer; transition: background 0.2s;
+  background: #0284c7; color: #fff; font-size: 13px; cursor: pointer; transition: background 0.2s;
 }
-.popup-detail-btn:hover { background: #40a9ff; }
+.popup-detail-btn:hover { background: #0369a1; }
 
-/* ============ 悬停提示 ============ */
+/* ============ 悬停提示（浅色地图上保持深底白字，确保可读） ============ */
 .hover-tip {
   position: absolute; z-index: 40; transform: translate(-50%, calc(-100% - 14px));
-  background: rgba(8, 20, 38, 0.92); color: #fff; padding: 6px 12px; border-radius: 6px;
+  background: rgba(15, 23, 42, 0.88); color: #fff; padding: 6px 12px; border-radius: 6px;
   font-size: 12px; font-weight: 600; pointer-events: none; white-space: nowrap;
-  border: 1px solid rgba(120, 180, 255, 0.25); box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 16px rgba(15,23,42,0.25);
 }
 </style>

@@ -255,8 +255,8 @@ onMounted(async () => {
     try {
       ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
       const AMap = await AMapLoader.load({ key: '5e00e01d2d2b6ca9e1eed533a15572e4', version: '2.0', plugins: ['AMap.Polygon', 'AMap.Marker'] })
-      // 大屏深色底图，突出网格与事件点位
-      mapInstance = new AMap.Map('gisMap', { zoom: 14, center: [113.939521, 22.971231], mapStyle: 'amap://styles/dark' })
+      // 标准底图 + 平台主色系网格，与系统整体白色调保持一致
+      mapInstance = new AMap.Map('gisMap', { zoom: 14, center: [113.939521, 22.971231], mapStyle: 'amap://styles/normal' })
       const map = mapInstance
 
       // 第一步：绘制社区底图（level 1）
@@ -267,8 +267,8 @@ onMounted(async () => {
               const coords = JSON.parse(node.roiJson)
               if (Array.isArray(coords) && coords.length >= 3) {
                 const polygon = new AMap.Polygon({
-                  path: coords, fillColor: '#38bdf8', fillOpacity: 0.05,
-                  strokeColor: '#38bdf8', strokeWeight: 2, strokeStyle: 'solid', zIndex: 1, map
+                  path: coords, fillColor: '#0284c7', fillOpacity: 0.08,
+                  strokeColor: '#0284c7', strokeWeight: 2, strokeStyle: 'solid', zIndex: 1, map
                 })
                 polygon.setOptions({ bubble: true })
               }
@@ -289,8 +289,8 @@ onMounted(async () => {
                 const baseFillColor = '#f59e0b'
                 const myId = ++hoverId
                 const polygon = new AMap.Polygon({
-                  path: coords, fillColor: baseFillColor, fillOpacity: 0.30,
-                  strokeColor: '#fbbf24', strokeWeight: 2, zIndex: 5, bubble: false, map
+                  path: coords, fillColor: baseFillColor, fillOpacity: 0.35,
+                  strokeColor: '#ffffff', strokeWeight: 2, zIndex: 5, bubble: false, map
                 })
                 polygon.on('mouseover', (e: any) => {
                   polygon.setOptions({ fillOpacity: 0.55, zIndex: 20 })
@@ -305,7 +305,7 @@ onMounted(async () => {
                 })
                 polygon.on('mouseout', () => {
                   if (hoverInfo.id !== myId) return
-                  polygon.setOptions({ fillOpacity: 0.30, zIndex: 5 })
+                  polygon.setOptions({ fillOpacity: 0.35, zIndex: 5 })
                   hoverInfo.visible = false
                 })
                 polygon.on('click', () => { selectedGrid.value = grid })
@@ -327,8 +327,8 @@ onMounted(async () => {
                 const baseFillColor = '#10b981'
                 const myId = ++hoverId
                 const polygon = new AMap.Polygon({
-                  path: coords, fillColor: baseFillColor, fillOpacity: 0.26,
-                  strokeColor: '#34d399', strokeWeight: 1, zIndex: 5, bubble: false, map
+                  path: coords, fillColor: baseFillColor, fillOpacity: 0.30,
+                  strokeColor: '#ffffff', strokeWeight: 1, zIndex: 5, bubble: false, map
                 })
                 polygon.on('mouseover', (e: any) => {
                   polygon.setOptions({ fillOpacity: 0.5, zIndex: 20 })
@@ -343,7 +343,7 @@ onMounted(async () => {
                 })
                 polygon.on('mouseout', () => {
                   if (hoverInfo.id !== myId) return
-                  polygon.setOptions({ fillOpacity: 0.26, zIndex: 5 })
+                  polygon.setOptions({ fillOpacity: 0.30, zIndex: 5 })
                   hoverInfo.visible = false
                 })
                 polygon.on('click', () => { selectedGrid.value = grid })
@@ -414,13 +414,13 @@ onMounted(async () => {
         grid: { left: 78, right: 30, top: 8, bottom: 8 },
         xAxis: {
           type: 'value',
-          axisLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 10 },
-          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } }
+          axisLabel: { color: '#9ca3af', fontSize: 10 },
+          splitLine: { lineStyle: { color: '#e5e7eb' } }
         },
         yAxis: {
           type: 'category', data: ranking.map((r: any) => r.gridName).reverse(),
-          axisLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 11 },
-          axisLine: { lineStyle: { color: 'rgba(255,255,255,0.15)' } }
+          axisLabel: { color: '#374151', fontSize: 11 },
+          axisLine: { lineStyle: { color: '#e5e7eb' } }
         },
         series: [{
           type: 'bar', barWidth: 12,
@@ -428,11 +428,11 @@ onMounted(async () => {
           itemStyle: {
             borderRadius: [0, 6, 6, 0],
             color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-              { offset: 0, color: 'rgba(24,144,255,0.35)' },
-              { offset: 1, color: '#1890FF' }
+              { offset: 0, color: 'rgba(2,132,199,0.35)' },
+              { offset: 1, color: '#0284c7' }
             ])
           },
-          label: { show: true, position: 'right', color: 'rgba(255,255,255,0.85)', fontSize: 10 }
+          label: { show: true, position: 'right', color: '#374151', fontSize: 10 }
         }]
       })
     } catch (e: any) {
@@ -463,26 +463,26 @@ onUnmounted(() => {
   margin: -24px; /* 抵消 main-content 的 padding，让地图成为真正主角 */
   height: calc(100vh - 56px);
   overflow: hidden;
-  background: #06121f;
+  background: #eef3f8;
 }
 .dash-screen:fullscreen { height: 100vh; }
 .dash-map { width: 100%; height: 100%; }
 
-/* ============ 玻璃拟态悬浮面板通用样式 ============ */
+/* ============ 半透明悬浮面板通用样式（白色调） ============ */
 .glass-panel {
-  background: rgba(8, 20, 38, 0.68);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(120, 180, 255, 0.16);
+  border: 1px solid rgba(2, 132, 199, 0.12);
   border-radius: 12px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
-  color: #e2e8f0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+  color: #334155;
 }
 .glass-panel h3 {
-  font-size: 13px; font-weight: 600; margin: 0 0 12px; color: #7dd3fc;
+  font-size: 13px; font-weight: 600; margin: 0 0 12px; color: #0284c7;
   display: flex; align-items: center; gap: 6px;
 }
-.panel-empty { font-size: 12px; color: rgba(255,255,255,0.4); text-align: center; padding: 16px 0; margin: 0; }
+.panel-empty { font-size: 12px; color: #94a3b8; text-align: center; padding: 16px 0; margin: 0; }
 
 /* ============ 顶部悬浮栏 ============ */
 .dash-top {
@@ -491,46 +491,46 @@ onUnmounted(() => {
 }
 .dash-title-box {
   pointer-events: auto;
-  background: rgba(8, 20, 38, 0.68);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(120, 180, 255, 0.16);
+  border: 1px solid rgba(2, 132, 199, 0.12);
   border-radius: 12px; padding: 10px 18px; flex-shrink: 0;
 }
 .dash-title-box h2 {
-  margin: 0; font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 1px;
+  margin: 0; font-size: 18px; font-weight: 700; color: #0f172a; letter-spacing: 1px;
   display: flex; align-items: center; gap: 8px;
 }
-.dash-title-box h2 i { color: #38bdf8; }
-.dash-title-box p { margin: 2px 0 0; font-size: 11px; color: rgba(255,255,255,0.55); }
-.dash-time { margin-left: 10px; color: #7dd3fc; font-variant-numeric: tabular-nums; }
+.dash-title-box h2 i { color: #0284c7; }
+.dash-title-box p { margin: 2px 0 0; font-size: 11px; color: #64748b; }
+.dash-time { margin-left: 10px; color: #0284c7; font-variant-numeric: tabular-nums; }
 
 .dash-kpis {
   pointer-events: auto;
   display: flex; gap: 10px; flex: 1; justify-content: center; flex-wrap: wrap;
 }
 .kpi {
-  background: rgba(8, 20, 38, 0.68);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(120, 180, 255, 0.16);
+  border: 1px solid rgba(2, 132, 199, 0.12);
   border-radius: 10px; padding: 8px 16px; min-width: 108px; text-align: center;
 }
-.kpi-num { margin: 0; font-size: 22px; font-weight: 700; color: #fff; line-height: 1.2; }
-.kpi-unit { font-size: 11px; color: rgba(255,255,255,0.5); margin-left: 3px; font-weight: 400; }
-.kpi-name { margin: 2px 0 0; font-size: 11px; color: rgba(255,255,255,0.6); }
-.kpi-name i { margin-right: 4px; color: #38bdf8; }
-.kpi-danger .kpi-num { color: #ff7875; }
-.kpi-danger .kpi-name i { color: #ff7875; }
+.kpi-num { margin: 0; font-size: 22px; font-weight: 700; color: #0f172a; line-height: 1.2; }
+.kpi-unit { font-size: 11px; color: #64748b; margin-left: 3px; font-weight: 400; }
+.kpi-name { margin: 2px 0 0; font-size: 11px; color: #64748b; }
+.kpi-name i { margin-right: 4px; color: #0284c7; }
+.kpi-danger .kpi-num { color: #dc2626; }
+.kpi-danger .kpi-name i { color: #dc2626; }
 
 .dash-fullscreen-btn {
   pointer-events: auto; flex-shrink: 0;
   display: flex; align-items: center; gap: 6px;
-  background: rgba(24, 144, 255, 0.28);
+  background: rgba(2, 132, 199, 0.10);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(120, 180, 255, 0.4);
-  border-radius: 10px; color: #fff; font-size: 13px;
+  border: 1px solid rgba(2, 132, 199, 0.30);
+  border-radius: 10px; color: #0284c7; font-size: 13px;
   padding: 10px 16px; cursor: pointer; transition: all 0.2s;
 }
-.dash-fullscreen-btn:hover { background: rgba(24, 144, 255, 0.5); }
+.dash-fullscreen-btn:hover { background: rgba(2, 132, 199, 0.18); }
 
 /* ============ 左侧悬浮面板 ============ */
 .dash-left {
@@ -541,10 +541,10 @@ onUnmounted(() => {
 .level-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 12px; }
 .level-row:last-child { margin-bottom: 0; }
 .level-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.level-name { width: 30px; color: rgba(255,255,255,0.75); flex-shrink: 0; }
-.level-track { flex: 1; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+.level-name { width: 30px; color: #475569; flex-shrink: 0; }
+.level-track { flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
 .level-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
-.level-count { width: 28px; text-align: right; font-weight: 600; color: #fff; }
+.level-count { width: 28px; text-align: right; font-weight: 600; color: #0f172a; }
 
 /* ============ 右侧悬浮面板：最新事件 ============ */
 .dash-right {
@@ -552,26 +552,26 @@ onUnmounted(() => {
 }
 .events-panel { padding: 14px 16px; height: 100%; display: flex; flex-direction: column; }
 .events-count {
-  margin-left: 4px; background: rgba(24,144,255,0.3); color: #7dd3fc;
+  margin-left: 4px; background: #e0f2fe; color: #0284c7;
   font-size: 11px; border-radius: 8px; padding: 0 7px; line-height: 16px;
 }
 .events-list { flex: 1; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
 .events-list::-webkit-scrollbar { width: 4px; }
-.events-list::-webkit-scrollbar-thumb { background: rgba(120,180,255,0.25); border-radius: 2px; }
+.events-list::-webkit-scrollbar-thumb { background: rgba(2,132,199,0.25); border-radius: 2px; }
 .event-item {
   display: flex; align-items: center; gap: 8px;
   padding: 9px 8px; border-radius: 8px; cursor: pointer; transition: background 0.15s;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid #f1f5f9;
 }
-.event-item:hover { background: rgba(120, 180, 255, 0.1); }
-.event-item.active { background: rgba(24, 144, 255, 0.22); }
+.event-item:hover { background: rgba(2, 132, 199, 0.06); }
+.event-item.active { background: rgba(2, 132, 199, 0.12); }
 .event-text { flex: 1; min-width: 0; }
 .event-title {
-  margin: 0; font-size: 12.5px; color: #f1f5f9;
+  margin: 0; font-size: 12.5px; color: #0f172a;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.event-meta { margin: 2px 0 0; font-size: 10.5px; color: rgba(255,255,255,0.45); }
-.event-locate { color: rgba(125, 211, 252, 0.6); font-size: 11px; flex-shrink: 0; }
+.event-meta { margin: 2px 0 0; font-size: 10.5px; color: #94a3b8; }
+.event-locate { color: rgba(2, 132, 199, 0.7); font-size: 11px; flex-shrink: 0; }
 
 /* ============ 事件详情悬浮卡片 ============ */
 .event-popup {
@@ -579,49 +579,49 @@ onUnmounted(() => {
   width: 420px; max-width: calc(100% - 32px); padding: 14px 18px;
 }
 .popup-head { display: flex; align-items: center; gap: 8px; }
-.popup-status { font-size: 11px; color: rgba(255,255,255,0.6); }
+.popup-status { font-size: 11px; color: #64748b; }
 .popup-close {
-  margin-left: auto; border: none; background: none; color: rgba(255,255,255,0.5);
+  margin-left: auto; border: none; background: none; color: #94a3b8;
   font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1;
 }
-.popup-close:hover { color: #fff; }
-.popup-title { margin: 8px 0 8px; font-size: 15px; font-weight: 600; color: #fff; }
-.popup-meta { font-size: 12px; color: rgba(255,255,255,0.65); display: flex; flex-direction: column; gap: 4px; }
-.popup-meta i { width: 14px; color: #7dd3fc; }
+.popup-close:hover { color: #0f172a; }
+.popup-title { margin: 8px 0 8px; font-size: 15px; font-weight: 600; color: #0f172a; }
+.popup-meta { font-size: 12px; color: #475569; display: flex; flex-direction: column; gap: 4px; }
+.popup-meta i { width: 14px; color: #0284c7; }
 .popup-desc {
-  margin: 8px 0 0; font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.6;
+  margin: 8px 0 0; font-size: 12px; color: #64748b; line-height: 1.6;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .popup-detail-btn {
   margin-top: 12px; width: 100%; padding: 8px 0; border: none; border-radius: 8px;
-  background: #1890ff; color: #fff; font-size: 13px; cursor: pointer; transition: background 0.2s;
+  background: #0284c7; color: #fff; font-size: 13px; cursor: pointer; transition: background 0.2s;
 }
-.popup-detail-btn:hover { background: #40a9ff; }
+.popup-detail-btn:hover { background: #0369a1; }
 
 /* ============ 网格选中面板 ============ */
 .grid-popup {
   position: absolute; z-index: 25; top: 92px; left: 50%; transform: translateX(-50%);
   padding: 12px 18px; min-width: 240px;
 }
-.popup-grid-name { font-size: 14px; font-weight: 700; color: #fff; }
+.popup-grid-name { font-size: 14px; font-weight: 700; color: #0f172a; }
 
-/* ============ 悬停提示 ============ */
+/* ============ 悬停提示（浅色地图上保持深底白字，确保可读） ============ */
 .hover-tip {
   position: absolute; z-index: 40; transform: translate(-50%, calc(-100% - 14px));
-  background: rgba(8, 20, 38, 0.92); color: #fff; padding: 6px 12px; border-radius: 6px;
+  background: rgba(15, 23, 42, 0.88); color: #fff; padding: 6px 12px; border-radius: 6px;
   font-size: 12px; font-weight: 600; pointer-events: none; white-space: nowrap;
-  border: 1px solid rgba(120, 180, 255, 0.25); box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 16px rgba(15,23,42,0.25);
 }
 
 /* ============ 错误提示 ============ */
 .dash-error {
   position: absolute; z-index: 50; top: 86px; left: 50%; transform: translateX(-50%);
-  background: rgba(120, 20, 20, 0.85); backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 120, 117, 0.4); border-radius: 8px;
-  color: #ffd6d6; font-size: 12px; padding: 8px 16px; max-width: 70%;
+  background: rgba(254, 226, 226, 0.92); backdrop-filter: blur(8px);
+  border: 1px solid rgba(220, 38, 38, 0.25); border-radius: 8px;
+  color: #b91c1c; font-size: 12px; padding: 8px 16px; max-width: 70%;
   display: flex; align-items: center; gap: 8px;
 }
 
-/* 标签在深色底上的适配 */
+/* 标签在悬浮面板上的适配 */
 .event-popup .tag, .event-item .tag { flex-shrink: 0; }
 </style>
