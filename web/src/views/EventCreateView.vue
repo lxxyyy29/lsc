@@ -69,6 +69,22 @@
         <textarea v-model="form.description" rows="4" placeholder="事件详细情况..." style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;resize:vertical;"></textarea>
       </div>
 
+      <!-- 现场照片：选填，最多 6 张，上传后随事件提交 -->
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">现场照片 <span style="font-weight:400;font-size:12px;color:#9ca3af;">（选填，最多 6 张）</span></label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <div v-for="(img, idx) in images" :key="idx" style="position:relative;width:72px;height:72px;">
+            <img :src="img" style="width:100%;height:100%;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;" />
+            <button @click="removeImage(idx)" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:#ff4d4f;color:#fff;font-size:12px;line-height:1;cursor:pointer;" title="移除">×</button>
+          </div>
+          <label v-if="images.length < 6" style="width:72px;height:72px;border:1px dashed #d1d5db;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#9ca3af;font-size:12px;gap:2px;">
+            <span style="font-size:20px;line-height:1;">+</span>
+            <span>{{ uploading ? '上传中...' : '上传' }}</span>
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp" multiple :disabled="uploading" style="display:none;" @change="onPickImages" />
+          </label>
+        </div>
+      </div>
+
       <div style="margin-bottom:16px;">
         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">上报来源</label>
         <select v-model="form.reportSource" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
@@ -90,7 +106,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createEvent, getGridTree, getDictItems } from '../api'
+import { createEvent, getGridTree, getDictItems, uploadEventImage } from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { locateWithFallback } from '../utils/geolocation'
 import { showMessage } from '../utils/message'
@@ -111,6 +127,38 @@ const FALLBACK_REPORT_SOURCES = [
   { itemValue: 'AI_CAMERA', itemLabel: '智能监控抓拍' },
 ]
 const reportSourceOptions = ref<{ itemValue: string; itemLabel: string }[]>(FALLBACK_REPORT_SOURCES)
+
+// 现场照片（选填）：选中即上传，成功后存 URL 随事件提交
+const images = ref<string[]>([])
+const uploading = ref(false)
+
+async function onPickImages(e: Event) {
+  const input = e.target as HTMLInputElement
+  const files = Array.from(input.files || [])
+  input.value = ''
+  if (!files.length) return
+  const remain = 6 - images.value.length
+  if (files.length > remain) showMessage(`最多上传 6 张，本次仅上传前 ${remain} 张`, 'warning')
+  uploading.value = true
+  try {
+    for (const f of files.slice(0, remain)) {
+      if (f.size > 10 * 1024 * 1024) {
+        showMessage(`图片「${f.name}」超过 10MB，已跳过`, 'warning')
+        continue
+      }
+      const res: any = await uploadEventImage(f)
+      if (res?.fileUrl) images.value.push(res.fileUrl)
+    }
+  } catch (err: any) {
+    showMessage(err?.message || '图片上传失败')
+  } finally {
+    uploading.value = false
+  }
+}
+
+function removeImage(idx: number) {
+  images.value.splice(idx, 1)
+}
 let mapInstance: any = null
 let markerInstance: any = null
 let AMapLib: any = null
@@ -298,7 +346,7 @@ async function submit() {
       sourceType: 'MANUAL',
       sourceSystem: 'GRID_PLATFORM',
       externalEventId: 'EVT-' + Date.now(),
-      evidenceReferences: [],
+      evidenceReferences: images.value,
     })
     if (props.embedded) {
       emit('created', result.id)

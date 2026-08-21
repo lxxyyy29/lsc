@@ -40,6 +40,15 @@
             <div><span style="color:#9ca3af;">上报人：</span>{{ getReportSourceName(event.reportSource) }}</div>
             <div><span style="color:#9ca3af;">来源系统：</span>{{ getSourceSystemName(event.sourceSystem) }}</div>
             <div v-if="event.description" style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6;"><span style="color:#9ca3af;">详细描述：</span><br/>{{ event.description }}</div>
+            <!-- 现场照片（创建事件时上传的证据图片，点击查看大图） -->
+            <div v-if="event.evidenceReferences && event.evidenceReferences.length" style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6;">
+              <span style="color:#9ca3af;">现场照片（{{ event.evidenceReferences.length }}）：</span>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                <a v-for="(url, idx) in event.evidenceReferences" :key="idx" :href="url" target="_blank" title="点击查看大图">
+                  <img :src="url" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;cursor:zoom-in;" />
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -147,6 +147,13 @@ export async function createEvent(data: any) {
   return http.post('/events', data)
 }
 
+// 创建事件时上传现场照片（选填），返回 fileUrl 供随事件提交
+export async function uploadEventImage(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return http.post('/media/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+}
+
 export async function closeEvent(id: number, reason: string) {
   return http.put(`/events/${id}/close`, { reason })
 }

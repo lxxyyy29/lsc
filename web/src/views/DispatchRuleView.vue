@@ -24,8 +24,8 @@
         </thead>
         <tbody>
           <tr v-for="r in rules" :key="r.id">
-            <td style="font-weight:500;">{{ r.eventType }}</td>
-            <td><span class="tag tag-purple">{{ r.targetRoleCode }}</span></td>
+            <td style="font-weight:500;">{{ getEventTypeName(r.eventType) }}</td>
+            <td><span class="tag tag-purple">{{ roleName(r.targetRoleCode) }}</span></td>
             <td style="text-align:center;">{{ r.priority }}</td>
             <td><span :class="['tag', r.enabled === 1 ? 'tag-green' : 'tag-orange']">{{ r.enabled === 1 ? '启用' : '停用' }}</span></td>
             <td style="font-size:12px;color:#6b7280;">{{ r.remark || '-' }}</td>
@@ -50,11 +50,7 @@
         <div class="form-group">
           <label class="form-label">目标角色 <span style="color:#ff4d4f;">*</span></label>
           <select v-model="form.targetRoleCode" class="form-select">
-            <option value="H5_WORKER">H5_WORKER（网格员）</option>
-            <option value="EVENT_OPERATOR">EVENT_OPERATOR（两委干部）</option>
-            <option value="DISPATCHER">DISPATCHER（派单员）</option>
-            <option value="AUDITOR">AUDITOR（审核员）</option>
-            <option value="H5_VERIFIER">H5_VERIFIER（核查员）</option>
+            <option v-for="r in roleOptions" :key="r.roleCode" :value="r.roleCode">{{ r.roleName }}</option>
           </select>
         </div>
         <div class="form-group">
@@ -83,13 +79,34 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getDispatchRules, createDispatchRule, updateDispatchRule, deleteDispatchRule } from '../api'
+import { getDispatchRules, createDispatchRule, updateDispatchRule, deleteDispatchRule, getSystemRoles } from '../api'
 import { showMessage } from '../utils/message'
 import { confirmDialog } from '../utils/dialog'
+import { getEventTypeName } from '../utils/eventTypes'
 
 const rules = ref<any[]>([])
+
+// 目标角色：动态读取系统角色列表展示中文名称（居民角色不受理事件，不作为派单目标）
+const roleOptions = ref<{ roleCode: string; roleName: string }[]>([])
+const FALLBACK_ROLE_NAMES: Record<string, string> = {
+  SUPER_ADMIN: '超级管理员', EVENT_OPERATOR: '管理员', GRID_WORKER: '网格员', PUBLIC: '居民',
+}
+function roleName(code: string): string {
+  return roleOptions.value.find(r => r.roleCode === code)?.roleName || FALLBACK_ROLE_NAMES[code] || code
+}
+async function loadRoles() {
+  try {
+    const data: any = await getSystemRoles()
+    const list = Array.isArray(data) ? data : []
+    roleOptions.value = list
+      .filter((r: any) => r.status === 'ACTIVE' && r.roleCode !== 'PUBLIC')
+      .map((r: any) => ({ roleCode: r.roleCode, roleName: r.roleName }))
+  } catch (e: any) {
+    showMessage(e?.message || '角色列表加载失败')
+  }
+}
 const showForm = ref(false)
-const form = ref<any>({ id: null, eventType: '', targetRoleCode: 'H5_WORKER', priority: 0, enabled: 1, remark: '' })
+const form = ref<any>({ id: null, eventType: '', targetRoleCode: 'GRID_WORKER', priority: 0, enabled: 1, remark: '' })
 
 async function loadRules() {
   try {
@@ -100,7 +117,7 @@ async function loadRules() {
 }
 
 function openCreate() {
-  form.value = { id: null, eventType: '', targetRoleCode: 'H5_WORKER', priority: 0, enabled: 1, remark: '' }
+  form.value = { id: null, eventType: '', targetRoleCode: 'GRID_WORKER', priority: 0, enabled: 1, remark: '' }
   showForm.value = true
 }
 
@@ -142,5 +159,8 @@ async function handleDelete(r: any) {
   }
 }
 
-onMounted(loadRules)
+onMounted(() => {
+  loadRules()
+  loadRoles()
+})
 </script>
