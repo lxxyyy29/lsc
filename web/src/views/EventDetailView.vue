@@ -24,7 +24,7 @@
           <button v-if="event.currentStatus !== 'CLOSED' && event.currentStatus !== 'IGNORED'" @click="showClose = true" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">关闭事件</button>
           <button v-if="(event.currentStatus === 'CLOSED' || event.currentStatus === 'IGNORED') && !event.archived" @click="handleArchive" style="padding:8px 16px;border:1px solid #6b7280;border-radius:6px;background:#fff;color:#374151;font-size:13px;cursor:pointer;">归档</button>
           <button v-if="event.currentStatus === 'CLOSED'" @click="handleReopen" style="padding:8px 16px;border:1px solid #52c41a;border-radius:6px;background:#fff;color:#52c41a;font-size:13px;cursor:pointer;">重新打开</button>
-          <button @click="handleBack" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">返回</button>
+          <button @click="handleBack" :title="embedded ? '关闭' : '返回'" style="width:32px;height:32px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:18px;line-height:1;color:#6b7280;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
         </div>
       </div>
 
@@ -40,13 +40,11 @@
             <div><span style="color:#9ca3af;">上报人：</span>{{ getReportSourceName(event.reportSource) }}</div>
             <div><span style="color:#9ca3af;">来源系统：</span>{{ getSourceSystemName(event.sourceSystem) }}</div>
             <div v-if="event.description" style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6;"><span style="color:#9ca3af;">详细描述：</span><br/>{{ event.description }}</div>
-            <!-- 现场照片（创建事件时上传的证据图片，点击查看大图） -->
+            <!-- 现场照片（创建事件时上传的证据图片，image 预览模式：点击打开全屏预览浮层，不跳转链接） -->
             <div v-if="event.evidenceReferences && event.evidenceReferences.length" style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6;">
               <span style="color:#9ca3af;">现场照片（{{ event.evidenceReferences.length }}）：</span>
               <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-                <a v-for="(url, idx) in event.evidenceReferences" :key="idx" :href="url" target="_blank" title="点击查看大图">
-                  <img :src="url" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;cursor:zoom-in;" />
-                </a>
+                <img v-for="(url, idx) in event.evidenceReferences" :key="idx" :src="url" @click="previewIdx = idx" title="点击预览大图" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;cursor:zoom-in;" />
               </div>
             </div>
           </div>
@@ -129,6 +127,14 @@
           </div>
         </div>
       </div>
+      <!-- 现场照片预览浮层（image 预览模式：全屏遮罩 + 大图 + 左右切换，点击遮罩或 × 关闭） -->
+      <div v-if="previewIdx !== null && event.evidenceReferences?.length" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:10001;" @click.self="previewIdx = null">
+        <button @click="previewIdx = null" title="关闭" style="position:absolute;top:20px;right:24px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:20px;cursor:pointer;">×</button>
+        <button v-if="event.evidenceReferences.length > 1" @click="previewIdx = (previewIdx - 1 + event.evidenceReferences.length) % event.evidenceReferences.length" title="上一张" style="position:absolute;left:24px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:20px;cursor:pointer;">‹</button>
+        <img :src="event.evidenceReferences[previewIdx]" style="max-width:80vw;max-height:85vh;object-fit:contain;border-radius:8px;" />
+        <button v-if="event.evidenceReferences.length > 1" @click="previewIdx = (previewIdx + 1) % event.evidenceReferences.length" title="下一张" style="position:absolute;right:24px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:20px;cursor:pointer;">›</button>
+        <span style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);color:#fff;font-size:13px;">{{ previewIdx + 1 }} / {{ event.evidenceReferences.length }}</span>
+      </div>
     </div>
 
     <div v-else style="text-align:center;padding:60px;color:#9ca3af;">事件不存在</div>
@@ -157,6 +163,8 @@ const loading = ref(true)
 const showDispatch = ref(false)
 const showClose = ref(false)
 const closeReason = ref('')
+// 现场照片预览：非 null 时打开全屏预览浮层，值为当前预览下标
+const previewIdx = ref<number | null>(null)
 const workers = ref<any[]>([])
 const dispatchForm = ref({ assigneeUserId: null as number | null, remark: '' })
 const dispatchSuggestion = ref<any>(null)

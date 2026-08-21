@@ -30,15 +30,19 @@
           <option value="YELLOW">重点（黄）</option>
           <option value="RED">紧急（红）</option>
         </select>
-        <!-- 一体化日期范围：开始日期 ~ 结束日期 -->
+        <!-- 一体化日期范围（daterange 风格）：开始日期 至 结束日期；空值时用 text 类型显示占位符，聚焦切回 date 弹出选择器 -->
         <div class="date-range">
           <span class="date-field">
             <i class="fas fa-calendar"></i>
-            <input v-model="filters.startDate" type="date" placeholder="开始日期" />
+            <input v-model="filters.startDate" :type="filters.startDate ? 'date' : 'text'" placeholder="开始日期"
+              @focus="($event.target as HTMLInputElement).type = 'date'"
+              @blur="dateInputBlur($event, 'startDate')" />
           </span>
-          <span class="date-sep">~</span>
+          <span class="date-sep">至</span>
           <span class="date-field">
-            <input v-model="filters.endDate" type="date" placeholder="结束日期" />
+            <input v-model="filters.endDate" :type="filters.endDate ? 'date' : 'text'" placeholder="结束日期"
+              @focus="($event.target as HTMLInputElement).type = 'date'"
+              @blur="dateInputBlur($event, 'endDate')" />
           </span>
           <button v-if="filters.startDate || filters.endDate" type="button" class="date-clear" title="清除日期" @click="filters.startDate = ''; filters.endDate = ''">✕</button>
         </div>
@@ -61,8 +65,9 @@
         <button @click="loadData" style="margin-top:12px;padding:6px 16px;border:1px solid #d9d9d9;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;">重试</button>
       </div>
 
-      <!-- 数据表格 -->
+      <!-- 数据表格（表体固定高度滚动，表头吸顶，撑满页面可视区） -->
       <template v-else>
+        <div class="table-scroll" style="max-height:calc(100vh - 330px);min-height:240px;overflow-y:auto;">
         <table class="table">
           <thead>
             <tr>
@@ -105,6 +110,7 @@
             </tr>
           </tbody>
         </table>
+        </div>
         <div v-if="!displayList.length" class="empty-state">
           <i class="fas fa-inbox"></i>
           <p>暂无事件数据</p>
@@ -125,7 +131,7 @@
     </div>
     <!-- 创建事件弹窗（内嵌创建表单，提交后直接刷新列表） -->
     <div v-if="showCreateModal" class="modal-overlay" @click.self="showCreateModal = false">
-      <div class="modal-box" style="width:760px;max-width:94vw;max-height:90vh;overflow-y:auto;">
+      <div class="modal-box" style="width:760px;max-width:94vw;height:86vh;display:flex;flex-direction:column;overflow:hidden;">
         <EventCreateView embedded @cancel="showCreateModal = false" @created="onEventCreated" />
       </div>
     </div>
@@ -194,6 +200,15 @@ const displayList = computed(() => {
 
 function goDetail(e: any) {
   detailEventId.value = e.id || e.externalEventId
+}
+
+// 日期输入失焦：未选择时切回 text 类型以重新显示占位符（原生 date 输入无法显示 placeholder）
+function dateInputBlur(e: Event, field: 'startDate' | 'endDate') {
+  const input = e.target as HTMLInputElement
+  if (!input.value) {
+    input.type = 'text'
+    filters[field] = ''
+  }
 }
 
 // 展示隐藏切换：隐藏后监管大屏/GIS 等面板不再展示，仅本闭环列表可见

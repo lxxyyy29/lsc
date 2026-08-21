@@ -1,18 +1,23 @@
 <template>
-  <div>
-    <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">创建事件</h2>
-    <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">上报新事件，启动闭环处置流程</p>
+  <!-- embedded 弹窗模式：header / 表单滚动区 / footer 三段结构，按钮固定 footer 右侧 -->
+  <div :style="embedded ? 'display:flex;flex-direction:column;height:100%;min-height:0;' : ''">
+    <div style="flex-shrink:0;">
+      <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">创建事件</h2>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">上报新事件，启动闭环处置流程</p>
+    </div>
 
-    <div class="card" style="max-width:700px;">
+    <div :style="embedded ? 'flex:1;overflow-y:auto;min-height:0;padding-right:4px;' : ''">
+    <div class="card" :style="embedded ? 'padding:0;box-shadow:none;margin-bottom:0;' : 'max-width:700px;'">
       <div style="margin-bottom:16px;">
         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事件标题 <span style="color:#ff4d4f;">*</span></label>
-        <input v-model="form.title" placeholder="简要描述事件" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;line-height:normal;box-sizing:border-box;" />
+        <input v-model="form.title" @input="errors.title = ''" placeholder="简要描述事件" :style="`width:100%;padding:8px 12px;border:1px solid ${errors.title ? '#ff4d4f' : '#d1d5db'};border-radius:6px;font-size:13px;line-height:normal;box-sizing:border-box;`" />
+        <p v-if="errors.title" class="field-error">{{ errors.title }}</p>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
         <div>
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事件类型 <span style="color:#ff4d4f;">*</span></label>
-          <select v-model="form.eventType" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+          <select v-model="form.eventType" @change="errors.eventType = ''" :style="`width:100%;padding:8px 12px;border:1px solid ${errors.eventType ? '#ff4d4f' : '#d1d5db'};border-radius:6px;font-size:13px;`">
             <option value="">请选择</option>
             <option value="市容环境">市容环境</option>
             <option value="消防安全">消防安全</option>
@@ -23,6 +28,7 @@
             <option value="违建">违建</option>
             <option value="其他">其他</option>
           </select>
+          <p v-if="errors.eventType" class="field-error">{{ errors.eventType }}</p>
         </div>
         <div>
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">紧急程度</label>
@@ -37,7 +43,8 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
         <div>
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">发生时间 <span style="color:#ff4d4f;">*</span></label>
-          <input v-model="form.occurredAt" type="datetime-local" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" />
+          <input v-model="form.occurredAt" @input="errors.occurredAt = ''" type="datetime-local" :style="`width:100%;padding:8px 12px;border:1px solid ${errors.occurredAt ? '#ff4d4f' : '#d1d5db'};border-radius:6px;font-size:13px;`" />
+          <p v-if="errors.occurredAt" class="field-error">{{ errors.occurredAt }}</p>
         </div>
         <div>
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">所属网格</label>
@@ -52,11 +59,12 @@
       <div style="margin-bottom:16px;">
         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事发地点 <span style="color:#ff4d4f;">*</span></label>
         <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <input v-model="form.location" placeholder="点击地图选择位置或手动输入地址" style="flex:1;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;line-height:normal;box-sizing:border-box;" />
+          <input v-model="form.location" @input="errors.location = ''" placeholder="点击地图选择位置或手动输入地址" :style="`flex:1;padding:8px 12px;border:1px solid ${errors.location ? '#ff4d4f' : '#d1d5db'};border-radius:6px;font-size:13px;line-height:normal;box-sizing:border-box;`" />
           <button @click="locateMe" type="button" style="padding:8px 12px;border:1px solid #1890ff;border-radius:6px;background:#fff;color:#1890ff;font-size:13px;cursor:pointer;white-space:nowrap;">
             <i class="fas fa-crosshairs"></i> 定位
           </button>
         </div>
+        <p v-if="errors.location" class="field-error">{{ errors.location }}</p>
         <div id="eventMap" style="height:250px;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;"></div>
         <p style="font-size:11px;color:#9ca3af;margin-top:4px;">点击地图标记位置，或拖动标记调整</p>
         <div v-if="form.longitude && form.latitude" style="font-size:11px;color:#52c41a;margin-top:4px;">
@@ -92,19 +100,28 @@
         </select>
       </div>
 
-      <!-- 操作栏吸底：弹窗内滚动时始终保持在可视区右下角 -->
-      <div style="display:flex;gap:12px;justify-content:flex-end;position:sticky;bottom:0;background:#fff;padding-top:12px;margin-top:16px;border-top:1px solid #f3f4f6;">
+      <!-- 页面模式操作栏吸底：弹窗内滚动时始终保持在可视区右下角 -->
+      <div v-if="!embedded" style="display:flex;gap:12px;justify-content:flex-end;position:sticky;bottom:0;background:#fff;padding-top:12px;margin-top:16px;border-top:1px solid #f3f4f6;">
         <button @click="handleCancel" style="padding:8px 20px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">取消</button>
         <button @click="submit" :disabled="loading" style="padding:8px 20px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">
           {{ loading ? '提交中...' : '创建事件' }}
         </button>
       </div>
     </div>
+    </div>
+
+    <!-- footer：弹窗模式下按钮固定在底部右侧 -->
+    <div v-if="embedded" style="flex-shrink:0;display:flex;gap:12px;justify-content:flex-end;padding-top:16px;margin-top:16px;border-top:1px solid #f3f4f6;">
+      <button @click="handleCancel" style="padding:8px 20px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">取消</button>
+      <button @click="submit" :disabled="loading" style="padding:8px 20px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">
+        {{ loading ? '提交中...' : '创建事件' }}
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createEvent, getGridTree, getDictItems, uploadEventImage } from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
@@ -162,6 +179,18 @@ function removeImage(idx: number) {
 let mapInstance: any = null
 let markerInstance: any = null
 let AMapLib: any = null
+
+// 必填项校验错误提示：提交时逐项标红并在字段下方展示 tips，输入后自动清除
+const errors = reactive({ title: '', eventType: '', occurredAt: '', location: '' })
+function validateRequired(): boolean {
+  errors.title = form.value.title.trim() ? '' : '请输入事件标题'
+  errors.eventType = form.value.eventType ? '' : '请选择事件类型'
+  errors.occurredAt = form.value.occurredAt ? '' : '请选择发生时间'
+  errors.location = form.value.location.trim() ? '' : '请填写事发地点'
+  const firstMsg = errors.title || errors.eventType || errors.occurredAt || errors.location
+  if (firstMsg) { showMessage(firstMsg, 'warning'); return false }
+  return true
+}
 
 const form = ref({
   title: '',
@@ -335,10 +364,7 @@ function handleCancel() {
 }
 
 async function submit() {
-  if (!form.value.title || !form.value.eventType || !form.value.occurredAt || !form.value.location) {
-    showMessage('请填写必填字段')
-    return
-  }
+  if (!validateRequired()) return
   loading.value = true
   try {
     const result = await createEvent({
