@@ -113,7 +113,8 @@ public class EventServiceImpl implements EventService {
                     user.id(), user.userName(), entity.getId()));
         }
 
-        for (String reference : request.evidenceReferences()) {
+        // 证据图片为可选字段，未传时按空列表处理，避免 NPE
+        for (String reference : request.evidenceReferences() != null ? request.evidenceReferences() : java.util.List.<String>of()) {
             eventMapper.insertEvidenceReference(entity.getId(), extractFileName(reference), reference);
         }
         eventMapper.insertEventRecord(entity.getId(), null, EventStatus.PENDING_AUDIT.name(), EVENT_INTAKE, EVENT_INTAKE);

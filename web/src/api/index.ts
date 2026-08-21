@@ -219,6 +219,11 @@ export async function setEventHidden(id: number | string, hidden: boolean) {
   return http.put(`/events/${id}/hidden`, { hidden })
 }
 
+// 删除事件：级联删除关联工单/审核记录/附件，并同步清理 MongoDB 文档
+export async function deleteEvents(ids: (number | string)[]) {
+  return http.post('/events/batch-delete', ids)
+}
+
 export async function getEventTimeline(id: number | string) {
   return http.get(`/events/${id}/timeline`)
 }

@@ -106,6 +106,7 @@
                 <button v-if="e.currentStatus === 'PENDING_AUDIT'" @click="handleAudit(e.id, 'reject')" style="padding:4px 10px;border:none;border-radius:4px;background:#ff4d4f;color:#fff;font-size:12px;cursor:pointer;margin-right:4px;">驳回</button>
                 <button v-if="['WAITING_DISPATCH', 'IN_AUDIT'].includes(e.currentStatus)" @click="goDetail(e)" style="padding:4px 10px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;margin-right:4px;">操作</button>
                 <button @click="toggleHidden(e)" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;margin-left:4px;color:#6b7280;">{{ e.hidden ? '显示' : '隐藏' }}</button>
+                <button @click="handleDelete(e)" style="padding:4px 10px;border:1px solid #ffccc7;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;margin-left:4px;color:#ff4d4f;">删除</button>
               </td>
             </tr>
           </tbody>
@@ -160,7 +161,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { getEvents, auditEvent, setEventHidden } from '../api'
+import { getEvents, auditEvent, setEventHidden, deleteEvents } from '../api'
 import EventCreateView from './EventCreateView.vue'
 import EventDetailView from './EventDetailView.vue'
 import { showMessage } from '../utils/message'
@@ -228,6 +229,27 @@ async function toggleHidden(e: any) {
     loadData()
   } catch (err: any) {
     showMessage(err?.message || '操作失败')
+  }
+}
+
+// 删除事件：级联删除关联工单/审核记录/附件，不可恢复，需二次确认
+async function handleDelete(e: any) {
+  if (!e.id) { showMessage('该事件缺少主键 ID，无法删除'); return }
+  const ok = await confirmDialog({
+    title: '删除事件',
+    message: `确定删除事件「${e.title}」？删除后将同时清除其关联工单、审核记录与附件，不可恢复。`,
+    okText: '删除',
+    danger: true,
+  })
+  if (!ok) return
+  try {
+    await deleteEvents([e.id])
+    showMessage('事件已删除', 'success')
+    // 当前页删空时回退一页，避免停留在空列表
+    if (displayList.value.length <= 1 && page.value > 1) page.value--
+    loadData()
+  } catch (err: any) {
+    showMessage(err?.message || '删除失败')
   }
 }
 
