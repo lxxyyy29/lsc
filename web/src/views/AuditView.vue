@@ -102,11 +102,24 @@
         </div>
       </div>
     </div>
+
+    <!-- 审核确认弹窗（取消仅关闭弹窗，确认才执行审核） -->
+    <div v-if="auditModal.visible" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:2000;" @click.self="auditModal.visible = false">
+      <div style="width:420px;background:#fff;border-radius:12px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,0.12);">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">{{ auditModal.action === 'pass' ? '审核通过' : '审核驳回' }}</h3>
+        <p style="font-size:12px;color:#9ca3af;margin-bottom:14px;">{{ auditModal.action === 'pass' ? '通过后事件将进入后续处置流程' : '驳回后事件将退回上报人' }}</p>
+        <textarea v-model="auditModal.remark" rows="3" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;resize:vertical;box-sizing:border-box;" :placeholder="auditModal.action === 'pass' ? '请输入通过备注（可选）' : '请输入驳回原因（必填）'"></textarea>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+          <button @click="auditModal.visible = false" class="btn btn-default">取消</button>
+          <button @click="confirmAudit" class="btn" :style="{ background: auditModal.action === 'pass' ? '#52c41a' : '#ff4d4f', color: '#fff' }">确认{{ auditModal.action === 'pass' ? '通过' : '驳回' }}</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { getAudits, auditEvent } from '../api'
 import { showMessage } from '../utils/message'
 
@@ -149,13 +162,23 @@ function viewDetail(audit: any) {
   selectedAudit.value = audit
 }
 
-async function auditAction(audit: any, action: string) {
-  const promptText = action === 'pass' ? '请输入通过备注（可选）' : '请输入驳回原因'
-  const remark = prompt(promptText, '')
-  if (remark === null) return
+// 审核确认弹窗状态：取消仅关闭弹窗，不执行任何审核操作
+const auditModal = reactive({ visible: false, id: 0, action: '', remark: '' })
+
+function auditAction(audit: any, action: string) {
+  auditModal.id = audit.id
+  auditModal.action = action
+  auditModal.remark = ''
+  auditModal.visible = true
+}
+
+async function confirmAudit() {
+  const { id, action, remark } = auditModal
+  if (action === 'reject' && !remark.trim()) { showMessage('请填写驳回原因', 'warning'); return }
   try {
-    await auditEvent(audit.id, action, remark?.trim() || undefined)
-    showMessage(action === 'pass' ? '已通过，事件进入待派单' : '已驳回')
+    await auditEvent(id, action, remark.trim() || undefined)
+    auditModal.visible = false
+    showMessage(action === 'pass' ? '已通过，事件进入待派单' : '已驳回', 'success')
     await loadData()
   } catch (e: any) {
     showMessage(e.message || '审核操作失败')
