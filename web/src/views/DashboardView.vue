@@ -312,13 +312,19 @@
       {{ hoverInfo.name }}
     </div>
 
-    <!-- 所有数据接口失败：全屏错误提示 + 重试（不再展示演示数据） -->
-    <div v-if="fatalError" class="dash-fatal">
+    <!-- 所有数据接口失败：居中紧凑错误卡片，逐条列出具体失败接口与原因（不再展示演示数据） -->
+    <div v-if="fatalErrors.length" class="dash-fatal">
       <div class="dash-fatal-box">
-        <i class="fas fa-exclamation-circle"></i>
-        <h2>数据加载失败</h2>
-        <p>后端数据接口不可用或返回异常，无法加载真实数据，请检查后端服务后重试。</p>
-        <p class="dash-fatal-detail">{{ fatalError }}</p>
+        <div class="dash-fatal-head">
+          <i class="fas fa-exclamation-circle"></i>
+          <div>
+            <h2>数据加载失败</h2>
+            <p>以下 {{ fatalErrors.length }} 个接口不可用，请检查后端服务后重试</p>
+          </div>
+        </div>
+        <ul class="dash-fatal-list">
+          <li v-for="(msg, idx) in fatalErrors" :key="idx">{{ msg }}</li>
+        </ul>
         <button @click="reload"><i class="fas fa-redo"></i> 重试</button>
       </div>
     </div>
@@ -447,8 +453,8 @@ const areaRaw = ref(0)
 const allGrids = ref<any[]>([])
 const hasPopulation = ref(false)
 const isLive = ref(false)
-// 所有数据接口失败时展示全屏错误提示（不再回退演示数据）
-const fatalError = ref('')
+// 所有数据接口失败时逐条展示具体失败接口与原因（不再回退演示数据）
+const fatalErrors = ref<string[]>([])
 
 let mapInstance: any = null
 let chartRing: any = null
@@ -1121,7 +1127,7 @@ async function loadData() {
       if (data.communityArea) areaRaw.value = Number(data.communityArea)
       anyLive = true
     }
-  } catch (e: any) { errors.push('概览: ' + (e?.message || e)) }
+  } catch (e: any) { errors.push('概览统计接口 /community/dashboard/overview：' + (e?.message || e)) }
 
   try {
     const big = await getBigScreenData()
@@ -1130,33 +1136,33 @@ async function loadData() {
       if (big.communityArea) areaRaw.value = Number(big.communityArea)
       anyLive = true
     }
-  } catch (e) {}
+  } catch (e: any) { errors.push('大屏聚合接口 /community/dashboard/big-screen：' + (e?.message || e)) }
 
   let stats: any = {}
   try {
     const s = await getGridStats()
     if (s) stats = s
     anyLive = true
-  } catch (e: any) { errors.push('网格统计: ' + (e?.message || e)) }
+  } catch (e: any) { errors.push('网格统计接口 /community/dashboard/grid-stats：' + (e?.message || e)) }
 
   let tree: any[] = []
   try {
     const t = await getGridTree()
     if (Array.isArray(t) && t.length) tree = t
-  } catch (e: any) { errors.push('网格树: ' + (e?.message || e)) }
+  } catch (e: any) { errors.push('网格树接口 /community/grids/tree：' + (e?.message || e)) }
 
   try {
     const r = await getEvents({ excludeHidden: true })
     if (r?.items?.length) { events.value = r.items; anyLive = true }
-  } catch (e: any) { errors.push('事件: ' + (e?.message || e)) }
+  } catch (e: any) { errors.push('事件列表接口 /events：' + (e?.message || e)) }
 
   isLive.value = anyLive
   if (!anyLive) {
-    // 所有接口均失败/为空：全屏错误提示，不再用演示数据兜底
-    fatalError.value = errors.length ? errors.join('；') : '所有数据接口返回空数据'
+    // 所有接口均失败/为空：逐条展示具体错误，不再用演示数据兜底
+    fatalErrors.value = errors.length ? errors : ['所有数据接口返回空数据']
     loadError.value = ''
   } else {
-    fatalError.value = ''
+    fatalErrors.value = []
     loadError.value = errors.length ? errors.join('；') : ''
   }
 
@@ -1173,10 +1179,10 @@ async function loadData() {
 
 // 重试：重新加载全部数据并重建地图与图表
 async function reload() {
-  fatalError.value = ''
+  fatalErrors.value = []
   loadError.value = ''
   const { tree, stats } = await loadData()
-  if (fatalError.value) return
+  if (fatalErrors.value.length) return
   if (mapInstance) { mapInstance.destroy(); mapInstance = null }
   await initMap(tree)
   renderCharts(stats)
@@ -1191,7 +1197,7 @@ onMounted(async () => {
   window.addEventListener('resize', resizeHandler)
 
   const { tree, stats } = await loadData()
-  if (fatalError.value) return
+  if (fatalErrors.value.length) return
   await initMap(tree)
   renderCharts(stats)
 })
@@ -1644,19 +1650,33 @@ function toggleLayerDock() {
   display: flex; align-items: center; gap: 8px;
 }
 
-/* 全屏致命错误：接口全部失败时替代演示数据 */
+/* 接口全部失败：居中紧凑错误卡片，逐条列出具体失败接口 */
 .dash-fatal {
   position: absolute; inset: 0; z-index: 60;
   display: flex; align-items: center; justify-content: center;
   background: rgba(248,250,252,0.88); backdrop-filter: blur(6px);
 }
-.dash-fatal-box { text-align: center; max-width: 460px; padding: 40px; }
-.dash-fatal-box > i { font-size: 44px; color: #dc2626; }
-.dash-fatal-box h2 { font-size: 18px; font-weight: 600; color: #1f2937; margin: 14px 0 8px; }
-.dash-fatal-box p { font-size: 13px; color: #6b7280; line-height: 1.7; }
-.dash-fatal-detail { margin-top: 10px; font-size: 12px; color: #b91c1c; word-break: break-all; }
+.dash-fatal-box {
+  width: 400px; max-width: 88vw; background: #fff; border-radius: 12px;
+  border: 1px solid rgba(220,38,38,0.18); box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+  padding: 20px 22px;
+}
+.dash-fatal-head { display: flex; align-items: flex-start; gap: 10px; }
+.dash-fatal-head > i { font-size: 26px; color: #dc2626; margin-top: 2px; }
+.dash-fatal-head h2 { font-size: 15px; font-weight: 600; color: #1f2937; }
+.dash-fatal-head p { font-size: 12px; color: #6b7280; margin-top: 3px; }
+.dash-fatal-list {
+  margin: 12px 0 0; padding: 10px 12px; list-style: none;
+  background: #fef2f2; border-radius: 8px; max-height: 148px; overflow-y: auto;
+}
+.dash-fatal-list li {
+  font-size: 12px; color: #b91c1c; line-height: 1.6; word-break: break-all;
+  padding-left: 14px; position: relative; margin-bottom: 4px;
+}
+.dash-fatal-list li::before { content: ''; position: absolute; left: 2px; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: #dc2626; }
+.dash-fatal-list li:last-child { margin-bottom: 0; }
 .dash-fatal-box button {
-  margin-top: 20px; padding: 8px 28px; border: none; border-radius: 6px;
+  margin-top: 14px; width: 100%; padding: 8px 0; border: none; border-radius: 6px;
   background: #0284c7; color: #fff; font-size: 13px; cursor: pointer;
 }
 .dash-fatal-box button:hover { background: #0369a1; }
