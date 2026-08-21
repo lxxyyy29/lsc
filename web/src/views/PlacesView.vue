@@ -23,7 +23,7 @@
         <table class="table">
           <thead><tr><th>名称</th><th>类型</th><th>地址</th><th>联系人</th><th>电话</th></tr></thead>
           <tbody>
-            <tr v-for="p in list" :key="p.id">
+            <tr v-for="(p, idx) in list" :key="p.id || ('ledger-' + idx)">
               <td>{{ p.placeName }}</td>
               <td><span class="tag tag-blue">{{ p.placeType || '-' }}</span></td>
               <td>{{ p.address || '-' }}</td>
