@@ -13,6 +13,7 @@ import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -187,6 +188,17 @@ public class WorkOrderController {
         permissionGuard.require(PermissionCodes.API_WORKORDER_CONFIRM_CLOSE);
         String remark = body != null ? body.getOrDefault("remark", "") : "";
         return ApiResponse.ok(workOrderService.rejectClose(id, remark));
+    }
+
+    /**
+     * 设置工单展示隐藏状态：隐藏后仅工单中心可见，大屏等面板不再统计展示
+     */
+    @PutMapping("/{id}/hidden")
+    public ApiResponse<Boolean> setHidden(@PathVariable Long id, @RequestBody Map<String, Boolean> body) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_WORKORDER_DISPATCH);
+        boolean hidden = Boolean.TRUE.equals(body.get("hidden"));
+        return ApiResponse.ok(workOrderService.setWorkOrderHidden(id, hidden));
     }
 
     /**

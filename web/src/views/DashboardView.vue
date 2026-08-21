@@ -1186,7 +1186,7 @@ async function loadData() {
   if (!tree.length) tree = buildMockTree()
 
   try {
-    const r = await getEvents()
+    const r = await getEvents({ excludeHidden: true })
     if (r?.items?.length) { events.value = r.items; anyLive = true }
   } catch (e: any) { errors.push('事件: ' + (e?.message || e)) }
   if (!events.value.length) events.value = buildMockEvents()

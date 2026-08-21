@@ -64,4 +64,6 @@ public class EventEntity {
     private String reportSource;
     /** 是否已归档：0=活跃 1=已归档留存 */
     private Integer archived;
+    /** 展示隐藏：0=显示 1=隐藏（仅事件闭环/工单中心可见） */
+    private Integer hidden;
 }

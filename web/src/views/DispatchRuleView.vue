@@ -11,12 +11,20 @@
     </div>
 
     <div class="card">
-      <table class="table">
+      <table class="table" style="table-layout:fixed;">
+        <colgroup>
+          <col style="width:150px;" />
+          <col style="width:120px;" />
+          <col style="width:80px;" />
+          <col style="width:80px;" />
+          <col />
+          <col style="width:140px;" />
+        </colgroup>
         <thead>
           <tr>
             <th>事件类型</th>
             <th>目标角色</th>
-            <th>优先级</th>
+            <th style="text-align:center;">优先级</th>
             <th>状态</th>
             <th>备注</th>
             <th>操作</th>
@@ -24,11 +32,11 @@
         </thead>
         <tbody>
           <tr v-for="r in rules" :key="r.id">
-            <td style="font-weight:500;">{{ getEventTypeName(r.eventType) }}</td>
+            <td style="font-weight:500;word-break:break-all;">{{ getEventTypeName(r.eventType) }}</td>
             <td><span class="tag tag-purple">{{ roleName(r.targetRoleCode) }}</span></td>
             <td style="text-align:center;">{{ r.priority }}</td>
             <td><span :class="['tag', r.enabled === 1 ? 'tag-green' : 'tag-orange']">{{ r.enabled === 1 ? '启用' : '停用' }}</span></td>
-            <td style="font-size:12px;color:#6b7280;">{{ r.remark || '-' }}</td>
+            <td style="font-size:12px;color:#6b7280;word-break:break-all;">{{ r.remark || '-' }}</td>
             <td>
               <button @click="openEdit(r)" style="padding:4px 10px;font-size:12px;border:1px solid #1890ff;border-radius:4px;background:#fff;color:#1890ff;cursor:pointer;margin-right:6px;">编辑</button>
               <button @click="handleDelete(r)" style="padding:4px 10px;font-size:12px;border:1px solid #ff4d4f;border-radius:4px;background:#fff;color:#ff4d4f;cursor:pointer;">删除</button>

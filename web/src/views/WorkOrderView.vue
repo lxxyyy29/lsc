@@ -90,6 +90,7 @@
                 <div style="display:flex;align-items:center;gap:6px;">
                   <span style="font-size:14px;line-height:1;" :title="urgencyLabel(o.urgencyLevel)">{{ urgencyDot(o.urgencyLevel) }}</span>
                   <span>{{ o.eventTitle || o.title || '-' }}</span>
+                  <span v-if="o.hidden" class="tag" style="background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;font-size:11px;">已隐藏</span>
                 </div>
               </td>
               <td style="font-size:12px;">{{ o.assigneeName || o.assignee || '-' }}</td>
@@ -97,6 +98,7 @@
               <td style="font-size:12px;">{{ o.createdAt || o.created_at || '-' }}</td>
               <td>
                 <button @click="viewDetail(o)" style="padding:2px 8px;border:1px solid #1890ff;border-radius:4px;background:#fff;color:#1890ff;font-size:11px;cursor:pointer;">详情</button>
+                <button @click="toggleHidden(o)" style="padding:2px 8px;border:1px solid #d1d5db;border-radius:4px;background:#fff;color:#6b7280;font-size:11px;cursor:pointer;margin-left:4px;">{{ o.hidden ? '显示' : '隐藏' }}</button>
               </td>
             </tr>
           </tbody>
@@ -161,8 +163,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import http, { getWorkOrders, confirmCloseWorkOrder, rejectCloseWorkOrder } from '../api'
+import http, { getWorkOrders, confirmCloseWorkOrder, rejectCloseWorkOrder, setWorkOrderHidden } from '../api'
 import { showMessage } from '../utils/message'
+import { confirmDialog } from '../utils/dialog'
 
 const loading = ref(false)
 const orders = ref<any[]>([])
@@ -294,4 +297,24 @@ async function loadData() {
 onMounted(() => {
   loadData()
 })
+
+// 展示隐藏切换：隐藏后监管大屏等面板不再统计展示，仅本工单中心可见
+async function toggleHidden(o: any) {
+  const target = !o.hidden
+  const ok = await confirmDialog({
+    title: target ? '隐藏工单' : '显示工单',
+    message: target
+      ? '隐藏后，该工单将不在监管大屏等面板统计展示，仅在工单中心可见。确定隐藏？'
+      : '恢复后，该工单将重新在监管大屏等面板统计展示。确定显示？',
+    okText: target ? '隐藏' : '显示',
+  })
+  if (!ok) return
+  try {
+    await setWorkOrderHidden(o.id || o.workOrderId, target)
+    showMessage(target ? '已隐藏，大屏面板不再统计展示' : '已恢复展示', 'success')
+    loadData()
+  } catch (e: any) {
+    showMessage(e?.message || '操作失败')
+  }
+}
 </script>

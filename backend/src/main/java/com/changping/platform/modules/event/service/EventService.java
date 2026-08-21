@@ -88,7 +88,14 @@ public interface EventService {
      * @Param [externalEventId 外部事件ID（可选）, page 页码, size 每页条数, status 事件状态（可选）, startDate 开始日期（可选）, endDate 结束日期（可选）, areaId 区域ID（可选）]
      * @return PagedResult<EventDetailVo> 分页事件详情列表
      */
-    PagedResult<EventDetailVo> queryEvents(String externalEventId, int page, int size, String status, String startDate, String endDate, Long areaId);
+    PagedResult<EventDetailVo> queryEvents(String externalEventId, int page, int size, String status, String startDate, String endDate, Long areaId, boolean excludeHidden);
+
+    /**
+     * @Description //设置事件展示隐藏：隐藏后仅事件闭环/工单中心可见，大屏/GIS 面板不再展示
+     * @Param [eventId 事件主键ID, hidden 是否隐藏]
+     * @return boolean 操作是否成功
+     */
+    boolean setEventHidden(Long eventId, boolean hidden);
 
     /**
      * @Author tangxinglin

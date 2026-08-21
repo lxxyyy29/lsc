@@ -170,11 +170,24 @@ public class EventController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate,
-            @RequestParam(required = false) Long areaId) {
+            @RequestParam(required = false) Long areaId,
+            @RequestParam(defaultValue = "false") boolean excludeHidden) {
         permissionGuard.require(PermissionCodes.API_EVENT_LIST);
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 100);
-        return ApiResponse.ok(eventService.queryEvents(externalEventId, safePage, safeSize, status, startDate, endDate, areaId));
+        return ApiResponse.ok(eventService.queryEvents(externalEventId, safePage, safeSize, status, startDate, endDate, areaId, excludeHidden));
+    }
+
+    /**
+     * @Description //设置事件展示隐藏：隐藏后仅事件闭环/工单中心可见，大屏/GIS 等面板不再展示
+     * @Param [id 事件主键ID, body hidden=true 隐藏 / false 恢复显示]
+     * @return ApiResponse<Boolean> 操作结果
+     */
+    @PutMapping("/{id}/hidden")
+    public ApiResponse<Boolean> setEventHidden(@PathVariable Long id, @RequestBody Map<String, Boolean> body) {
+        permissionGuard.require(PermissionCodes.API_EVENT_CREATE);
+        boolean hidden = Boolean.TRUE.equals(body.get("hidden"));
+        return ApiResponse.ok(eventService.setEventHidden(id, hidden));
     }
 
     /**
@@ -539,7 +552,7 @@ public class EventController {
             "SELECT id, title, event_type, urgency_level, status, " +
             "CAST(longitude AS DECIMAL(10,6)) as lng, CAST(latitude AS DECIMAL(10,6)) as lat, " +
             "created_at FROM biz_event " +
-            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0");
+            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0 AND COALESCE(hidden, 0) = 0");
         List<Object> params = new ArrayList<>();
         if (startDate != null && !startDate.isEmpty()) { sql.append(" AND created_at >= ?"); params.add(startDate); }
         if (endDate != null && !endDate.isEmpty()) { sql.append(" AND created_at <= ?"); params.add(endDate); }
@@ -558,7 +571,7 @@ public class EventController {
             "SELECT id, title, event_type, status, " +
             "CAST(longitude AS DECIMAL(10,6)) as lng, CAST(latitude AS DECIMAL(10,6)) as lat, " +
             "created_at FROM biz_event " +
-            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0 " +
+            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0 AND COALESCE(hidden, 0) = 0 " +
             "ORDER BY created_at DESC LIMIT 200";
         return ApiResponse.ok(jdbcTemplate.queryForList(sql));
     }

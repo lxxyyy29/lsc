@@ -50,6 +50,11 @@ public class AlarmEventDocument {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    /**
+     * 展示隐藏标记：true=隐藏（仅事件闭环/工单中心可见，大屏/GIS 面板不展示），null/false=正常显示
+     */
+    private Boolean hidden;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getExternalEventId() { return externalEventId; }
@@ -86,6 +91,8 @@ public class AlarmEventDocument {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public Boolean getHidden() { return hidden; }
+    public void setHidden(Boolean hidden) { this.hidden = hidden; }
 
     public static class Location {
         private String address;

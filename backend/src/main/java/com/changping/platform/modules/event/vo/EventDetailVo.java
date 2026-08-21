@@ -38,7 +38,8 @@ public record EventDetailVo(
         String gridName,
         String urgencyLevel,
         String reportSource,
-        Boolean archived) {
+        Boolean archived,
+        Boolean hidden) {
 
     public record LifecycleRecordVo(
             String action,

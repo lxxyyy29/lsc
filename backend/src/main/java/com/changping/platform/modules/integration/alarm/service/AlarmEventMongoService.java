@@ -19,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -269,9 +270,20 @@ public class AlarmEventMongoService {
     public List<AlarmEventDocument> queryEvents(String externalEventId, int page, int size,
                                                 Collection<String> excludeStatuses, String status,
                                                 LocalDateTime startDate, LocalDateTime endDate) {
+        return queryEvents(externalEventId, page, size, excludeStatuses, status, startDate, endDate, false);
+    }
+
+    /**
+     * @Description //分页查询告警事件列表，支持排除已隐藏事件（大屏/GIS 等对外面板使用）
+     * @Param [excludeHidden 为 true 时过滤 hidden=true 的事件]
+     */
+    public List<AlarmEventDocument> queryEvents(String externalEventId, int page, int size,
+                                                Collection<String> excludeStatuses, String status,
+                                                LocalDateTime startDate, LocalDateTime endDate,
+                                                boolean excludeHidden) {
         int safePage = Math.max(page - 1, 0);
         int safeSize = Math.max(1, Math.min(size, 500));
-        Query query = new Query(buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate))
+        Query query = new Query(buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate, excludeHidden))
                 .with(PageRequest.of(safePage, safeSize,
                         Sort.by(Sort.Order.desc("occurredAt"), Sort.Order.desc("createdAt"))));
         return mongoTemplate.find(query, AlarmEventDocument.class);
@@ -286,8 +298,32 @@ public class AlarmEventMongoService {
      */
     public long countEvents(String externalEventId, Collection<String> excludeStatuses, String status,
                             LocalDateTime startDate, LocalDateTime endDate) {
-        return mongoTemplate.count(new Query(buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate)),
+        return countEvents(externalEventId, excludeStatuses, status, startDate, endDate, false);
+    }
+
+    /**
+     * @Description //统计告警事件总数，支持排除已隐藏事件
+     */
+    public long countEvents(String externalEventId, Collection<String> excludeStatuses, String status,
+                            LocalDateTime startDate, LocalDateTime endDate, boolean excludeHidden) {
+        return mongoTemplate.count(new Query(buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate, excludeHidden)),
                 AlarmEventDocument.class);
+    }
+
+    /**
+     * @Description //设置事件展示隐藏标记：隐藏后仅事件闭环/工单中心可见，大屏/GIS 面板不再展示
+     * @Param [externalEventId 外部事件ID, hidden 是否隐藏]
+     * @return boolean 是否命中并更新了文档
+     */
+    public boolean setHidden(String externalEventId, boolean hidden) {
+        if (!StringUtils.hasText(externalEventId)) {
+            return false;
+        }
+        Update update = new Update().set("hidden", hidden).set("updatedAt", LocalDateTime.now());
+        return mongoTemplate.updateFirst(
+                new Query(Criteria.where("externalEventId").is(externalEventId.trim())),
+                update,
+                AlarmEventDocument.class).getModifiedCount() > 0;
     }
 
     /**
@@ -299,6 +335,11 @@ public class AlarmEventMongoService {
      */
     private Criteria buildCriteria(String externalEventId, Collection<String> excludeStatuses, String status,
                                    LocalDateTime startDate, LocalDateTime endDate) {
+        return buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate, false);
+    }
+
+    private Criteria buildCriteria(String externalEventId, Collection<String> excludeStatuses, String status,
+                                   LocalDateTime startDate, LocalDateTime endDate, boolean excludeHidden) {
         List<Criteria> ands = new ArrayList<>();
         if (StringUtils.hasText(externalEventId)) {
             ands.add(Criteria.where("externalEventId").regex(Pattern.quote(externalEventId.trim()), "i"));
@@ -314,6 +355,12 @@ public class AlarmEventMongoService {
         }
         if (endDate != null) {
             ands.add(Criteria.where("occurredAt").lte(endDate));
+        }
+        if (excludeHidden) {
+            // hidden 为 null/false 均视为显示，仅排除显式标记为 true 的事件
+            ands.add(new Criteria().orOperator(
+                    Criteria.where("hidden").exists(false),
+                    Criteria.where("hidden").is(false)));
         }
         if (ands.isEmpty()) {
             return new Criteria();

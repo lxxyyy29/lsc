@@ -44,6 +44,7 @@ public class EventMapper {
         entity.setUrgencyLevel(rs.getString("urgency_level"));
         entity.setReportSource(rs.getString("report_source"));
         entity.setArchived(rs.getObject("archived") != null ? rs.getInt("archived") : 0);
+        entity.setHidden(rs.getObject("hidden") != null ? rs.getInt("hidden") : 0);
         Timestamp occurredAt = rs.getTimestamp("occurred_at");
         if (occurredAt != null) {
             entity.setOccurredAt(occurredAt.toLocalDateTime());
@@ -82,7 +83,7 @@ public class EventMapper {
     public EventEntity selectByExternalEventId(String externalEventId) {
         List<EventEntity> results = jdbcTemplate.query(
                 "SELECT id, event_code, external_event_id, title, description, source_type, source_system, event_type, "
-                        + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at, archived "
+                        + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at, archived, hidden "
                         + "FROM biz_event WHERE external_event_id = ? LIMIT 1",
                 EVENT_ROW_MAPPER,
                 externalEventId);
@@ -99,7 +100,7 @@ public class EventMapper {
     public EventEntity selectDetailById(Long id) {
         List<EventEntity> results = jdbcTemplate.query(
                 "SELECT id, event_code, external_event_id, title, description, source_type, source_system, event_type, "
-                        + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at, archived "
+                        + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at, archived, hidden "
                         + "FROM biz_event WHERE id = ?",
                 EVENT_ROW_MAPPER,
                 id);
@@ -121,7 +122,7 @@ public class EventMapper {
         String placeholders = distinctIds.stream().map(id -> "?").collect(Collectors.joining(", "));
         List<EventEntity> events = jdbcTemplate.query(
                 "SELECT id, event_code, external_event_id, title, description, source_type, source_system, event_type, "
-                        + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at, archived "
+                        + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at, archived, hidden "
                         + "FROM biz_event WHERE id IN (" + placeholders + ")",
                 EVENT_ROW_MAPPER,
                 distinctIds.toArray());
@@ -152,7 +153,7 @@ public class EventMapper {
         String placeholders = distinctIds.stream().map(id -> "?").collect(Collectors.joining(", "));
         List<EventEntity> events = jdbcTemplate.query(
                 "SELECT id, event_code, external_event_id, title, description, source_type, source_system, event_type, "
-                        + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at, archived "
+                        + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at, archived, hidden "
                         + "FROM biz_event WHERE external_event_id IN (" + placeholders + ")",
                 EVENT_ROW_MAPPER,
                 distinctIds.toArray());
@@ -174,7 +175,7 @@ public class EventMapper {
         if (externalEventId == null || externalEventId.isBlank()) {
             return jdbcTemplate.query(
                     "SELECT id, event_code, external_event_id, title, description, source_type, source_system, event_type, "
-                            + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at, archived "
+                            + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at, archived, hidden "
                             + "FROM biz_event ORDER BY id DESC LIMIT ? OFFSET ?",
                     EVENT_ROW_MAPPER,
                     limit,
@@ -182,12 +183,21 @@ public class EventMapper {
         }
         return jdbcTemplate.query(
                 "SELECT id, event_code, external_event_id, title, description, source_type, source_system, event_type, "
-                        + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at, archived "
+                        + "status, incident_address, longitude, latitude, area_id, area_name, grid_id, urgency_level, report_source, occurred_at, created_at, updated_at, archived, hidden "
                         + "FROM biz_event WHERE external_event_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
                 EVENT_ROW_MAPPER,
                 externalEventId,
                 limit,
                 offset);
+    }
+
+    /**
+     * @Description //更新事件展示隐藏标记（MySQL 侧）
+     * @Param [eventId 事件主键ID, hidden 0=显示 1=隐藏]
+     * @return int 影响行数
+     */
+    public int updateHidden(Long eventId, int hidden) {
+        return jdbcTemplate.update("UPDATE biz_event SET hidden = ? WHERE id = ?", hidden, eventId);
     }
 
     /**

@@ -131,7 +131,7 @@ export async function deleteGrid(id: number) {
   return http.delete(`/community/grids/${id}`)
 }
 
-export async function getEvents(params?: { page?: number; size?: number; status?: string; urgencyLevel?: string; startDate?: string; endDate?: string; areaId?: number }) {
+export async function getEvents(params?: { page?: number; size?: number; status?: string; urgencyLevel?: string; startDate?: string; endDate?: string; areaId?: number; excludeHidden?: boolean }) {
   return http.get('/events', { params: { page: 1, size: 20, ...params } })
 }
 
@@ -212,6 +212,11 @@ export async function handleTrendAlert(id: number, remark: string) {
 
 export async function archiveEvent(id: number) {
   return http.post(`/events/${id}/archive`)
+}
+
+// 事件展示隐藏切换：隐藏后大屏/GIS 等面板不再展示，仅事件闭环可见
+export async function setEventHidden(id: number | string, hidden: boolean) {
+  return http.put(`/events/${id}/hidden`, { hidden })
 }
 
 export async function getEventTimeline(id: number | string) {
@@ -381,6 +386,11 @@ export async function dispatchWorkOrder(eventId: string | number, data: { proces
 }
 export async function handleWorkOrder(id: number | string, data: { action: string; remark?: string; evidence?: any[] }) {
   return http.post(`/work-orders/${id}/handle`, data)
+}
+
+// 工单展示隐藏切换：隐藏后大屏等面板不再统计展示，仅工单中心可见
+export async function setWorkOrderHidden(id: number | string, hidden: boolean) {
+  return http.put(`/work-orders/${id}/hidden`, { hidden })
 }
 
 // 关闭确认

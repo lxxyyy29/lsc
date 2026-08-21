@@ -215,7 +215,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     @Override
     public List<WebWorkOrderSummary> queryWebWorkOrders() {
         return jdbcTemplate.query(
-                "SELECT wo.id, wo.work_order_no, wo.source_event_id, wo.status, wo.assignee_name, wo.dispatcher_name, wo.created_at, wo.updated_at, "
+                "SELECT wo.id, wo.work_order_no, wo.source_event_id, wo.status, wo.assignee_name, wo.dispatcher_name, wo.created_at, wo.updated_at, wo.hidden, "
                         + "e.event_code, e.title, e.area_id, e.area_name, e.urgency_level "
                         + "FROM biz_work_order wo "
                         + "LEFT JOIN biz_event e ON e.id = wo.source_event_id "
@@ -233,7 +233,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                         getNullableTime(rs.getTimestamp("updated_at")),
                         getNullableLong(rs, "area_id"),
                         rs.getString("area_name"),
-                        rs.getString("urgency_level")));
+                        rs.getString("urgency_level"),
+                        rs.getInt("hidden") == 1));
     }
 
     @Override
@@ -270,7 +271,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         pageParams.add(offset);
 
         List<WebWorkOrderSummary> items = jdbcTemplate.query(
-                "SELECT wo.id, wo.work_order_no, wo.source_event_id, wo.status, wo.assignee_name, wo.dispatcher_name, wo.created_at, wo.updated_at, "
+                "SELECT wo.id, wo.work_order_no, wo.source_event_id, wo.status, wo.assignee_name, wo.dispatcher_name, wo.created_at, wo.updated_at, wo.hidden, "
                         + "e.event_code, e.title, e.area_id, e.area_name, e.urgency_level "
                         + "FROM biz_work_order wo "
                         + "LEFT JOIN biz_event e ON e.id = wo.source_event_id"
@@ -290,7 +291,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                         getNullableTime(rs.getTimestamp("updated_at")),
                         getNullableLong(rs, "area_id"),
                         rs.getString("area_name"),
-                        rs.getString("urgency_level")),
+                        rs.getString("urgency_level"),
+                        rs.getInt("hidden") == 1),
                 pageParams.toArray());
 
         return new PagedWorkOrders(items, total != null ? total : 0, safePage, safeSize);
@@ -488,6 +490,17 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         int pendingCloseCount = ((Number) result.get("pending_close_count")).intValue();
         int closedCount = ((Number) result.get("closed_count")).intValue();
         return new H5WorkbenchSummary(totalCount, waitingAcceptCount, pendingCloseCount, closedCount);
+    }
+
+    @Override
+    public boolean setWorkOrderHidden(Long workOrderId, boolean hidden) {
+        int updated = jdbcTemplate.update(
+                "UPDATE biz_work_order SET hidden = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                hidden ? 1 : 0, workOrderId);
+        if (updated == 0) {
+            throw new BusinessException("WORK_ORDER_NOT_FOUND", "工单不存在");
+        }
+        return true;
     }
 
     @Override

@@ -52,16 +52,16 @@ public class DashboardMapper {
         result.put("otherPlaceCount", otherPlaceCount != null ? otherPlaceCount : 0);
 
         // 事件统计（与事件列表页口径一致：仅计未归档的活跃事件）
-        Long eventTotal = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0", Long.class);
+        Long eventTotal = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0", Long.class);
         result.put("eventTotal", eventTotal != null ? eventTotal : 0);
 
-        Long eventPending = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status NOT IN ('CLOSED', 'COMPLETED')", Long.class);
+        Long eventPending = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 AND status NOT IN ('CLOSED', 'COMPLETED')", Long.class);
         result.put("eventPending", eventPending != null ? eventPending : 0);
 
         // 三色分级统计
-        Long eventGreen = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND urgency_level = 'GREEN'", Long.class);
-        Long eventYellow = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND urgency_level = 'YELLOW'", Long.class);
-        Long eventRed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND urgency_level = 'RED'", Long.class);
+        Long eventGreen = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 AND urgency_level = 'GREEN'", Long.class);
+        Long eventYellow = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 AND urgency_level = 'YELLOW'", Long.class);
+        Long eventRed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 AND urgency_level = 'RED'", Long.class);
         result.put("eventGreen", eventGreen != null ? eventGreen : 0);
         result.put("eventYellow", eventYellow != null ? eventYellow : 0);
         result.put("eventRed", eventRed != null ? eventRed : 0);
@@ -87,12 +87,12 @@ public class DashboardMapper {
         Map<String, Object> result = new HashMap<>();
 
         // === 核心指标卡片（与事件列表页口径一致：仅计未归档的活跃事件） ===
-        Long eventTotal = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0", Long.class);
-        Long eventToday = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND DATE(created_at) = CURDATE()", Long.class);
-        Long eventPending = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status NOT IN ('CLOSED')", Long.class);
-        Long eventClosed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'CLOSED'", Long.class);
-        Long workOrderTotal = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_work_order", Long.class);
-        Long workOrderProcessing = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_work_order WHERE status IN ('WAITING_ACCEPT','PROCESSING')", Long.class);
+        Long eventTotal = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0", Long.class);
+        Long eventToday = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 AND DATE(created_at) = CURDATE()", Long.class);
+        Long eventPending = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 AND status NOT IN ('CLOSED')", Long.class);
+        Long eventClosed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 AND status = 'CLOSED'", Long.class);
+        Long workOrderTotal = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_work_order WHERE COALESCE(hidden, 0) = 0", Long.class);
+        Long workOrderProcessing = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_work_order WHERE COALESCE(hidden, 0) = 0 AND status IN ('WAITING_ACCEPT','PROCESSING')", Long.class);
 
         Map<String, Object> kpis = new HashMap<>();
         kpis.put("eventTotal", eventTotal != null ? eventTotal : 0);
@@ -105,18 +105,18 @@ public class DashboardMapper {
 
         // === 紧急程度分布 ===
         List<Map<String, Object>> urgencyDist = jdbcTemplate.queryForList(
-            "SELECT urgency_level AS level, COUNT(id) AS count FROM biz_event WHERE COALESCE(archived, 0) = 0 GROUP BY urgency_level");
+            "SELECT urgency_level AS level, COUNT(id) AS count FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 GROUP BY urgency_level");
         result.put("urgencyDist", urgencyDist);
 
         // === 事件类型分布 ===
         List<Map<String, Object>> eventTypeDist = jdbcTemplate.queryForList(
-            "SELECT event_type AS type, COUNT(id) AS count FROM biz_event WHERE COALESCE(archived, 0) = 0 GROUP BY event_type ORDER BY count DESC LIMIT 8");
+            "SELECT event_type AS type, COUNT(id) AS count FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 GROUP BY event_type ORDER BY count DESC LIMIT 8");
         result.put("eventTypeDist", eventTypeDist);
 
         // === 近 7 天趋势 ===
         List<Map<String, Object>> weeklyTrend = jdbcTemplate.queryForList(
             "SELECT DATE(created_at) AS date, COUNT(id) AS count FROM biz_event " +
-            "WHERE COALESCE(archived, 0) = 0 AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) " +
+            "WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) " +
             "GROUP BY DATE(created_at) ORDER BY date ASC");
         result.put("weeklyTrend", weeklyTrend);
 
@@ -125,12 +125,12 @@ public class DashboardMapper {
             "SELECT g.grid_name AS gridName, COUNT(e.id) AS count " +
             "FROM cmn_grid g " +
             "LEFT JOIN (biz_event e JOIN cmn_grid eg ON eg.id = e.grid_id) " +
-            "  ON (eg.id = g.id OR eg.parent_id = g.id) AND COALESCE(e.archived, 0) = 0 " +
+            "  ON (eg.id = g.id OR eg.parent_id = g.id) AND COALESCE(e.archived, 0) = 0 AND COALESCE(e.hidden, 0) = 0 " +
             "WHERE g.status = 'ACTIVE' AND g.grid_level = 2 " +
             "GROUP BY g.id, g.grid_name HAVING COUNT(e.id) > 0 ORDER BY count DESC LIMIT 10");
         // 无法归属现有网格的事件（未关联或历史遗留 grid_id）归入“未分配网格”，避免排名缺失大块数据
         Long unassigned = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 " +
+            "SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 " +
             "AND (grid_id IS NULL OR grid_id NOT IN (SELECT id FROM cmn_grid))", Long.class);
         if (unassigned != null && unassigned > 0) {
             Map<String, Object> row = new HashMap<>();
@@ -144,7 +144,7 @@ public class DashboardMapper {
         // === 最新工单 ===
         List<Map<String, Object>> recentWorkOrders = jdbcTemplate.queryForList(
             "SELECT wo.work_order_no AS workOrderNo, wo.status, wo.assignee_name AS assigneeName, " +
-            "wo.created_at AS createdAt FROM biz_work_order wo ORDER BY wo.created_at DESC LIMIT 10");
+            "wo.created_at AS createdAt FROM biz_work_order wo WHERE COALESCE(hidden, 0) = 0 ORDER BY wo.created_at DESC LIMIT 10");
         result.put("recentWorkOrders", recentWorkOrders);
 
         return result;
@@ -163,19 +163,19 @@ public class DashboardMapper {
 
         // 本月事件数（与事件列表页口径一致：仅计未归档的活跃事件）
         Long eventCount = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND created_at >= ? AND created_at < ?",
+            "SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 AND created_at >= ? AND created_at < ?",
             Long.class, startDate, endDate);
         result.put("eventCount", eventCount != null ? eventCount : 0);
 
         // 本月工单数
         Long workOrderCount = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM biz_work_order WHERE created_at >= ? AND created_at < ?",
+            "SELECT COUNT(*) FROM biz_work_order WHERE COALESCE(hidden, 0) = 0 AND created_at >= ? AND created_at < ?",
             Long.class, startDate, endDate);
         result.put("workOrderCount", workOrderCount != null ? workOrderCount : 0);
 
         // 本月完成工单
         Long completedCount = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM biz_work_order WHERE status = 'COMPLETED' AND completed_at >= ? AND completed_at < ?",
+            "SELECT COUNT(*) FROM biz_work_order WHERE COALESCE(hidden, 0) = 0 AND status = 'COMPLETED' AND completed_at >= ? AND completed_at < ?",
             Long.class, startDate, endDate);
         result.put("completedCount", completedCount != null ? completedCount : 0);
 
@@ -198,7 +198,7 @@ public class DashboardMapper {
             "COUNT(e.id) AS eventCount, " +
             "SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END) AS closedCount, " +
             "ROUND(SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(e.id), 0), 1) AS closeRate " +
-            "FROM cmn_grid g LEFT JOIN biz_event e ON g.id = e.grid_id AND " + timeFilter + " AND COALESCE(e.archived, 0) = 0 " +
+            "FROM cmn_grid g LEFT JOIN biz_event e ON g.id = e.grid_id AND " + timeFilter + " AND COALESCE(e.archived, 0) = 0 AND COALESCE(e.hidden, 0) = 0 " +
             "WHERE g.status = 'ACTIVE' AND g.grid_level = 2 " +
             "GROUP BY g.id, g.grid_name ORDER BY closeRate DESC");
         result.put("period", period);
@@ -220,7 +220,7 @@ public class DashboardMapper {
         // 各网格事件统计（与事件列表页口径一致：仅计未归档的活跃事件）
         List<Map<String, Object>> eventStats = jdbcTemplate.queryForList(
             "SELECT g.grid_name AS gridName, COUNT(e.id) AS eventCount " +
-            "FROM cmn_grid g LEFT JOIN biz_event e ON g.id = e.grid_id AND COALESCE(e.archived, 0) = 0 " +
+            "FROM cmn_grid g LEFT JOIN biz_event e ON g.id = e.grid_id AND COALESCE(e.archived, 0) = 0 AND COALESCE(e.hidden, 0) = 0 " +
             "WHERE g.status = 'ACTIVE' AND g.grid_level = 2 " +
             "GROUP BY g.id, g.grid_name ORDER BY eventCount DESC");
         result.put("eventStats", eventStats);

@@ -242,7 +242,7 @@ public class EventServiceImpl implements EventService {
      * @return PagedResult<EventDetailVo> 分页事件详情列表
      */
     @Override
-    public PagedResult<EventDetailVo> queryEvents(String externalEventId, int page, int size, String status, String startDate, String endDate, Long areaId) {
+    public PagedResult<EventDetailVo> queryEvents(String externalEventId, int page, int size, String status, String startDate, String endDate, Long areaId, boolean excludeHidden) {
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(size, 100));
 
@@ -256,8 +256,8 @@ public class EventServiceImpl implements EventService {
         LocalDateTime end = parseEndDate(endDate);
 
         // Get total count and current page directly from MongoDB (native pagination)
-        long total = alarmEventMongoService.countEvents(externalEventId, excludeStatuses, status, start, end);
-        List<AlarmEventDocument> pageDocuments = alarmEventMongoService.queryEvents(externalEventId, safePage, safeSize, excludeStatuses, status, start, end);
+        long total = alarmEventMongoService.countEvents(externalEventId, excludeStatuses, status, start, end, excludeHidden);
+        List<AlarmEventDocument> pageDocuments = alarmEventMongoService.queryEvents(externalEventId, safePage, safeSize, excludeStatuses, status, start, end, excludeHidden);
 
         if (pageDocuments.isEmpty()) {
             return PagedResult.of(List.of(), total, safePage, safeSize);
@@ -441,7 +441,8 @@ public class EventServiceImpl implements EventService {
                 null,
                 entity.getUrgencyLevel(),
                 entity.getReportSource(),
-                entity.getArchived() != null && entity.getArchived() == 1);
+                entity.getArchived() != null && entity.getArchived() == 1,
+                Boolean.TRUE.equals(document.getHidden()));
     }
 
     /**
@@ -486,7 +487,8 @@ public class EventServiceImpl implements EventService {
                 null,
                 entity == null ? null : entity.getUrgencyLevel(),
                 entity == null ? null : entity.getReportSource(),
-                entity != null && entity.getArchived() != null && entity.getArchived() == 1);
+                entity != null && entity.getArchived() != null && entity.getArchived() == 1,
+                Boolean.TRUE.equals(document.getHidden()));
     }
 
     /**
@@ -642,7 +644,8 @@ public class EventServiceImpl implements EventService {
                 null,
                 entity.getUrgencyLevel(),
                 entity.getReportSource(),
-                entity.getArchived() != null && entity.getArchived() == 1);
+                entity.getArchived() != null && entity.getArchived() == 1,
+                entity.getHidden() != null && entity.getHidden() == 1);
     }
 
     /**
@@ -1047,13 +1050,31 @@ public class EventServiceImpl implements EventService {
         return true;
     }
 
+    /**
+     * @Description //设置事件展示隐藏：同步更新 MySQL 与 MongoDB，隐藏后大屏/GIS/热力图不再展示
+     * @Param [eventId 事件主键ID, hidden 是否隐藏]
+     * @return boolean 操作是否成功
+     */
     @Override
+    public boolean setEventHidden(Long eventId, boolean hidden) {
+        EventEntity entity = eventMapper.selectDetailById(eventId);
+        if (entity == null) {
+            throw new BusinessException("EVENT_NOT_FOUND", "事件不存在");
+        }
+        eventMapper.updateHidden(eventId, hidden ? 1 : 0);
+        // 列表与大屏数据源自 MongoDB，同步更新文档标记
+        if (StringUtils.hasText(entity.getExternalEventId())) {
+            alarmEventMongoService.setHidden(entity.getExternalEventId(), hidden);
+        }
+        return true;
+    }
+
     public List<Map<String, Object>> getHeatmapData(String startDate, String endDate, String eventType) {
         StringBuilder sql = new StringBuilder(
             "SELECT id, title, event_type, urgency_level, status, " +
             "CAST(longitude AS DECIMAL(10,6)) as lng, CAST(latitude AS DECIMAL(10,6)) as lat, " +
             "created_at FROM biz_event " +
-            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0");
+            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0 AND COALESCE(hidden, 0) = 0");
         List<Object> params = new ArrayList<>();
         if (startDate != null && !startDate.isEmpty()) { sql.append(" AND created_at >= ?"); params.add(startDate); }
         if (endDate != null && !endDate.isEmpty()) { sql.append(" AND created_at <= ?"); params.add(endDate); }

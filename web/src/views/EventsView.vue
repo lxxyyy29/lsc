@@ -81,6 +81,7 @@
                 <div style="display:flex;align-items:center;gap:6px;">
                   <span>{{ e.title }}</span>
                   <span v-if="e.archived" class="tag" style="background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;font-size:11px;">已归档</span>
+                  <span v-if="e.hidden" class="tag" style="background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;font-size:11px;">已隐藏</span>
                 </div>
               </td>
               <td>
@@ -98,7 +99,8 @@
                 <button @click="goDetail(e)" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;margin-right:4px;">详情</button>
                 <button v-if="e.currentStatus === 'PENDING_AUDIT'" @click="handleAudit(e.id, 'pass')" style="padding:4px 10px;border:none;border-radius:4px;background:#52c41a;color:#fff;font-size:12px;cursor:pointer;margin-right:4px;">通过</button>
                 <button v-if="e.currentStatus === 'PENDING_AUDIT'" @click="handleAudit(e.id, 'reject')" style="padding:4px 10px;border:none;border-radius:4px;background:#ff4d4f;color:#fff;font-size:12px;cursor:pointer;margin-right:4px;">驳回</button>
-                <button v-if="['WAITING_DISPATCH', 'IN_AUDIT'].includes(e.currentStatus)" @click="goDetail(e)" style="padding:4px 10px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;">操作</button>
+                <button v-if="['WAITING_DISPATCH', 'IN_AUDIT'].includes(e.currentStatus)" @click="goDetail(e)" style="padding:4px 10px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;margin-right:4px;">操作</button>
+                <button @click="toggleHidden(e)" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;margin-left:4px;color:#6b7280;">{{ e.hidden ? '显示' : '隐藏' }}</button>
               </td>
             </tr>
           </tbody>
@@ -152,10 +154,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { getEvents, auditEvent } from '../api'
+import { getEvents, auditEvent, setEventHidden } from '../api'
 import EventCreateView from './EventCreateView.vue'
 import EventDetailView from './EventDetailView.vue'
 import { showMessage } from '../utils/message'
+import { confirmDialog } from '../utils/dialog'
 
 const list = ref<any[]>([])
 const loading = ref(true)
@@ -191,6 +194,26 @@ const displayList = computed(() => {
 
 function goDetail(e: any) {
   detailEventId.value = e.id || e.externalEventId
+}
+
+// 展示隐藏切换：隐藏后监管大屏/GIS 等面板不再展示，仅本闭环列表可见
+async function toggleHidden(e: any) {
+  const target = !e.hidden
+  const ok = await confirmDialog({
+    title: target ? '隐藏事件' : '显示事件',
+    message: target
+      ? '隐藏后，该事件将不在监管大屏、全域态势、GIS 网格等面板展示，仅在事件闭环中可见。确定隐藏？'
+      : '恢复后，该事件将重新在监管大屏、GIS 等面板展示。确定显示？',
+    okText: target ? '隐藏' : '显示',
+  })
+  if (!ok) return
+  try {
+    await setEventHidden(e.id, target)
+    showMessage(target ? '已隐藏，大屏/GIS 面板不再展示' : '已恢复展示', 'success')
+    loadData()
+  } catch (err: any) {
+    showMessage(err?.message || '操作失败')
+  }
 }
 
 // 审核确认弹窗状态：取消仅关闭弹窗，确认才执行审核

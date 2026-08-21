@@ -293,7 +293,7 @@ async function initMap() {
     tree = await getGridTree() || []
   } catch (e) { /* 网格树加载失败不阻断大屏 */ }
   try {
-    const result = await getEvents()
+    const result = await getEvents({ excludeHidden: true })
     activeEvents = (result.items || []).filter((e: any) => !e.archived)
   } catch (e) { /* 事件加载失败不阻断大屏 */ }
   if (!tree.length) return

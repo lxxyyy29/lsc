@@ -116,6 +116,11 @@ public interface WorkOrderService {
      */
     H5WorkbenchSummary getH5Workbench();
 
+    /**
+     * 设置工单展示隐藏状态（隐藏后仅工单中心可见，大屏等面板不再统计展示）
+     */
+    boolean setWorkOrderHidden(Long workOrderId, boolean hidden);
+
     record DispatchRequest(Long assigneeUserId, String remark) {
     }
 
@@ -206,7 +211,8 @@ public interface WorkOrderService {
             java.time.LocalDateTime updatedAt,
             Long areaId,
             String areaName,
-            String urgencyLevel) {
+            String urgencyLevel,
+            Boolean hidden) {
     }
 
     record PagedWorkOrders(
