@@ -236,6 +236,7 @@
 import { ref, computed, onMounted } from 'vue'
 import http, { syncGridWorkersToOrgMembers, hasPermission } from '../api'
 import { showMessage } from '../utils/message'
+import { confirmDialog, promptDialog } from '../utils/dialog'
 
 // 注册审批仅超级管理员可见（后端同样校验 api:system:user:create）
 const canApprove = hasPermission('api:system:user:create')
@@ -313,7 +314,7 @@ async function handleAssign() {
   if (!assignLeaderId.value) { showMessage('请先选择组长'); return }
   if (!assignChecked.value.length) { showMessage('请勾选要划分的属下网格员'); return }
   const leader = leaderCandidates.value.find(l => l.id === assignLeaderId.value)
-  if (!confirm(`确认将选中的 ${assignChecked.value.length} 名成员划入组长「${leader?.name}」名下吗？`)) return
+  if (!await confirmDialog({ message: `确认将选中的 ${assignChecked.value.length} 名成员划入组长「${leader?.name}」名下吗？` })) return
   try {
     await http.post('/community/org-members/assign', { leaderId: assignLeaderId.value, memberIds: assignChecked.value })
     showMessage('划分成功')
@@ -324,7 +325,7 @@ async function handleAssign() {
   }
 }
 async function unassignOne(m: any) {
-  if (!confirm(`确认取消「${m.name}」与组长「${m.leaderName}」的划分关系吗？`)) return
+  if (!await confirmDialog({ message: `确认取消「${m.name}」与组长「${m.leaderName}」的划分关系吗？` })) return
   try {
     await http.post('/community/org-members/assign', { leaderId: null, memberIds: [m.id] })
     showMessage('已取消划分')
@@ -336,7 +337,7 @@ async function unassignOne(m: any) {
 }
 
 async function handleSync() {
-  if (!confirm('将系统用户中的网格员同步到组织人员表，继续吗？')) return
+  if (!await confirmDialog({ message: '将系统用户中的网格员同步到组织人员表，继续吗？', okText: '继续' })) return
   try {
     const res: any = await syncGridWorkersToOrgMembers()
     showMessage(res?.message || '同步完成')
@@ -382,7 +383,7 @@ async function fetchPwdResets() {
 }
 
 async function approvePwdReset(row: any) {
-  if (!confirm(`确认将 ${row.real_name || row.account} 的密码重置为手机号后 6 位吗？`)) return
+  if (!await confirmDialog({ message: `确认将 ${row.real_name || row.account} 的密码重置为手机号后 6 位吗？`, okText: '确认重置' })) return
   try {
     const res: any = await http.post(`/password-reset/${row.id}/approve`)
     showMessage(`已重置成功！\n新密码：${res?.newPassword}\n\n请通过电话/微信告知用户本人，提醒其登录后自行修改`, 'success', 8000)
@@ -394,7 +395,7 @@ async function approvePwdReset(row: any) {
 }
 
 async function rejectPwdReset(row: any) {
-  const remark = prompt('驳回原因：')
+  const remark = await promptDialog({ title: '驳回密码重置', placeholder: '请输入驳回原因（必填）', required: true })
   if (remark === null) return
   try {
     await http.post(`/password-reset/${row.id}/reject`, { remark })
@@ -425,7 +426,7 @@ async function approveReg(row: any) {
 }
 
 async function rejectReg(row: any) {
-  const remark = prompt('拒绝原因：')
+  const remark = await promptDialog({ title: '拒绝注册申请', placeholder: '请输入拒绝原因（必填）', required: true })
   if (remark === null) return
   await http.post(`/registration/${row.id}/reject`, { remark })
   showMessage('已拒绝')
@@ -461,7 +462,7 @@ function handleEdit(item: any) {
 }
 
 async function handleDelete(item: any) {
-  if (!confirm(`确定要删除网格员「${item.name}」吗？`)) return
+  if (!await confirmDialog({ message: `确定要删除网格员「${item.name}」吗？`, danger: true, okText: '删除' })) return
   try {
     await http.delete(`/community/org-members/${item.id}`)
     showMessage('删除成功')

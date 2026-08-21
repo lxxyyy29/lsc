@@ -228,6 +228,7 @@ import {
   getVideoRecordDates, getVideoRecords
 } from '../api'
 import { showMessage } from '../utils/message'
+import { confirmDialog } from '../utils/dialog'
 
 interface Camera {
   id: number
@@ -450,7 +451,7 @@ async function saveCamera() {
 }
 
 async function removeCamera(c: Camera) {
-  if (!confirm(`确认删除点位「${c.camera_name}」?`)) return
+  if (!await confirmDialog({ message: `确认删除点位「${c.camera_name}」？`, danger: true, okText: '删除' })) return
   await deleteVideoCamera(c.id)
   if (currentCamera.value?.id === c.id) {
     currentCamera.value = null

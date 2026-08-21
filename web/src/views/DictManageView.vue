@@ -164,6 +164,7 @@ import {
   createDictItem, updateDictItem, deleteDictItem, type DictType, type DictItem
 } from '../api'
 import { showMessage } from '../utils/message'
+import { confirmDialog } from '../utils/dialog'
 
 const types = ref<DictType[]>([])
 const items = ref<DictItem[]>([])
@@ -203,7 +204,7 @@ async function saveType() {
 }
 
 async function removeType(t: DictType) {
-  if (!confirm(`确认删除字典「${t.dictName}」及其 ${t.itemCount} 个字典项吗？`)) return
+  if (!await confirmDialog({ message: `确认删除字典「${t.dictName}」及其 ${t.itemCount} 个字典项吗？`, danger: true, okText: '删除' })) return
   try {
     await deleteDictType(t.id)
     showMessage('删除成功', 'success')
@@ -246,7 +247,7 @@ async function saveItem() {
 }
 
 async function removeItem(i: DictItem) {
-  if (!confirm(`确认删除字典项「${i.itemLabel}」吗？`)) return
+  if (!await confirmDialog({ message: `确认删除字典项「${i.itemLabel}」吗？`, danger: true, okText: '删除' })) return
   try {
     await deleteDictItem(i.id)
     showMessage('删除成功', 'success')

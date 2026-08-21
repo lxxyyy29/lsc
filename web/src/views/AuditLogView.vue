@@ -201,6 +201,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import http from '../api'
 import { getAuditLogs, getAuditLogDiff, previewAuditLogRollback, rollbackAuditLog } from '../api'
 import { showMessage } from '../utils/message'
+import { confirmDialog } from '../utils/dialog'
 
 const items = ref<any[]>([])
 const tables = ref<string[]>([])
@@ -355,7 +356,7 @@ async function handleRollback(log: any) {
     previewData.value._logId = log.id
   } catch (e: any) {
     // 如果预览接口不可用，直接确认
-    if (confirm(`确定要将 ${log.tableName} 表中 ID=${log.recordId} 的记录回滚到变更前状态吗？`)) {
+    if (await confirmDialog({ message: `确定要将 ${log.tableName} 表中 ID=${log.recordId} 的记录回滚到变更前状态吗？`, danger: true, okText: '回滚' })) {
       await doRollback(log.id)
     }
   }

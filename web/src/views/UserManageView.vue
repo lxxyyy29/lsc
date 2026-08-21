@@ -156,6 +156,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { confirmDialog } from '../utils/dialog'
 import {
   getSystemUsers, getSystemUserDetail, createSystemUser, updateSystemUser,
   updateSystemUserStatus, assignUserRoles, resetSystemUserPassword, deleteSystemUser,
@@ -311,7 +312,7 @@ async function toggleStatus(u: any) {
     return
   }
   const next = u.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE'
-  if (!window.confirm(`确定${next === 'DISABLED' ? '停用' : '启用'}账号「${u.realName || u.username}」吗？`)) return
+  if (!await confirmDialog({ message: `确定${next === 'DISABLED' ? '停用' : '启用'}账号「${u.realName || u.username}」吗？`, danger: next === 'DISABLED' })) return
   try {
     await updateSystemUserStatus(u.id, next)
     notify(`账号已${next === 'DISABLED' ? '停用' : '启用'}`, 'success')
@@ -394,7 +395,7 @@ async function handleDelete(u: any) {
     notify('超级管理员账号不可删除')
     return
   }
-  if (!window.confirm(`确定删除账号「${u.realName || u.username}」吗？删除后不可恢复。`)) return
+  if (!await confirmDialog({ message: `确定删除账号「${u.realName || u.username}」吗？删除后不可恢复。`, danger: true, okText: '删除' })) return
   try {
     await deleteSystemUser(u.id)
     notify('账号已删除', 'success')

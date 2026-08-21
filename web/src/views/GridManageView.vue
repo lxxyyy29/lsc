@@ -110,6 +110,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { getGridTree, createGrid, updateGrid, deleteGrid } from '../api'
+import { confirmDialog } from '../utils/dialog'
 
 interface GridNode {
   id: number
@@ -362,11 +363,11 @@ function fillForm(g: GridNode) {
   }
 }
 
-function selectGrid(g: GridNode, skipHighlight = false) {
+async function selectGrid(g: GridNode, skipHighlight = false) {
   if (editing.value) finishEditArea()
   if (drawing.value) cancelDraw()
   // 有未保存的新绘边界时先确认，避免点一下已有网格就把刚画的图静默清掉
-  if (!form.value.id && roiPoints.value >= 3 && !confirmLeaveUnsaved()) return
+  if (!form.value.id && roiPoints.value >= 3 && !await confirmLeaveUnsaved()) return
   selectedId.value = g.id
   selectedGrid.value = g
   fillForm(g)
@@ -384,8 +385,8 @@ function selectGrid(g: GridNode, skipHighlight = false) {
 }
 
 /** 未保存的新绘边界拦截：确认放弃才切换，取消则留在原地继续保存 */
-function confirmLeaveUnsaved(): boolean {
-  return window.confirm('当前新勾画的网格边界还未保存，切换后将被丢弃。\n确定放弃吗？（建议先点右侧「保存网格」）')
+function confirmLeaveUnsaved(): Promise<boolean> {
+  return confirmDialog({ message: '当前新勾画的网格边界还未保存，切换后将被丢弃。\n确定放弃吗？（建议先点右侧「保存网格」）', danger: true, okText: '放弃' })
 }
 
 function setCurrentPolygon(poly: any | null) {
@@ -417,7 +418,7 @@ function updateFormFromPolygon(poly: any) {
 
 async function startCreate() {
   if (editing.value) finishEditArea()
-  if (!form.value.id && roiPoints.value >= 3 && !confirmLeaveUnsaved()) return
+  if (!form.value.id && roiPoints.value >= 3 && !await confirmLeaveUnsaved()) return
   formVisible.value = true
   selectedId.value = null
   selectedGrid.value = null
@@ -694,7 +695,7 @@ async function removeGrid() {
   if (!selectedGrid.value) return
   if (editing.value) finishEditArea()
   const g = selectedGrid.value
-  if (!window.confirm(`确定删除网格「${g.gridName}」？\n（该网格下有子网格时将无法删除）`)) return
+  if (!await confirmDialog({ message: `确定删除网格「${g.gridName}」？\n（该网格下有子网格时将无法删除）`, danger: true, okText: '删除' })) return
   try {
     await deleteGrid(g.id)
     notify('网格已删除', 'success')

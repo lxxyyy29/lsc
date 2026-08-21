@@ -132,6 +132,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getSystemUsers, archiveEvent, getDispatchSuggestion, smartDispatchEvent } from '../api'
 import { getEventTypeName, getReportSourceName, getSourceSystemName } from '../utils/eventTypes'
 import { showMessage } from '../utils/message'
+import { confirmDialog } from '../utils/dialog'
 
 const route = useRoute()
 const router = useRouter()
@@ -254,7 +255,7 @@ async function handleReopen() {
 }
 
 async function handleArchive() {
-  if (!confirm('确认归档该事件？归档后将从活跃视图隐藏。')) return
+  if (!await confirmDialog({ message: '确认归档该事件？归档后将从活跃视图隐藏。', okText: '归档' })) return
   try {
     await archiveEvent(Number(eventId.value))
     emit('changed')
@@ -292,7 +293,7 @@ watch(showDispatch, async (visible) => {
 
 // 一键智能派单：按规则自动分配推荐人
 async function handleSmartDispatch() {
-  if (!confirm('确认按智能推荐自动派单？')) return
+  if (!await confirmDialog({ message: '确认按智能推荐自动派单？', okText: '确认派单' })) return
   try {
     await smartDispatchEvent(Number(eventId.value), dispatchForm.value.remark)
     showDispatch.value = false

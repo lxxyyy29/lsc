@@ -152,6 +152,7 @@ import http from '../api'
 import { getHouseholdTypeName } from '../utils/eventTypes'
 import ImportDialog from '../components/ImportDialog.vue'
 import { showMessage } from '../utils/message'
+import { confirmDialog } from '../utils/dialog'
 
 const householdTypes = [
   { value: 'LOCAL', label: '本地户籍' },
@@ -263,7 +264,7 @@ async function handleSubmit() {
 }
 
 async function handleDelete(p: any) {
-  if (!confirm(`确定删除人员「${p.name}」吗？删除后不可恢复。`)) return
+  if (!await confirmDialog({ message: `确定删除人员「${p.name}」吗？删除后不可恢复。`, danger: true, okText: '删除' })) return
   try {
     await http.delete(`/community/population/${p.id}`)
     showMessage('删除成功')

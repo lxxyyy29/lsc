@@ -85,6 +85,7 @@
 import { ref, onMounted } from 'vue'
 import { getDispatchRules, createDispatchRule, updateDispatchRule, deleteDispatchRule } from '../api'
 import { showMessage } from '../utils/message'
+import { confirmDialog } from '../utils/dialog'
 
 const rules = ref<any[]>([])
 const showForm = ref(false)
@@ -132,7 +133,7 @@ async function handleSave() {
 }
 
 async function handleDelete(r: any) {
-  if (!confirm(`确定删除规则「${r.eventType} → ${r.targetRoleCode}」？`)) return
+  if (!await confirmDialog({ message: `确定删除规则「${r.eventType} → ${r.targetRoleCode}」？`, danger: true, okText: '删除' })) return
   try {
     await deleteDispatchRule(r.id)
     await loadRules()

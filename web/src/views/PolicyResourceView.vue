@@ -145,6 +145,7 @@
 import { ref, computed, onMounted } from 'vue'
 import http from '../api'
 import { showMessage } from '../utils/message'
+import { confirmDialog } from '../utils/dialog'
 
 const POLICY_TYPES = [
   { value: '', label: '全部' },
@@ -263,7 +264,7 @@ async function openPush(item: any) {
 async function pushPolicy() {
   if (!matchingPolicy.value) return
   const total = matchingPeople.value.length
-  if (!confirm(`政策「${matchingPolicy.value.title}」共匹配 ${total} 人，\n将向其中有居民账号的人发送站内通知，确认推送吗？`)) return
+  if (!await confirmDialog({ message: `政策「${matchingPolicy.value.title}」共匹配 ${total} 人，\n将向其中有居民账号的人发送站内通知，确认推送吗？`, okText: '确认推送' })) return
   pushing.value = true
   try {
     const res: any = await http.post(`/community/policy-resources/${matchingPolicy.value.id}/push`)
