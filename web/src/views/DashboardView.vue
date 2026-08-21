@@ -25,7 +25,7 @@
       <div class="topbar-sub">一屏观全域 · 以图管格 · 以格管人</div>
       <div class="topbar-right">
         <span class="tb-status" :class="isLive ? 'live' : 'demo'">
-          <i class="fas fa-circle"></i>{{ isLive ? '实时数据' : '演示数据' }}
+          <i class="fas fa-circle"></i>{{ isLive ? '实时数据' : '数据异常' }}
         </span>
         <div class="tb-clock">
           <span class="tb-time">{{ clock.time }}</span>
@@ -191,7 +191,7 @@
     <div class="dock-bar">
       <div class="dock-left">
         <span class="dk-status" :class="isLive ? 'live' : 'demo'">
-          <i class="fas fa-circle"></i>{{ isLive ? '实时' : '演示' }}
+          <i class="fas fa-circle"></i>{{ isLive ? '实时' : '异常' }}
         </span>
         <span class="dk-sys"><i class="fas fa-broadcast-tower"></i>系统正常</span>
         <span class="dk-sys"><i class="fas fa-server"></i>5 接口在线</span>
@@ -312,6 +312,17 @@
       {{ hoverInfo.name }}
     </div>
 
+    <!-- 所有数据接口失败：全屏错误提示 + 重试（不再展示演示数据） -->
+    <div v-if="fatalError" class="dash-fatal">
+      <div class="dash-fatal-box">
+        <i class="fas fa-exclamation-circle"></i>
+        <h2>数据加载失败</h2>
+        <p>后端数据接口不可用或返回异常，无法加载真实数据，请检查后端服务后重试。</p>
+        <p class="dash-fatal-detail">{{ fatalError }}</p>
+        <button @click="reload"><i class="fas fa-redo"></i> 重试</button>
+      </div>
+    </div>
+
     <!-- 错误提示 -->
     <div v-if="loadError" class="dash-error">
       <i class="fas fa-exclamation-circle"></i>
@@ -336,7 +347,7 @@ const router = useRouter()
  *  - 网格树（地图多边形）：GET /community/grids/tree
  *  - 事件列表：GET /events?page=1&size=20
  *  - 近 7 日趋势：可用 GET /events/statistics 或 big-screen 提供
- *  所有接口失败或为空时自动回退到内置演示数据，保证大屏始终完整可用。
+  *  任一接口成功即展示真实数据；全部失败时展示全屏错误提示与重试按钮，不再使用内置演示数据。
  * ================================================================ */
 
 // ==================== 网格预警色（大网格只描边/淡填充，小网格实填充） ====================
@@ -403,92 +414,41 @@ function gridEvents(grid: any): any[] {
   } catch (e) { return [] }
 }
 
-// ==================== 演示数据兜底 ====================
+// ==================== 地图默认中心点（社区位置） ====================
 const MOCK_CENTER: [number, number] = [113.9395, 22.9712]
 
-function rectRoi(cx: number, cy: number, w: number, h: number): number[][] {
-  return [[cx - w, cy - h], [cx + w, cy - h], [cx + w, cy + h], [cx - w, cy + h], [cx - w, cy - h]]
-}
-
-function buildMockTree(): any[] {
-  const [cx, cy] = MOCK_CENTER
-  const cw = 0.014, ch = 0.02
-  const gw = (2 * cw) / 3, gh = (2 * ch) / 3
-  const cos = Math.cos(22.97 * Math.PI / 180)
-  const area = (w: number, h: number) => +(w * h * 111 * 111 * cos).toFixed(2)
-  const bigs: any[] = []
-  const pops = [3260, 2840, 2980, 2510, 3420, 2190, 1870, 2630, 1740]
-  const demoLv = ['RED', 'GREEN', 'YELLOW', 'YELLOW', 'RED', 'GREEN', 'GREEN', 'YELLOW', 'RED']
-  let idx = 1
-  for (let r = 0; r < 3; r++) {
-    for (let c = 0; c < 3; c++) {
-      const bx = cx - cw + gw / 2 + c * gw
-      const by = cy - ch + gh / 2 + r * gh
-      const sw = gw / 2
-      const kids: any[] = []
-      for (let k = 0; k < 2; k++) {
-        const sx = bx - gw / 2 + sw / 2 + k * sw
-        kids.push({
-          id: 1000 + idx * 2 + k, gridLevel: 3,
-          gridName: `第 ${idx} 网格-${k + 1} 区`,
-          area: area(sw, gh),
-          roiJson: JSON.stringify(rectRoi(sx, by, sw / 2, gh / 2)),
-          managerName: `网格员-${idx}${k + 1}`, status: 'ACTIVE'
-        })
-      }
-      bigs.push({
-        id: 900 + idx, gridLevel: 2,
-        gridName: `第 ${idx} 网格`, area: area(gw, gh),
-        roiJson: JSON.stringify(rectRoi(bx, by, gw / 2, gh / 2)),
-        managerName: `网格长-${idx}`, status: 'ACTIVE', populationCount: pops[idx - 1],
-        urgencyLevel: demoLv[idx - 1],
-        children: kids
-      })
-      idx++
-    }
+// 近 7 日趋势：优先用后端聚合（big-screen weeklyTrend），其次按已加载事件创建时间统计；无数据返回 null（图表留空，不再用假数据填充）
+function realTrend(): { days: string[]; values: number[] } | null {
+  const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`
+  const wt = overview.value?.weeklyTrend
+  if (Array.isArray(wt) && wt.length) {
+    return { days: wt.map((i: any) => fmt(new Date(i.date))), values: wt.map((i: any) => Number(i.count) || 0) }
   }
-  return [{
-    id: 1, gridLevel: 1, gridName: '示范社区', area: area(2 * cw, 2 * ch),
-    roiJson: JSON.stringify(rectRoi(cx, cy, cw, ch)),
-    managerName: '社区书记', status: 'ACTIVE', children: bigs
-  }]
-}
-
-const MOCK_OVERVIEW = { largeGridCount: 9, smallGridCount: 18, eventTotal: 36, eventRed: 3, eventYellow: 9, eventGreen: 24, communityArea: 3.4 }
-
-function buildMockEvents(): any[] {
-  const at = (h: number) => new Date(Date.now() - h * 3600e3).toISOString()
-  return [
-    { id: 1001, title: '东城路 23 号占道经营影响通行', urgencyLevel: 'YELLOW', currentStatus: 'WAITING_DISPATCH', longitude: 113.9428, latitude: 22.9748, address: '东城路 23 号门口', createdAt: at(0.6), description: '商贩占用机动车道摆摊，造成早高峰拥堵，已现场劝离一次，需网格员跟进复查。' },
-    { id: 1002, title: '幸福里小区 3 栋飞线充电', urgencyLevel: 'RED', currentStatus: 'AUDIT_APPROVED', longitude: 113.9352, latitude: 22.9731, address: '幸福里小区 3 栋', createdAt: at(2.1), description: '业主从 6 楼私拉电线为电动车充电，存在火灾隐患，已通知物业并上报。' },
-    { id: 1003, title: '中心公园休闲椅损坏', urgencyLevel: 'GREEN', currentStatus: 'CLOSED', longitude: 113.9401, latitude: 22.9679, address: '中心公园东门', createdAt: at(5.5), description: '公园东门两处休闲椅木板断裂，已安排维修更换。' },
-    { id: 1004, title: '文明路井盖缺失', urgencyLevel: 'RED', currentStatus: 'PENDING_AUDIT', longitude: 113.9456, latitude: 22.9696, address: '文明路与新风路交叉口', createdAt: at(8.0), description: '雨水井盖破损缺失，夜间通行存在安全隐患，需立即围蔽处理。' },
-    { id: 1005, title: '阳光花园垃圾分类点满溢', urgencyLevel: 'YELLOW', currentStatus: 'DISPATCHED_TO_WORK_ORDER', longitude: 113.9378, latitude: 22.9688, address: '阳光花园北门', createdAt: at(12.0), description: '垃圾未及时清运，气味影响周边居民，已派单环卫。' },
-    { id: 1006, title: '夜市摊贩噪音扰民投诉', urgencyLevel: 'YELLOW', currentStatus: 'IN_AUDIT', longitude: 113.9431, latitude: 22.9719, address: '滨河夜市', createdAt: at(16.0), description: '夜间摊贩高音喇叭扰民，多名居民通过 12345 反映。' },
-    { id: 1007, title: '老旧小区楼道杂物堆积', urgencyLevel: 'GREEN', currentStatus: 'CLOSED', longitude: 113.9382, latitude: 22.9756, address: '新安里小区 2 栋', createdAt: at(22.0), description: '楼道堆放纸箱杂物，已联合物业清理完毕。' },
-    { id: 1008, title: '施工工地扬尘污染', urgencyLevel: 'GREEN', currentStatus: 'IGNORED', longitude: 113.9447, latitude: 22.9762, address: '东城路与文明路工地', createdAt: at(30.0), description: '工地未按规定洒水降尘，经核实已安装喷淋设备。' }
-  ]
-}
-
-function mockTrend() {
+  if (!events.value.length) return null
+  const buckets: Record<string, number> = {}
   const days: string[] = []
-  const base = [4, 6, 5, 8, 7, 9, 6]
-  for (let i = 0; i < 7; i++) {
+  for (let i = 6; i >= 0; i--) {
     const d = new Date()
-    d.setDate(d.getDate() - (6 - i))
-    days.push(`${d.getMonth() + 1}/${d.getDate()}`)
+    d.setDate(d.getDate() - i)
+    days.push(fmt(d)); buckets[fmt(d)] = 0
   }
-  return { days, values: base }
+  for (const e of events.value) {
+    const k = e.createdAt ? fmt(new Date(e.createdAt)) : ''
+    if (k in buckets) buckets[k]++
+  }
+  return { days, values: days.map(d => buckets[d]) }
 }
 
 // ==================== 状态 ====================
 const overview = ref<any>({})
 const events = ref<any[]>([])
 const loadError = ref('')
-const areaRaw = ref(MOCK_OVERVIEW.communityArea)
+const areaRaw = ref(0)
 const allGrids = ref<any[]>([])
 const hasPopulation = ref(false)
 const isLive = ref(false)
+// 所有数据接口失败时展示全屏错误提示（不再回退演示数据）
+const fatalError = ref('')
 
 let mapInstance: any = null
 let chartRing: any = null
@@ -559,10 +519,10 @@ function useCount(target: () => number, duration = 1000) {
   return display
 }
 
-const largeGridNum = useCount(() => overview.value.largeGridCount || MOCK_OVERVIEW.largeGridCount)
-const smallGridNum = useCount(() => overview.value.smallGridCount || MOCK_OVERVIEW.smallGridCount)
-const eventTotalNum = useCount(() => overview.value.eventTotal || MOCK_OVERVIEW.eventTotal)
-const redEventNum = useCount(() => overview.value.eventRed || MOCK_OVERVIEW.eventRed)
+const largeGridNum = useCount(() => overview.value.largeGridCount || 0)
+const smallGridNum = useCount(() => overview.value.smallGridCount || 0)
+const eventTotalNum = useCount(() => overview.value.eventTotal || 0)
+const redEventNum = useCount(() => overview.value.eventRed || 0)
 const fmtArea = computed(() => (Number(areaRaw.value) || 0).toFixed(2))
 
 const kpiList = computed(() => [
@@ -1122,8 +1082,9 @@ function renderRank(ranking: any[]) {
 function renderSparkBottom() {
   const el = document.getElementById('spark-bottom')
   if (!el) return
+  const t = realTrend()
+  if (!t) return
   if (!chartSparkBottom) chartSparkBottom = echarts.init(el)
-  const t = mockTrend()
   chartSparkBottom.setOption({
     backgroundColor: 'transparent',
     grid: { left: 0, right: 0, top: 2, bottom: 0 },
@@ -1139,8 +1100,8 @@ function renderSparkBottom() {
 
 function renderCharts(stats: any) {
   renderRing()
-  const trend = mockTrend()
-  renderTrend(trend.days, trend.values)
+  const trend = realTrend()
+  if (trend) renderTrend(trend.days, trend.values)
   if (stats?.populationRanking?.length) {
     hasPopulation.value = true
     renderRank(stats.populationRanking)
@@ -1183,16 +1144,21 @@ async function loadData() {
     const t = await getGridTree()
     if (Array.isArray(t) && t.length) tree = t
   } catch (e: any) { errors.push('网格树: ' + (e?.message || e)) }
-  if (!tree.length) tree = buildMockTree()
 
   try {
     const r = await getEvents({ excludeHidden: true })
     if (r?.items?.length) { events.value = r.items; anyLive = true }
   } catch (e: any) { errors.push('事件: ' + (e?.message || e)) }
-  if (!events.value.length) events.value = buildMockEvents()
 
   isLive.value = anyLive
-  if (errors.length && !anyLive) loadError.value = errors.join('；')
+  if (!anyLive) {
+    // 所有接口均失败/为空：全屏错误提示，不再用演示数据兜底
+    fatalError.value = errors.length ? errors.join('；') : '所有数据接口返回空数据'
+    loadError.value = ''
+  } else {
+    fatalError.value = ''
+    loadError.value = errors.length ? errors.join('；') : ''
+  }
 
   allGrids.value = []
   const flatten = (nodes: any[]) => {
@@ -1200,9 +1166,20 @@ async function loadData() {
   }
   flatten(tree)
   const community = allGrids.value.find((g: any) => g.gridLevel === 1)
-  if (community?.area && !anyLive) areaRaw.value = Number(community.area)
+  if (community?.area) areaRaw.value = Number(community.area)
 
   return { tree, stats }
+}
+
+// 重试：重新加载全部数据并重建地图与图表
+async function reload() {
+  fatalError.value = ''
+  loadError.value = ''
+  const { tree, stats } = await loadData()
+  if (fatalError.value) return
+  if (mapInstance) { mapInstance.destroy(); mapInstance = null }
+  await initMap(tree)
+  renderCharts(stats)
 }
 
 // ==================== 生命周期 ====================
@@ -1214,6 +1191,7 @@ onMounted(async () => {
   window.addEventListener('resize', resizeHandler)
 
   const { tree, stats } = await loadData()
+  if (fatalError.value) return
   await initMap(tree)
   renderCharts(stats)
 })
@@ -1231,7 +1209,7 @@ watch(leftTab, async (v) => {
   await nextTick()
   if (v === 'ring') { renderRing(); setTimeout(() => chartRing?.resize?.(), 50) }
   else if (v === 'trend') {
-    const t = mockTrend(); renderTrend(t.days, t.values)
+    const t = realTrend(); if (t) renderTrend(t.days, t.values)
     setTimeout(() => chartTrend?.resize?.(), 50)
   }
   else if (v === 'rank' && hasPopulation.value) {
@@ -1665,6 +1643,23 @@ function toggleLayerDock() {
   color: #b91c1c; font-size: 12px; padding: 8px 16px; max-width: 70%;
   display: flex; align-items: center; gap: 8px;
 }
+
+/* 全屏致命错误：接口全部失败时替代演示数据 */
+.dash-fatal {
+  position: absolute; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(248,250,252,0.88); backdrop-filter: blur(6px);
+}
+.dash-fatal-box { text-align: center; max-width: 460px; padding: 40px; }
+.dash-fatal-box > i { font-size: 44px; color: #dc2626; }
+.dash-fatal-box h2 { font-size: 18px; font-weight: 600; color: #1f2937; margin: 14px 0 8px; }
+.dash-fatal-box p { font-size: 13px; color: #6b7280; line-height: 1.7; }
+.dash-fatal-detail { margin-top: 10px; font-size: 12px; color: #b91c1c; word-break: break-all; }
+.dash-fatal-box button {
+  margin-top: 20px; padding: 8px 28px; border: none; border-radius: 6px;
+  background: #0284c7; color: #fff; font-size: 13px; cursor: pointer;
+}
+.dash-fatal-box button:hover { background: #0369a1; }
 
 /* ================= 过渡动画 ================= */
 .hud-enter-active, .hud-leave-active { transition: opacity 0.25s, transform 0.25s, right 0.28s ease; }
