@@ -31,13 +31,9 @@
           <option value="YELLOW">重点（黄）</option>
           <option value="RED">紧急（红）</option>
         </select>
-        <select v-model="filters.sourceSystem" class="filter-select">
+        <select v-model="filters.sourceSystem" class="filter-select" @change="page = 1; loadData()">
           <option value="">全部来源</option>
-          <option value="GRID_PLATFORM">平台录入</option>
-          <option value="H5">网格员上报</option>
-          <option value="PUBLIC_REPORT">居民随手拍</option>
-          <option value="12345">12345热线</option>
-          <option value="PROPERTY_REPORT">物业上报</option>
+          <option v-for="opt in reportSourceOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
         </select>
         <!-- 日期范围：Element Plus daterange（点查询生效，clearable 自带清空） -->
         <el-date-picker
@@ -168,7 +164,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { getEvents, auditEvent, setEventHidden, deleteEvents } from '../api'
+import { getEvents, auditEvent, setEventHidden, deleteEvents, getDictItems } from '../api'
 import EventCreateView from './EventCreateView.vue'
 import EventDetailView from './EventDetailView.vue'
 import { showMessage } from '../utils/message'
@@ -204,6 +200,43 @@ const filters = reactive({
 // 日期范围筛选：[开始, 结束]，value 为 YYYY-MM-DD 字符串
 const dateRange = ref<[string, string] | null>(null)
 const showArchived = ref(false)
+
+// 字典数据接口返回格式
+interface DictItem {
+  id: number
+  dictCode: string
+  itemValue: string
+  itemLabel: string
+  sortOrder: number
+  status: 'ACTIVE' | 'INACTIVE'
+  remark: string | null
+}
+
+// 事件来源系统选项（从字典接口动态获取）
+const reportSourceOptions = ref<{ value: string; label: string }[]>([])
+
+async function loadReportSources() {
+  try {
+    const items: DictItem[] = await getDictItems('event_report_source', true)
+    if (Array.isArray(items) && items.length) {
+      reportSourceOptions.value = items
+        .filter((item: DictItem) => item.status === 'ACTIVE')
+        .sort((a: DictItem, b: DictItem) => a.sortOrder - b.sortOrder)
+        .map((item: DictItem) => ({
+          value: item.itemValue,
+          label: item.itemLabel
+        }))
+    }
+  } catch (e) {
+    reportSourceOptions.value = [
+      { value: 'GRID_MEMBER', label: '网格员上报' },
+      { value: 'RESIDENT', label: '居民上报' },
+      { value: '12345', label: '12345转办' },
+      { value: 'PROPERTY', label: '物业上报' },
+      { value: 'AI_CAMERA', label: '智能监控抓拍' },
+    ]
+  }
+}
 
 // 前端过滤：默认隐藏已归档事件，保持办理界面清爽
 const displayList = computed(() => {
@@ -295,17 +328,8 @@ function statusLabel(status: string) {
 }
 
 function sourceLabel(source: string) {
-  const map: Record<string, string> = {
-    GRID_PLATFORM: '平台录入',
-    MANUAL: '平台录入',
-    H5: '网格员上报',
-    PUBLIC_REPORT: '居民随手拍',
-    RESIDENT_REPORT: '居民随手拍',
-    PUBLIC: '居民/公开上报',
-    '12345': '12345热线',
-    PROPERTY_REPORT: '物业上报',
-  }
-  return map[source] || source || '-'
+  const found = reportSourceOptions.value.find(opt => opt.value === source)
+  return found ? found.label : (source || '-')
 }
 
 async function loadData() {
@@ -335,5 +359,7 @@ async function loadData() {
 watch(() => filters.status, () => { page.value = 1; loadData() })
 watch(() => filters.urgencyLevel, () => { page.value = 1; loadData() })
 
-onMounted(loadData)
+onMounted(async () => {
+  await Promise.all([loadData(), loadReportSources()])
+})
 </script>
