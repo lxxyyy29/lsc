@@ -23,6 +23,7 @@
         <input v-model="filters.startTime" type="datetime-local" class="filter-input" />
         <span style="color:#9ca3af;font-size:12px;">至</span>
         <input v-model="filters.endTime" type="datetime-local" class="filter-input" />
+        <button @click="quickToday" class="filter-action ghost" title="筛选今天的数据">今天</button>
         <button @click="page = 1; loadData()" class="filter-action"><i class="fas fa-search"></i>查询</button>
         <button @click="resetFilters" class="filter-action ghost">重置</button>
       </div>
@@ -223,6 +224,16 @@ const filters = reactive({
   startTime: '',
   endTime: '',
 })
+
+// 快捷筛选：今天 00:00 ~ 23:59，并立即查询
+function quickToday() {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  filters.startTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T00:00`
+  filters.endTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T23:59`
+  page.value = 1
+  loadData()
+}
 
 function resetFilters() {
   filters.tableName = ''

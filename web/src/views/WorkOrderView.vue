@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">工单中心</h2>
+    <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">已完成工单</h2>
     <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">工单派发、流转追踪、办结确认</p>
 
     <!-- 统计卡片 -->
@@ -298,13 +298,13 @@ onMounted(() => {
   loadData()
 })
 
-// 展示隐藏切换：隐藏后监管大屏等面板不再统计展示，仅本工单中心可见
+// 展示隐藏切换：隐藏后监管大屏等面板不再统计展示，仅本已完成工单可见
 async function toggleHidden(o: any) {
   const target = !o.hidden
   const ok = await confirmDialog({
     title: target ? '隐藏工单' : '显示工单',
     message: target
-      ? '隐藏后，该工单将不在监管大屏等面板统计展示，仅在工单中心可见。确定隐藏？'
+      ? '隐藏后，该工单将不在监管大屏等面板统计展示，仅在已完成工单可见。确定隐藏？'
       : '恢复后，该工单将重新在监管大屏等面板统计展示。确定显示？',
     okText: target ? '隐藏' : '显示',
   })

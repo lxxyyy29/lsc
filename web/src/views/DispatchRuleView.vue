@@ -53,11 +53,11 @@
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ form.id ? '编辑规则' : '新增规则' }}</h3>
         <div class="form-group">
           <label class="form-label">事件类型 <span style="color:#ff4d4f;">*</span></label>
-          <input v-model="form.eventType" class="form-input" placeholder="如：消防安全 / FIRE / 矛盾纠纷" />
+          <input v-model="form.eventType" class="form-input" :style="fieldError.eventType ? 'border-color:#ff4d4f;' : ''" placeholder="如：消防安全 / FIRE / 矛盾纠纷" @input="fieldError.eventType = false" />
         </div>
         <div class="form-group">
           <label class="form-label">目标角色 <span style="color:#ff4d4f;">*</span></label>
-          <select v-model="form.targetRoleCode" class="form-select">
+          <select v-model="form.targetRoleCode" class="form-select" :style="fieldError.targetRoleCode ? 'border-color:#ff4d4f;' : ''" @change="fieldError.targetRoleCode = false">
             <option v-for="r in roleOptions" :key="r.roleCode" :value="r.roleCode">{{ r.roleName }}</option>
           </select>
         </div>
@@ -115,6 +115,8 @@ async function loadRoles() {
 }
 const showForm = ref(false)
 const form = ref<any>({ id: null, eventType: '', targetRoleCode: 'GRID_WORKER', priority: 0, enabled: 1, remark: '' })
+// 必填项错误标记：保存校验失败时红色边框标识对应字段
+const fieldError = ref({ eventType: false, targetRoleCode: false })
 
 async function loadRules() {
   try {
@@ -135,8 +137,9 @@ function openEdit(r: any) {
 }
 
 async function handleSave() {
-  if (!form.value.eventType?.trim()) { showMessage('请填写事件类型'); return }
-  if (!form.value.targetRoleCode) { showMessage('请选择目标角色'); return }
+  fieldError.value = { eventType: false, targetRoleCode: false }
+  if (!form.value.eventType?.trim()) { fieldError.value.eventType = true; showMessage('请填写事件类型（必填项用红色框标识）'); return }
+  if (!form.value.targetRoleCode) { fieldError.value.targetRoleCode = true; showMessage('请选择目标角色（必填项用红色框标识）'); return }
   try {
     const payload = {
       eventType: form.value.eventType.trim(),

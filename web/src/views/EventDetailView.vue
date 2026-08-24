@@ -21,7 +21,6 @@
         </div>
         <div style="display:flex;gap:8px;">
           <button v-if="['WAITING_DISPATCH', 'IN_AUDIT'].includes(event.currentStatus)" @click="showDispatch = true" style="padding:8px 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">派发工单</button>
-          <button v-if="event.currentStatus !== 'CLOSED' && event.currentStatus !== 'IGNORED'" @click="showClose = true" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">关闭事件</button>
           <button v-if="(event.currentStatus === 'CLOSED' || event.currentStatus === 'IGNORED') && !event.archived" @click="handleArchive" style="padding:8px 16px;border:1px solid #6b7280;border-radius:6px;background:#fff;color:#374151;font-size:13px;cursor:pointer;">归档</button>
           <button v-if="event.currentStatus === 'CLOSED'" @click="handleReopen" style="padding:8px 16px;border:1px solid #52c41a;border-radius:6px;background:#fff;color:#52c41a;font-size:13px;cursor:pointer;">重新打开</button>
           <button @click="handleBack" :title="embedded ? '关闭' : '返回'" style="width:32px;height:32px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:18px;line-height:1;color:#6b7280;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>

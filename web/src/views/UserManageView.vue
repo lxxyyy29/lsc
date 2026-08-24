@@ -45,12 +45,22 @@
             <td style="font-weight:600;">{{ u.realName || '-' }}</td>
             <td><code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;font-size:12px;">{{ u.username }}</code></td>
             <td>{{ u.phone || '-' }}</td>
-            <td>
+            <td style="position:relative;">
               <span v-for="rn in (u.roleNames || [])" :key="rn"
-                    style="display:inline-block;background:#e0f2fe;color:#0369a1;font-size:11px;border-radius:10px;padding:2px 8px;margin:2px 4px 2px 0;">
+                    style="display:inline-block;background:#e0f2fe;color:#0369a1;font-size:11px;border-radius:10px;padding:2px 8px;margin:2px 4px 2px 0;cursor:pointer;"
+                    @click.stop="quickRole(u)">
                 {{ rn }}
               </span>
-              <span v-if="!(u.roleNames || []).length" style="color:#9ca3af;font-size:12px;">未分配</span>
+              <span v-if="!(u.roleNames || []).length" style="color:#9ca3af;font-size:12px;cursor:pointer;border-bottom:1px dashed #9ca3af;" @click.stop="quickRole(u)" title="点击选择角色">未分配</span>
+              <!-- 行内快速选角色下拉 -->
+              <div v-if="quickRoleUser?.id === u.id" style="position:absolute;top:100%;left:0;z-index:50;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);padding:6px;min-width:160px;">
+                <div v-for="r in roles" :key="r.id"
+                     style="padding:6px 10px;font-size:12px;cursor:pointer;border-radius:6px;"
+                     :style="u.roleIds?.includes(r.id) ? 'background:#e0f2fe;color:#0369a1;' : ''"
+                     @click="quickAssignRole(r)">
+                  {{ r.roleName }}
+                </div>
+              </div>
             </td>
             <td>
               <span :style="{ color: u.status === 'ACTIVE' ? '#059669' : '#9ca3af', fontSize: '12px', cursor: 'pointer' }"
@@ -326,6 +336,28 @@ async function toggleStatus(u: any) {
 const showRoles = ref(false)
 const roleTarget = ref<any>(null)
 const checkedRoleId = ref<number | null>(null)
+// 行内快速选角色（与状态一样点击即选）
+const quickRoleUser = ref<any>(null)
+
+function quickRole(u: any) {
+  quickRoleUser.value = quickRoleUser.value?.id === u.id ? null : u
+}
+
+async function quickAssignRole(r: any) {
+  const u = quickRoleUser.value
+  if (!u) return
+  quickRoleUser.value = null
+  saving.value = true
+  try {
+    await assignUserRoles(u.id, [r.id])
+    notify(`已为「${u.realName || u.username}」分配角色：${r.roleName}`, 'success')
+    fetchData()
+  } catch (e: any) {
+    notify(e?.message || '分配失败，请稍后重试')
+  } finally {
+    saving.value = false
+  }
+}
 
 async function openRoles(u: any) {
   roleTarget.value = u

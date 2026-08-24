@@ -65,8 +65,11 @@ public class LedgerService {
     private List<Map<String, Object>> getEventData(Map<String, String> filters) {
         // 与事件列表页口径一致：仅展示未归档的活跃事件
         StringBuilder sql = new StringBuilder(
-            "SELECT e.event_code, e.title, e.event_type, e.report_source, e.status, " +
-            "e.urgency_level, g.grid_name, e.incident_address, e.occurred_at, e.created_at " +
+            "SELECT e.event_code, e.title, e.event_type, " +
+            "CASE e.report_source WHEN 'GRID_MEMBER' THEN '网格员' WHEN 'PUBLIC_REPORT' THEN '居民随手拍' WHEN 'RESIDENT_REPORT' THEN '居民随手拍' WHEN '12345' THEN '12345热线' WHEN 'PROPERTY' THEN '物业上报' WHEN 'MANUAL' THEN '平台录入' ELSE COALESCE(e.report_source, '-') END AS report_source, " +
+            "CASE e.status WHEN 'PENDING_AUDIT' THEN '待审核' WHEN 'IN_AUDIT' THEN '审核中' WHEN 'AUDIT_APPROVED' THEN '已通过' WHEN 'AUDIT_REJECTED' THEN '已驳回' WHEN 'WAITING_DISPATCH' THEN '待派单' WHEN 'DISPATCHED_TO_WORK_ORDER' THEN '已派单' WHEN 'CLOSED' THEN '已关闭' WHEN 'IGNORED' THEN '已忽略' ELSE e.status END AS status, " +
+            "CASE e.urgency_level WHEN 'GREEN' THEN '一般（绿）' WHEN 'YELLOW' THEN '重点（黄）' WHEN 'RED' THEN '紧急（红）' ELSE e.urgency_level END AS urgency_level, " +
+            "g.grid_name, e.incident_address, e.occurred_at, e.created_at " +
             "FROM biz_event e LEFT JOIN cmn_grid g ON g.id = e.grid_id WHERE COALESCE(e.archived, 0) = 0");
         List<Object> params = new ArrayList<>();
         applyFilter(sql, params, filters);
@@ -76,7 +79,9 @@ public class LedgerService {
 
     private List<Map<String, Object>> getPopulationData(Map<String, String> filters) {
         StringBuilder sql = new StringBuilder(
-            "SELECT p.name, p.phone, p.household_type, p.address, g.grid_name, p.created_at " +
+            "SELECT p.name, p.phone, " +
+            "CASE p.household_type WHEN 'LOCAL' THEN '本地户籍' WHEN 'NON_LOCAL' THEN '外地户籍' WHEN 'FLOATING' THEN '流动人口' WHEN 'LOW_INCOME' THEN '低保户' WHEN 'SPECIAL_CARE' THEN '优抚对象' WHEN 'OTHER' THEN '其他' ELSE COALESCE(p.household_type, '-') END AS household_type, " +
+            "p.address, g.grid_name, p.created_at " +
             "FROM cmn_population p LEFT JOIN cmn_grid g ON g.id = p.grid_id WHERE 1=1");
         List<Object> params = new ArrayList<>();
         applyFilter(sql, params, filters);
@@ -87,7 +92,7 @@ public class LedgerService {
     private List<Map<String, Object>> getBuildingData(Map<String, String> filters) {
         StringBuilder sql = new StringBuilder(
             "SELECT b.building_no, b.address, b.landlord_name, b.landlord_phone, " +
-            "b.fire_risk_level, g.grid_name, b.created_at " +
+            "CASE b.fire_risk_level WHEN 'LOW' THEN '低' WHEN 'MEDIUM' THEN '中' WHEN 'HIGH' THEN '高' ELSE COALESCE(b.fire_risk_level, '-') END AS fire_risk_level, g.grid_name, b.created_at " +
             "FROM cmn_building b LEFT JOIN cmn_grid g ON g.id = b.grid_id WHERE 1=1");
         List<Object> params = new ArrayList<>();
         applyFilter(sql, params, filters);
@@ -98,7 +103,10 @@ public class LedgerService {
     private List<Map<String, Object>> getMerchantData(Map<String, String> filters) {
         StringBuilder sql = new StringBuilder(
             "SELECT m.merchant_name, m.legal_person_name, m.legal_person_phone, " +
-            "m.remark, m.status, m.fire_risk_level, g.grid_name, m.created_at " +
+            "m.remark, " +
+            "CASE m.status WHEN 'ACTIVE' THEN '启用中' WHEN 'DISABLED' THEN '已停用' ELSE COALESCE(m.status, '-') END AS status, " +
+            "CASE m.fire_risk_level WHEN 'LOW' THEN '低' WHEN 'MEDIUM' THEN '中' WHEN 'HIGH' THEN '高' ELSE COALESCE(m.fire_risk_level, '-') END AS fire_risk_level, " +
+            "g.grid_name, m.created_at " +
             "FROM biz_merchant m LEFT JOIN cmn_grid g ON g.id = m.area_id WHERE 1=1");
         List<Object> params = new ArrayList<>();
         applyFilter(sql, params, filters);
@@ -108,7 +116,10 @@ public class LedgerService {
 
     private List<Map<String, Object>> getPatrolData(Map<String, String> filters) {
         StringBuilder sql = new StringBuilder(
-            "SELECT g.grid_name, pr.patrol_type, pr.content, pr.status, pr.created_at " +
+            "SELECT g.grid_name, " +
+            "CASE pr.patrol_type WHEN 'REGULAR' THEN '日常巡查' WHEN 'SPECIAL' THEN '专项巡查' WHEN 'EMERGENCY' THEN '应急巡查' ELSE COALESCE(pr.patrol_type, '-') END AS patrol_type, " +
+            "pr.content, " +
+            "CASE pr.status WHEN 'COMPLETED' THEN '已完成' WHEN 'PENDING' THEN '待完成' WHEN 'OVERDUE' THEN '超期' WHEN 'SUBMITTED' THEN '已提交' ELSE COALESCE(pr.status, '-') END AS status, pr.created_at " +
             "FROM cmn_patrol_record pr LEFT JOIN cmn_grid g ON g.id = pr.grid_id WHERE 1=1");
         List<Object> params = new ArrayList<>();
         applyFilter(sql, params, filters);

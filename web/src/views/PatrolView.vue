@@ -54,12 +54,14 @@
       <button @click="remindUpcoming" :disabled="loading" class="filter-action warn">
         <i class="fas fa-bell"></i>到期未巡提醒
       </button>
-      <select v-model="filterStatus" class="filter-select" @change="loadTasks">
+      <select v-model="filterStatus" class="filter-select">
         <option value="">全部状态</option>
         <option value="PENDING">待巡查</option>
         <option value="COMPLETED">已完成</option>
         <option value="OVERDUE">已超期</option>
       </select>
+      <button @click="loadTasks()" class="filter-action"><i class="fas fa-search"></i>查询</button>
+      <button @click="resetPatrolFilters" class="filter-action ghost">重置</button>
     </div>
 
     <!-- 任务列表 -->
@@ -171,6 +173,12 @@ const stats = ref<any>({})
 const loading = ref(true)
 const error = ref('')
 const filterStatus = ref('')
+
+// 重置筛选：清空状态筛选并重新加载
+function resetPatrolFilters() {
+  filterStatus.value = ''
+  loadTasks()
+}
 
 // ============ 巡查轨迹地图 ============
 const trackUser = ref('')

@@ -143,8 +143,11 @@ public class DashboardMapper {
 
         // === 最新工单 ===
         List<Map<String, Object>> recentWorkOrders = jdbcTemplate.queryForList(
-            "SELECT wo.work_order_no AS workOrderNo, wo.status, wo.assignee_name AS assigneeName, " +
-            "wo.created_at AS createdAt FROM biz_work_order wo WHERE COALESCE(hidden, 0) = 0 ORDER BY wo.created_at DESC LIMIT 10");
+            "SELECT wo.work_order_no AS workOrderNo, wo.status, " +
+            "COALESCE(e.title, wo.work_order_no) AS title, " +
+            "wo.created_at AS createdAt FROM biz_work_order wo " +
+            "LEFT JOIN biz_event e ON e.id = wo.source_event_id " +
+            "WHERE COALESCE(wo.hidden, 0) = 0 ORDER BY wo.created_at DESC LIMIT 10");
         result.put("recentWorkOrders", recentWorkOrders);
 
         return result;

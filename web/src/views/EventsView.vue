@@ -141,8 +141,8 @@
         </div>
       </template>
     </div>
-    <!-- 创建事件弹窗（内嵌创建表单，提交后直接刷新列表） -->
-    <div v-if="showCreateModal" class="modal-overlay" @click.self="showCreateModal = false">
+    <!-- 创建事件弹窗（内嵌创建表单，提交后直接刷新列表；仅能通过取消/×按钮关闭，避免误点丢失已输入内容） -->
+    <div v-if="showCreateModal" class="modal-overlay">
       <div class="modal-box" style="width:760px;max-width:94vw;height:86vh;display:flex;flex-direction:column;overflow:hidden;">
         <EventCreateView embedded @cancel="showCreateModal = false" @created="onEventCreated" />
       </div>

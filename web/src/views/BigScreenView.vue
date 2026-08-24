@@ -100,9 +100,9 @@
           <h3 class="chart-title"><i class="fas fa-tasks"></i> 最新工单动态</h3>
           <div class="scroll-area">
             <div v-for="item in data.recentWorkOrders" :key="item.workOrderNo" class="wo-row">
-              <span class="wo-no">{{ item.workOrderNo }}</span>
+              <span class="wo-no" :title="item.title || item.workOrderNo">{{ item.title || item.workOrderNo }}</span>
+              <span v-if="isActiveOrder(item.status)" class="wo-dot" title="处理中"></span>
               <span class="wo-status" :class="'status-' + (item.status || '').toLowerCase()">{{ workOrderStatusLabel(item.status) }}</span>
-              <span class="wo-assignee">{{ item.assigneeName || '未派单' }}</span>
               <span class="wo-time">{{ formatTime(item.createdAt) }}</span>
             </div>
             <p v-if="!data.recentWorkOrders?.length" class="panel-empty">暂无工单</p>
@@ -227,6 +227,11 @@ function workOrderStatusLabel(status: string) {
     WAITING_CLOSE_CONFIRM: '待确认', COMPLETED: '已完成', CLOSED: '已关闭'
   }
   return map[status] || status || '未知'
+}
+
+// 红点仅标注未派单（待接单）与进行中（处理中）的工单
+function isActiveOrder(status: string) {
+  return status === 'WAITING_ACCEPT' || status === 'PROCESSING'
 }
 
 function formatTrendDate(date: string) {
@@ -528,7 +533,8 @@ onUnmounted(() => {
   border-bottom: 1px solid #f1f5f9; font-size: 11.5px;
 }
 .wo-row:last-child { border-bottom: none; }
-.wo-no { color: #0284c7; font-variant-numeric: tabular-nums; }
+.wo-no { color: #0284c7; font-variant-numeric: tabular-nums; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wo-dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0; box-shadow: 0 0 4px rgba(239, 68, 68, 0.8); }
 .wo-status { border-radius: 4px; padding: 1px 6px; font-size: 10.5px; flex-shrink: 0; }
 .status-waiting_accept { background: #fef3c7; color: #d97706; }
 .status-processing { background: #e0f2fe; color: #0284c7; }

@@ -1,6 +1,6 @@
 <template>
-  <div class="grid-manage-page" :class="{ 'no-form': !formVisible }">
-    <!-- 地图中心点配置条 -->
+  <div>
+    <!-- 地图中心点配置条（独立于 grid 布局之外，避免挤乱三列结构） -->
     <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:12px;font-size:13px;flex-wrap:wrap;">
       <span style="font-weight:600;color:#075985;"><i class="fas fa-map-pin"></i> 地图中心点</span>
       <span style="color:#6b7280;">地图类页面（看板/GIS/大屏）默认以此坐标为中心</span>
@@ -8,6 +8,7 @@
       <input v-model="centerLat" type="number" step="0.000001" placeholder="纬度" style="width:120px;padding:5px 10px;border:1px solid #bfdbfe;border-radius:6px;font-size:13px;box-sizing:border-box;" />
       <button @click="saveMapCenter" class="btn-primary" style="padding:5px 16px;font-size:12px;">保存中心点</button>
     </div>
+    <div class="grid-manage-page" :class="{ 'no-form': !formVisible }">
     <!-- 左：网格树 -->
     <aside class="tree-panel">
       <div class="panel-header">
@@ -111,6 +112,7 @@
         <button class="toast-close" @click="toast.visible = false">✕</button>
       </div>
     </transition>
+    </div>
   </div>
 </template>
 
@@ -403,11 +405,12 @@ function fillForm(g: GridNode) {
   }
 }
 
-async function selectGrid(g: GridNode, skipHighlight = false) {
+async function selectGrid(g: GridNode, skipHighlight = false, skipUnsavedCheck = false) {
   if (editing.value) finishEditArea()
   if (drawing.value) cancelDraw()
   // 有未保存的新绘边界时先确认，避免点一下已有网格就把刚画的图静默清掉
-  if (!form.value.id && roiPoints.value >= 3 && !await confirmLeaveUnsaved()) return
+  // （保存成功后的自动定位跳过该检查，避免误弹"边界还未保存"提示）
+  if (!skipUnsavedCheck && !form.value.id && roiPoints.value >= 3 && !await confirmLeaveUnsaved()) return
   selectedId.value = g.id
   selectedGrid.value = g
   fillForm(g)
@@ -720,9 +723,10 @@ async function saveGrid() {
     }
     // 轻量同步：增量更新多边形而非销毁重建，保存后立即看到最新边界
     await syncTreeLight()
+    // 已保存：跳过"未保存新绘边界"确认，避免误弹"边界还未保存"提示
     // 定位到新/更新的网格（视野+表单），优先用返回的id，其次按名称匹配
     const target = flatTree.value.find(n => (form.value.id && n.id === form.value.id) || n.gridName === payload.gridName)
-    if (target) selectGrid(target, true)
+    if (target) selectGrid(target, true, true)
     else resetForm()
   } catch (e: any) {
     notify(`保存失败：${e?.message || '服务器内部异常，请稍后重试'}`)
