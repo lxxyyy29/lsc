@@ -36,7 +36,7 @@ export const menuGroups: MenuGroup[] = [
     items: [
       { path: '/gis', name: 'GIS网格可视化', permKey: 'web:menu:gis' },
       { path: '/grid-manage', name: '网格管理', permKey: 'web:menu:grid-manage' },
-      { path: '/biz-areas', name: '辖区管理', permKey: 'web:menu:biz-areas' },
+      // { path: '/biz-areas', name: '辖区管理', permKey: 'web:menu:biz-areas' },
       { path: '/org-members', name: '组织人员', badgeKey: 'pwdResetsPending', permKey: 'web:menu:org-members' },
     ]
   },

@@ -449,7 +449,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import http from '../api'
 import { showMessage } from '../utils/message'
 
@@ -480,6 +480,16 @@ const tabs = [
   { key: 'policyPush', label: '政策推送' },
 ]
 const activeTab = ref('household')
+
+const tabLoaded = ref<Record<string, boolean>>({
+  household: false,
+  activity: false,
+  meeting: false,
+  assessment: false,
+  task: false,
+  deliberation: false,
+  policyPush: false,
+})
 const overview = ref<any>({})
 const households = ref<any[]>([])
 const activities = ref<any[]>([])
@@ -656,16 +666,40 @@ async function generateAssessment() {
   } catch (e: any) { showMessage(e?.message) }
 }
 
+watch(activeTab, (newTab) => {
+  if (!tabLoaded.value[newTab]) {
+    tabLoaded.value[newTab] = true
+    switch (newTab) {
+      case 'household':
+        loadHouseholds()
+        break
+      case 'activity':
+        loadActivities()
+        break
+      case 'meeting':
+        loadMeetings()
+        break
+      case 'assessment':
+        loadAssessments()
+        break
+      case 'task':
+        loadTasks()
+        break
+      case 'deliberation':
+        loadDeliberations()
+        break
+      case 'policyPush':
+        loadPolicyPushes()
+        loadPolicyOptions()
+        break
+    }
+  }
+})
+
 onMounted(() => {
   loadGridOptions()
   loadOverview()
+  tabLoaded.value.household = true
   loadHouseholds()
-  loadActivities()
-  loadMeetings()
-  loadAssessments()
-  loadTasks()
-  loadDeliberations()
-  loadPolicyPushes()
-  loadPolicyOptions()
 })
 </script>
