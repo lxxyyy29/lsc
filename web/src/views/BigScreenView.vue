@@ -14,6 +14,10 @@
       <div class="bs-topbar glass-panel">
         <h1><i class="fas fa-chart-line"></i> 网格社区综合监管大屏</h1>
         <span class="bs-time">{{ currentTime }}</span>
+        <button class="bs-fullscreen-btn" @click="mapReset" title="回到中心位置">
+          <i class="fas fa-compass"></i>
+          回到中心
+        </button>
         <button class="bs-fullscreen-btn" @click="toggleFullscreen" :title="isFullscreen ? '退出全屏' : '全屏看地图'">
           <i :class="isFullscreen ? 'fas fa-compress' : 'fas fa-expand'"></i>
           {{ isFullscreen ? '退出全屏' : '全屏' }}
@@ -173,6 +177,7 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getBigScreenData, getGridTree, getEvents } from '../api'
+import http from '../api'
 import { getEventTypeName } from '../utils/eventTypes'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
@@ -188,6 +193,8 @@ const hoverInfo = reactive({ visible: false, x: 0, y: 0, name: '' })
 
 let timer: number | undefined
 let mapInstance: any = null
+// 地图固定中心点（系统配置，默认拔蛟窝社区坐标）
+let mapCenter: [number, number] = [113.939521, 22.971231]
 
 async function loadData() {
   try {
@@ -293,10 +300,27 @@ function onFullscreenChange() {
 async function initMapBase() {
   try {
     ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
+    // 读取系统配置的地图中心点（网格管理页可配置），未配置时用默认坐标
+    try {
+      const [lng, lat] = await Promise.all([
+        http.get('/system/config/map.center.lng'),
+        http.get('/system/config/map.center.lat'),
+      ])
+      if (lng && !isNaN(Number(lng))) mapCenter = [Number(lng), mapCenter[1]]
+      if (lat && !isNaN(Number(lat))) mapCenter = [mapCenter[0], Number(lat)]
+    } catch (e) { /* 配置接口失败时使用默认中心点 */ }
     const AMap = await AMapLoader.load({ key: '5e00e01d2d2b6ca9e1eed533a15572e4', version: '2.0', plugins: ['AMap.Polygon', 'AMap.Marker'] })
-    mapInstance = new AMap.Map('bsMap', { zoom: 14, center: [113.939521, 22.971231], mapStyle: 'amap://styles/normal' })
+    mapInstance = new AMap.Map('bsMap', { zoom: 14, center: mapCenter, mapStyle: 'amap://styles/normal' })
   } catch (e) {
   }
+}
+
+// 回到固定中心位置（与系统配置的中心点一致，便于快速复位视角）
+function mapReset() {
+  if (!mapInstance) return
+  mapInstance.setZoomAndCenter(14, mapCenter)
+  mapInstance.setPitch(0)
+  mapInstance.setRotation(0)
 }
 
 // 在已有地图实例上叠加业务数据（网格轮廓 + 事件点位）

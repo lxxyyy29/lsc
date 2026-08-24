@@ -7,6 +7,12 @@
       <!-- 地图区域 -->
       <div class="card" style="position:relative;padding:0;overflow:hidden;">
         <div id="gisMapLarge" style="height:calc(100vh - 200px);border-radius:12px;overflow:hidden;"></div>
+        <!-- 地图加载失败提示（常见原因：高德 key 域名白名单未包含当前访问域名） -->
+        <div v-if="mapError" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;padding:24px 32px;border-radius:12px;background:rgba(255,255,255,0.97);box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:200;">
+          <div style="font-size:28px;margin-bottom:10px;">🗺️</div>
+          <div style="font-size:14px;font-weight:600;color:#374151;margin-bottom:6px;">地图加载失败</div>
+          <div style="font-size:12px;color:#6b7280;max-width:280px;line-height:1.7;">{{ mapError }}<br/>请在浏览器 F12 控制台查看具体报错（INVALID_USER_SCODE = 高德 key 未授权当前域名）</div>
+        </div>
 
         <!-- 悬停提示框 -->
         <div v-if="hoverInfo.visible" :style="{
@@ -167,6 +173,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+
+// 地图加载失败提示（白屏定位用）
+const mapError = ref('')
 import { getGridTree, getEvents, getEventHeatmap, getPatrolTrajectories } from '../api'
 import http from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
@@ -396,6 +405,7 @@ function focusGrid(grid: GridInfo) {
 }
 
 onMounted(async () => {
+  try {
   ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
   // 读取系统配置的地图中心点（网格管理页可配置），未配置时用默认坐标
   let centerLng = 113.939521
@@ -535,6 +545,13 @@ onMounted(async () => {
       }
     }
   })
+  } catch (e: any) {
+    // 地图初始化失败（常见：高德 key 域名白名单未授权）——显示提示而非静默白屏
+    console.error('[GIS] 地图初始化失败:', e)
+    mapError.value = e?.message?.includes('INVALID_USER_SCODE') || String(e?.message || '').includes('key')
+      ? '当前域名未在高德地图 key 的白名单中，地图无法加载。'
+      : `地图初始化失败：${e?.message || '未知错误'}`
+  }
 })
 
 function drawGridPolygon(map: any, grid: any, fillColor: string, strokeColor: string, strokeWeight: number, fillOpacity: number) {

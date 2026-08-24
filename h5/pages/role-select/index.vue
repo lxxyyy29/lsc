@@ -76,7 +76,8 @@
     </view>
 
     <view class="register-links">
-      <text class="register-link" @click="goRegister">注册账号</text>
+      <!-- 注册入口已移除：网格员由后台账号管理/组织人员添加，居民通过微信一键登录自动开通 -->
+      <text class="register-hint">网格员由管理后台统一开通 · 居民可用微信一键登录</text>
     </view>
 
     <view class="login-help">
@@ -227,9 +228,6 @@ function redirectByRole(session: { permissionCodes: string[] }) {
   }
 }
 
-function goRegister() {
-  uni.navigateTo({ url: '/pages/register/index' })
-}
 </script>
 
 <style>
@@ -328,7 +326,6 @@ function goRegister() {
   justify-content: center;
   gap: 24rpx;
 }
-.register-link { color: #ffffff; font-size: 28rpx; }
-.register-divider { color: rgba(255,255,255,0.5); font-size: 28rpx; }
+.register-hint { color: rgba(255,255,255,0.65); font-size: 26rpx; text-align: center; }
 .login-help { margin-top: 40rpx; color: rgba(255,255,255,0.7); font-size: 24rpx; text-align: center; }
 </style>
