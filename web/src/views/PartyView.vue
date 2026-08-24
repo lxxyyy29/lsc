@@ -99,10 +99,10 @@
     <div v-if="activeTab === 'meeting'" class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <h3 style="font-size:14px;font-weight:600;">三会一课</h3>
-        <button @click="showAddMeeting = true" class="btn btn-primary">添加记录</button>
+        <button @click="openAddMeeting" class="btn btn-primary">添加记录</button>
       </div>
       <table class="table">
-        <thead><tr><th>类型</th><th>主题</th><th>日期</th><th>党支部</th><th>参会人数</th><th>状态</th></tr></thead>
+        <thead><tr><th>类型</th><th>主题</th><th>日期</th><th>党支部</th><th>参会人数</th><th>状态</th><th style="width:130px;">操作</th></tr></thead>
         <tbody>
           <tr v-for="m in meetings" :key="m.id">
             <td><span class="tag tag-red">{{ m.meetingType }}</span></td>
@@ -111,6 +111,10 @@
             <td style="font-size:12px;">{{ m.partyBranch || '-' }}</td>
             <td>{{ m.participantCount || '-' }}</td>
             <td><span class="tag" :class="m.status === 'COMPLETED' ? 'tag-green' : 'tag-orange'">{{ m.status === 'COMPLETED' ? '已完成' : '计划中' }}</span></td>
+            <td>
+              <button @click="openEditMeeting(m)" style="padding:3px 10px;border:1px solid #1890ff;border-radius:4px;background:#fff;color:#1890ff;font-size:12px;cursor:pointer;margin-right:4px;">编辑</button>
+              <button @click="deleteMeeting(m)" style="padding:3px 10px;border:1px solid #ffccc7;border-radius:4px;background:#fff;color:#ff4d4f;font-size:12px;cursor:pointer;">删除</button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -476,7 +480,7 @@ const votingDeliberation = ref<any>(null)
 
 const householdForm = ref({ partyMemberId: null as number | null, householdName: '', householdAddress: '', gridId: null as number | null })
 const activityForm = ref({ title: '', description: '', activityDate: '', gridId: null as number | null, maxParticipants: null as number | null, createdBy: 1 })
-const meetingForm = ref({ meetingType: '支部党员大会', title: '', meetingDate: '', partyBranch: '', participantCount: null as number | null })
+const meetingForm = ref<{ id: number | null; meetingType: string; title: string; meetingDate: string; partyBranch: string; participantCount: number | null; status?: string }>({ id: null, meetingType: '支部党员大会', title: '', meetingDate: '', partyBranch: '', participantCount: null })
 const taskForm = ref({ taskTitle: '', taskType: 'PATROL', description: '', gridId: null as number | null, assignedMemberId: null as number | null, deadline: '', createdBy: 1 })
 const deliberationForm = ref({ title: '', content: '', gridId: null as number | null, createdBy: 1 })
 const voteForm = ref({ voteType: 'SUPPORT', comment: '' })
@@ -556,7 +560,31 @@ async function submitActivity() {
   try { await http.post('/party/activities', activityForm.value); showAddActivity.value = false; loadActivities() } catch (e: any) { showMessage(e?.message) }
 }
 async function submitMeeting() {
-  try { await http.post('/party/meetings', meetingForm.value); showAddMeeting.value = false; loadMeetings() } catch (e: any) { showMessage(e?.message) }
+  try {
+    if (meetingForm.value.id) {
+      await http.put(`/party/meetings/${meetingForm.value.id}`, meetingForm.value)
+    } else {
+      await http.post('/party/meetings', meetingForm.value)
+    }
+    showAddMeeting.value = false
+    loadMeetings()
+  } catch (e: any) { showMessage(e?.message) }
+}
+function openAddMeeting() {
+  meetingForm.value = { id: null, meetingType: '支部党员大会', title: '', meetingDate: '', partyBranch: '', participantCount: null }
+  showAddMeeting.value = true
+}
+function openEditMeeting(m: any) {
+  meetingForm.value = {
+    id: m.id, meetingType: m.meetingType || '支部党员大会', title: m.title || '',
+    meetingDate: m.meetingDate || '', partyBranch: m.partyBranch || '',
+    participantCount: m.participantCount ?? null, status: m.status || 'COMPLETED',
+  }
+  showAddMeeting.value = true
+}
+async function deleteMeeting(m: any) {
+  if (!confirm(`确定删除会议「${m.title || ''}」吗？`)) return
+  try { await http.delete(`/party/meetings/${m.id}`); loadMeetings() } catch (e: any) { showMessage(e?.message) }
 }
 async function submitTask() {
   try { await http.post('/party/tasks', taskForm.value); showAddTask.value = false; loadTasks() } catch (e: any) { showMessage(e?.message) }

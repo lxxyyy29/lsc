@@ -161,7 +161,11 @@ public class PartyController {
     @GetMapping("/meetings")
     public ApiResponse<List<Map<String, Object>>> meetings(@RequestParam(required = false) String type) {
         requirePartyViewPermission();
-        StringBuilder sql = new StringBuilder("SELECT * FROM sys_party_meeting WHERE 1=1");
+        // 字段转 camelCase 别名，与前端取值（meetingDate/partyBranch/participantCount）保持一致
+        StringBuilder sql = new StringBuilder(
+                "SELECT id, meeting_type AS meetingType, title, meeting_date AS meetingDate, " +
+                "party_branch AS partyBranch, content, participant_count AS participantCount, status " +
+                "FROM sys_party_meeting WHERE 1=1");
         List<Object> params = new ArrayList<>();
         if (type != null && !type.isEmpty()) {
             sql.append(" AND meeting_type = ?");
@@ -180,6 +184,28 @@ public class PartyController {
         jdbcTemplate.update(
             "INSERT INTO sys_party_meeting (meeting_type, title, meeting_date, party_branch, content, participant_count, status) VALUES (?, ?, ?, ?, ?, ?, 'COMPLETED')",
             body.get("meetingType"), body.get("title"), body.get("meetingDate"), body.get("partyBranch"), body.get("content"), body.get("participantCount"));
+        return ApiResponse.ok(true);
+    }
+
+    /**
+     * 编辑会议记录
+     */
+    @PutMapping("/meetings/{id}")
+    public ApiResponse<Boolean> updateMeeting(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        requirePartyManagePermission();
+        jdbcTemplate.update(
+            "UPDATE sys_party_meeting SET meeting_type = ?, title = ?, meeting_date = ?, party_branch = ?, content = ?, participant_count = ?, status = ?, updated_at = NOW() WHERE id = ?",
+            body.get("meetingType"), body.get("title"), body.get("meetingDate"), body.get("partyBranch"), body.get("content"), body.get("participantCount"), body.get("status"), id);
+        return ApiResponse.ok(true);
+    }
+
+    /**
+     * 删除会议记录
+     */
+    @DeleteMapping("/meetings/{id}")
+    public ApiResponse<Boolean> deleteMeeting(@PathVariable Long id) {
+        requirePartyManagePermission();
+        jdbcTemplate.update("DELETE FROM sys_party_meeting WHERE id = ?", id);
         return ApiResponse.ok(true);
     }
 

@@ -11,8 +11,9 @@
     <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
       <div>
         <h1 class="page-title">角色管理</h1>
-        <p class="page-desc">系统固定 4 个内置角色（超级管理员/管理员/网格员/居民），不可新增或删除；可为角色分配菜单权限（勾选后该角色用户即可看到对应菜单）</p>
+        <p class="page-desc">系统固定 4 个内置角色（超级管理员/管理员/网格员/居民）不可删除；支持新增自定义角色并分配菜单权限（勾选后该角色用户即可看到对应菜单）</p>
       </div>
+      <button @click="openCreate" class="btn btn-primary"><i class="fas fa-plus"></i> 新增角色</button>
     </div>
 
     <div class="card">
@@ -53,14 +54,51 @@
             </td>
             <td style="color:#6b7280;font-size:12px;">{{ r.remark || '-' }}</td>
             <td>
-              <div style="display:flex;gap:6px;">
+              <div style="display:flex;gap:6px;align-items:center;">
                 <button @click="openAssign(r)" class="btn btn-default" style="padding:4px 10px;font-size:12px;" :disabled="r.roleCode === 'SUPER_ADMIN'">分配权限</button>
-                <span style="color:#9ca3af;font-size:12px;display:inline-flex;align-items:center;">内置角色</span>
+                <template v-if="isBuiltin(r.roleCode)">
+                  <span style="color:#9ca3af;font-size:12px;">内置角色</span>
+                </template>
+                <template v-else>
+                  <button @click="openEdit(r)" class="btn btn-default" style="padding:4px 10px;font-size:12px;">编辑</button>
+                  <button @click="handleDelete(r)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;">删除</button>
+                </template>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- 新增/编辑角色弹窗 -->
+    <div v-if="showRoleForm" class="modal-overlay" @click.self="showRoleForm = false">
+      <div class="modal-box" style="width:460px;">
+        <h3 style="margin:0 0 16px;font-size:16px;">{{ roleForm.id ? '编辑角色' : '新增角色' }}</h3>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">角色名称 <span style="color:#ff4d4f;">*</span></label>
+          <input v-model="roleForm.roleName" placeholder="如：纪检监督员" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">角色标识 <span style="color:#ff4d4f;">*</span></label>
+          <input v-model="roleForm.roleCode" :disabled="!!roleForm.id" placeholder="英文大写，如 SUPERVISOR" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+          <p style="font-size:11px;color:#9ca3af;margin:4px 0 0;">角色标识用于系统识别，创建后不可修改</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">状态</label>
+          <select v-model="roleForm.status" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">
+            <option value="ACTIVE">正常</option>
+            <option value="DISABLED">停用</option>
+          </select>
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">备注</label>
+          <input v-model="roleForm.remark" placeholder="角色用途说明" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
+          <button @click="showRoleForm = false" class="btn btn-default">取消</button>
+          <button @click="submitRole" class="btn btn-primary" :disabled="roleSaving">{{ roleSaving ? '保存中...' : '保存' }}</button>
+        </div>
+      </div>
     </div>
 
     <!-- 分配权限弹窗：只展示本项目 web 菜单权限（web:menu:*），按模块分组 -->
@@ -99,6 +137,7 @@ import {
   getSystemRoles,
   getSystemRoleDetail, assignRolePermissions, getPermissionTree
 } from '../api'
+import http from '../api'
 import { menuGroups } from '../menu'
 
 // 菜单权限总数（与分配弹窗可勾选项一一对应，来自 menu.ts 单一数据源）
@@ -120,15 +159,65 @@ const filteredRoles = computed(() => {
     || (r.remark || '').toLowerCase().includes(key))
 })
 
-// 内置角色标识的中文释义（系统固定 4 个，不支持新增）
+// 内置角色标识的中文释义（系统固定 4 个，不可删除；可新增自定义角色）
 const ROLE_CODE_NAMES: Record<string, string> = {
   SUPER_ADMIN: '超级管理员',
   EVENT_OPERATOR: '管理员',
   GRID_WORKER: '网格员',
   PUBLIC: '居民'
 }
+const BUILTIN_CODES = ['SUPER_ADMIN', 'EVENT_OPERATOR', 'GRID_WORKER', 'PUBLIC']
 function roleCodeName(code: string) {
   return ROLE_CODE_NAMES[code] || code
+}
+function isBuiltin(code: string) {
+  return BUILTIN_CODES.includes(code)
+}
+
+// ==================== 新增/编辑角色 ====================
+const showRoleForm = ref(false)
+const roleSaving = ref(false)
+const roleForm = ref<{ id: number | null; roleName: string; roleCode: string; status: string; remark: string }>({
+  id: null, roleName: '', roleCode: '', status: 'ACTIVE', remark: ''
+})
+
+function openCreate() {
+  roleForm.value = { id: null, roleName: '', roleCode: '', status: 'ACTIVE', remark: '' }
+  showRoleForm.value = true
+}
+function openEdit(r: any) {
+  roleForm.value = { id: r.id, roleName: r.roleName || '', roleCode: r.roleCode || '', status: r.status || 'ACTIVE', remark: r.remark || '' }
+  showRoleForm.value = true
+}
+async function submitRole() {
+  if (!roleForm.value.roleName.trim()) { notify('请填写角色名称'); return }
+  if (!roleForm.value.roleCode.trim()) { notify('请填写角色标识（英文，如 VOLUNTEER）'); return }
+  roleSaving.value = true
+  try {
+    const payload: any = { roleName: roleForm.value.roleName.trim(), roleCode: roleForm.value.roleCode.trim().toUpperCase(), status: roleForm.value.status, remark: roleForm.value.remark }
+    if (roleForm.value.id) {
+      await http.put(`/system/roles/${roleForm.value.id}`, payload)
+    } else {
+      await http.post('/system/roles', payload)
+    }
+    showRoleForm.value = false
+    notify(roleForm.value.id ? '角色已更新' : '角色已创建', 'success')
+    await fetchRoles()
+  } catch (e: any) {
+    notify(`保存失败：${e?.message || '服务器异常'}`)
+  } finally {
+    roleSaving.value = false
+  }
+}
+async function handleDelete(r: any) {
+  if (!confirm(`确定删除角色「${r.roleName}」吗？该角色下的用户将失去对应权限。`)) return
+  try {
+    await http.delete(`/system/roles/${r.id}`)
+    notify('角色已删除', 'success')
+    await fetchRoles()
+  } catch (e: any) {
+    notify(`删除失败：${e?.message || '服务器异常'}`)
+  }
 }
 
 const toast = ref({ visible: false, type: 'error' as 'error' | 'success', message: '' })

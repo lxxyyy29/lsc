@@ -6,19 +6,8 @@
         <p class="page-desc">网格员、社区工作人员、志愿者等信息维护</p>
       </div>
       <div style="display:flex;gap:8px;">
-        <button @click="handleSync" class="btn btn-default">
-          <i class="fas fa-sync"></i>同步网格员
-        </button>
         <button @click="openAssign" class="btn btn-default">
           <i class="fas fa-sitemap"></i>人员划分
-        </button>
-        <button v-if="canApprove" @click="showApproval = true; fetchPending()" class="btn btn-default">
-          <i class="fas fa-user-check"></i>注册审批
-          <span v-if="pendingCount > 0" style="background:#dc2626;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;">{{ pendingCount }}</span>
-        </button>
-        <button v-if="canResetPwd" @click="showPwdReset = true; fetchPwdResets()" class="btn btn-default">
-          <i class="fas fa-key"></i>密码重置
-          <span v-if="pwdResetCount > 0" style="background:#dc2626;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;">{{ pwdResetCount }}</span>
         </button>
         <button @click="showAdd = true" class="btn btn-primary">
           <i class="fas fa-plus"></i>添加组织人员
@@ -27,6 +16,24 @@
     </div>
 
     <div class="card">
+      <!-- 搜索筛选栏：姓名/电话 + 所属区域 + 组长 + 状态 -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <input v-model="filters.keyword" class="filter-input" style="width:220px;" placeholder="搜索姓名 / 电话" />
+        <select v-model="filters.gridId" class="filter-select" style="min-width:140px;">
+          <option :value="null">全部区域</option>
+          <option v-for="g in grids" :key="g.id" :value="g.id">{{ g.gridName }}</option>
+        </select>
+        <select v-model="filters.leaderId" class="filter-select" style="min-width:140px;">
+          <option :value="null">全部组长</option>
+          <option v-for="l in leaderOptions" :key="l.id" :value="l.id">{{ l.name }}</option>
+        </select>
+        <select v-model="filters.status" class="filter-select" style="min-width:110px;">
+          <option value="">全部状态</option>
+          <option value="ACTIVE">启用</option>
+          <option value="DISABLED">停用</option>
+        </select>
+        <button @click="resetFilters" class="btn btn-default" style="padding:6px 14px;font-size:12px;">重置</button>
+      </div>
       <div v-if="loading" class="empty-state">
         <i class="fas fa-spinner fa-spin"></i>
         <p>加载中...</p>
@@ -40,7 +47,7 @@
         <table class="table">
           <thead><tr><th>姓名</th><th>电话</th><th>类型</th><th>职务</th><th>所属网格</th><th>组长</th><th>状态</th><th>操作</th></tr></thead>
           <tbody>
-            <tr v-for="p in list" :key="p.id">
+            <tr v-for="p in filteredList" :key="p.id">
               <td>{{ p.name }}</td>
               <td>{{ p.phone || '-' }}</td>
               <td><span class="tag tag-blue">{{ memberTypeLabel(p.memberType) }}</span></td>
@@ -66,80 +73,6 @@
           <p>暂无网格员，点击"添加网格员"开始添加</p>
         </div>
       </template>
-    </div>
-
-    <!-- 注册审批弹窗 -->
-    <div v-if="showApproval" class="modal-overlay" @click.self="showApproval = false">
-      <div class="modal-box" style="width:600px;">
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">注册审批</h3>
-        <table class="table" style="font-size:13px;">
-          <thead><tr><th>用户名</th><th>姓名</th><th>手机号</th><th>申请时间</th><th>来源</th><th>身份</th><th>操作</th></tr></thead>
-          <tbody>
-            <tr v-for="r in pendingList" :key="r.id">
-              <td>{{ r.username }}</td>
-              <td>{{ r.realName }}</td>
-              <td>{{ r.phone }}</td>
-              <td>{{ r.createdAt }}</td>
-              <td>
-                <span :class="r.regSource === 'WEB' ? 'tag tag-green' : 'tag tag-blue'">
-                  {{ r.regSource === 'WEB' ? 'Web管理员注册' : '小程序注册' }}
-                </span>
-              </td>
-              <td>
-                <select v-if="r.regSource !== 'WEB'" v-model="approvalTypes[r.id]" class="form-select" style="padding:3px 8px;font-size:12px;">
-                  <option value="GRID_WORKER">网格员</option>
-                  <option value="STAFF">社区工作人员</option>
-                </select>
-                <span v-else style="font-size:12px;color:#059669;">普通管理员</span>
-              </td>
-              <td>
-                <button @click="approveReg(r)" class="btn btn-primary" style="padding:4px 10px;font-size:12px;">通过</button>
-                <button @click="rejectReg(r)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;">拒绝</button>
-              </td>
-            </tr>
-            <tr v-if="!pendingList.length"><td colspan="7" style="text-align:center;color:#999;padding:20px;">暂无待审批</td></tr>
-          </tbody>
-        </table>
-        <div style="text-align:right;margin-top:16px;">
-          <button @click="showApproval = false" class="btn btn-default">关闭</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 密码重置申请弹窗 -->
-    <div v-if="showPwdReset" class="modal-overlay" @click.self="showPwdReset = false">
-      <div class="modal-box" style="width:640px;">
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">密码重置申请</h3>
-        <table class="table" style="font-size:13px;">
-          <thead><tr><th>姓名</th><th>账号</th><th>手机号</th><th>申请时间</th><th>状态</th><th>操作</th></tr></thead>
-          <tbody>
-            <tr v-for="r in pwdResetList" :key="r.id">
-              <td>{{ r.real_name || '-' }}</td>
-              <td>{{ r.account }}</td>
-              <td>{{ r.phone }}</td>
-              <td>{{ formatTs(r.created_at) }}</td>
-              <td>
-                <span :class="r.status === 'PENDING' ? 'tag tag-orange' : (r.status === 'APPROVED' ? 'tag tag-green' : 'tag tag-red')">
-                  {{ r.status === 'PENDING' ? '待处理' : (r.status === 'APPROVED' ? '已重置' : '已驳回') }}
-                </span>
-                <span v-if="r.status !== 'PENDING' && r.handled_by_name" style="font-size:11px;color:#999;margin-left:4px;">{{ r.handled_by_name }}处理</span>
-              </td>
-              <td>
-                <template v-if="r.status === 'PENDING'">
-                  <button @click="approvePwdReset(r)" class="btn btn-primary" style="padding:4px 10px;font-size:12px;">重置</button>
-                  <button @click="rejectPwdReset(r)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;">驳回</button>
-                </template>
-                <span v-else style="font-size:12px;color:#999;">{{ formatTs(r.handled_at) }}</span>
-              </td>
-            </tr>
-            <tr v-if="!pwdResetList.length"><td colspan="6" style="text-align:center;color:#999;padding:20px;">暂无密码重置申请</td></tr>
-          </tbody>
-        </table>
-        <p style="font-size:12px;color:#999;margin-top:12px;">重置后新密码为手机号后 6 位，请通过电话/微信告知用户本人</p>
-        <div style="text-align:right;margin-top:12px;">
-          <button @click="showPwdReset = false" class="btn btn-default">关闭</button>
-        </div>
-      </div>
     </div>
 
     <!-- 添加/编辑弹窗 -->
@@ -234,14 +167,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import http, { syncGridWorkersToOrgMembers, hasPermission } from '../api'
+import http from '../api'
 import { showMessage } from '../utils/message'
 import { confirmDialog, promptDialog } from '../utils/dialog'
-
-// 注册审批仅超级管理员可见（后端同样校验 api:system:user:create）
-const canApprove = hasPermission('api:system:user:create')
-// 密码重置处理：超管与普通管理员均可（后端校验 api:password-reset:handle）
-const canResetPwd = hasPermission('api:password-reset:handle')
 
 const list = ref<any[]>([])
 const grids = ref<any[]>([])
@@ -249,13 +177,37 @@ const loading = ref(true)
 const error = ref('')
 const showAdd = ref(false)
 const showEdit = ref(false)
-const showApproval = ref(false)
-const pendingList = ref<any[]>([])
-const pendingCount = ref(0)
-const approvalTypes = ref<Record<number, string>>({})
-const showPwdReset = ref(false)
-const pwdResetList = ref<any[]>([])
-const pwdResetCount = ref(0)
+
+// ==================== 搜索筛选 ====================
+const filters = ref({ keyword: '', gridId: null as number | null, leaderId: null as number | null, status: '' })
+
+// 组长下拉选项：从列表提取（memberType=LEADER 或 leaderName 非空的人员）
+const leaderOptions = computed(() => {
+  const seen = new Map<number, string>()
+  list.value.forEach((m: any) => {
+    if (m.memberType === 'LEADER' && m.id) seen.set(m.id, m.name)
+  })
+  list.value.forEach((m: any) => {
+    if (m.leaderId && m.leaderName && !seen.has(m.leaderId)) seen.set(m.leaderId, m.leaderName)
+  })
+  return Array.from(seen, ([id, name]) => ({ id, name }))
+})
+
+const filteredList = computed(() => {
+  const f = filters.value
+  const kw = f.keyword.trim().toLowerCase()
+  return list.value.filter((p: any) => {
+    if (kw && !((p.name || '').toLowerCase().includes(kw) || (p.phone || '').toLowerCase().includes(kw))) return false
+    if (f.gridId != null && Number(p.gridId) !== Number(f.gridId)) return false
+    if (f.leaderId != null && Number(p.leaderId) !== Number(f.leaderId)) return false
+    if (f.status && p.status !== f.status) return false
+    return true
+  })
+})
+
+function resetFilters() {
+  filters.value = { keyword: '', gridId: null, leaderId: null, status: '' }
+}
 
 // 人员划分：组长 ↔ 属下网格员勾选
 const showAssign = ref(false)
@@ -336,17 +288,6 @@ async function unassignOne(m: any) {
   }
 }
 
-async function handleSync() {
-  if (!await confirmDialog({ message: '将系统用户中的网格员同步到组织人员表，继续吗？', okText: '继续' })) return
-  try {
-    const res: any = await syncGridWorkersToOrgMembers()
-    showMessage(res?.message || '同步完成')
-    await fetchData()
-  } catch(e: any) {
-    showMessage('同步失败：' + (e?.message || '未知错误'))
-  }
-}
-
 async function fetchData() {
   loading.value = true
   error.value = ''
@@ -357,81 +298,6 @@ async function fetchData() {
   } finally {
     loading.value = false
   }
-  // 待审批数量单独拉取：无审批权限的普通管理员不影响页面正常使用
-  if (canApprove) {
-    try {
-      const pending = await http.get('/registration/pending') || []
-      pendingCount.value = pending.length
-    } catch { pendingCount.value = 0 }
-  }
-  // 待处理密码重置申请数：超管与普通管理员均可见
-  if (canResetPwd) {
-    try {
-      const resets: any[] = await http.get('/password-reset/list', { params: { status: 'PENDING' } }) || []
-      pwdResetCount.value = resets.length
-    } catch { pwdResetCount.value = 0 }
-  }
-}
-
-function formatTs(value: any): string {
-  if (!value) return '-'
-  return String(value).replace('T', ' ').slice(0, 16)
-}
-
-async function fetchPwdResets() {
-  pwdResetList.value = await http.get('/password-reset/list') || []
-}
-
-async function approvePwdReset(row: any) {
-  if (!await confirmDialog({ message: `确认将 ${row.real_name || row.account} 的密码重置为手机号后 6 位吗？`, okText: '确认重置' })) return
-  try {
-    const res: any = await http.post(`/password-reset/${row.id}/approve`)
-    showMessage(`已重置成功！\n新密码：${res?.newPassword}\n\n请通过电话/微信告知用户本人，提醒其登录后自行修改`, 'success', 8000)
-    await fetchPwdResets()
-    await fetchData()
-  } catch (e: any) {
-    showMessage('重置失败：' + (e?.message || '请稍后重试'))
-  }
-}
-
-async function rejectPwdReset(row: any) {
-  const remark = await promptDialog({ title: '驳回密码重置', placeholder: '请输入驳回原因（必填）', required: true })
-  if (remark === null) return
-  try {
-    await http.post(`/password-reset/${row.id}/reject`, { remark })
-    showMessage('已驳回')
-    await fetchPwdResets()
-    await fetchData()
-  } catch (e: any) {
-    showMessage('驳回失败：' + (e?.message || '请稍后重试'))
-  }
-}
-
-async function fetchPending() {
-  pendingList.value = await http.get('/registration/pending') || []
-  // web 管理员注册默认审批为普通管理员（STAFF），小程序注册默认网格员
-  for (const r of pendingList.value) {
-    if (!approvalTypes.value[r.id]) {
-      approvalTypes.value[r.id] = r.regSource === 'WEB' ? 'STAFF' : 'GRID_WORKER'
-    }
-  }
-}
-
-async function approveReg(row: any) {
-  await http.post(`/registration/${row.id}/approve`, { remark: '审批通过', memberType: approvalTypes.value[row.id] || 'GRID_WORKER' })
-  showMessage(row.regSource === 'WEB' ? '已通过，账号已获得普通管理员权限，可登录 web 管理端' : '已通过，用户已分配网格员身份并可登录 H5 端')
-  delete approvalTypes.value[row.id]
-  await fetchPending()
-  await fetchData()
-}
-
-async function rejectReg(row: any) {
-  const remark = await promptDialog({ title: '拒绝注册申请', placeholder: '请输入拒绝原因（必填）', required: true })
-  if (remark === null) return
-  await http.post(`/registration/${row.id}/reject`, { remark })
-  showMessage('已拒绝')
-  await fetchPending()
-  await fetchData()
 }
 
 async function fetchGrids() {
