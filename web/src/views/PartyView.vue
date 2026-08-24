@@ -230,11 +230,7 @@
     <div class="modal-box">
       <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">添加联户</h3>
       <div class="form-group">
-        <label class="form-label">党员ID</label>
-        <input v-model.number="householdForm.partyMemberId" type="number" class="form-input" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">户主姓名</label>
+        <label class="form-label">户主姓名 <span style="color:#ff4d4f;">*</span></label>
         <input v-model="householdForm.householdName" class="form-input" />
       </div>
       <div class="form-group">
@@ -242,8 +238,11 @@
         <input v-model="householdForm.householdAddress" class="form-input" />
       </div>
       <div class="form-group">
-        <label class="form-label">网格ID</label>
-        <input v-model.number="householdForm.gridId" type="number" class="form-input" />
+        <label class="form-label">所属网格 <span style="color:#ff4d4f;">*</span></label>
+        <select v-model="householdForm.gridId" class="form-select">
+          <option :value="null">请选择网格</option>
+          <option v-for="g in gridOptions" :key="g.id" :value="g.id">{{ g.label }}</option>
+        </select>
       </div>
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
         <button @click="showAddHousehold = false" class="btn btn-default">取消</button>
@@ -275,8 +274,11 @@
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">网格ID</label>
-        <input v-model.number="activityForm.gridId" type="number" class="form-input" />
+        <label class="form-label">所属网格 <span style="color:#ff4d4f;">*</span></label>
+        <select v-model="activityForm.gridId" class="form-select">
+          <option :value="null">请选择网格</option>
+          <option v-for="g in gridOptions" :key="g.id" :value="g.id">{{ g.label }}</option>
+        </select>
       </div>
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
         <button @click="showAddActivity = false" class="btn btn-default">取消</button>
@@ -348,12 +350,11 @@
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div class="form-group">
-          <label class="form-label">网格ID</label>
-          <input v-model.number="taskForm.gridId" type="number" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">指派党员ID</label>
-          <input v-model.number="taskForm.assignedMemberId" type="number" class="form-input" />
+          <label class="form-label">所属网格 <span style="color:#ff4d4f;">*</span></label>
+          <select v-model="taskForm.gridId" class="form-select">
+            <option :value="null">请选择网格</option>
+            <option v-for="g in gridOptions" :key="g.id" :value="g.id">{{ g.label }}</option>
+          </select>
         </div>
       </div>
       <div class="form-group">
@@ -380,8 +381,11 @@
         <textarea v-model="deliberationForm.content" rows="3" class="form-textarea"></textarea>
       </div>
       <div class="form-group">
-        <label class="form-label">网格ID</label>
-        <input v-model.number="deliberationForm.gridId" type="number" class="form-input" />
+        <label class="form-label">所属网格 <span style="color:#ff4d4f;">*</span></label>
+        <select v-model="deliberationForm.gridId" class="form-select">
+          <option :value="null">请选择网格</option>
+          <option v-for="g in gridOptions" :key="g.id" :value="g.id">{{ g.label }}</option>
+        </select>
       </div>
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
         <button @click="showAddDeliberation = false" class="btn btn-default">取消</button>
@@ -448,6 +452,23 @@
 import { ref, onMounted } from 'vue'
 import http from '../api'
 import { showMessage } from '../utils/message'
+
+// 网格下拉数据源：三级网格树平铺（名称带层级前缀，便于选择）
+const gridOptions = ref<any[]>([])
+async function loadGridOptions() {
+  try {
+    const tree: any = await http.get('/community/grids/tree') || []
+    gridOptions.value = []
+    const flatten = (nodes: any[], prefix = '') => {
+      for (const n of nodes) {
+        const label = prefix ? `${prefix} > ${n.gridName}` : n.gridName
+        gridOptions.value.push({ id: n.id, label })
+        if (n.children) flatten(n.children, label)
+      }
+    }
+    flatten(Array.isArray(tree) ? tree : [])
+  } catch (e) { /* 网格加载失败时下拉为空 */ }
+}
 
 const tabs = [
   { key: 'household', label: '党员联户' },
@@ -554,9 +575,12 @@ async function signupActivity(id: number) {
   }
 }
 async function submitHousehold() {
+  if (!householdForm.value.gridId) { showMessage('请选择所属网格'); return }
+  if (!householdForm.value.householdName?.trim()) { showMessage('请填写户主姓名'); return }
   try { await http.post('/party/households', householdForm.value); showAddHousehold.value = false; loadHouseholds() } catch (e: any) { showMessage(e?.message) }
 }
 async function submitActivity() {
+  if (!activityForm.value.gridId) { showMessage('请选择所属网格'); return }
   try { await http.post('/party/activities', activityForm.value); showAddActivity.value = false; loadActivities() } catch (e: any) { showMessage(e?.message) }
 }
 async function submitMeeting() {
@@ -587,6 +611,7 @@ async function deleteMeeting(m: any) {
   try { await http.delete(`/party/meetings/${m.id}`); loadMeetings() } catch (e: any) { showMessage(e?.message) }
 }
 async function submitTask() {
+  if (!taskForm.value.gridId) { showMessage('请选择所属网格'); return }
   try { await http.post('/party/tasks', taskForm.value); showAddTask.value = false; loadTasks() } catch (e: any) { showMessage(e?.message) }
 }
 async function acceptTask(id: number) {
@@ -596,6 +621,7 @@ async function completeTask(id: number) {
   try { await http.post(`/party/tasks/${id}/complete`, {}); loadTasks() } catch (e: any) { showMessage(e?.message) }
 }
 async function submitDeliberation() {
+  if (!deliberationForm.value.gridId) { showMessage('请选择所属网格'); return }
   try { await http.post('/party/deliberations', deliberationForm.value); showAddDeliberation.value = false; loadDeliberations() } catch (e: any) { showMessage(e?.message) }
 }
 function openVoteModal(d: any) {
@@ -631,6 +657,7 @@ async function generateAssessment() {
 }
 
 onMounted(() => {
+  loadGridOptions()
   loadOverview()
   loadHouseholds()
   loadActivities()
