@@ -484,6 +484,7 @@ function onParentChange() {
 }
 
 function resetForm() {
+  setCurrentPolygon(null)
   if (selectedGrid.value) {
     selectGrid(selectedGrid.value)
   } else {
@@ -715,19 +716,20 @@ async function saveGrid() {
     }
     if (form.value.id) {
       await updateGrid(form.value.id, payload)
-      notify('网格已更新', 'success')
     } else {
       const created = await createGrid(payload)
-      notify('网格已创建', 'success')
       if (created?.id) form.value.id = created.id
     }
     // 轻量同步：增量更新多边形而非销毁重建，保存后立即看到最新边界
     await syncTreeLight()
-    // 已保存：跳过"未保存新绘边界"确认，避免误弹"边界还未保存"提示
-    // 定位到新/更新的网格（视野+表单），优先用返回的id，其次按名称匹配
-    const target = flatTree.value.find(n => (form.value.id && n.id === form.value.id) || n.gridName === payload.gridName)
-    if (target) selectGrid(target, true, true)
-    else resetForm()
+    // 保存成功后完全回到初始状态（无选中、无表单、按钮禁用）
+    selectedId.value = null
+    selectedGrid.value = null
+    highlight(0)
+    formVisible.value = false
+    setCurrentPolygon(null)
+    tipText.value = '点击左侧网格查看/调整区域；选中后可拖拽顶点或重绘边界'
+    notify(`网格${form.value.id ? '已更新' : '已创建'}：${payload.gridName}`, 'success')
   } catch (e: any) {
     notify(`保存失败：${e?.message || '服务器内部异常，请稍后重试'}`)
   } finally {
@@ -745,6 +747,10 @@ async function removeGrid() {
     notify('网格已删除', 'success')
     selectedId.value = null
     selectedGrid.value = null
+    // 隐藏右侧表单并清理状态，完全回到初始状态（包括提示文字）
+    formVisible.value = false
+    setCurrentPolygon(null)
+    tipText.value = '点击左侧网格查看/调整区域；选中后可拖拽顶点或重绘边界'
     resetForm()
     await syncTreeLight()
   } catch (e: any) {
