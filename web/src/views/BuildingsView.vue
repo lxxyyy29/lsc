@@ -132,6 +132,7 @@ const emptyForm = () => ({
   buildingNo: '', address: '', householdCount: null as number | null,
   landlordName: '', landlordPhone: '', fireRiskLevel: '',
   isGroupRental: 0 as number, gridId: null as number | null, remark: '',
+  status: 'ACTIVE',
 })
 const form = ref(emptyForm())
 
@@ -183,6 +184,7 @@ function openEdit(b: any) {
     fireRiskLevel: b.fireRiskLevel || '',
     isGroupRental: b.isGroupRental ? 1 : 0,
     gridId: b.gridId || null, remark: b.remark || '',
+    status: b.status || 'ACTIVE',
   }
   showForm.value = true
 }

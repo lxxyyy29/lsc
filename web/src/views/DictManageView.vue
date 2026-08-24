@@ -92,10 +92,10 @@
     <div v-if="showTypeModal" class="modal-overlay" @click.self="showTypeModal = false">
       <div class="modal-box">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ editingType ? '编辑字典' : '新增字典' }}</h3>
-        <div class="form-group">
-          <label class="form-label">字典编码 <span class="required">*</span></label>
-          <input v-model="typeForm.dictCode" class="form-input" :disabled="!!editingType" placeholder="如 event_report_source" />
-          <p v-if="editingType" style="font-size:12px;color:#9ca3af;margin-top:4px;">编码已被业务引用，不可修改</p>
+        <div v-if="editingType" class="form-group">
+          <label class="form-label">字典编码</label>
+          <input v-model="typeForm.dictCode" class="form-input" disabled placeholder="如 event_report_source" />
+          <p style="font-size:12px;color:#9ca3af;margin-top:4px;">编码已被业务引用，不可修改；新增时系统自动生成</p>
         </div>
         <div class="form-group">
           <label class="form-label">字典名称 <span class="required">*</span></label>
@@ -123,10 +123,11 @@
     <div v-if="showItemModal" class="modal-overlay" @click.self="showItemModal = false">
       <div class="modal-box">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ editingItem ? '编辑字典项' : '新增字典项' }}</h3>
-        <div class="form-group">
+        <div v-if="editingItem" class="form-group">
           <label class="form-label">值 <span class="required">*</span></label>
           <input v-model="itemForm.itemValue" class="form-input" placeholder="存入业务字段的值，如 GRID_MEMBER" />
         </div>
+        <p v-else style="font-size:12px;color:#9ca3af;margin:0 0 14px;">值由系统自动生成，保存后可在列表中查看</p>
         <div class="form-group">
           <label class="form-label">显示名 <span class="required">*</span></label>
           <input v-model="itemForm.itemLabel" class="form-input" placeholder="下拉框展示的文字，如 网格员上报" />
@@ -191,8 +192,12 @@ async function saveType() {
       await updateDictType(editingType.value.id, { dictName: typeForm.dictName, status: typeForm.status, remark: typeForm.remark })
       showMessage('保存成功', 'success')
     } else {
-      if (!typeForm.dictCode.trim()) { showMessage('请填写字典编码', 'warning'); return }
-      if (!/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(typeForm.dictCode.trim())) { showMessage('字典编码仅支持字母开头，由字母/数字/下划线/中划线组成', 'warning'); return }
+      // 新增字典：编码由系统自动生成（DICT_ + 时间戳），无需填写
+      const payload: any = { dictName: typeForm.dictName, status: typeForm.status, remark: typeForm.remark }
+      if (typeForm.dictCode.trim()) {
+        if (!/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(typeForm.dictCode.trim())) { showMessage('字典编码仅支持字母开头，由字母/数字/下划线/中划线组成', 'warning'); return }
+        payload.dictCode = typeForm.dictCode.trim()
+      }
       await createDictType({ dictCode: typeForm.dictCode.trim(), dictName: typeForm.dictName, status: typeForm.status, remark: typeForm.remark })
       showMessage('新增成功', 'success')
     }
@@ -230,13 +235,16 @@ function openItemForm(i: DictItem | null) {
 
 async function saveItem() {
   if (!selectedType.value) return
-  if (!itemForm.itemValue.trim() || !itemForm.itemLabel.trim()) { showMessage('请填写值和显示名', 'warning'); return }
+  if (!itemForm.itemLabel.trim()) { showMessage('请填写显示名', 'warning'); return }
   try {
     if (editingItem.value) {
       await updateDictItem(editingItem.value.id, { ...itemForm })
       showMessage('保存成功', 'success')
     } else {
-      await createDictItem(selectedType.value.dictCode, { ...itemForm })
+      // 新增字典项：值由系统自动生成（ITEM_ + 时间戳），仅传显示名等
+      const payload: any = { ...itemForm }
+      delete payload.itemValue
+      await createDictItem(selectedType.value.dictCode, payload)
       showMessage('新增成功', 'success')
     }
     showItemModal.value = false

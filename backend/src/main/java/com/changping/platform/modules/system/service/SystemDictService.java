@@ -54,10 +54,12 @@ public class SystemDictService {
                 rs.getString("remark")), dictCode);
     }
 
-    /** 创建字典类型，编码唯一 */
+    /** 创建字典类型，编码唯一；前端未传编码时自动生成（DICT_ + 时间戳） */
     @Transactional
     public DictTypeItem createType(UpsertTypeRequest request) {
-        String dictCode = requireText(request.dictCode(), "字典编码不能为空").trim();
+        String dictCode = StringUtils.hasText(request.dictCode())
+                ? request.dictCode().trim()
+                : "DICT_" + System.currentTimeMillis();
         String dictName = requireText(request.dictName(), "字典名称不能为空").trim();
         Integer exists = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM sys_dict_type WHERE dict_code = ?", Integer.class, dictCode);
@@ -93,11 +95,13 @@ public class SystemDictService {
         jdbcTemplate.update("DELETE FROM sys_dict_type WHERE id = ?", id);
     }
 
-    /** 新增字典项，同一字典下值唯一 */
+    /** 新增字典项，同一字典下值唯一；前端未传值时自动生成（ITEM_ + 时间戳） */
     @Transactional
     public DictItem createItem(String dictCode, UpsertItemRequest request) {
         requireType(dictCode);
-        String itemValue = requireText(request.itemValue(), "字典项值不能为空").trim();
+        String itemValue = StringUtils.hasText(request.itemValue())
+                ? request.itemValue().trim()
+                : "ITEM_" + System.currentTimeMillis();
         String itemLabel = requireText(request.itemLabel(), "字典项名称不能为空").trim();
         Integer exists = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM sys_dict_item WHERE dict_code = ? AND item_value = ?",

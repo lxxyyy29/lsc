@@ -132,6 +132,7 @@ const emptyForm = () => ({
   contactName: '', contactPhone: '',
   fireFacilities: '', riskTags: '',
   gridId: null as number | null, remark: '',
+  status: 'ACTIVE',
 })
 const form = ref(emptyForm())
 
@@ -174,6 +175,7 @@ function openEdit(p: any) {
     contactName: p.contactName || '', contactPhone: p.contactPhone || '',
     fireFacilities: p.fireFacilities || '', riskTags: p.riskTags || '',
     gridId: p.gridId || null, remark: p.remark || '',
+    status: p.status || 'ACTIVE',
   }
   showForm.value = true
 }
