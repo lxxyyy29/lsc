@@ -201,14 +201,14 @@ const filters = reactive({
 const dateRange = ref<[string, string] | null>(null)
 const showArchived = ref(false)
 
-// 字典数据接口返回格式
+// 字典数据接口返回格式（与 src/api/index.ts 的 DictItem 一致）
 interface DictItem {
   id: number
   dictCode: string
   itemValue: string
   itemLabel: string
   sortOrder: number
-  status: 'ACTIVE' | 'INACTIVE'
+  status: string
   remark: string | null
 }
 
