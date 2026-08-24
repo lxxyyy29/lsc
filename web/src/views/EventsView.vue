@@ -39,22 +39,15 @@
           <option value="12345">12345热线</option>
           <option value="PROPERTY_REPORT">物业上报</option>
         </select>
-        <!-- 一体化日期范围（daterange 风格）：开始日期 至 结束日期；空值时用 text 类型显示占位符，聚焦切回 date 弹出选择器 -->
-        <div class="date-range">
-          <span class="date-field">
-            <i class="fas fa-calendar"></i>
-            <input v-model="filters.startDate" :type="filters.startDate ? 'date' : 'text'" placeholder="开始日期"
-              @focus="($event.target as HTMLInputElement).type = 'date'"
-              @blur="dateInputBlur($event, 'startDate')" />
-          </span>
-          <span class="date-sep">至</span>
-          <span class="date-field">
-            <input v-model="filters.endDate" :type="filters.endDate ? 'date' : 'text'" placeholder="结束日期"
-              @focus="($event.target as HTMLInputElement).type = 'date'"
-              @blur="dateInputBlur($event, 'endDate')" />
-          </span>
-          <button v-if="filters.startDate || filters.endDate" type="button" class="date-clear" title="清除日期" @click="filters.startDate = ''; filters.endDate = ''">✕</button>
-        </div>
+        <!-- 日期范围：Element Plus daterange（点查询生效，clearable 自带清空） -->
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          value-format="YYYY-MM-DD"
+        />
         <button @click="loadData" class="filter-action"><i class="fas fa-search"></i> 查询</button>
         <label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#6b7280;margin-left:8px;white-space:nowrap;">
           <input type="checkbox" v-model="showArchived" @change="loadData" /> 显示已归档
@@ -203,6 +196,9 @@ const filters = reactive({
   startDate: '',
   endDate: '',
 })
+
+// 日期范围筛选：[开始, 结束]，value 为 YYYY-MM-DD 字符串
+const dateRange = ref<[string, string] | null>(null)
 const showArchived = ref(false)
 
 // 前端过滤：默认隐藏已归档事件，保持办理界面清爽
@@ -213,15 +209,6 @@ const displayList = computed(() => {
 
 function goDetail(e: any) {
   detailEventId.value = e.id || e.externalEventId
-}
-
-// 日期输入失焦：未选择时切回 text 类型以重新显示占位符（原生 date 输入无法显示 placeholder）
-function dateInputBlur(e: Event, field: 'startDate' | 'endDate') {
-  const input = e.target as HTMLInputElement
-  if (!input.value) {
-    input.type = 'text'
-    filters[field] = ''
-  }
 }
 
 // 展示隐藏切换：隐藏后监管大屏/GIS 等面板不再展示，仅本闭环列表可见
@@ -324,9 +311,11 @@ async function loadData() {
     if (filters.status) params.status = filters.status
     if (filters.urgencyLevel) params.urgencyLevel = filters.urgencyLevel
     if (filters.sourceSystem) params.sourceSystem = filters.sourceSystem
-    if (filters.startDate) params.startDate = filters.startDate
-    if (filters.endDate) params.endDate = filters.endDate
     if (showArchived.value) params.includeArchived = true
+    if (dateRange.value && dateRange.value.length === 2) {
+      if (dateRange.value[0]) params.startDate = dateRange.value[0]
+      if (dateRange.value[1]) params.endDate = dateRange.value[1]
+    }
     const result = await getEvents(params)
     list.value = result?.items || result?.list || []
     total.value = result?.total || list.value.length

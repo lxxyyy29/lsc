@@ -193,7 +193,6 @@ async function loadData() {
   try {
     data.value = await getBigScreenData() || {}
   } catch (e) {
-    console.error('加载大屏数据失败:', e)
   } finally {
     loading.value = false
   }
@@ -290,24 +289,43 @@ function onFullscreenChange() {
   setTimeout(() => mapInstance?.resize?.(), 100)
 }
 
-// 初始化监管地图：标准底图 + 社区/网格轮廓 + 可交互事件点位
-async function initMap() {
-  let tree: any[] = []
-  let activeEvents: any[] = []
-  try {
-    tree = await getGridTree() || []
-  } catch (e) { /* 网格树加载失败不阻断大屏 */ }
-  try {
-    const result = await getEvents({ excludeHidden: true })
-    activeEvents = (result.items || []).filter((e: any) => !e.archived)
-  } catch (e) { /* 事件加载失败不阻断大屏 */ }
-  if (!tree.length) return
-
+// 初始化监管地图底图（仅加载高德 API 和创建空地图实例）
+async function initMapBase() {
   try {
     ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
     const AMap = await AMapLoader.load({ key: '5e00e01d2d2b6ca9e1eed533a15572e4', version: '2.0', plugins: ['AMap.Polygon', 'AMap.Marker'] })
     mapInstance = new AMap.Map('bsMap', { zoom: 14, center: [113.939521, 22.971231], mapStyle: 'amap://styles/normal' })
+  } catch (e) {
+  }
+}
+
+// 在已有地图实例上叠加业务数据（网格轮廓 + 事件点位）
+async function overlayData() {
+  if (!mapInstance) {
+    return
+  }
+
+  let tree: any[] = []
+  let activeEvents: any[] = []
+
+  try {
+    tree = await getGridTree() || []
+  } catch (e) {
+  }
+
+  try {
+    const result = await getEvents({ excludeHidden: true })
+    activeEvents = (result.items || []).filter((e: any) => !e.archived)
+  } catch (e) {
+  }
+
+  if (!tree.length && !activeEvents.length) {
+    return
+  }
+
+  try {
     const map = mapInstance
+    const AMap = (window as any).AMap
 
     // 绘制网格轮廓（社区底图 + 大网格 + 小网格），纯展示不抢事件交互
     const drawPolygons = (nodes: any[]) => {
@@ -332,7 +350,10 @@ async function initMap() {
         if (node.children) drawPolygons(node.children)
       }
     }
-    drawPolygons(tree)
+
+    if (tree.length) {
+      drawPolygons(tree)
+    }
 
     // 事件点位：悬停放大提示、点击弹出详情卡片
     for (const evt of activeEvents) {
@@ -371,19 +392,32 @@ async function initMap() {
         map.setCenter([evt.longitude, evt.latitude])
       })
     }
+
+    if (activeEvents.length) {
+    }
   } catch (e) {
-    console.error('监管地图初始化失败:', e)
   }
+}
+
+// 完整初始化流程（兼容旧接口）：先加载底图，再叠加数据
+async function initMap() {
+  await initMapBase()
+  await overlayData()
 }
 
 onMounted(async () => {
   updateTime()
+
+  await initMapBase()
+
   await loadData()
-  await initMap()
+  await overlayData()
+
   document.addEventListener('fullscreenchange', onFullscreenChange)
-  timer = window.setInterval(() => {
+  timer = window.setInterval(async () => {
     updateTime()
-    loadData()  // 每 60 秒刷新数据
+    await loadData()
+    await overlayData()
   }, 60000)
 })
 

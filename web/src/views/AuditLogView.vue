@@ -20,10 +20,16 @@
         </select>
         <input v-model="filters.recordId" class="filter-input" placeholder="记录ID" @keyup.enter="page = 1; loadData()" />
         <input v-model="filters.operatorName" class="filter-input" placeholder="操作人" @keyup.enter="page = 1; loadData()" />
-        <input v-model="filters.startTime" type="datetime-local" class="filter-input" />
-        <span style="color:#9ca3af;font-size:12px;">至</span>
-        <input v-model="filters.endTime" type="datetime-local" class="filter-input" />
-        <button @click="quickToday" class="filter-action ghost" title="筛选今天的数据">今天</button>
+        <el-date-picker
+          v-model="dateRange"
+          type="datetimerange"
+          range-separator="至"
+          start-placeholder="开始时间"
+          end-placeholder="结束时间"
+          format="YYYY-MM-DD HH:mm"
+          value-format="YYYY-MM-DDTHH:mm"
+          @change="page = 1; loadData()"
+        />
         <button @click="page = 1; loadData()" class="filter-action"><i class="fas fa-search"></i>查询</button>
         <button @click="resetFilters" class="filter-action ghost">重置</button>
       </div>
@@ -221,27 +227,17 @@ const filters = reactive({
   operationType: '',
   recordId: '',
   operatorName: '',
-  startTime: '',
-  endTime: '',
 })
 
-// 快捷筛选：今天 00:00 ~ 23:59，并立即查询
-function quickToday() {
-  const now = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  filters.startTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T00:00`
-  filters.endTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T23:59`
-  page.value = 1
-  loadData()
-}
+// 时间段筛选：[开始, 结束]，value 与原 datetime-local 一致为 YYYY-MM-DDTHH:mm 字符串
+const dateRange = ref<[string, string] | null>(null)
 
 function resetFilters() {
   filters.tableName = ''
   filters.operationType = ''
   filters.recordId = ''
   filters.operatorName = ''
-  filters.startTime = ''
-  filters.endTime = ''
+  dateRange.value = null
   page.value = 1
   loadData()
 }
@@ -314,9 +310,10 @@ async function loadData() {
     if (filters.tableName) params.tableName = filters.tableName
     if (filters.operationType) params.operationType = filters.operationType
     if (filters.recordId) params.recordId = filters.recordId
-    if (filters.operatorName) params.operatorName = filters.operatorName
-    if (filters.startTime) params.startTime = filters.startTime
-    if (filters.endTime) params.endTime = filters.endTime
+    if (dateRange.value && dateRange.value.length === 2) {
+      if (dateRange.value[0]) params.startTime = dateRange.value[0]
+      if (dateRange.value[1]) params.endTime = dateRange.value[1]
+    }
     const result = await getAuditLogs(params)
     items.value = result?.items || []
     total.value = result?.total || 0

@@ -776,7 +776,6 @@ function toggleLayers() {
     const AMap = (window as any).AMap
     const HeatMapCls = AMap?.HeatMap || AMap?.Heatmap
     if (!HeatMapCls) {
-      console.warn('[热力图] AMap.HeatMap 插件未加载')
       layerState.heatmap = false
       return
     }
@@ -1246,7 +1245,9 @@ async function reload() {
   fatalErrors.value = []
   loadError.value = ''
   const { tree, stats } = await loadData()
-  if (fatalErrors.value.length) return
+  if (fatalErrors.value.length) {
+    return
+  }
   if (mapInstance) { mapInstance.destroy(); mapInstance = null }
   await initMap(tree)
   renderCharts(stats)
@@ -1260,8 +1261,17 @@ onMounted(async () => {
   resizeHandler = () => { chartRing?.resize?.(); chartTrend?.resize?.(); chartRank?.resize?.(); chartSparkBottom?.resize?.() }
   window.addEventListener('resize', resizeHandler)
 
+  await initMap([])
+
   const { tree, stats } = await loadData()
-  if (fatalErrors.value.length) return
+  if (fatalErrors.value.length) {
+    return
+  }
+
+  if (mapInstance) {
+    mapInstance.destroy()
+    mapInstance = null
+  }
   await initMap(tree)
   renderCharts(stats)
 })

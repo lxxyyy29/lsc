@@ -138,8 +138,8 @@ function openEdit(r: any) {
 
 async function handleSave() {
   fieldError.value = { eventType: false, targetRoleCode: false }
-  if (!form.value.eventType?.trim()) { fieldError.value.eventType = true; showMessage('请填写事件类型（必填项用红色框标识）'); return }
-  if (!form.value.targetRoleCode) { fieldError.value.targetRoleCode = true; showMessage('请选择目标角色（必填项用红色框标识）'); return }
+  if (!form.value.eventType?.trim()) { fieldError.value.eventType = true; showMessage('请填写事件类型'); return }
+  if (!form.value.targetRoleCode) { fieldError.value.targetRoleCode = true; showMessage('请选择目标角色'); return }
   try {
     const payload = {
       eventType: form.value.eventType.trim(),
