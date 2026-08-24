@@ -106,9 +106,7 @@
               <td style="font-size:12px;color:#6b7280;">{{ e.occurredAt }}</td>
               <td>
                 <button @click="goDetail(e)" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;margin-right:4px;">详情</button>
-                <button v-if="e.currentStatus === 'PENDING_AUDIT'" @click="handleAudit(e.id, 'pass')" style="padding:4px 10px;border:none;border-radius:4px;background:#52c41a;color:#fff;font-size:12px;cursor:pointer;margin-right:4px;">通过</button>
-                <button v-if="e.currentStatus === 'PENDING_AUDIT'" @click="handleAudit(e.id, 'reject')" style="padding:4px 10px;border:none;border-radius:4px;background:#ff4d4f;color:#fff;font-size:12px;cursor:pointer;margin-right:4px;">驳回</button>
-                <button v-if="['WAITING_DISPATCH', 'IN_AUDIT'].includes(e.currentStatus)" @click="goDetail(e)" style="padding:4px 10px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;margin-right:4px;">操作</button>
+                <button v-if="['PENDING_AUDIT', 'WAITING_DISPATCH', 'IN_AUDIT'].includes(e.currentStatus)" @click="goDetail(e)" style="padding:4px 10px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;margin-right:4px;">操作</button>
                 <button @click="toggleHidden(e)" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;margin-left:4px;color:#6b7280;">{{ e.hidden ? '显示' : '隐藏' }}</button>
                 <button @click="handleDelete(e)" style="padding:4px 10px;border:1px solid #ffccc7;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;margin-left:4px;color:#ff4d4f;">删除</button>
               </td>
@@ -141,10 +139,15 @@
       </div>
     </div>
 
-    <!-- 事件详情弹窗（列表项点击直达，派单/关闭/归档操作后自动刷新列表） -->
+    <!-- 事件详情弹窗（列表项点击直达，派单/关闭/归档操作后自动刷新列表；通过/驳回按钮在弹窗右下角） -->
     <div v-if="detailEventId" class="modal-overlay" @click.self="detailEventId = null">
       <div class="modal-box" style="width:960px;max-width:96vw;max-height:92vh;overflow-y:auto;">
         <EventDetailView embedded :event-id="detailEventId" @close="detailEventId = null" @changed="loadData" />
+        <!-- 审核操作：仅待审核事件显示，位于弹窗右下角 -->
+        <div v-if="detailEvent?.currentStatus === 'PENDING_AUDIT'" style="display:flex;justify-content:flex-end;gap:8px;padding-top:14px;border-top:1px solid #e5e7eb;margin-top:14px;position:sticky;bottom:0;background:#fff;">
+          <button @click="handleAudit(detailEvent.id, 'reject')" style="padding:8px 24px;border:none;border-radius:6px;background:#ff4d4f;color:#fff;font-size:13px;cursor:pointer;">驳回</button>
+          <button @click="handleAudit(detailEvent.id, 'pass')" style="padding:8px 24px;border:none;border-radius:6px;background:#52c41a;color:#fff;font-size:13px;cursor:pointer;">通过</button>
+        </div>
       </div>
     </div>
 
@@ -182,6 +185,7 @@ const totalPages = ref(0)
 // 弹窗交互：创建事件与事件详情均不离开列表页
 const showCreateModal = ref(false)
 const detailEventId = ref<string | number | null>(null)
+const detailEvent = ref<any>(null)
 
 function onEventCreated() {
   showCreateModal.value = false
@@ -208,6 +212,7 @@ const displayList = computed(() => {
 })
 
 function goDetail(e: any) {
+  detailEvent.value = e
   detailEventId.value = e.id || e.externalEventId
 }
 

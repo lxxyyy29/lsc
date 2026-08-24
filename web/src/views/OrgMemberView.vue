@@ -9,9 +9,6 @@
         <button @click="openAssign" class="btn btn-default">
           <i class="fas fa-sitemap"></i>人员划分
         </button>
-        <button @click="showAdd = true" class="btn btn-primary">
-          <i class="fas fa-plus"></i>添加组织人员
-        </button>
       </div>
     </div>
 
@@ -70,15 +67,16 @@
         </table>
         <div v-if="!list.length" class="empty-state">
           <i class="fas fa-users"></i>
-          <p>暂无网格员，点击"添加网格员"开始添加</p>
+          <p>暂无组织人员，请通过后台账号管理添加</p>
         </div>
       </template>
     </div>
 
-    <!-- 添加/编辑弹窗 -->
-    <div v-if="showAdd || showEdit" class="modal-overlay" @click.self="closeModal">
+    <!-- 编辑弹窗（本模块仅用于组长↔网格员关系绑定，不提供添加、不修改人员类型/职务） -->
+    <div v-if="showEdit" class="modal-overlay" @click.self="closeModal">
       <div class="modal-box">
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ showEdit ? '编辑组织人员' : '添加组织人员' }}</h3>
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">编辑组织人员</h3>
+        <p style="font-size:12px;color:#6b7280;margin:0 0 12px;">人员类型与职务由后台账号统一管理，此处仅可调整联系方式与所属网格</p>
         <div class="form-group">
           <label class="form-label">姓名 <span class="required">*</span></label>
           <input v-model="form.name" class="form-input" placeholder="请输入姓名" />
@@ -86,16 +84,6 @@
         <div class="form-group">
           <label class="form-label">电话</label>
           <input v-model="form.phone" class="form-input" placeholder="请输入电话" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">人员类型 <span class="required">*</span></label>
-          <select v-model="form.memberType" class="form-select">
-            <option v-for="t in memberTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">职务</label>
-          <input v-model="form.position" class="form-input" placeholder="如：网格员、网格长" />
         </div>
         <div class="form-group">
           <label class="form-label">所属社区</label>
@@ -120,7 +108,7 @@
         </div>
         <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
           <button @click="closeModal" class="btn btn-default">取消</button>
-          <button @click="handleSubmit" class="btn btn-primary">{{ showEdit ? '保存' : '添加' }}</button>
+          <button @click="handleSubmit" class="btn btn-primary">保存</button>
         </div>
       </div>
     </div>
@@ -346,8 +334,8 @@ async function handleSubmit() {
       await http.put(`/community/org-members/${form.value.id}`, form.value)
       showMessage('保存成功')
     } else {
-      await http.post('/community/org-members', form.value)
-      showMessage('添加成功')
+      showMessage('请通过后台账号管理添加组织人员')
+      return
     }
     closeModal()
     await fetchData()
