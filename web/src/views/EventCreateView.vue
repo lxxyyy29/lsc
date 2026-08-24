@@ -94,10 +94,12 @@
       </div>
 
       <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">上报来源</label>
-        <select v-model="form.reportSource" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">上报来源 <span style="color:#ff4d4f;">*</span></label>
+        <select v-model="form.reportSource" :style="`width:100%;padding:8px 12px;border:1px solid ${errors.reportSource ? '#ff4d4f' : '#d1d5db'};border-radius:6px;font-size:13px;`">
+          <option value="">请选择</option>
           <option v-for="opt in reportSourceOptions" :key="opt.itemValue" :value="opt.itemValue">{{ opt.itemLabel }}</option>
         </select>
+        <p v-if="errors.reportSource" class="field-error">{{ errors.reportSource }}</p>
       </div>
 
       <!-- 页面模式操作栏吸底：弹窗内滚动时始终保持在可视区右下角 -->
@@ -181,13 +183,14 @@ let markerInstance: any = null
 let AMapLib: any = null
 
 // 必填项校验错误提示：提交时逐项标红并在字段下方展示 tips，输入后自动清除
-const errors = reactive({ title: '', eventType: '', occurredAt: '', location: '' })
+const errors = reactive({ title: '', eventType: '', occurredAt: '', location: '', reportSource: '' })
 function validateRequired(): boolean {
   errors.title = form.value.title.trim() ? '' : '请输入事件标题'
   errors.eventType = form.value.eventType ? '' : '请选择事件类型'
   errors.occurredAt = form.value.occurredAt ? '' : '请选择发生时间'
   errors.location = form.value.location.trim() ? '' : '请填写事发地点'
-  const firstMsg = errors.title || errors.eventType || errors.occurredAt || errors.location
+  errors.reportSource = form.value.reportSource ? '' : '请选择上报来源'
+  const firstMsg = errors.title || errors.eventType || errors.occurredAt || errors.location || errors.reportSource
   if (firstMsg) { showMessage(firstMsg, 'warning'); return false }
   return true
 }
@@ -199,7 +202,7 @@ const form = ref({
   occurredAt: new Date().toISOString().slice(0, 16),
   location: '',
   description: '',
-  reportSource: 'GRID_MEMBER',
+  reportSource: '',
   gridId: null as number | null,
   longitude: null as number | null,
   latitude: null as number | null,

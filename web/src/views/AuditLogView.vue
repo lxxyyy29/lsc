@@ -310,6 +310,7 @@ async function loadData() {
     if (filters.tableName) params.tableName = filters.tableName
     if (filters.operationType) params.operationType = filters.operationType
     if (filters.recordId) params.recordId = filters.recordId
+    if (filters.operatorName) params.operatorName = filters.operatorName
     if (dateRange.value && dateRange.value.length === 2) {
       if (dateRange.value[0]) params.startTime = dateRange.value[0]
       if (dateRange.value[1]) params.endTime = dateRange.value[1]
