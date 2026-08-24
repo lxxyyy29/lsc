@@ -349,6 +349,34 @@ public class AlarmEventMongoService {
     }
 
     /**
+     * @Description //存量回填紧急程度：将 MySQL biz_event.urgency_level 同步到 Mongo 缺失 urgencyLevel 的文档
+     * @Param [externalIdToUrgency 外部事件ID → 紧急程度]
+     * @return int 更新条数
+     */
+    public int backfillUrgencyLevels(Map<String, String> externalIdToUrgency) {
+        if (externalIdToUrgency == null || externalIdToUrgency.isEmpty()) {
+            return 0;
+        }
+        int updated = 0;
+        for (Map.Entry<String, String> entry : externalIdToUrgency.entrySet()) {
+            if (!StringUtils.hasText(entry.getKey()) || !StringUtils.hasText(entry.getValue())) {
+                continue;
+            }
+            try {
+                var result = mongoTemplate.updateMulti(
+                        new Query(Criteria.where("externalEventId").is(entry.getKey().trim())
+                                .and("urgencyLevel").exists(false)),
+                        new Update().set("urgencyLevel", entry.getValue().trim()),
+                        AlarmEventDocument.class);
+                updated += result.getModifiedCount();
+            } catch (Exception ignore) {
+                // 单条失败不影响整体回填
+            }
+        }
+        return updated;
+    }
+
+    /**
      * @Description //设置事件归档标记：归档后默认列表/看板不再展示（保持与 MySQL archived 一致）
      * @Param [sqlEventId 事件主键ID, externalEventId 外部事件ID, archived 是否归档]
      * @return boolean 是否命中并更新了文档

@@ -183,7 +183,7 @@
       </div>
     </div>
     <!-- 录像回放弹窗 -->
-    <div v-if="recordVisible" class="modal-mask" @click.self="closeRecord">
+    <div v-if="recordVisible" class="modal-mask">
       <div class="modal-box record-box">
         <div class="modal-header">
           <div class="modal-title">🎞 录像回放（保留 7 天）</div>

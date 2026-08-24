@@ -20,6 +20,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -35,6 +38,7 @@ import org.springframework.util.StringUtils;
 public class EventServiceImpl implements EventService {
 
     private static final String EVENT_INTAKE = "EVENT_INTAKE";
+    private static final Logger log = LoggerFactory.getLogger(EventServiceImpl.class);
 
     private final EventMapper eventMapper;
     private final AlarmWorkflowStatusSyncService alarmWorkflowStatusSyncService;
@@ -60,6 +64,32 @@ public class EventServiceImpl implements EventService {
         this.alarmEventMongoService = alarmEventMongoService;
         this.jdbcTemplate = jdbcTemplate;
         this.bizManagementService = bizManagementService;
+    }
+
+    /**
+     * 启动时回填存量事件紧急程度：Mongo 文档缺少 urgencyLevel 的历史事件，
+     * 从 MySQL biz_event.urgency_level 同步补齐（否则列表按紧急程度筛选查不到存量数据）
+     */
+    @PostConstruct
+    public void backfillUrgencyOnStartup() {
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT external_event_id, urgency_level FROM biz_event WHERE external_event_id IS NOT NULL");
+            Map<String, String> externalIdToUrgency = new HashMap<>();
+            for (Map<String, Object> row : rows) {
+                Object id = row.get("external_event_id");
+                Object level = row.get("urgency_level");
+                if (id != null && level != null) {
+                    externalIdToUrgency.put(String.valueOf(id), String.valueOf(level));
+                }
+            }
+            int updated = alarmEventMongoService.backfillUrgencyLevels(externalIdToUrgency);
+            if (updated > 0) {
+                log.info("[urgency-backfill] 存量事件紧急程度回填完成，共 {} 条", updated);
+            }
+        } catch (Exception e) {
+            log.warn("[urgency-backfill] 存量事件紧急程度回填失败（不影响启动）: {}", e.getMessage());
+        }
     }
 
     /**
