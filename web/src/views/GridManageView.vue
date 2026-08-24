@@ -192,15 +192,22 @@ let mapClickHandler: ((e: any) => void) | null = null
 let mapDblHandler: (() => void) | null = null
 const editing = ref(false)
 const saving = ref(false)
+// 追踪是否有未保存的修改（用于关闭确认）
+const hasUnsavedChanges = ref(false)
 // 右侧表单默认隐藏：仅点击「新增网格」或选中网格进入编辑时才弹出，避免空表单遮挡地图
 const formVisible = ref(false)
 watch(formVisible, () => {
   // 布局变化后地图容器宽度变了，需要 resize 才能铺满
   nextTick(() => setTimeout(() => map.value?.resize(), 60))
 })
-function closeForm() {
+async function closeForm() {
   if (drawing.value) cancelDraw()
+  if (editing.value) finishEditArea()
+  // 有任何未保存的修改时（新增或编辑模式），都需要确认
+  if (hasUnsavedChanges.value && !await confirmLeaveUnsaved()) return
   formVisible.value = false
+  setCurrentPolygon(null)
+  hasUnsavedChanges.value = false
 }
 const tipText = ref('点击左侧网格查看/调整区域；选中后可拖拽顶点或重绘边界')
 
@@ -224,6 +231,16 @@ const form = ref<any>({
   remark: '',
   area: null
 })
+
+// 控制是否监听表单变化（加载数据时暂时禁用）
+let enableFormWatch = true
+
+// 监听表单字段变化，标记为未保存状态
+watch(form, () => {
+  if (formVisible.value && enableFormWatch) {
+    hasUnsavedChanges.value = true
+  }
+}, { deep: true })
 
 const roiPoints = computed(() => {
   if (!currentPolygon.value) return 0
@@ -392,6 +409,8 @@ function highlight(id: number) {
 /* ---------- 网格选择 / 表单 ---------- */
 
 function fillForm(g: GridNode) {
+  enableFormWatch = false
+  hasUnsavedChanges.value = false
   form.value = {
     id: g.id,
     gridName: g.gridName || '',
@@ -403,14 +422,15 @@ function fillForm(g: GridNode) {
     remark: g.remark || '',
     area: g.area ?? null
   }
+  // 下一帧恢复监听，避免加载数据时误触发
+  nextTick(() => { enableFormWatch = true })
 }
 
 async function selectGrid(g: GridNode, skipHighlight = false, skipUnsavedCheck = false) {
   if (editing.value) finishEditArea()
   if (drawing.value) cancelDraw()
-  // 有未保存的新绘边界时先确认，避免点一下已有网格就把刚画的图静默清掉
-  // （保存成功后的自动定位跳过该检查，避免误弹"边界还未保存"提示）
-  if (!skipUnsavedCheck && !form.value.id && roiPoints.value >= 3 && !await confirmLeaveUnsaved()) return
+  // 有未保存的修改时（新增或编辑模式），都需要确认，避免丢失数据
+  if (!skipUnsavedCheck && hasUnsavedChanges.value && !await confirmLeaveUnsaved()) return
   selectedId.value = g.id
   selectedGrid.value = g
   fillForm(g)
@@ -461,7 +481,9 @@ function updateFormFromPolygon(poly: any) {
 
 async function startCreate() {
   if (editing.value) finishEditArea()
-  if (!form.value.id && roiPoints.value >= 3 && !await confirmLeaveUnsaved()) return
+  if (hasUnsavedChanges.value && !await confirmLeaveUnsaved()) return
+  hasUnsavedChanges.value = false
+  enableFormWatch = false
   formVisible.value = true
   selectedId.value = null
   selectedGrid.value = null
@@ -471,6 +493,7 @@ async function startCreate() {
     id: null, gridName: '', gridCode: '', parentId: null, gridLevel: null,
     sortOrder: flatTree.value.length + 1, status: 'ACTIVE', remark: '', area: null
   }
+  nextTick(() => { enableFormWatch = true })
   tipText.value = '新增网格：请先在地图上绘制边界，再填写信息保存'
   startDraw()
 }
@@ -488,7 +511,9 @@ function resetForm() {
   if (selectedGrid.value) {
     selectGrid(selectedGrid.value)
   } else {
+    enableFormWatch = false
     form.value = { id: null, gridName: '', gridCode: '', parentId: null, gridLevel: null, sortOrder: 0, status: 'ACTIVE', remark: '', area: null }
+    nextTick(() => { enableFormWatch = true })
   }
 }
 
@@ -593,6 +618,7 @@ function finishDraw() {
   editBackupPath = pts.map(p => [p[0], p[1]])
   polyEditor.value = new AMapLib.value.PolyEditor(map.value, poly)
   polyEditor.value.open()
+  hasUnsavedChanges.value = true
   tipText.value = '边界绘制完成，可拖动白色顶点微调区域；满意后填写右侧信息保存，「完成拖拽」退出拖动模式'
 }
 function cancelDraw() {
@@ -644,6 +670,7 @@ function finishEditArea() {
   polyEditor.value?.close()
   polyEditor.value = null
   editing.value = false
+  hasUnsavedChanges.value = true
   editBackupPath = null
   updateFormFromPolygon(currentPolygon.value)
   tipText.value = '拖拽完成，点击右侧「保存网格」后生效'
@@ -728,6 +755,7 @@ async function saveGrid() {
     highlight(0)
     formVisible.value = false
     setCurrentPolygon(null)
+    hasUnsavedChanges.value = false
     tipText.value = '点击左侧网格查看/调整区域；选中后可拖拽顶点或重绘边界'
     notify(`网格${form.value.id ? '已更新' : '已创建'}：${payload.gridName}`, 'success')
   } catch (e: any) {
@@ -750,6 +778,7 @@ async function removeGrid() {
     // 隐藏右侧表单并清理状态，完全回到初始状态（包括提示文字）
     formVisible.value = false
     setCurrentPolygon(null)
+    hasUnsavedChanges.value = false
     tipText.value = '点击左侧网格查看/调整区域；选中后可拖拽顶点或重绘边界'
     resetForm()
     await syncTreeLight()
