@@ -33,6 +33,12 @@
         <button class="btn-login" :disabled="submitting" @click="handlePhoneLogin" style="color:#ffffff;">
           {{ submitting ? '登录中...' : '登 录' }}
         </button>
+        <!-- #ifdef MP-WEIXIN -->
+        <!-- 微信手机号一键登录（企业/组织认证主体可用）：授权后自动按手机号登录 -->
+        <button class="btn-wechat" open-type="getPhoneNumber" @getphonenumber="handleWechatLogin" :disabled="submitting" style="color:#07c160;">
+          <text>微信一键登录</text>
+        </button>
+        <!-- #endif -->
         <view class="test-hint">
           <text>测试验证码：123456</text>
         </view>
@@ -83,7 +89,7 @@
 import { reactive, ref } from 'vue'
 import { HttpResponseError } from '../../src/api/http'
 import { loginH5, createH5SessionFromLoginResponse, persistH5Session } from '../../src/api/auth'
-import { sendSmsCode, phoneLogin, login as residentLogin, persistResidentSession } from '../../src/api/resident'
+import { sendSmsCode, phoneLogin, login as residentLogin, persistResidentSession, wechatLogin } from '../../src/api/resident'
 
 type LoginMode = 'phone' | 'password'
 
@@ -139,6 +145,25 @@ async function handleSendCode() {
     uni.showToast({ title: '验证码已发送', icon: 'success' })
   } catch (e: any) {
     errorMessage.value = e?.message || '验证码发送失败'
+  }
+}
+
+/** 微信手机号一键登录：getPhoneNumber 回调拿 code → 后端换手机号并按角色登录 */
+async function handleWechatLogin(e: any) {
+  // 用户拒绝授权时 detail 无 code
+  if (!e?.detail?.code) {
+    errorMessage.value = '已取消微信授权'
+    return
+  }
+  errorMessage.value = ''
+  submitting.value = true
+  try {
+    const session = await wechatLogin(e.detail.code)
+    redirectByRole(session)
+  } catch (err: any) {
+    errorMessage.value = err?.message || '微信登录失败，请重试'
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -279,6 +304,19 @@ function goRegister() {
 }
 .btn-login::after { border: none; }
 .btn-login[disabled] { opacity: 0.6; }
+.btn-wechat {
+  width: 100%;
+  height: 90rpx;
+  line-height: 90rpx;
+  margin-top: 24rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid #07c160;
+  background: #ffffff;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.btn-wechat::after { border: none; }
+.btn-wechat[disabled] { opacity: 0.6; }
 .error { color: #ff4d4f; font-size: 26rpx; text-align: center; margin-top: 20rpx; display: block; }
 .test-hint { margin-top: 20rpx; text-align: center; font-size: 24rpx; color: #9ca3af; }
 .switch-row { margin-top: 24rpx; text-align: center; }

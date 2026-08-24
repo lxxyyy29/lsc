@@ -9,6 +9,7 @@ import com.changping.platform.modules.auth.security.PermissionCodes;
 import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.auth.service.SmsService;
+import com.changping.platform.modules.auth.service.WechatService;
 import com.changping.platform.modules.auth.vo.CurrentUserVo;
 import com.changping.platform.modules.auth.vo.LoginResponse;
 import com.changping.platform.modules.common.security.RateLimit;
@@ -44,6 +45,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate stringRedisTemplate;
     private final SmsService smsService;
+    private final WechatService wechatService;
 
     /** 验证码 Redis key 前缀 */
     private static final String SMS_CODE_KEY_PREFIX = "sms:code:";
@@ -59,13 +61,15 @@ public class AuthController {
      */
     public AuthController(AuthService authService, CurrentUserService currentUserService,
                           JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder,
-                          StringRedisTemplate stringRedisTemplate, SmsService smsService) {
+                          StringRedisTemplate stringRedisTemplate, SmsService smsService,
+                          WechatService wechatService) {
         this.authService = authService;
         this.currentUserService = currentUserService;
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
         this.stringRedisTemplate = stringRedisTemplate;
         this.smsService = smsService;
+        this.wechatService = wechatService;
     }
 
     /**
@@ -171,6 +175,24 @@ public class AuthController {
         stringRedisTemplate.delete(redisKey);
 
         try {
+            return ApiResponse.ok(authService.loginByPhone(phone));
+        } catch (BusinessException e) {
+            return ApiResponse.fail(e.getCode(), e.getMessage());
+        }
+    }
+
+    /**
+     * 微信手机号授权登录（方案A）：
+     * 前端 open-type=getPhoneNumber 按钮回调拿到 code → 后端换真实手机号 → 按手机号登录（复用 loginByPhone 身份判断）
+     */
+    @PostMapping("/wechat-login")
+    public ApiResponse<LoginResponse> wechatLogin(@RequestBody Map<String, String> body) {
+        String code = body.get("code");
+        try {
+            String phone = wechatService.getPhoneNumber(code);
+            if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
+                return ApiResponse.fail("WECHAT_PHONE_INVALID", "微信返回的手机号无效");
+            }
             return ApiResponse.ok(authService.loginByPhone(phone));
         } catch (BusinessException e) {
             return ApiResponse.fail(e.getCode(), e.getMessage());

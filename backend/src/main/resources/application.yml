@@ -60,6 +60,10 @@ sms:
   sign-name: ${SMS_SIGN_NAME:}
   template-code: ${SMS_TEMPLATE_CODE:}
 
+wechat:
+  appid: ${WECHAT_APPID:}
+  secret: ${WECHAT_APPSECRET:}
+
 security:
   auth:
     jwt-secret: changping-grid-community-2026-secret-key-48chars

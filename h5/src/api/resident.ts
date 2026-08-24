@@ -294,6 +294,11 @@ export async function phoneLogin(phone: string, code: string): Promise<ResidentS
   return request<ResidentSession>('post', '/auth/phone-login', { phone, code })
 }
 
+/** 微信手机号一键登录：getPhoneNumber 按钮的 code → 后端换手机号并登录（返回统一登录响应） */
+export async function wechatLogin(code: string): Promise<ResidentSession> {
+  return request<ResidentSession>('post', '/auth/wechat-login', { code })
+}
+
 export async function register(account: string, password: string, realName: string, phone: string): Promise<void> {
   await request<void>('post', '/auth/register', { account, password, realName, phone })
 }
