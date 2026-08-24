@@ -88,6 +88,12 @@ public class EventServiceImpl implements EventService {
         entity.setLocation(request.location());
         entity.setLongitude(request.longitude());
         entity.setLatitude(request.latitude());
+        // 紧急程度：创建表单三色必选；未传或非法时默认 GREEN（历史导入/三方回调兼容）
+        String urgency = request.urgencyLevel();
+        if (urgency == null || !List.of("GREEN", "YELLOW", "RED").contains(urgency)) {
+            urgency = "GREEN";
+        }
+        entity.setUrgencyLevel(urgency);
         // 事件接入后先进入待审核，由审核员审核通过后进入待派单（闭环处置）
         entity.setStatus(EventStatus.PENDING_AUDIT.name());
 
@@ -131,7 +137,7 @@ public class EventServiceImpl implements EventService {
                 externalId, "PUBLIC", "12345",
                 eventType != null ? eventType : "COMPLAINT", title, description,
                 java.time.LocalDateTime.now(), location,
-                null, null, java.util.List.of());
+                null, null, java.util.List.of(), null);
         EventDetailVo vo = createEvent(request);
         // 更新来源标记为 12345，并记录来电人信息
         jdbcTemplate.update("UPDATE biz_event SET report_source = '12345', report_user_name = ?, report_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -156,7 +162,7 @@ public class EventServiceImpl implements EventService {
                 externalId, "PROPERTY", "PROPERTY_REPORT",
                 eventType != null ? eventType : "COMPLAINT", title, description,
                 java.time.LocalDateTime.now(), locationFull.isBlank() ? "拔蛟窝社区" : locationFull,
-                null, null, java.util.List.of());
+                null, null, java.util.List.of(), null);
         EventDetailVo vo = createEvent(request);
         // 更新来源标记为 PROPERTY，记录上报人
         jdbcTemplate.update("UPDATE biz_event SET report_source = 'PROPERTY', report_user_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -179,7 +185,7 @@ public class EventServiceImpl implements EventService {
                 eventType != null && !eventType.isBlank() ? eventType : "OTHER", title, description,
                 java.time.LocalDateTime.now(),
                 location != null && !location.isBlank() ? location : "拔蛟窝社区",
-                longitude, latitude, java.util.List.of());
+                longitude, latitude, java.util.List.of(), null);
         EventDetailVo vo = createEvent(request);
         // 来源标记为 RESIDENT，记录上报人信息，便于“我的上报”与事件详情追溯
         jdbcTemplate.update("UPDATE biz_event SET report_source = 'RESIDENT', report_user_id = ?, report_user_name = ?, report_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -243,7 +249,7 @@ public class EventServiceImpl implements EventService {
      * @return PagedResult<EventDetailVo> 分页事件详情列表
      */
     @Override
-    public PagedResult<EventDetailVo> queryEvents(String externalEventId, int page, int size, String status, String startDate, String endDate, Long areaId, boolean excludeHidden) {
+    public PagedResult<EventDetailVo> queryEvents(String externalEventId, int page, int size, String status, String urgencyLevel, String startDate, String endDate, Long areaId, boolean excludeHidden, boolean includeArchived, String sourceSystem) {
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(size, 100));
 
@@ -257,8 +263,8 @@ public class EventServiceImpl implements EventService {
         LocalDateTime end = parseEndDate(endDate);
 
         // Get total count and current page directly from MongoDB (native pagination)
-        long total = alarmEventMongoService.countEvents(externalEventId, excludeStatuses, status, start, end, excludeHidden);
-        List<AlarmEventDocument> pageDocuments = alarmEventMongoService.queryEvents(externalEventId, safePage, safeSize, excludeStatuses, status, start, end, excludeHidden);
+        long total = alarmEventMongoService.countEvents(externalEventId, excludeStatuses, status, start, end, excludeHidden, urgencyLevel, includeArchived, sourceSystem);
+        List<AlarmEventDocument> pageDocuments = alarmEventMongoService.queryEvents(externalEventId, safePage, safeSize, excludeStatuses, status, start, end, excludeHidden, urgencyLevel, includeArchived, sourceSystem);
 
         if (pageDocuments.isEmpty()) {
             return PagedResult.of(List.of(), total, safePage, safeSize);
@@ -911,6 +917,8 @@ public class EventServiceImpl implements EventService {
         jdbcTemplate.update(
             "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'ARCHIVE', '系统', '归档留存', NOW())",
             entity.getId(), status, status);
+        // 同步 MongoDB 归档标记：默认列表/看板不再展示已归档事件
+        alarmEventMongoService.setArchived(id, entity.getExternalEventId(), true);
     }
 
     @Override
@@ -997,6 +1005,8 @@ public class EventServiceImpl implements EventService {
         jdbcTemplate.update(
                 "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'REOPEN', '系统', '重新打开事件', NOW())",
                 entity.getId(), EventStatus.CLOSED.name(), EventStatus.WAITING_DISPATCH.name());
+        // 同步 MongoDB：恢复为活跃事件
+        alarmEventMongoService.setArchived(eventId, entity.getExternalEventId(), false);
     }
 
     @Override

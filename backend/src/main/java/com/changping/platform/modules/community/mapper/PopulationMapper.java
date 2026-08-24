@@ -60,8 +60,9 @@ public class PopulationMapper {
         java.util.List<Object> params = new java.util.ArrayList<>();
         if (keyword != null && !keyword.isBlank()) {
             String like = "%" + keyword.trim() + "%";
-            sql.append(" AND (p.name LIKE ? OR p.phone LIKE ? OR p.address LIKE ? OR p.id_card LIKE ? OR p.building_no LIKE ?)");
-            params.add(like); params.add(like); params.add(like); params.add(like); params.add(like);
+            // 模糊匹配姓名/电话/地址/证件/楼栋/房号，并支持按网格名称搜索（如"第一网格一区和二区"）
+            sql.append(" AND (p.name LIKE ? OR p.phone LIKE ? OR p.address LIKE ? OR p.id_card LIKE ? OR p.building_no LIKE ? OR p.room_no LIKE ? OR g.grid_name LIKE ?)");
+            params.add(like); params.add(like); params.add(like); params.add(like); params.add(like); params.add(like); params.add(like);
         }
         if (householdType != null && !householdType.isBlank()) {
             sql.append(" AND p.household_type = ?");

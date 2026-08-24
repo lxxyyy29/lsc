@@ -68,6 +68,15 @@ public class AuditLogMapper {
     public List<AuditLogEntity> findByPageWithFilters(String tableName, String recordId, String operationType,
                                                        Long operatorId, String startTime, String endTime,
                                                        int page, int size) {
+        return findByPageWithFilters(tableName, recordId, operationType, operatorId, startTime, endTime, page, size, null);
+    }
+
+    /**
+     * 分页查询（增强版：支持操作类型/操作人/时间范围筛选；operatorName 按操作人模糊匹配）
+     */
+    public List<AuditLogEntity> findByPageWithFilters(String tableName, String recordId, String operationType,
+                                                       Long operatorId, String startTime, String endTime,
+                                                       int page, int size, String operatorName) {
         int offset = (Math.max(1, page) - 1) * size;
         StringBuilder sql = new StringBuilder("SELECT * FROM sys_audit_log WHERE 1=1");
         java.util.List<Object> params = new java.util.ArrayList<>();
@@ -87,6 +96,10 @@ public class AuditLogMapper {
             sql.append(" AND operator_id = ?");
             params.add(operatorId);
         }
+        if (operatorName != null && !operatorName.isEmpty()) {
+            sql.append(" AND operator_name LIKE ?");
+            params.add("%" + operatorName.trim() + "%");
+        }
         if (startTime != null && !startTime.isEmpty()) {
             sql.append(" AND operation_time >= ?");
             params.add(startTime);
@@ -103,6 +116,11 @@ public class AuditLogMapper {
 
     public long countWithFilters(String tableName, String recordId, String operationType,
                                   Long operatorId, String startTime, String endTime) {
+        return countWithFilters(tableName, recordId, operationType, operatorId, startTime, endTime, null);
+    }
+
+    public long countWithFilters(String tableName, String recordId, String operationType,
+                                  Long operatorId, String startTime, String endTime, String operatorName) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM sys_audit_log WHERE 1=1");
         java.util.List<Object> params = new java.util.ArrayList<>();
         if (tableName != null && !tableName.isEmpty()) {
@@ -120,6 +138,10 @@ public class AuditLogMapper {
         if (operatorId != null) {
             sql.append(" AND operator_id = ?");
             params.add(operatorId);
+        }
+        if (operatorName != null && !operatorName.isEmpty()) {
+            sql.append(" AND operator_name LIKE ?");
+            params.add("%" + operatorName.trim() + "%");
         }
         if (startTime != null && !startTime.isEmpty()) {
             sql.append(" AND operation_time >= ?");

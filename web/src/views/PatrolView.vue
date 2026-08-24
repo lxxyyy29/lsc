@@ -346,7 +346,7 @@ async function generateTasks() {
 async function markOverdue() {
   try {
     const count = await markOverduePatrolTasks()
-    showMessage(`标记了 ${count} 个超期任务`)
+    showMessage(count > 0 ? `标记了 ${count} 个超期任务` : '当前没有可标记的超期任务（无过期未完成的任务，或已被每日定时自动标记）')
     loadTasks()
   } catch (e: any) {
     showMessage(e?.message || '操作失败')

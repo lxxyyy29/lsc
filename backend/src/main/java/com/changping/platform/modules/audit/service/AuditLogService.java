@@ -131,8 +131,17 @@ public class AuditLogService {
     public Map<String, Object> queryPaged(String tableName, String recordId, String operationType,
                                           Long operatorId, String startTime, String endTime,
                                           int page, int size) {
-        List<AuditLogEntity> items = mapper.findByPageWithFilters(tableName, recordId, operationType, operatorId, startTime, endTime, page, size);
-        long total = mapper.countWithFilters(tableName, recordId, operationType, operatorId, startTime, endTime);
+        return queryPaged(tableName, recordId, operationType, operatorId, startTime, endTime, page, size, null);
+    }
+
+    /**
+     * 分页查询（增强版：支持操作类型/操作人/时间范围筛选；operatorName 按操作人姓名模糊匹配）
+     */
+    public Map<String, Object> queryPaged(String tableName, String recordId, String operationType,
+                                          Long operatorId, String startTime, String endTime,
+                                          int page, int size, String operatorName) {
+        List<AuditLogEntity> items = mapper.findByPageWithFilters(tableName, recordId, operationType, operatorId, startTime, endTime, page, size, operatorName);
+        long total = mapper.countWithFilters(tableName, recordId, operationType, operatorId, startTime, endTime, operatorName);
         Map<String, Object> result = new HashMap<>();
         result.put("items", items);
         result.put("total", total);

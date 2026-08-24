@@ -55,6 +55,12 @@ public class AlarmEventDocument {
      */
     private Boolean hidden;
 
+    /** 紧急程度：GREEN/YELLOW/RED，用于列表按紧急程度筛选 */
+    private String urgencyLevel;
+
+    /** 是否已归档：true=归档留存（默认列表不展示），null/false=活跃 */
+    private Boolean archived;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getExternalEventId() { return externalEventId; }
@@ -71,6 +77,10 @@ public class AlarmEventDocument {
     public void setDescription(String description) { this.description = description; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getUrgencyLevel() { return urgencyLevel; }
+    public void setUrgencyLevel(String urgencyLevel) { this.urgencyLevel = urgencyLevel; }
+    public Boolean getArchived() { return archived; }
+    public void setArchived(Boolean archived) { this.archived = archived; }
     public LocalDateTime getOccurredAt() { return occurredAt; }
     public void setOccurredAt(LocalDateTime occurredAt) { this.occurredAt = occurredAt; }
     public Location getLocation() { return location; }

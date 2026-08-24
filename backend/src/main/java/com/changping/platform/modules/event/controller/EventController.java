@@ -168,14 +168,17 @@ public class EventController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String urgencyLevel,
+            @RequestParam(required = false) String sourceSystem,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate,
             @RequestParam(required = false) Long areaId,
-            @RequestParam(defaultValue = "false") boolean excludeHidden) {
+            @RequestParam(defaultValue = "false") boolean excludeHidden,
+            @RequestParam(defaultValue = "false") boolean includeArchived) {
         permissionGuard.require(PermissionCodes.API_EVENT_LIST);
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 100);
-        return ApiResponse.ok(eventService.queryEvents(externalEventId, safePage, safeSize, status, startDate, endDate, areaId, excludeHidden));
+        return ApiResponse.ok(eventService.queryEvents(externalEventId, safePage, safeSize, status, urgencyLevel, startDate, endDate, areaId, excludeHidden, includeArchived, sourceSystem));
     }
 
     /**
@@ -475,7 +478,7 @@ public class EventController {
                     externalId, "PUBLIC", "PUBLIC_REPORT",
                     type != null ? type : "OTHER", title, description,
                     java.time.LocalDateTime.now(), "拔蛟窝社区", null, null,
-                    new java.util.ArrayList<>());
+                    new java.util.ArrayList<>(), null);
                 alarmEventMongoService.upsertManualEvent(mongoRequest, eventId, eventCode, "WAITING_DISPATCH");
             } catch (Exception mongoEx) {
                 log.warn("公众上报事件写入MongoDB失败（不影响主流程）: {}", mongoEx.getMessage());

@@ -29,5 +29,7 @@ public record CreateEventRequest(
         String location,
         BigDecimal longitude,
         BigDecimal latitude,
-        List<String> evidenceReferences) {
+        List<String> evidenceReferences,
+        /** 紧急程度：GREEN/YELLOW/RED，不传默认 GREEN（Web 创建表单必选） */
+        String urgencyLevel) {
 }

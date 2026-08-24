@@ -111,6 +111,7 @@ public class AlarmEventMongoService {
         document.setTitle(request.title());
         document.setDescription(request.description());
         document.setStatus(status);
+        document.setUrgencyLevel(request.urgencyLevel());
         document.setOccurredAt(request.occurredAt());
         AlarmEventDocument.Location location = document.getLocation() == null ? new AlarmEventDocument.Location() : document.getLocation();
         location.setAddress(request.location());
@@ -281,9 +282,30 @@ public class AlarmEventMongoService {
                                                 Collection<String> excludeStatuses, String status,
                                                 LocalDateTime startDate, LocalDateTime endDate,
                                                 boolean excludeHidden) {
+        return queryEvents(externalEventId, page, size, excludeStatuses, status, startDate, endDate, excludeHidden, null, false);
+    }
+
+    /**
+     * @Description //分页查询告警事件列表（带紧急程度筛选），紧急程度 null 时不过滤；
+     *              includeArchived 默认 false 时排除已归档事件，避免前端过滤后出现空白页
+     */
+    public List<AlarmEventDocument> queryEvents(String externalEventId, int page, int size,
+                                                Collection<String> excludeStatuses, String status,
+                                                LocalDateTime startDate, LocalDateTime endDate,
+                                                boolean excludeHidden, String urgencyLevel, boolean includeArchived) {
+        return queryEvents(externalEventId, page, size, excludeStatuses, status, startDate, endDate, excludeHidden, urgencyLevel, includeArchived, null);
+    }
+
+    /**
+     * @Description //分页查询告警事件列表（带来源系统筛选），sourceSystem null 时不过滤
+     */
+    public List<AlarmEventDocument> queryEvents(String externalEventId, int page, int size,
+                                                Collection<String> excludeStatuses, String status,
+                                                LocalDateTime startDate, LocalDateTime endDate,
+                                                boolean excludeHidden, String urgencyLevel, boolean includeArchived, String sourceSystem) {
         int safePage = Math.max(page - 1, 0);
         int safeSize = Math.max(1, Math.min(size, 500));
-        Query query = new Query(buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate, excludeHidden))
+        Query query = new Query(buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate, excludeHidden, urgencyLevel, includeArchived, sourceSystem))
                 .with(PageRequest.of(safePage, safeSize,
                         Sort.by(Sort.Order.desc("occurredAt"), Sort.Order.desc("createdAt"))));
         return mongoTemplate.find(query, AlarmEventDocument.class);
@@ -306,8 +328,42 @@ public class AlarmEventMongoService {
      */
     public long countEvents(String externalEventId, Collection<String> excludeStatuses, String status,
                             LocalDateTime startDate, LocalDateTime endDate, boolean excludeHidden) {
-        return mongoTemplate.count(new Query(buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate, excludeHidden)),
+        return countEvents(externalEventId, excludeStatuses, status, startDate, endDate, excludeHidden, null, false);
+    }
+
+    /**
+     * @Description //统计告警事件总数（带紧急程度筛选），紧急程度 null 时不过滤；includeArchived 默认 false 排除已归档
+     */
+    public long countEvents(String externalEventId, Collection<String> excludeStatuses, String status,
+                            LocalDateTime startDate, LocalDateTime endDate, boolean excludeHidden, String urgencyLevel, boolean includeArchived) {
+        return countEvents(externalEventId, excludeStatuses, status, startDate, endDate, excludeHidden, urgencyLevel, includeArchived, null);
+    }
+
+    /**
+     * @Description //统计告警事件总数（带来源系统筛选），sourceSystem null 时不过滤
+     */
+    public long countEvents(String externalEventId, Collection<String> excludeStatuses, String status,
+                            LocalDateTime startDate, LocalDateTime endDate, boolean excludeHidden, String urgencyLevel, boolean includeArchived, String sourceSystem) {
+        return mongoTemplate.count(new Query(buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate, excludeHidden, urgencyLevel, includeArchived, sourceSystem)),
                 AlarmEventDocument.class);
+    }
+
+    /**
+     * @Description //设置事件归档标记：归档后默认列表/看板不再展示（保持与 MySQL archived 一致）
+     * @Param [sqlEventId 事件主键ID, externalEventId 外部事件ID, archived 是否归档]
+     * @return boolean 是否命中并更新了文档
+     */
+    public boolean setArchived(Long sqlEventId, String externalEventId, boolean archived) {
+        Query query;
+        if (StringUtils.hasText(externalEventId)) {
+            query = new Query(Criteria.where("externalEventId").is(externalEventId.trim()));
+        } else if (sqlEventId != null) {
+            query = new Query(Criteria.where("normalizedPayload.eventCode").is(sqlEventId.toString()));
+        } else {
+            return false;
+        }
+        Update update = new Update().set("archived", archived).set("updatedAt", LocalDateTime.now());
+        return mongoTemplate.updateMulti(query, update, AlarmEventDocument.class).getModifiedCount() > 0;
     }
 
     /**
@@ -340,6 +396,21 @@ public class AlarmEventMongoService {
 
     private Criteria buildCriteria(String externalEventId, Collection<String> excludeStatuses, String status,
                                    LocalDateTime startDate, LocalDateTime endDate, boolean excludeHidden) {
+        return buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate, excludeHidden, null, false);
+    }
+
+    private Criteria buildCriteria(String externalEventId, Collection<String> excludeStatuses, String status,
+                                   LocalDateTime startDate, LocalDateTime endDate, boolean excludeHidden, String urgencyLevel) {
+        return buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate, excludeHidden, urgencyLevel, false);
+    }
+
+    private Criteria buildCriteria(String externalEventId, Collection<String> excludeStatuses, String status,
+                                   LocalDateTime startDate, LocalDateTime endDate, boolean excludeHidden, String urgencyLevel, boolean includeArchived) {
+        return buildCriteria(externalEventId, excludeStatuses, status, startDate, endDate, excludeHidden, urgencyLevel, includeArchived, null);
+    }
+
+    private Criteria buildCriteria(String externalEventId, Collection<String> excludeStatuses, String status,
+                                   LocalDateTime startDate, LocalDateTime endDate, boolean excludeHidden, String urgencyLevel, boolean includeArchived, String sourceSystem) {
         List<Criteria> ands = new ArrayList<>();
         if (StringUtils.hasText(externalEventId)) {
             ands.add(Criteria.where("externalEventId").regex(Pattern.quote(externalEventId.trim()), "i"));
@@ -349,6 +420,18 @@ public class AlarmEventMongoService {
         }
         if (StringUtils.hasText(status)) {
             ands.add(Criteria.where("workflowStatus.currentStatus").is(status.trim()));
+        }
+        if (StringUtils.hasText(urgencyLevel)) {
+            ands.add(Criteria.where("urgencyLevel").is(urgencyLevel.trim()));
+        }
+        if (StringUtils.hasText(sourceSystem)) {
+            ands.add(Criteria.where("sourceSystem").is(sourceSystem.trim()));
+        }
+        if (!includeArchived) {
+            // 默认排除已归档：归档事件仅勾选"显示已归档"时展示，避免列表 total 虚高出现空白页
+            ands.add(new Criteria().orOperator(
+                    Criteria.where("archived").exists(false),
+                    Criteria.where("archived").is(false)));
         }
         if (startDate != null) {
             ands.add(Criteria.where("occurredAt").gte(startDate));

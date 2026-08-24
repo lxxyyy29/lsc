@@ -303,6 +303,7 @@ async function loadData() {
     if (filters.tableName) params.tableName = filters.tableName
     if (filters.operationType) params.operationType = filters.operationType
     if (filters.recordId) params.recordId = filters.recordId
+    if (filters.operatorName) params.operatorName = filters.operatorName
     if (filters.startTime) params.startTime = filters.startTime
     if (filters.endTime) params.endTime = filters.endTime
     const result = await getAuditLogs(params)

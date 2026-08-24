@@ -32,12 +32,13 @@ public class AuditLogController {
             @RequestParam(required = false) String recordId,
             @RequestParam(required = false) String operationType,
             @RequestParam(required = false) Long operatorId,
+            @RequestParam(required = false) String operatorName,
             @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         requireViewPermission();
-        return ApiResponse.ok(service.queryPaged(tableName, recordId, operationType, operatorId, startTime, endTime, page, size));
+        return ApiResponse.ok(service.queryPaged(tableName, recordId, operationType, operatorId, startTime, endTime, page, size, operatorName));
     }
 
     @GetMapping("/history")

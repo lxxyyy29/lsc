@@ -19,6 +19,7 @@
           <option value="">全部状态</option>
           <option value="PENDING_AUDIT">待审核</option>
           <option value="IN_AUDIT">审核中</option>
+          <option value="AUDIT_REJECTED">已驳回</option>
           <option value="WAITING_DISPATCH">待派单</option>
           <option value="DISPATCHED_TO_WORK_ORDER">已派单</option>
           <option value="CLOSED">已关闭</option>
@@ -29,6 +30,14 @@
           <option value="GREEN">一般（绿）</option>
           <option value="YELLOW">重点（黄）</option>
           <option value="RED">紧急（红）</option>
+        </select>
+        <select v-model="filters.sourceSystem" class="filter-select">
+          <option value="">全部来源</option>
+          <option value="GRID_PLATFORM">平台录入</option>
+          <option value="H5">网格员上报</option>
+          <option value="PUBLIC_REPORT">居民随手拍</option>
+          <option value="12345">12345热线</option>
+          <option value="PROPERTY_REPORT">物业上报</option>
         </select>
         <!-- 一体化日期范围（daterange 风格）：开始日期 至 结束日期；空值时用 text 类型显示占位符，聚焦切回 date 弹出选择器 -->
         <div class="date-range">
@@ -75,6 +84,7 @@
               <th>标题</th>
               <th>状态</th>
               <th>紧急程度</th>
+              <th>来源</th>
               <th>上报时间</th>
               <th>操作</th>
             </tr>
@@ -99,6 +109,7 @@
                   {{ e.urgencyLevel === 'RED' ? '紧急' : e.urgencyLevel === 'YELLOW' ? '重点' : '一般' }}
                 </span>
               </td>
+              <td style="font-size:12px;color:#6b7280;">{{ sourceLabel(e.sourceSystem || e.sourceType) }}</td>
               <td style="font-size:12px;color:#6b7280;">{{ e.occurredAt }}</td>
               <td>
                 <button @click="goDetail(e)" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;margin-right:4px;">详情</button>
@@ -188,6 +199,7 @@ function onEventCreated() {
 const filters = reactive({
   status: '',
   urgencyLevel: '',
+  sourceSystem: '',
   startDate: '',
   endDate: '',
 })
@@ -290,6 +302,20 @@ function statusLabel(status: string) {
   return map[status] || status
 }
 
+function sourceLabel(source: string) {
+  const map: Record<string, string> = {
+    GRID_PLATFORM: '平台录入',
+    MANUAL: '平台录入',
+    H5: '网格员上报',
+    PUBLIC_REPORT: '居民随手拍',
+    RESIDENT_REPORT: '居民随手拍',
+    PUBLIC: '居民/公开上报',
+    '12345': '12345热线',
+    PROPERTY_REPORT: '物业上报',
+  }
+  return map[source] || source || '-'
+}
+
 async function loadData() {
   loading.value = true
   error.value = ''
@@ -297,8 +323,10 @@ async function loadData() {
     const params: any = { page: page.value, size: pageSize }
     if (filters.status) params.status = filters.status
     if (filters.urgencyLevel) params.urgencyLevel = filters.urgencyLevel
+    if (filters.sourceSystem) params.sourceSystem = filters.sourceSystem
     if (filters.startDate) params.startDate = filters.startDate
     if (filters.endDate) params.endDate = filters.endDate
+    if (showArchived.value) params.includeArchived = true
     const result = await getEvents(params)
     list.value = result?.items || result?.list || []
     total.value = result?.total || list.value.length

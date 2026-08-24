@@ -124,6 +124,10 @@ public class PopulationController {
     @PostMapping
     public ApiResponse<Boolean> create(@RequestBody PopulationEntity entity) {
         requirePopulationPermission();
+        // status 未传时默认 ACTIVE，避免插入 NULL 导致列表（WHERE status='ACTIVE'）查不到
+        if (entity.getStatus() == null || entity.getStatus().isBlank()) {
+            entity.setStatus("ACTIVE");
+        }
         return ApiResponse.ok(populationService.create(entity));
     }
 
@@ -131,6 +135,12 @@ public class PopulationController {
     public ApiResponse<Boolean> update(@PathVariable Long id, @RequestBody PopulationEntity entity) {
         requirePopulationPermission();
         entity.setId(id);
+        // 编辑表单可能不带 status：保留原状态，避免全字段更新把 status 置 NULL 后数据"消失"
+        if (entity.getStatus() == null || entity.getStatus().isBlank()) {
+            PopulationEntity current = populationService.detail(id);
+            entity.setStatus(current != null && current.getStatus() != null && !current.getStatus().isBlank()
+                    ? current.getStatus() : "ACTIVE");
+        }
         return ApiResponse.ok(populationService.update(entity));
     }
 
