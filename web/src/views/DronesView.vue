@@ -39,19 +39,74 @@
 
     <!-- 设备管理 -->
     <div v-if="activeTab === 'devices'" class="card">
-      <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">无人机设备（外部数据源）</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h3 style="font-size:14px;font-weight:600;margin:0;">无人机设备</h3>
+        <button @click="openDeviceForm()" class="btn btn-primary" style="padding:6px 14px;font-size:12px;">
+          <i class="fas fa-plus"></i> 新增设备档案
+        </button>
+      </div>
       <table class="table">
-        <thead><tr><th>设备名称</th><th>类型</th><th>状态</th><th>序列号</th></tr></thead>
+        <thead><tr><th>设备名称</th><th>型号</th><th>类型</th><th>状态</th><th>序列号</th><th style="width:130px;">操作</th></tr></thead>
         <tbody>
-          <tr v-for="d in devices" :key="d.id || d.deviceSn || d.device_sn">
-            <td>{{ d.deviceName || d.nickname || d.name || '-' }}</td>
-            <td><span class="tag tag-blue">{{ d.deviceType === 3 ? '无人机' : '机场' }}</span></td>
-            <td><span :class="['tag', isOnline(d) ? 'tag-green' : 'tag-orange']">{{ isOnline(d) ? '在线' : '离线' }}</span></td>
-            <td style="font-size:12px;">{{ d.deviceSn || d.childSn || '-' }}</td>
+          <tr v-for="d in allDevices" :key="d.__local ? 'L' + d.id : (d.id || d.deviceSn || d.device_sn)">
+            <td>
+              {{ d.deviceName || d.nickname || d.name || '-' }}
+              <span v-if="d.__local" style="background:#f0f7ff;color:#075985;border:1px solid #bfdbfe;border-radius:4px;padding:0 6px;font-size:10px;margin-left:6px;">本地档案</span>
+            </td>
+            <td style="font-size:12px;">{{ d.model || '-' }}</td>
+            <td><span class="tag tag-blue">{{ d.__local ? '无人机(档案)' : (d.deviceType === 3 ? '无人机' : '机场') }}</span></td>
+            <td><span :class="['tag', isOnline(d) ? 'tag-green' : 'tag-orange']">{{ d.__local ? '档案维护' : (isOnline(d) ? '在线' : '离线') }}</span></td>
+            <td style="font-size:12px;">{{ d.sn || d.deviceSn || d.childSn || '-' }}</td>
+            <td>
+              <template v-if="d.__local">
+                <button @click="openDeviceForm(d)" style="padding:3px 10px;border:1px solid #1890ff;border-radius:4px;background:#fff;color:#1890ff;font-size:12px;cursor:pointer;margin-right:4px;">编辑</button>
+                <button @click="deleteLocalDevice(d)" style="padding:3px 10px;border:1px solid #ffccc7;border-radius:4px;background:#fff;color:#ff4d4f;font-size:12px;cursor:pointer;">删除</button>
+              </template>
+              <span v-else style="color:#9ca3af;font-size:12px;">平台设备</span>
+            </td>
           </tr>
         </tbody>
       </table>
-      <p v-if="!devices.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无设备数据（请检查外部无人机平台连接）</p>
+      <p v-if="!allDevices.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无设备数据（可点击「新增设备档案」手工维护，或检查外部无人机平台连接）</p>
+    </div>
+
+    <!-- 新增/编辑设备档案弹窗 -->
+    <div v-if="showDeviceForm" class="modal-overlay" @click.self="showDeviceForm = false">
+      <div class="modal-box" style="width:440px;">
+        <h3 style="margin:0 0 16px;font-size:16px;">{{ deviceForm.id ? '编辑设备档案' : '新增设备档案' }}</h3>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">设备名称 <span style="color:#ff4d4f;">*</span></label>
+          <input v-model="deviceForm.deviceName" placeholder="如：一号机巢无人机" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">型号</label>
+            <input v-model="deviceForm.model" placeholder="如：M30T" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">序列号 SN</label>
+            <input v-model="deviceForm.sn" placeholder="设备序列号" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">机巢 SN</label>
+            <input v-model="deviceForm.dockSn" placeholder="机场/机巢序列号" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">连接地址</label>
+            <input v-model="deviceForm.connectAddr" placeholder="平台/流地址" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+          </div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">备注</label>
+          <input v-model="deviceForm.remark" placeholder="设备用途说明" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
+          <button @click="showDeviceForm = false" class="btn btn-default">取消</button>
+          <button @click="saveLocalDevice" class="btn btn-primary" :disabled="deviceSaving">{{ deviceSaving ? '保存中...' : '保存' }}</button>
+        </div>
+      </div>
     </div>
 
     <!-- 巡检任务 -->
@@ -395,7 +450,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import http, { getSession, getJobs, createJob, pauseResumeJob, returnHome, getSpeakerFiles, playSpeaker as playSpeakerAction, stopSpeaker, setSpeakerVolume as setSpeakerVolumeAction, switchCameraMode as switchCameraModeAction, startRecording, stopRecording } from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { getEventTypeName } from '../utils/eventTypes'
@@ -413,6 +468,56 @@ const tabs = [
 const activeTab = ref('devices')
 const overview = ref<any>({})
 const devices = ref<any[]>([])
+const localDevices = ref<any[]>([])
+// 合并展示：本地档案 + 平台设备（平台设备只读）
+const allDevices = computed(() => {
+  const locals = localDevices.value.map((d: any) => ({ ...d, __local: true }))
+  const remotes = devices.value.filter((r: any) => !locals.some((l: any) => l.sn && r.deviceSn === l.sn))
+  return [...locals, ...remotes]
+})
+const showDeviceForm = ref(false)
+const deviceSaving = ref(false)
+const deviceForm = ref<any>({ id: null, deviceName: '', model: '', sn: '', dockSn: '', connectAddr: '', remark: '' })
+
+function openDeviceForm(d?: any) {
+  deviceForm.value = d ? { id: d.id, deviceName: d.deviceName || '', model: d.model || '', sn: d.sn || '', dockSn: d.dockSn || '', connectAddr: d.connectAddr || '', remark: d.remark || '' }
+    : { id: null, deviceName: '', model: '', sn: '', dockSn: '', connectAddr: '', remark: '' }
+  showDeviceForm.value = true
+}
+async function saveLocalDevice() {
+  if (!deviceForm.value.deviceName.trim()) { alert('请填写设备名称'); return }
+  deviceSaving.value = true
+  try {
+    const payload: any = { ...deviceForm.value }
+    delete payload.id
+    if (deviceForm.value.id) {
+      await http.put(`/drone/devices/local/${deviceForm.value.id}`, payload)
+    } else {
+      await http.post('/drone/devices/local', payload)
+    }
+    showDeviceForm.value = false
+    await loadLocalDevices()
+  } catch (e: any) {
+    alert(e?.message || '保存失败')
+  } finally {
+    deviceSaving.value = false
+  }
+}
+async function deleteLocalDevice(d: any) {
+  if (!confirm(`确定删除设备档案「${d.deviceName}」吗？`)) return
+  try {
+    await http.delete(`/drone/devices/local/${d.id}`)
+    await loadLocalDevices()
+  } catch (e: any) {
+    alert(e?.message || '删除失败')
+  }
+}
+async function loadLocalDevices() {
+  try {
+    const data: any = await http.get('/drone/devices/local')
+    localDevices.value = Array.isArray(data) ? data : []
+  } catch (e) { localDevices.value = [] }
+}
 const jobs = ref<any[]>([])
 const waylines = ref<any[]>([])
 const cameras = ref<any[]>([])
@@ -584,6 +689,7 @@ async function loadData() {
     overview.value = overviewRes || {}
     // 如果外部API无数据，显示示例数据
     devices.value = devicesRes && devicesRes.length > 0 ? devicesRes : getSampleDevices()
+    await loadLocalDevices()
     jobs.value = jobsRes && jobsRes.length > 0 ? jobsRes : getSampleJobs()
     waylines.value = waylinesRes && waylinesRes.length > 0 ? waylinesRes : getSampleWaylines()
     cameras.value = camerasRes || []

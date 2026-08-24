@@ -168,6 +168,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { getGridTree, getEvents, getEventHeatmap, getPatrolTrajectories } from '../api'
+import http from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
 interface GridInfo {
@@ -396,12 +397,23 @@ function focusGrid(grid: GridInfo) {
 
 onMounted(async () => {
   ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
+  // 读取系统配置的地图中心点（网格管理页可配置），未配置时用默认坐标
+  let centerLng = 113.939521
+  let centerLat = 22.971231
+  try {
+    const [lng, lat] = await Promise.all([
+      http.get('/system/config/map.center.lng'),
+      http.get('/system/config/map.center.lat'),
+    ])
+    if (lng && !isNaN(Number(lng))) centerLng = Number(lng)
+    if (lat && !isNaN(Number(lat))) centerLat = Number(lat)
+  } catch (e) { /* 配置接口失败时使用默认中心点 */ }
   AMapLib = await AMapLoader.load({
     key: '5e00e01d2d2b6ca9e1eed533a15572e4',
     version: '2.0',
     plugins: ['AMap.Polygon', 'AMap.Marker', 'AMap.Polyline', 'AMap.HeatMap', 'AMap.Circle']
   })
-  mapInstance = new AMapLib.Map('gisMapLarge', { zoom: 14, center: [113.939521, 22.971231], mapStyle: 'amap://styles/normal' })
+  mapInstance = new AMapLib.Map('gisMapLarge', { zoom: 14, center: [centerLng, centerLat], mapStyle: 'amap://styles/normal' })
   const map = mapInstance
 
   const tree = await getGridTree()

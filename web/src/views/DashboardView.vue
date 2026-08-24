@@ -344,6 +344,7 @@
 import { ref, computed, reactive, watchEffect, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { getDashboardOverview, getGridStats, getGridTree, getEvents, getBigScreenData } from '../api'
+import http from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import * as echarts from 'echarts'
 
@@ -872,9 +873,18 @@ function toggleLabels() {
 async function initMap(tree: any[]) {
   try {
     ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
+    // 读取系统配置的地图中心点（网格管理页可配置），未配置时用默认坐标
+    let center: [number, number] = MOCK_CENTER
+    try {
+      const [lng, lat] = await Promise.all([
+        http.get('/system/config/map.center.lng'),
+        http.get('/system/config/map.center.lat'),
+      ])
+      if (lng && !isNaN(Number(lng)) && lat && !isNaN(Number(lat))) center = [Number(lng), Number(lat)]
+    } catch (e) { /* 配置接口失败时使用默认中心点 */ }
     const AMap = await AMapLoader.load({ key: '5e00e01d2d2b6ca9e1eed533a15572e4', version: '2.0', plugins: ['AMap.Polygon', 'AMap.Marker', 'AMap.Text', 'AMap.HeatMap', 'AMap.LabelsLayer', 'AMap.TileLayer'] })
     mapInstance = new AMap.Map('gisMap', {
-      zoom: 14, center: MOCK_CENTER,
+      zoom: 14, center,
       viewMode: '3D',           // 3D 视图模式
       pitch: 45,                // 俯仰角 45°
       rotation: 0,              // 正向朝上，避免旋转造成方位辨识困难

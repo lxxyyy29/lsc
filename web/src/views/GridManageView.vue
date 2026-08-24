@@ -1,5 +1,13 @@
 <template>
   <div class="grid-manage-page" :class="{ 'no-form': !formVisible }">
+    <!-- 地图中心点配置条 -->
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:12px;font-size:13px;flex-wrap:wrap;">
+      <span style="font-weight:600;color:#075985;"><i class="fas fa-map-pin"></i> 地图中心点</span>
+      <span style="color:#6b7280;">地图类页面（看板/GIS/大屏）默认以此坐标为中心</span>
+      <input v-model="centerLng" type="number" step="0.000001" placeholder="经度" style="width:120px;padding:5px 10px;border:1px solid #bfdbfe;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+      <input v-model="centerLat" type="number" step="0.000001" placeholder="纬度" style="width:120px;padding:5px 10px;border:1px solid #bfdbfe;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+      <button @click="saveMapCenter" class="btn-primary" style="padding:5px 16px;font-size:12px;">保存中心点</button>
+    </div>
     <!-- 左：网格树 -->
     <aside class="tree-panel">
       <div class="panel-header">
@@ -110,7 +118,39 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { getGridTree, createGrid, updateGrid, deleteGrid } from '../api'
+import http from '../api'
 import { confirmDialog } from '../utils/dialog'
+
+// ==================== 地图中心点配置 ====================
+const centerLng = ref('113.939521')
+const centerLat = ref('22.971231')
+
+async function loadMapCenter() {
+  try {
+    const [lng, lat] = await Promise.all([
+      http.get('/system/config/map.center.lng'),
+      http.get('/system/config/map.center.lat'),
+    ])
+    if (lng) centerLng.value = String(lng)
+    if (lat) centerLat.value = String(lat)
+  } catch (e) { /* 接口失败保持默认值 */ }
+}
+
+async function saveMapCenter() {
+  const lng = Number(centerLng.value)
+  const lat = Number(centerLat.value)
+  if (isNaN(lng) || isNaN(lat) || lng < 73 || lng > 135 || lat < 18 || lat > 54) {
+    confirmDialog({ message: '请输入有效的经纬度（经度 73~135，纬度 18~54）' })
+    return
+  }
+  try {
+    await http.put('/system/config/map.center.lng', { value: String(lng) })
+    await http.put('/system/config/map.center.lat', { value: String(lat) })
+    confirmDialog({ message: '地图中心点已保存，地图页面刷新后生效' })
+  } catch (e: any) {
+    confirmDialog({ message: '保存失败：' + (e?.message || '服务器异常') })
+  }
+}
 
 interface GridNode {
   id: number
@@ -711,6 +751,7 @@ async function removeGrid() {
 /* ---------- 初始化 ---------- */
 
 onMounted(async () => {
+  loadMapCenter()
   ;(window as any)._AMapSecurityConfig = { securityJsCode: '0a57a5453a660300283bebf7323d8bce' }
   AMapLib.value = await AMapLoader.load({
     key: '5e00e01d2d2b6ca9e1eed533a15572e4',
