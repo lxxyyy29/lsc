@@ -1,57 +1,65 @@
 <template>
-  <!-- embedded 弹窗模式：header / 表单滚动区 / footer 三段结构，按钮固定 footer 右侧 -->
-  <div :style="embedded ? 'display:flex;flex-direction:column;height:100%;min-height:0;' : ''">
-    <div style="flex-shrink:0;">
+  <!-- 页面模式：独立页面；embedded 模式：作为 el-dialog 内容体（标题/底部由父级提供） -->
+  <div :style="embedded ? 'padding:0;' : ''">
+    <!-- 页面模式：标题与说明（弹窗模式由父级 el-dialog 标题提供） -->
+    <div v-if="!embedded">
       <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">创建事件</h2>
       <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">上报新事件，启动闭环处置流程</p>
     </div>
 
-    <div :style="embedded ? 'flex:1;overflow-y:auto;min-height:0;padding-right:4px;' : ''">
-    <div class="card" :style="embedded ? 'padding:0;box-shadow:none;margin-bottom:0;' : 'max-width:700px;'">
+    <div class="card" :style="embedded ? 'padding:0;box-shadow:none;max-width:none;' : 'max-width:700px;'">
       <div style="margin-bottom:16px;">
         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事件标题 <span style="color:#ff4d4f;">*</span></label>
-        <input v-model="form.title" @input="errors.title = ''" placeholder="简要描述事件" :style="`width:100%;padding:8px 12px;border:1px solid ${errors.title ? '#ff4d4f' : '#d1d5db'};border-radius:6px;font-size:13px;line-height:normal;box-sizing:border-box;`" />
+        <el-input v-model="form.title" @input="errors.title = ''" placeholder="简要描述事件" :class="{ 'is-invalid': errors.title }" />
         <p v-if="errors.title" class="field-error">{{ errors.title }}</p>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
         <div>
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事件类型 <span style="color:#ff4d4f;">*</span></label>
-          <select v-model="form.eventType" @change="errors.eventType = ''" :style="`width:100%;padding:8px 12px;border:1px solid ${errors.eventType ? '#ff4d4f' : '#d1d5db'};border-radius:6px;font-size:13px;`">
-            <option value="">请选择</option>
-            <option value="市容环境">市容环境</option>
-            <option value="消防安全">消防安全</option>
-            <option value="矛盾纠纷">矛盾纠纷</option>
-            <option value="安全生产">安全生产</option>
-            <option value="民生诉求">民生诉求</option>
-            <option value="防汛防台风">防汛防台风</option>
-            <option value="违建">违建</option>
-            <option value="其他">其他</option>
-          </select>
+          <el-select v-model="form.eventType" @change="errors.eventType = ''" placeholder="请选择" :class="{ 'is-invalid': errors.eventType }" style="width:100%;">
+            <el-option label="市容环境" value="市容环境" />
+            <el-option label="消防安全" value="消防安全" />
+            <el-option label="矛盾纠纷" value="矛盾纠纷" />
+            <el-option label="安全生产" value="安全生产" />
+            <el-option label="民生诉求" value="民生诉求" />
+            <el-option label="防汛防台风" value="防汛防台风" />
+            <el-option label="违建" value="违建" />
+            <el-option label="其他" value="其他" />
+          </el-select>
           <p v-if="errors.eventType" class="field-error">{{ errors.eventType }}</p>
         </div>
         <div>
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">紧急程度</label>
-          <select v-model="form.urgencyLevel" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
-            <option value="GREEN">一般（绿）</option>
-            <option value="YELLOW">重点（黄）</option>
-            <option value="RED">紧急（红）</option>
-          </select>
+          <el-select v-model="form.urgencyLevel" style="width:100%;">
+            <el-option label="一般（绿）" value="GREEN" />
+            <el-option label="重点（黄）" value="YELLOW" />
+            <el-option label="紧急（红）" value="RED" />
+          </el-select>
         </div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
         <div>
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">发生时间 <span style="color:#ff4d4f;">*</span></label>
-          <input v-model="form.occurredAt" @input="errors.occurredAt = ''" type="datetime-local" :style="`width:100%;padding:8px 12px;border:1px solid ${errors.occurredAt ? '#ff4d4f' : '#d1d5db'};border-radius:6px;font-size:13px;`" />
+          <el-date-picker
+            v-model="form.occurredAt"
+            type="datetime"
+            format="YYYY-MM-DD HH:mm"
+            value-format="YYYY-MM-DDTHH:mm"
+            placeholder="选择发生时间"
+            :class="{ 'is-invalid': errors.occurredAt }"
+            style="width:100%;"
+            @change="errors.occurredAt = ''"
+          />
           <p v-if="errors.occurredAt" class="field-error">{{ errors.occurredAt }}</p>
         </div>
         <div>
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">所属网格</label>
-          <select v-model="form.gridId" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
-            <option :value="null">自动关联</option>
-            <option v-for="g in grids" :key="g.id" :value="g.id">{{ g.gridName }}</option>
-          </select>
+          <el-select v-model="form.gridId" style="width:100%;">
+            <el-option :value="null" label="自动关联" />
+            <el-option v-for="g in grids" :key="g.id" :value="g.id" :label="g.gridName" />
+          </el-select>
         </div>
       </div>
 
@@ -59,10 +67,10 @@
       <div style="margin-bottom:16px;">
         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事发地点 <span style="color:#ff4d4f;">*</span></label>
         <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <input v-model="form.location" @input="errors.location = ''" placeholder="点击地图选择位置或手动输入地址" :style="`flex:1;padding:8px 12px;border:1px solid ${errors.location ? '#ff4d4f' : '#d1d5db'};border-radius:6px;font-size:13px;line-height:normal;box-sizing:border-box;`" />
-          <button @click="locateMe" type="button" style="padding:8px 12px;border:1px solid #1890ff;border-radius:6px;background:#fff;color:#1890ff;font-size:13px;cursor:pointer;white-space:nowrap;">
+          <el-input v-model="form.location" @input="errors.location = ''" placeholder="点击地图选择位置或手动输入地址" :class="{ 'is-invalid': errors.location }" style="flex:1;" />
+          <el-button @click="locateMe" type="default" plain style="white-space:nowrap;">
             <i class="fas fa-crosshairs"></i> 定位
-          </button>
+          </el-button>
         </div>
         <p v-if="errors.location" class="field-error">{{ errors.location }}</p>
         <div id="eventMap" style="height:250px;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;"></div>
@@ -74,7 +82,7 @@
 
       <div style="margin-bottom:16px;">
         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">详细描述</label>
-        <textarea v-model="form.description" rows="4" placeholder="事件详细情况..." style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;resize:vertical;"></textarea>
+        <el-input v-model="form.description" type="textarea" :autosize="{ minRows: 4, maxRows: 8 }" placeholder="事件详细情况..." style="width:100%;" />
       </div>
 
       <!-- 现场照片：选填，最多 6 张，上传后随事件提交 -->
@@ -94,30 +102,17 @@
       </div>
 
       <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">上报来源 <span style="color:#ff4d4f;">*</span></label>
-        <select v-model="form.reportSource" :style="`width:100%;padding:8px 12px;border:1px solid ${errors.reportSource ? '#ff4d4f' : '#d1d5db'};border-radius:6px;font-size:13px;`">
-          <option value="">请选择</option>
-          <option v-for="opt in reportSourceOptions" :key="opt.itemValue" :value="opt.itemValue">{{ opt.itemLabel }}</option>
-        </select>
-        <p v-if="errors.reportSource" class="field-error">{{ errors.reportSource }}</p>
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">上报来源</label>
+        <el-select v-model="form.reportSource" placeholder="请输入" clearable style="width:100%;">
+          <el-option v-for="opt in reportSourceOptions" :key="opt.itemValue" :value="opt.itemValue" :label="opt.itemLabel" />
+        </el-select>
       </div>
 
-      <!-- 页面模式操作栏吸底：弹窗内滚动时始终保持在可视区右下角 -->
+      <!-- 页面模式操作栏（弹窗模式的取消/创建按钮由父级 el-dialog 的 #footer 提供） -->
       <div v-if="!embedded" style="display:flex;gap:12px;justify-content:flex-end;position:sticky;bottom:0;background:#fff;padding-top:12px;margin-top:16px;border-top:1px solid #f3f4f6;">
-        <button @click="handleCancel" style="padding:8px 20px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">取消</button>
-        <button @click="submit" :disabled="loading" style="padding:8px 20px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">
-          {{ loading ? '提交中...' : '创建事件' }}
-        </button>
+        <el-button @click="handleCancel">取消</el-button>
+        <el-button @click="submit" type="primary" :loading="loading">创建事件</el-button>
       </div>
-    </div>
-    </div>
-
-    <!-- footer：弹窗模式下按钮固定在底部右侧 -->
-    <div v-if="embedded" style="flex-shrink:0;display:flex;gap:12px;justify-content:flex-end;padding-top:16px;margin-top:16px;border-top:1px solid #f3f4f6;">
-      <button @click="handleCancel" style="padding:8px 20px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;">取消</button>
-      <button @click="submit" :disabled="loading" style="padding:8px 20px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">
-        {{ loading ? '提交中...' : '创建事件' }}
-      </button>
     </div>
   </div>
 </template>
@@ -388,4 +383,7 @@ async function submit() {
     loading.value = false
   }
 }
+
+// 暴露 submit 给父级 el-dialog 的 #footer 按钮调用（loading 由父级管理）
+defineExpose({ submit })
 </script>

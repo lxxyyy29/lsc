@@ -128,12 +128,21 @@
         </div>
       </template>
     </div>
-    <!-- 创建事件弹窗（内嵌创建表单，提交后直接刷新列表；仅能通过取消/×按钮关闭，避免误点丢失已输入内容） -->
-    <div v-if="showCreateModal" class="modal-overlay">
-      <div class="modal-box" style="width:760px;max-width:94vw;height:86vh;display:flex;flex-direction:column;overflow:hidden;">
-        <EventCreateView embedded @cancel="showCreateModal = false" @created="onEventCreated" />
-      </div>
-    </div>
+    <!-- 创建事件弹窗：使用 Element Plus el-dialog（下拉浮层 z-index 由 EP 统一管理，解决原生遮罩压住下拉的问题） -->
+    <el-dialog
+      v-model="showCreateModal"
+      title="创建事件"
+      width="760px"
+      class="create-dialog"
+      :close-on-click-modal="false"
+      @close="showCreateModal = false"
+    >
+      <EventCreateView ref="createRef" embedded @cancel="showCreateModal = false" @created="onEventCreated" />
+      <template #footer>
+        <el-button @click="showCreateModal = false">取消</el-button>
+        <el-button type="primary" :loading="createLoading" @click="onCreate">创建事件</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 事件详情弹窗（列表项点击直达，派单/关闭/归档操作后自动刷新列表；通过/驳回按钮在弹窗右下角） -->
     <div v-if="detailEventId" class="modal-overlay" @click.self="detailEventId = null">
@@ -180,6 +189,18 @@ const totalPages = ref(0)
 
 // 弹窗交互：创建事件与事件详情均不离开列表页
 const showCreateModal = ref(false)
+const createRef = ref<InstanceType<typeof EventCreateView> | null>(null)
+const createLoading = ref(false)
+
+// 调用内嵌创建表单的 submit，并由父级管理弹窗 footer 的 loading 态
+async function onCreate() {
+  createLoading.value = true
+  try {
+    await createRef.value?.submit()
+  } finally {
+    createLoading.value = false
+  }
+}
 const detailEventId = ref<string | number | null>(null)
 const detailEvent = ref<any>(null)
 
@@ -363,3 +384,10 @@ onMounted(async () => {
   await Promise.all([loadData(), loadReportSources()])
 })
 </script>
+
+<style>
+.el-dialog.create-dialog { display: flex; flex-direction: column; height: 77vh; max-height: 77vh; }
+.el-dialog.create-dialog .el-dialog__header { flex-shrink: 0; }
+.el-dialog.create-dialog .el-dialog__body { flex: 1 1 auto; overflow-y: auto; padding-top: 12px; }
+.el-dialog.create-dialog .el-dialog__footer { flex-shrink: 0; padding: 12px 20px; text-align: right; }
+</style>
