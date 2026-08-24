@@ -152,6 +152,10 @@
           {{ c.label }}
         </button>
       </div>
+      <div class="search-box" style="margin-top:6px;">
+        <i class="fas fa-map-marker-alt"></i>
+        <input v-model="gridSearch" placeholder="搜索网格定位（如：第一网格一区）..." @keyup.enter="searchGrid" />
+      </div>
       <div class="search-box">
         <i class="fas fa-search"></i>
         <input v-model="eventSearch" placeholder="搜索事件标题..." />
@@ -466,6 +470,8 @@ let hoverId = 0
 let clockTimer: number | undefined
 let resizeHandler: (() => void) | null = null
 let gridPolygonList: any[] = []
+// 网格ID -> 多边形 映射（搜索定位/高亮用）
+const gridPolygonMap: Record<number, any> = {}
 let labelMarkerList: any[] = []
 let evtLabelsLayer: any = null      // 非紧急事件高性能图层（LabelsLayer）
 let redPulseMarkers: any[] = []     // 红色紧急事件保留 DOM 脉冲动画
@@ -493,6 +499,8 @@ const leftTabs = [
 
 const eventFilter = ref<'ALL' | 'RED' | 'YELLOW' | 'GREEN'>('ALL')
 const eventSearch = ref('')
+const gridSearch = ref('')
+let highlightedGridId: number | null = null
 const urgencyChips = [
   { key: 'ALL', label: '全部', color: '#0284c7', bg: 'rgba(2,132,199,0.08)' },
   { key: 'RED', label: '紧急', color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
@@ -640,6 +648,49 @@ function formatTime(t: string) {
 function goEventDetail(evt: any) {
   router.push('/events/' + (evt.id || evt.externalEventId))
 }
+// 搜索网格并定位：按网格名称匹配，放大居中 + 高亮该网格边界
+function searchGrid() {
+  const kw = gridSearch.value.trim()
+  if (!kw || !mapInstance) return
+  const match = allGrids.value.find((g: any) => (g.gridName || '').includes(kw))
+  if (!match) {
+    crosshair.visible = true
+    crosshair.x = 16; crosshair.y = 60
+    hoverInfo.visible = true; hoverInfo.x = 16; hoverInfo.y = 60
+    hoverInfo.name = `未找到网格「${kw}」，请尝试输入网格名称关键字`
+    setTimeout(() => { hoverInfo.visible = false }, 2500)
+    return
+  }
+  // 还原上一次高亮
+  if (highlightedGridId != null && gridPolygonMap[highlightedGridId]) {
+    const prev = gridPolygonMap[highlightedGridId]
+    prev.setOptions({ fillOpacity: prev.__origFillOpacity ?? 0, strokeWeight: prev.__origStrokeWeight ?? 1.5, zIndex: 5 })
+  }
+  highlightedGridId = Number(match.id)
+  let coords: number[][] = []
+  try { coords = JSON.parse(match.roiJson || '[]') } catch (e) {}
+  if (coords.length >= 3) {
+    let cx = 0, cy = 0
+    for (const [x, y] of coords) { cx += x; cy += y }
+    cx /= coords.length; cy /= coords.length
+    const poly = gridPolygonMap[highlightedGridId]
+    if (poly) {
+      poly.__origFillOpacity = poly.getOptions().fillOpacity ?? 0
+      poly.__origStrokeWeight = poly.getOptions().strokeWeight ?? 1.5
+      poly.setOptions({ fillOpacity: 0.35, strokeWeight: 4, strokeColor: '#f59e0b', zIndex: 30 })
+    }
+    mapInstance.setZoomAndCenter(16, [cx, cy])
+  } else {
+    mapInstance.setZoom(15)
+  }
+  crosshair.visible = true
+  const px = mapInstance.lngLatToContainer(coords.length >= 3 ? [coords[0][0], coords[0][1]] : [0, 0])
+  if (px) { crosshair.x = px.getX(); crosshair.y = px.getY() }
+  hoverInfo.visible = true; hoverInfo.x = 16; hoverInfo.y = 60
+  hoverInfo.name = `已定位：${match.gridName}${match.area ? `（${match.area} km²）` : ''}`
+  setTimeout(() => { hoverInfo.visible = false }, 3000)
+}
+
 function focusEvent(evt: any) {
   selectedEvent.value = evt
   if (mapInstance && evt.longitude && evt.latitude) {
@@ -847,6 +898,7 @@ async function initMap(tree: any[]) {
                 strokeDasharray: [8, 6], strokeOpacity: 0.7, zIndex: 1, bubble: true, map
               })
               gridPolygonList.push(p)
+              gridPolygonMap[Number(node.id)] = p
             }
           } catch (e) {}
         }
@@ -871,6 +923,7 @@ async function initMap(tree: any[]) {
                 zIndex: 5, bubble: false, map
               })
               gridPolygonList.push(polygon)
+              gridPolygonMap[Number(grid.id)] = polygon
               polygon.on('mouseover', (e: any) => {
                 polygon.setOptions({ fillOpacity: st.hoverOpacity, strokeWeight: 2.5, zIndex: 20 })
                 crosshair.visible = true
@@ -930,6 +983,7 @@ async function initMap(tree: any[]) {
                 strokeOpacity: 0.85, zIndex: 5, bubble: false, map
               })
               gridPolygonList.push(polygon)
+              gridPolygonMap[Number(grid.id)] = polygon
               polygon.on('mouseover', (e: any) => {
                 polygon.setOptions({ fillOpacity: st.hoverOpacity, strokeWeight: 1.8, strokeOpacity: 1, zIndex: 20 })
                 crosshair.visible = true
