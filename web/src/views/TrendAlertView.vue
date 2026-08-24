@@ -109,7 +109,7 @@
     </div>
 
     <!-- 处理弹窗 -->
-    <div v-if="showHandle" class="modal-overlay" @click.self="showHandle = false">
+    <div v-if="showHandle" class="modal-overlay">
       <div class="modal-box" style="width:440px;">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">处理预警</h3>
         <p style="font-size:13px;color:#6b7280;margin-bottom:12px;background:#f9fafb;padding:10px 12px;border-radius:6px;">{{ current?.title }}</p>

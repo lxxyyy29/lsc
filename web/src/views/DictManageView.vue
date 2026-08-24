@@ -89,7 +89,7 @@
     </div>
 
     <!-- 字典类型 新增/编辑 弹窗 -->
-    <div v-if="showTypeModal" class="modal-overlay" @click.self="showTypeModal = false">
+    <div v-if="showTypeModal" class="modal-overlay">
       <div class="modal-box">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ editingType ? '编辑字典' : '新增字典' }}</h3>
         <div v-if="editingType" class="form-group">
@@ -120,7 +120,7 @@
     </div>
 
     <!-- 字典项 新增/编辑 弹窗 -->
-    <div v-if="showItemModal" class="modal-overlay" @click.self="showItemModal = false">
+    <div v-if="showItemModal" class="modal-overlay">
       <div class="modal-box">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ editingItem ? '编辑字典项' : '新增字典项' }}</h3>
         <div v-if="editingItem" class="form-group">

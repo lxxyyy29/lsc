@@ -66,7 +66,7 @@
       </div>
 
       <!-- 派单弹窗（z-index 高于外层详情弹窗，避免嵌套时被遮挡） -->
-      <div v-if="showDispatch" class="modal-overlay" style="z-index:10000;" @click.self="showDispatch = false">
+      <div v-if="showDispatch" class="modal-overlay" style="z-index:10000;">
         <div class="modal-box">
           <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">派发工单</h3>
 

@@ -71,7 +71,7 @@
     </div>
 
     <!-- 新增/编辑角色弹窗 -->
-    <div v-if="showRoleForm" class="modal-overlay" @click.self="showRoleForm = false">
+    <div v-if="showRoleForm" class="modal-overlay">
       <div class="modal-box" style="width:460px;">
         <h3 style="margin:0 0 16px;font-size:16px;">{{ roleForm.id ? '编辑角色' : '新增角色' }}</h3>
         <div style="margin-bottom:14px;">
@@ -102,7 +102,7 @@
     </div>
 
     <!-- 分配权限弹窗：只展示本项目 web 菜单权限（web:menu:*），按模块分组 -->
-    <div v-if="showAssign" class="modal-overlay" @click.self="showAssign = false">
+    <div v-if="showAssign" class="modal-overlay">
       <div class="modal-box" style="width:640px;max-height:80vh;display:flex;flex-direction:column;">
         <h3 style="margin:0 0 4px;font-size:16px;">分配菜单权限 — {{ assignRole?.roleName }}</h3>
         <p style="color:#6b7280;font-size:12px;margin:0 0 12px;">勾选该角色可见的左侧导航菜单；接口权限由系统内置分配，不受此处影响</p>

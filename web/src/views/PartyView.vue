@@ -226,7 +226,7 @@
 
   <!-- 弹窗放在组件根级别，避免被 overflow 裁剪 -->
   <!-- 添加联户弹窗 -->
-  <div v-if="showAddHousehold" class="modal-overlay" @click.self="showAddHousehold = false">
+  <div v-if="showAddHousehold" class="modal-overlay">
     <div class="modal-box">
       <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">添加联户</h3>
       <div class="form-group">
@@ -252,7 +252,7 @@
   </div>
 
   <!-- 添加活动弹窗 -->
-  <div v-if="showAddActivity" class="modal-overlay" @click.self="showAddActivity = false">
+  <div v-if="showAddActivity" class="modal-overlay">
     <div class="modal-box">
       <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">创建志愿活动</h3>
       <div class="form-group">
@@ -288,7 +288,7 @@
   </div>
 
   <!-- 添加会议弹窗 -->
-  <div v-if="showAddMeeting" class="modal-overlay" @click.self="showAddMeeting = false">
+  <div v-if="showAddMeeting" class="modal-overlay">
     <div class="modal-box">
       <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">添加会议记录</h3>
       <div class="form-group">
@@ -326,7 +326,7 @@
   </div>
 
   <!-- 下发任务弹窗 -->
-  <div v-if="showAddTask" class="modal-overlay" @click.self="showAddTask = false">
+  <div v-if="showAddTask" class="modal-overlay">
     <div class="modal-box">
       <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">下发党建任务</h3>
       <div class="form-group">
@@ -369,7 +369,7 @@
   </div>
 
   <!-- 发起议事弹窗 -->
-  <div v-if="showAddDeliberation" class="modal-overlay" @click.self="showAddDeliberation = false">
+  <div v-if="showAddDeliberation" class="modal-overlay">
     <div class="modal-box">
       <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">发起党群议事</h3>
       <div class="form-group">
@@ -395,7 +395,7 @@
   </div>
 
   <!-- 投票弹窗 -->
-  <div v-if="showVoteModal" class="modal-overlay" @click.self="showVoteModal = false">
+  <div v-if="showVoteModal" class="modal-overlay">
     <div class="modal-box">
       <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">投票：{{ votingDeliberation?.title }}</h3>
       <div class="form-group">
@@ -418,7 +418,7 @@
   </div>
 
   <!-- 推送政策弹窗 -->
-  <div v-if="showPushModal" class="modal-overlay" @click.self="showPushModal = false">
+  <div v-if="showPushModal" class="modal-overlay">
     <div class="modal-box">
       <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">推送政策</h3>
       <div class="form-group">

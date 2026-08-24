@@ -71,7 +71,7 @@
     </div>
 
     <!-- 新增/编辑设备档案弹窗 -->
-    <div v-if="showDeviceForm" class="modal-overlay" @click.self="showDeviceForm = false">
+    <div v-if="showDeviceForm" class="modal-overlay">
       <div class="modal-box" style="width:440px;">
         <h3 style="margin:0 0 16px;font-size:16px;">{{ deviceForm.id ? '编辑设备档案' : '新增设备档案' }}</h3>
         <div style="margin-bottom:14px;">

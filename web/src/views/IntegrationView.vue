@@ -90,7 +90,7 @@
     </div>
 
     <!-- 选择网格员对话框 -->
-    <div v-if="showWorkerPicker" class="dialog-overlay" @click.self="showWorkerPicker = false">
+    <div v-if="showWorkerPicker" class="dialog-overlay">
       <div class="dialog" style="width:420px;">
         <div class="dialog-header">
           <h3>选择网格员发起会话</h3>

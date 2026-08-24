@@ -148,7 +148,7 @@
     </div>
 
     <!-- 审核确认弹窗（替代浏览器原生 prompt：取消仅关闭弹窗，不执行任何审核操作） -->
-    <div v-if="auditModal.visible" class="modal-overlay" style="z-index:10000;" @click.self="auditModal.visible = false">
+    <div v-if="auditModal.visible" class="modal-overlay" style="z-index:10000;">
       <div class="modal-box" style="width:420px;">
         <h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">{{ auditModal.action === 'pass' ? '审核通过' : '审核驳回' }}</h3>
         <p style="font-size:12px;color:#9ca3af;margin-bottom:14px;">{{ auditModal.action === 'pass' ? '通过后事件将进入后续处置流程' : '驳回后事件将退回上报人' }}</p>

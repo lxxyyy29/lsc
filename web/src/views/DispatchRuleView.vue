@@ -48,7 +48,7 @@
     </div>
 
     <!-- 新增/编辑弹窗 -->
-    <div v-if="showForm" class="modal-overlay" @click.self="showForm = false">
+    <div v-if="showForm" class="modal-overlay">
       <div class="modal-box" style="width:440px;">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ form.id ? '编辑规则' : '新增规则' }}</h3>
         <div class="form-group">

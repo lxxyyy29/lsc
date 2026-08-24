@@ -64,7 +64,7 @@
     </div>
 
     <!-- 创建/编辑弹窗 -->
-    <div v-if="showDialog" class="modal-overlay" @click.self="showDialog = false">
+    <div v-if="showDialog" class="modal-overlay">
       <div class="modal-box">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ editing ? '编辑政策' : '新增政策' }}</h3>
         <div class="form-group">
@@ -101,7 +101,7 @@
     </div>
 
     <!-- 政策找人结果弹窗 -->
-    <div v-if="showMatchDialog" class="modal-overlay" @click.self="showMatchDialog = false">
+    <div v-if="showMatchDialog" class="modal-overlay">
       <div class="modal-box" style="width:640px;">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:4px;">政策找人</h3>
         <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">

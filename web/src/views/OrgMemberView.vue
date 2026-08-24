@@ -73,7 +73,7 @@
     </div>
 
     <!-- 编辑弹窗（本模块仅用于组长↔网格员关系绑定，不提供添加、不修改人员类型/职务） -->
-    <div v-if="showEdit" class="modal-overlay" @click.self="closeModal">
+    <div v-if="showEdit" class="modal-overlay">
       <div class="modal-box">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">编辑组织人员</h3>
         <p style="font-size:12px;color:#6b7280;margin:0 0 12px;">人员类型与职务由后台账号统一管理，此处仅可调整联系方式与所属网格</p>
@@ -114,7 +114,7 @@
     </div>
 
     <!-- 人员划分弹窗：选择组长后勾选属下网格员 -->
-    <div v-if="showAssign" class="modal-overlay" @click.self="showAssign = false">
+    <div v-if="showAssign" class="modal-overlay">
       <div class="modal-box" style="width:640px;">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">人员划分</h3>
         <div class="form-group">

@@ -110,7 +110,7 @@
     </div>
 
     <!-- 新增/编辑弹窗 -->
-    <div v-if="formVisible" class="modal-mask" @click.self="formVisible = false">
+    <div v-if="formVisible" class="modal-mask">
       <div class="modal-box">
         <div class="modal-header">
           <div class="modal-title">{{ form.id ? '编辑点位' : '新增点位' }}</div>
