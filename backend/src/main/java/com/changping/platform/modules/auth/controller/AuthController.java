@@ -195,7 +195,37 @@ public class AuthController {
             }
             return ApiResponse.ok(authService.loginByPhone(phone));
         } catch (BusinessException e) {
+            // 居民免注册：微信授权手机号未绑定账号时，自动开通居民账号（PUBLIC 角色）再登录
+            if ("AUTH_INVALID_CREDENTIALS".equals(e.getCode()) && body.get("code") != null) {
+                try {
+                    String phone = wechatService.getPhoneNumber(body.get("code"));
+                    if (phone != null && phone.matches("^1[3-9]\\d{9}$")) {
+                        autoCreatePublicUser(phone);
+                        return ApiResponse.ok(authService.loginByPhone(phone));
+                    }
+                } catch (Exception autoEx) {
+                    return ApiResponse.fail("WECHAT_AUTO_REGISTER_FAILED", "微信登录自动开通失败：" + autoEx.getMessage());
+                }
+            }
             return ApiResponse.fail(e.getCode(), e.getMessage());
+        }
+    }
+
+    /** 微信授权自动开通居民账号：账号=手机号，随机初始密码（居民通过微信登录，无需知道密码） */
+    private void autoCreatePublicUser(String phone) {
+        String hashedPassword = passwordEncoder.encode("WX" + System.currentTimeMillis());
+        try {
+            jdbcTemplate.update(
+                    "INSERT INTO sys_user (username, password_hash, real_name, phone, status, password_version, deleted, created_at, updated_at) VALUES (?, ?, ?, ?, 'ACTIVE', 1, 0, NOW(), NOW())",
+                    phone, hashedPassword, "微信用户" + phone.substring(phone.length() - 4), phone);
+            Long userId = jdbcTemplate.queryForObject("SELECT id FROM sys_user WHERE username = ?", Long.class, phone);
+            List<Long> roleIds = jdbcTemplate.queryForList(
+                    "SELECT id FROM sys_role WHERE role_code = 'PUBLIC' ORDER BY id LIMIT 1", Long.class);
+            if (!roleIds.isEmpty()) {
+                jdbcTemplate.update("INSERT INTO sys_user_role (user_id, role_id) VALUES (?, ?)", userId, roleIds.get(0));
+            }
+        } catch (org.springframework.dao.DuplicateKeyException dup) {
+            // 并发授权重复开通：账号已存在则忽略，由 loginByPhone 兜底登录
         }
     }
 

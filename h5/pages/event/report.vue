@@ -26,10 +26,18 @@
       <view class="form-item">
         <text class="label">事发地点</text>
         <view class="location-row">
-          <input v-model="location" class="input" placeholder="如：拔蛟窝社区 XX 路 XX 号" placeholder-style="color:#5e7488;font-size:30rpx;" />
-          <view class="locate-btn" @click="locateCurrent">
+          <input v-model="location" class="input" placeholder="输入地址后点「搜索」，或直接定位/地图选点" placeholder-style="color:#5e7488;font-size:30rpx;" />
+          <view class="locate-btn" @click="searchAddress">
+            <text class="locate-btn-text">搜索</text>
+          </view>
+          <view class="locate-btn locate-btn-secondary" @click="locateCurrent">
             <text class="locate-btn-text">定位</text>
           </view>
+          <!-- #ifdef MP-WEIXIN -->
+          <view class="locate-btn locate-btn-secondary" @click="chooseMapLocation">
+            <text class="locate-btn-text">地图选点</text>
+          </view>
+          <!-- #endif -->
         </view>
         <view class="map-picker-wrap">
           <AMapPointPicker
@@ -179,6 +187,60 @@ async function reverseGeocode(lng: number, lat: number): Promise<string> {
   return ''
 }
 
+/** 高德地理编码：输入地址 → 经纬度（REST 接口，与逆地理同一 key） */
+async function geocodeAddress(address: string): Promise<{ longitude: number; latitude: number } | null> {
+  try {
+    const res = await fetch(
+      `https://restapi.amap.com/v3/geocode/geo?address=${encodeURIComponent(address)}&key=5e00e01d2d2b6ca9e1eed533a15572e4`
+    )
+    const data = await res.json()
+    const loc = data?.geocodes?.[0]?.location
+    if (data?.status === '1' && loc) {
+      const [lng, lat] = String(loc).split(',').map(Number)
+      if (!isNaN(lng) && !isNaN(lat)) return { longitude: lng, latitude: lat }
+    }
+  } catch { /* 地理编码失败由调用方提示 */ }
+  return null
+}
+
+/** 按输入地址搜索定位：地址 → 经纬度，并回填地点描述 */
+async function searchAddress() {
+  const addr = location.value.trim()
+  if (!addr) {
+    uni.showToast({ title: '请先输入地址', icon: 'none' })
+    return
+  }
+  uni.showLoading({ title: '搜索定位中...' })
+  try {
+    const geo = await geocodeAddress(addr)
+    if (geo) {
+      longitude.value = Number(geo.longitude.toFixed(6))
+      latitude.value = Number(geo.latitude.toFixed(6))
+      locationHint.value = '已按输入地址定位，可在下方地图中微调'
+    } else {
+      uni.showToast({ title: '未找到该地址，请尝试更详细描述', icon: 'none' })
+    }
+  } finally {
+    uni.hideLoading()
+  }
+}
+
+/** 地图选点（小程序端）：微信原生地图选择位置，自动回填地址与经纬度 */
+function chooseMapLocation() {
+  uni.chooseLocation({
+    success: (res: any) => {
+      if (!res.latitude || !res.longitude) return
+      longitude.value = Number(res.longitude.toFixed(6))
+      latitude.value = Number(res.latitude.toFixed(6))
+      if (res.address || res.name) location.value = res.address || res.name
+      locationHint.value = '已在地图上选择位置'
+    },
+    fail: () => {
+      uni.showToast({ title: '已取消选点', icon: 'none' })
+    }
+  })
+}
+
 /** 定位：三层定位工具获取坐标，H5 下逆地理自动填充地点描述 */
 async function locateCurrent() {
   uni.showLoading({ title: '定位中...' })
@@ -301,6 +363,7 @@ function goHistory() {
   display: flex; align-items: center; justify-content: center;
   padding: 0 16px; border-radius: 8px; background: #12539f; flex-shrink: 0;
 }
+.locate-btn-secondary { background: #0d3866; border: 1rpx solid #2a5f9e; }
 .locate-btn-text { font-size: 14px; color: #eaf5ff; }
 .map-picker-wrap { margin-top: 8px; }
 .location-hint { display: block; font-size: 12px; color: #8ce56d; margin-top: 6px; }
