@@ -53,6 +53,27 @@
         <p v-if="!list.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无数据</p>
       </template>
     </div>
+
+    <!-- 详情弹窗 -->
+    <div v-if="detailVisible" class="detail-modal-overlay" @click.self="closeDetail">
+      <div class="detail-modal-box">
+        <div class="detail-modal-header">
+          <h3 style="margin:0;font-size:16px;font-weight:600;">上报详情</h3>
+          <button @click="closeDetail" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;padding:0;line-height:1;">&times;</button>
+        </div>
+        <div class="detail-modal-body" v-if="currentItem">
+          <div class="detail-row"><span class="detail-label">标题</span><span class="detail-value">{{ currentItem.title }}</span></div>
+          <div class="detail-row"><span class="detail-label">类型</span><span class="detail-value"><span class="tag tag-blue">{{ getEventTypeName(currentItem.reportType) }}</span></span></div>
+          <div class="detail-row"><span class="detail-label">状态</span><span class="detail-value"><span :class="statusClass(currentItem.status)">{{ statusLabel(currentItem.status) }}</span></span></div>
+          <div class="detail-row"><span class="detail-label">描述</span><span class="detail-value">{{ currentItem.content || '-' }}</span></div>
+          <div class="detail-row"><span class="detail-label">上报人</span><span class="detail-value">{{ currentItem.residentName || '-' }}<span v-if="currentItem.residentPhone">（{{ currentItem.residentPhone }}）</span></span></div>
+          <div class="detail-row"><span class="detail-label">所属网格</span><span class="detail-value">{{ currentItem.gridName || '-' }}</span></div>
+          <div class="detail-row"><span class="detail-label">上报时间</span><span class="detail-value">{{ formatTime(currentItem.createdAt) }}</span></div>
+          <div v-if="currentItem.handleResult" class="detail-row"><span class="detail-label">处理结果</span><span class="detail-value">{{ currentItem.handleResult }}</span></div>
+          <div v-if="currentItem.eventId" class="detail-row"><span class="detail-label">关联事件</span><span class="detail-value"><a href="javascript:void(0)" @click="goEvent(currentItem); closeDetail()" style="color:#0284c7;text-decoration:none;"><i class="fas fa-link"></i> 查看事件详情</a></span></div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -77,6 +98,8 @@ const activeStatus = ref('')
 const list = ref<any[]>([])
 const loading = ref(true)
 const error = ref('')
+const detailVisible = ref(false)
+const currentItem = ref<any>(null)
 
 function statusLabel(s: string) {
   return { PENDING: '待处理', PROCESSING: '处理中', HANDLED: '已处理', COMPLETED: '已完成', IGNORED: '已忽略' }[s] || s || '未知'
@@ -111,7 +134,13 @@ async function fetchData() {
 }
 
 function viewDetail(item: any) {
-  showMessage(`标题：${item.title}\n描述：${item.content || '-'}\n类型：${getEventTypeName(item.reportType)}\n状态：${statusLabel(item.status)}\n上报人：${item.residentName || '-'}（${item.residentPhone || '-'}）\n所属网格：${item.gridName || '-'}\n上报时间：${formatTime(item.createdAt)}${item.handleResult ? '\n处理结果：' + item.handleResult : ''}`, 'info', 8000)
+  currentItem.value = item
+  detailVisible.value = true
+}
+
+function closeDetail() {
+  detailVisible.value = false
+  currentItem.value = null
 }
 
 // 跳转到归口生成的事件详情，处置派单在事件中心完成
@@ -121,3 +150,57 @@ function goEvent(item: any) {
 
 onMounted(fetchData)
 </script>
+
+<style scoped>
+.detail-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.detail-modal-box {
+  background: #fff;
+  border-radius: 12px;
+  width: 520px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+}
+
+.detail-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-modal-body {
+  padding: 20px;
+}
+
+.detail-row {
+  display: flex;
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+.detail-label {
+  width: 80px;
+  flex-shrink: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.detail-value {
+  flex: 1;
+  color: #1f2937;
+  font-size: 13px;
+  word-break: break-all;
+}
+</style>

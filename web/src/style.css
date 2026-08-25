@@ -102,6 +102,17 @@ input, select, textarea {
 .filter-action.warn { background: #fff7ed; color: #b45309; border: 1px solid #f59e0b; }
 .filter-action.warn:hover { background: #ffedd5; color: #92400e; }
 
+/* Element Plus 日期选择器宽度锁定：EP 默认宽度走 CSS 变量（daterange 350px / datetimerange 400px），
+   行内 style 不一定生效，这里用变量覆盖 + !important 双重强制 */
+.dp-240 { width: 240px !important; --el-date-editor-daterange-width: 240px; --el-date-editor-datetimerange-width: 240px; }
+.dp-350 { width: 350px !important; --el-date-editor-daterange-width: 350px; --el-date-editor-datetimerange-width: 350px; }
+
+/* Element Plus 表单控件：必填校验未过时的红框（替代原生 input 的 inline 红边） */
+.el-input.is-invalid .el-input__wrapper,
+.el-textarea.is-invalid .el-textarea__inner,
+.el-select.is-invalid .el-select__wrapper,
+.el-date-editor.is-invalid .el-input__wrapper { box-shadow: 0 0 0 1px #ff4d4f inset !important; }
+
 /* 日期范围选择器：开始日期 ~ 结束日期 一体化容器（贴合系统浅色主题） */
 .date-range { display: inline-flex; align-items: center; height: 36px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s; }
 .date-range:focus-within { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2,132,199,0.1); }
