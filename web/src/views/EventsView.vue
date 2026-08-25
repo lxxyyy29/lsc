@@ -115,8 +115,8 @@
           <p>暂无事件数据</p>
         </div>
 
-        <!-- 分页 -->
-        <div v-if="totalPages > 1" style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">
+        <!-- 分页：有数据即显示，单页也展示"共 X 条 第 1/1 页" -->
+        <div v-if="total > 0" style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">
           <span style="font-size:13px;color:#6b7280;">共 {{ total }} 条</span>
           <div style="display:flex;gap:6px;">
             <button @click="page = 1; loadData()" :disabled="page === 1" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:13px;cursor:pointer;">首页</button>

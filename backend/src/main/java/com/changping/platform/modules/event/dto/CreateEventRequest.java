@@ -31,5 +31,7 @@ public record CreateEventRequest(
         BigDecimal latitude,
         List<String> evidenceReferences,
         /** 紧急程度：GREEN/YELLOW/RED，不传默认 GREEN（Web 创建表单必选） */
-        String urgencyLevel) {
+        String urgencyLevel,
+        /** 所属网格ID（可选）：未传时若有坐标则按坐标自动匹配最小网格 */
+        Long gridId) {
 }

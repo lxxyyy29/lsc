@@ -497,7 +497,7 @@ public class EventController {
                     externalId, "PUBLIC", "PUBLIC_REPORT",
                     type != null ? type : "OTHER", title, description,
                     java.time.LocalDateTime.now(), "拔蛟窝社区", null, null,
-                    new java.util.ArrayList<>(), null);
+                    new java.util.ArrayList<>(), null, null);
                 alarmEventMongoService.upsertManualEvent(mongoRequest, eventId, eventCode, "WAITING_DISPATCH");
             } catch (Exception mongoEx) {
                 log.warn("公众上报事件写入MongoDB失败（不影响主流程）: {}", mongoEx.getMessage());

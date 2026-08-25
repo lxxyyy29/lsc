@@ -45,6 +45,7 @@ public class EventServiceImpl implements EventService {
     private final AlarmEventMongoService alarmEventMongoService;
     private final JdbcTemplate jdbcTemplate;
     private final BizManagementService bizManagementService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     /**
      * @Author tangxinglin
@@ -58,12 +59,14 @@ public class EventServiceImpl implements EventService {
             AlarmWorkflowStatusSyncService alarmWorkflowStatusSyncService,
             AlarmEventMongoService alarmEventMongoService,
             JdbcTemplate jdbcTemplate,
-            BizManagementService bizManagementService) {
+            BizManagementService bizManagementService,
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
         this.eventMapper = eventMapper;
         this.alarmWorkflowStatusSyncService = alarmWorkflowStatusSyncService;
         this.alarmEventMongoService = alarmEventMongoService;
         this.jdbcTemplate = jdbcTemplate;
         this.bizManagementService = bizManagementService;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -142,6 +145,16 @@ public class EventServiceImpl implements EventService {
                     areaAtIntake.id(), areaAtIntake.areaName(), entity.getId());
         }
 
+        // 所属网格：前端已选则用所选；未选但有坐标时按坐标射线法自动匹配最小网格（grid_level=3 优先，回退 level=2）
+        Long gridId = request.gridId();
+        if (gridId == null) {
+            gridId = resolveGridByCoordinates(entity.getLongitude(), entity.getLatitude());
+        }
+        if (gridId != null) {
+            entity.setGridId(gridId);
+            jdbcTemplate.update("UPDATE biz_event SET grid_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", gridId, entity.getId());
+        }
+
         // H5 端工作人员上报：记录上报人并标记来源为网格员，便于“我的上报”按人追溯
         if ("H5".equalsIgnoreCase(request.sourceType())) {
             AuthenticatedUserContextHolder.getOptional().ifPresent(user -> jdbcTemplate.update(
@@ -167,7 +180,7 @@ public class EventServiceImpl implements EventService {
                 externalId, "PUBLIC", "12345",
                 eventType != null ? eventType : "COMPLAINT", title, description,
                 java.time.LocalDateTime.now(), location,
-                null, null, java.util.List.of(), null);
+                null, null, java.util.List.of(), null, null);
         EventDetailVo vo = createEvent(request);
         // 更新来源标记为 12345，并记录来电人信息
         jdbcTemplate.update("UPDATE biz_event SET report_source = '12345', report_user_name = ?, report_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -192,7 +205,7 @@ public class EventServiceImpl implements EventService {
                 externalId, "PROPERTY", "PROPERTY_REPORT",
                 eventType != null ? eventType : "COMPLAINT", title, description,
                 java.time.LocalDateTime.now(), locationFull.isBlank() ? "拔蛟窝社区" : locationFull,
-                null, null, java.util.List.of(), null);
+                null, null, java.util.List.of(), null, null);
         EventDetailVo vo = createEvent(request);
         // 更新来源标记为 PROPERTY，记录上报人
         jdbcTemplate.update("UPDATE biz_event SET report_source = 'PROPERTY', report_user_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -215,7 +228,7 @@ public class EventServiceImpl implements EventService {
                 eventType != null && !eventType.isBlank() ? eventType : "OTHER", title, description,
                 java.time.LocalDateTime.now(),
                 location != null && !location.isBlank() ? location : "拔蛟窝社区",
-                longitude, latitude, java.util.List.of(), null);
+                longitude, latitude, java.util.List.of(), null, null);
         EventDetailVo vo = createEvent(request);
         // 来源标记为 RESIDENT，记录上报人信息，便于“我的上报”与事件详情追溯
         jdbcTemplate.update("UPDATE biz_event SET report_source = 'RESIDENT', report_user_id = ?, report_user_name = ?, report_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -323,6 +336,78 @@ public class EventServiceImpl implements EventService {
      * @Param [value 日期字符串(可为空)]
      * @return LocalDateTime 解析结果，非法或为空时返回 null
      */
+    // ---- 网格多边形缓存（30s TTL，按坐标自动关联网格用） ----
+
+    private record CachedGridPolygon(long id, int gridLevel, double[] polyLng, double[] polyLat) {}
+    private volatile List<CachedGridPolygon> cachedGridPolygons = null;
+    private volatile long gridCacheTimestamp = 0;
+
+    /**
+     * 按坐标自动匹配网格：优先匹配最小网格（grid_level=3 小网格），未命中则回退大网格（grid_level=2）。
+     * 缓存 30 秒 TTL，避免每次创建事件都查库。坐标为空或无匹配时返回 null。
+     */
+    private Long resolveGridByCoordinates(java.math.BigDecimal longitude, java.math.BigDecimal latitude) {
+        if (longitude == null || latitude == null) return null;
+        double lng = longitude.doubleValue();
+        double lat = latitude.doubleValue();
+        List<CachedGridPolygon> grids = getCachedGridPolygons();
+        // 优先小网格（level=3），更精确
+        for (CachedGridPolygon g : grids) {
+            if (g.gridLevel() == 3 && pointInPolygon(lng, lat, g.polyLng(), g.polyLat())) {
+                return g.id();
+            }
+        }
+        // 回退大网格（level=2）
+        for (CachedGridPolygon g : grids) {
+            if (g.gridLevel() == 2 && pointInPolygon(lng, lat, g.polyLng(), g.polyLat())) {
+                return g.id();
+            }
+        }
+        return null;
+    }
+
+    private List<CachedGridPolygon> getCachedGridPolygons() {
+        long now = System.currentTimeMillis();
+        List<CachedGridPolygon> cached = cachedGridPolygons;
+        if (cached != null && (now - gridCacheTimestamp) < 30_000) {
+            return cached;
+        }
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT id, grid_level, roi_json FROM cmn_grid WHERE status = 'ACTIVE' AND roi_json IS NOT NULL");
+        List<CachedGridPolygon> result = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            String roiJson = (String) row.get("roi_json");
+            if (roiJson == null || roiJson.isBlank()) continue;
+            try {
+                List<double[]> pts = objectMapper.readValue(roiJson, new com.fasterxml.jackson.core.type.TypeReference<List<double[]>>() {});
+                if (pts.size() < 3) continue;
+                double[] polyLng = new double[pts.size()];
+                double[] polyLat = new double[pts.size()];
+                for (int i = 0; i < pts.size(); i++) {
+                    polyLng[i] = pts.get(i)[0];
+                    polyLat[i] = pts.get(i)[1];
+                }
+                int level = ((Number) row.get("grid_level")).intValue();
+                result.add(new CachedGridPolygon(((Number) row.get("id")).longValue(), level, polyLng, polyLat));
+            } catch (Exception ignored) {}
+        }
+        cachedGridPolygons = result;
+        gridCacheTimestamp = now;
+        return result;
+    }
+
+    private boolean pointInPolygon(double x, double y, double[] polyX, double[] polyY) {
+        int n = polyX.length;
+        boolean inside = false;
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            if ((polyY[i] > y) != (polyY[j] > y)
+                    && x < (polyX[j] - polyX[i]) * (y - polyY[i]) / (polyY[j] - polyY[i]) + polyX[i]) {
+                inside = !inside;
+            }
+        }
+        return inside;
+    }
+
     private LocalDateTime parseStartDate(String value) {
         if (!StringUtils.hasText(value)) {
             return null;
