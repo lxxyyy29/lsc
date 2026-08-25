@@ -177,7 +177,7 @@ import { getEvents, auditEvent, setEventHidden, deleteEvents, getDictItems } fro
 import EventCreateView from './EventCreateView.vue'
 import EventDetailView from './EventDetailView.vue'
 import { showMessage } from '../utils/message'
-import { confirmDialog } from '../utils/dialog'
+import { confirmDialog, promptDialog } from '../utils/dialog'
 
 const list = ref<any[]>([])
 const loading = ref(true)
@@ -293,15 +293,16 @@ async function toggleHidden(e: any) {
 // 删除事件：级联删除关联工单/审核记录/附件，不可恢复，需二次确认
 async function handleDelete(e: any) {
   if (!e.id) { showMessage('该事件缺少主键 ID，无法删除'); return }
-  const ok = await confirmDialog({
+  const reason = await promptDialog({
     title: '删除事件',
-    message: `确定删除事件「${e.title}」？删除后将同时清除其关联工单、审核记录与附件，不可恢复。`,
-    okText: '删除',
-    danger: true,
+    message: `确定删除事件「${e.title}」？删除后将同时清除其关联工单、审核记录与附件，不可恢复。请填写删除原因：`,
+    placeholder: '请输入删除原因（必填）',
+    required: true,
+    rows: 2,
   })
-  if (!ok) return
+  if (!reason) return
   try {
-    await deleteEvents([e.id])
+    await deleteEvents([e.id], reason)
     showMessage('事件已删除', 'success')
     // 当前页删空时回退一页，避免停留在空列表
     if (displayList.value.length <= 1 && page.value > 1) page.value--

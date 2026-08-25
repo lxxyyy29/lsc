@@ -57,6 +57,7 @@ public class EventController {
     private final CurrentUserService currentUserService;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
     private final AlarmEventMongoService alarmEventMongoService;
+    private final com.changping.platform.modules.audit.service.AuditLogService auditLogService;
 
     /**
      * @Author tangxinglin
@@ -72,7 +73,8 @@ public class EventController {
             PermissionGuard permissionGuard,
             CurrentUserService currentUserService,
             org.springframework.jdbc.core.JdbcTemplate jdbcTemplate,
-            AlarmEventMongoService alarmEventMongoService) {
+            AlarmEventMongoService alarmEventMongoService,
+            com.changping.platform.modules.audit.service.AuditLogService auditLogService) {
         this.eventService = eventService;
         this.eventIgnoreService = eventIgnoreService;
         this.workOrderService = workOrderService;
@@ -80,6 +82,7 @@ public class EventController {
         this.currentUserService = currentUserService;
         this.jdbcTemplate = jdbcTemplate;
         this.alarmEventMongoService = alarmEventMongoService;
+        this.auditLogService = auditLogService;
     }
 
     /**
@@ -244,17 +247,33 @@ public class EventController {
 
     /**
      * @Author tangxinglin
-     * @Description //批量删除事件接口，仅限Web端用户操作
+     * @Description //批量删除事件接口，仅限Web端用户操作，需填写删除原因并记录审计日志
      * @Date 2026/04/18 10:00
-     * @Param [ids 待删除的事件主键ID列表]
+     * @Param [body 包含 ids(事件主键ID列表) 和 reason(删除原因)]
      * @return ApiResponse<Void> void
      */
     @PostMapping("/batch-delete")
-    public ApiResponse<Void> deleteEvents(@RequestBody  List<Long> ids) {
+    @SuppressWarnings("unchecked")
+    public ApiResponse<Void> deleteEvents(@RequestBody Map<String, Object> body) {
         currentUserService.requireClientType(AuthService.ClientType.WEB);
         permissionGuard.require(PermissionCodes.API_EVENT_CREATE);
+        Object idsObj = body.get("ids");
+        if (!(idsObj instanceof List)) {
+            throw new BusinessException("INVALID_PARAM", "缺少 ids 列表");
+        }
+        List<Long> ids = ((List<Object>) idsObj).stream()
+                .map(o -> Long.valueOf(o.toString())).toList();
+        String reason = body.get("reason") == null ? "" : body.get("reason").toString().trim();
+        if (reason.isEmpty()) {
+            throw new BusinessException("REASON_REQUIRED", "请填写删除原因");
+        }
+        com.changping.platform.modules.auth.vo.CurrentUserVo user =
+                currentUserService.getCurrentUser(AuthService.ClientType.WEB, PermissionCodes.API_EVENT_CREATE);
         for (Long id : ids) {
             eventService.deleteEvent(id);
+            auditLogService.logQuickChange(
+                    "biz_event", String.valueOf(id), "DELETE",
+                    null, null, user.id(), user.realName(), reason);
         }
         return ApiResponse.ok(null);
     }
