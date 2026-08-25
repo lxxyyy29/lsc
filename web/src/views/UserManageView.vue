@@ -18,7 +18,7 @@
 
     <div class="card">
       <div class="filter-bar">
-        <input v-model="searchKey" class="filter-input" placeholder="搜索姓名 / 账号 / 手机号..." />
+        <input v-model="searchKey" class="filter-input" placeholder="搜索姓名 / 账号 / 手机号..." autocomplete="off" />
         <select v-model="filterRoleId" class="filter-select">
           <option :value="0">全部角色</option>
           <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.roleName }}</option>
@@ -103,12 +103,10 @@
           </select>
           <template v-if="!form.id">
             <label class="form-label">角色 <span style="color:#ef4444;">*</span> <span style="color:#9ca3af;font-weight:400;font-size:12px;">（每个账号只能选择一个角色）</span></label>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;">
-              <label v-for="r in roles" :key="r.id" style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="createRole" :value="r.id" v-model="form.roleId" />
-                {{ r.roleName }}
-              </label>
-            </div>
+            <select v-model="form.roleId" class="form-input">
+              <option :value="null">请选择角色</option>
+              <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.roleName }}</option>
+            </select>
             <template v-if="isGridWorkerSelected">
               <label class="form-label">分配小网格 <span style="color:#9ca3af;font-weight:400;font-size:12px;">（选填；分配后自动联动我的网格/巡查任务/派单）</span></label>
               <select v-model="form.gridId" class="form-input">
@@ -151,8 +149,8 @@
       <div class="modal-box" style="width:420px;">
         <h3 style="margin:0 0 16px;font-size:16px;">重置密码 — {{ pwdTarget?.realName || pwdTarget?.username }}</h3>
         <div style="display:flex;flex-direction:column;gap:12px;">
-          <input v-model="newPassword" type="password" class="form-input" placeholder="新密码（6-64 位）" />
-          <input v-model="confirmPassword" type="password" class="form-input" placeholder="再次输入新密码" />
+          <input v-model="newPassword" type="password" class="form-input" placeholder="新密码（6-64 位）" autocomplete="new-password" />
+          <input v-model="confirmPassword" type="password" class="form-input" placeholder="再次输入新密码" autocomplete="new-password" />
           <p v-if="pwdError" style="color:#ef4444;font-size:12px;margin:0;">{{ pwdError }}</p>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
@@ -280,7 +278,7 @@ async function submitForm() {
   if (!/^1\d{10}$/.test(form.value.phone.trim())) { formError.value = '请输入正确的 11 位手机号（后端必填，移动端登录要用）'; return }
   if (!form.value.id) {
     if (!form.value.password || form.value.password.length < 6) { formError.value = '初始密码至少 6 位'; return }
-    if (form.value.roleId == null) { formError.value = '请选择一个角色'; return }
+    if (form.value.roleId == null || form.value.roleId === '') { formError.value = '请选择一个角色'; return }
   }
   saving.value = true
   try {

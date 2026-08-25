@@ -56,8 +56,7 @@
         </div>
         <div>
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">所属网格</label>
-          <el-select v-model="form.gridId" style="width:100%;">
-            <el-option :value="null" label="自动关联" />
+          <el-select v-model="form.gridId" style="width:100%;" placeholder="自动关联" clearable>
             <el-option v-for="g in grids" :key="g.id" :value="g.id" :label="g.gridName" />
           </el-select>
         </div>
@@ -375,7 +374,30 @@ function locateByIp() {
   })
 }
 
+function resetForm() {
+  form.value = {
+    title: '',
+    eventType: '',
+    urgencyLevel: 'GREEN',
+    occurredAt: new Date().toISOString().slice(0, 16),
+    location: '',
+    description: '',
+    reportSource: '',
+    gridId: null as number | null,
+    longitude: null as number | null,
+    latitude: null as number | null,
+  }
+  images.value = []
+  Object.keys(errors).forEach(key => (errors as any)[key] = '')
+  if (markerInstance && mapInstance) {
+    markerInstance.setPosition([113.939521, 22.971231])
+    mapInstance.setCenter([113.939521, 22.971231])
+    mapInstance.setZoom(15)
+  }
+}
+
 function handleCancel() {
+  resetForm()
   if (props.embedded) {
     emit('cancel')
   } else {
@@ -394,6 +416,7 @@ async function submit() {
       externalEventId: 'EVT-' + Date.now(),
       evidenceReferences: images.value,
     })
+    resetForm()
     if (props.embedded) {
       emit('created', result.id)
     } else {
