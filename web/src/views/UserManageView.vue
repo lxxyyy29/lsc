@@ -87,10 +87,10 @@
         <h3 style="margin:0 0 16px;font-size:16px;">{{ form.id ? '编辑账号' : '新增账号' }}</h3>
         <div style="display:flex;flex-direction:column;gap:12px;">
           <label class="form-label">登录账号 <span style="color:#ef4444;">*</span></label>
-          <input v-model="form.username" class="form-input" placeholder="登录用账号" :disabled="!!form.id" />
+          <input v-model="form.username" class="form-input" placeholder="登录用账号" :disabled="!!form.id" autocomplete="off" @focus="$event.target.select()" />
           <template v-if="!form.id">
             <label class="form-label">初始密码 <span style="color:#ef4444;">*</span></label>
-            <input v-model="form.password" type="password" class="form-input" placeholder="6-64 位" />
+            <input v-model="form.password" type="password" class="form-input" placeholder="6-64 位" autocomplete="new-password" @focus="$event.target.select()" />
           </template>
           <label class="form-label">姓名 <span style="color:#ef4444;">*</span></label>
           <input v-model="form.realName" class="form-input" placeholder="真实姓名" />
