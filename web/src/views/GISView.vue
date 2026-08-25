@@ -198,6 +198,8 @@ const selectedGrid = ref<GridInfo | null>(null)
 let hoverId = 0
 let mapInstance: any = null
 let AMapLib: any = null
+// 跟踪所有绘制的多边形覆盖物，用于自适应地图视野
+const allOverlays: any[] = []
 const gridTree = ref<GridInfo[]>([])
 
 // 图层控制
@@ -395,11 +397,12 @@ function focusGrid(grid: GridInfo) {
   try {
     const coords = JSON.parse(grid.roiJson)
     if (Array.isArray(coords) && coords.length > 0) {
-      const lngs = coords.map((c: number[]) => c[0])
-      const lats = coords.map((c: number[]) => c[1])
-      const center = [(Math.min(...lngs) + Math.max(...lngs)) / 2, (Math.min(...lats) + Math.max(...lats)) / 2]
-      mapInstance.setCenter(center)
-      mapInstance.setZoom(15)
+      // 临时创建一个多边形用于聚焦，setFitView 后立即销毁
+      const tempPoly = new AMapLib.Polygon({ path: coords, map: mapInstance })
+      mapInstance.setFitView([tempPoly], false, [60, 60, 60, 60])
+      const currentZoom = mapInstance.getZoom()
+      if (currentZoom > 18) mapInstance.setZoom(18)
+      tempPoly.setMap(null)
     }
   } catch (e) {}
 }
@@ -436,11 +439,12 @@ onMounted(async () => {
         try {
           const coords = JSON.parse(node.roiJson)
           if (Array.isArray(coords) && coords.length >= 3) {
-            new AMapLib.Polygon({
+            const poly = new AMapLib.Polygon({
               path: coords, fillColor: '#0284c7', fillOpacity: 0.08,
               strokeColor: '#0284c7', strokeWeight: 3, strokeStyle: 'solid',
               zIndex: 1, bubble: true, map
             })
+            allOverlays.push(poly)
           }
         } catch (e) {}
       }
@@ -470,6 +474,17 @@ onMounted(async () => {
     }
   }
   drawSmallGrids(tree)
+
+  // 自适应视野：让所有多边形（社区边界+大网格+小网格）完整显示在地图内
+  if (allOverlays.length > 0) {
+    setTimeout(() => {
+      mapInstance.setFitView(allOverlays, false, [80, 80, 80, 80])
+      // 限制缩放级别，避免视野过大或过挤
+      const currentZoom = mapInstance.getZoom()
+      if (currentZoom > 17) mapInstance.setZoom(17)
+      if (currentZoom < 12) mapInstance.setZoom(12)
+    }, 100)
+  }
 
   // ==================== 热力图 ====================
   const loadHeatmap = async () => {
@@ -564,6 +579,7 @@ function drawGridPolygon(map: any, grid: any, fillColor: string, strokeColor: st
       path: coords, fillColor, fillOpacity, strokeColor, strokeWeight,
       strokeStyle: 'solid', zIndex: 5, bubble: false, map
     })
+    allOverlays.push(polygon)
 
     polygon.on('mouseover', (e: any) => {
       polygon.setOptions({ fillOpacity: 0.6, strokeWeight: strokeWeight + 1, zIndex: 20 })

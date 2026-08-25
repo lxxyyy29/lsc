@@ -109,6 +109,29 @@
       </div>
     </div>
 
+    <!-- 新增航线弹窗 -->
+    <div v-if="showWaylineForm" class="modal-overlay">
+      <div class="modal-box" style="width:440px;">
+        <h3 style="margin:0 0 16px;font-size:16px;">新增巡检航线</h3>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">航线名称 <span style="color:#ff4d4f;">*</span></label>
+          <input v-model="waylineForm.waylineName" placeholder="如：A区日常巡检航线" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">航线类型</label>
+          <select v-model="waylineForm.waylineType" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">
+            <option value="点状航线">点状航线</option>
+            <option value="线状航线">线状航线</option>
+            <option value="面状航线">面状航线</option>
+          </select>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
+          <button @click="showWaylineForm = false" class="btn btn-default">取消</button>
+          <button @click="saveWayline" class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 巡检任务 -->
     <div v-if="activeTab === 'jobs'" class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -185,7 +208,12 @@
 
     <!-- 航线管理 -->
     <div v-if="activeTab === 'waylines'" class="card">
-      <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">巡检航线</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h3 style="font-size:14px;font-weight:600;margin:0;">巡检航线</h3>
+        <button @click="openWaylineForm()" class="btn btn-primary" style="padding:6px 14px;font-size:12px;">
+          <i class="fas fa-plus"></i> 新增航线
+        </button>
+      </div>
       <table class="table">
         <thead><tr><th>航线名称</th><th>类型</th><th>更新时间</th></tr></thead>
         <tbody>
@@ -522,6 +550,26 @@ const jobs = ref<any[]>([])
 const waylines = ref<any[]>([])
 const cameras = ref<any[]>([])
 const externalSources = ref<any[]>([])
+
+// 新增航线表单
+const showWaylineForm = ref(false)
+const waylineForm = ref<any>({ waylineName: '', waylineType: '点状航线' })
+function openWaylineForm() {
+  waylineForm.value = { waylineName: '', waylineType: '点状航线' }
+  showWaylineForm.value = true
+}
+async function saveWayline() {
+  if (!waylineForm.value.waylineName?.trim()) { alert('请填写航线名称'); return }
+  try {
+    const payload: any = { ...waylineForm.value }
+    await http.post('/drone/waylines', payload)
+    showWaylineForm.value = false
+    alert('航线新增成功')
+    loadOverview()
+  } catch (e: any) {
+    alert(e?.message || '保存失败')
+  }
+}
 const aiAlerts = ref<any[]>([])
 const selectedDrone = ref<any>(null)
 const wsUrl = ref('')

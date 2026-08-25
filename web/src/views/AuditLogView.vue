@@ -54,9 +54,7 @@
             <tr>
               <th>ID</th>
               <th>模块</th>
-              <th>记录ID</th>
               <th>操作</th>
-              <th>变更字段</th>
               <th>操作人</th>
               <th>时间</th>
               <th>操作</th>
@@ -66,13 +64,11 @@
             <tr v-for="log in items" :key="log.id">
               <td>{{ log.id }}</td>
               <td><span class="tag tag-blue" :title="log.tableName">{{ moduleLabel(log.tableName) }}</span></td>
-              <td style="font-size:12px;color:#6b7280;">{{ log.recordId }}</td>
               <td>
                 <span :class="['tag', opClass(log.operationType)]">
                   {{ opLabel(log.operationType) }}
                 </span>
               </td>
-              <td style="font-size:12px;color:#6b7280;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ formatJson(log.changedFields) }}</td>
               <td>{{ log.operatorName || '-' }}</td>
               <td style="font-size:12px;color:#6b7280;">{{ formatTime(log.operationTime) }}</td>
               <td>

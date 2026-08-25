@@ -20,7 +20,6 @@
           </div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button v-if="['WAITING_DISPATCH', 'IN_AUDIT'].includes(event.currentStatus)" @click="showDispatch = true" style="padding:8px 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">派发工单</button>
           <button v-if="(event.currentStatus === 'CLOSED' || event.currentStatus === 'IGNORED') && !event.archived" @click="handleArchive" style="padding:8px 16px;border:1px solid #6b7280;border-radius:6px;background:#fff;color:#374151;font-size:13px;cursor:pointer;">归档</button>
           <button v-if="event.currentStatus === 'CLOSED'" @click="handleReopen" style="padding:8px 16px;border:1px solid #52c41a;border-radius:6px;background:#fff;color:#52c41a;font-size:13px;cursor:pointer;">重新打开</button>
           <button @click="handleBack" :title="embedded ? '关闭' : '返回'" style="width:32px;height:32px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:18px;line-height:1;color:#6b7280;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
@@ -153,6 +152,7 @@ const router = useRouter()
 // embedded=true 时作为弹窗内嵌组件：事件 id 由 props 传入，操作变更后 emit 通知父组件刷新列表
 const props = withDefaults(defineProps<{ embedded?: boolean; eventId?: string | number | null }>(), { embedded: false, eventId: null })
 const emit = defineEmits<{ (e: 'close'): void; (e: 'changed'): void }>()
+defineExpose({ triggerDispatch: () => { showDispatch.value = true } })
 // 弹窗模式优先用 props 传入的 id，页面模式回退到路由参数
 const eventId = computed(() => props.eventId ?? route.params.id)
 

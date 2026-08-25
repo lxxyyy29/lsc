@@ -585,6 +585,7 @@ async function signupActivity(id: number) {
   }
 }
 async function submitHousehold() {
+  if (!householdForm.value.partyMemberId) { showMessage('请选择关联党员'); return }
   if (!householdForm.value.gridId) { showMessage('请选择所属网格'); return }
   if (!householdForm.value.householdName?.trim()) { showMessage('请填写户主姓名'); return }
   try { await http.post('/party/households', householdForm.value); showAddHousehold.value = false; loadHouseholds() } catch (e: any) { showMessage(e?.message) }

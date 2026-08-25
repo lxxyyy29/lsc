@@ -177,11 +177,12 @@ public class EventController {
             @RequestParam(required = false) String endDate,
             @RequestParam(required = false) Long areaId,
             @RequestParam(defaultValue = "false") boolean excludeHidden,
-            @RequestParam(defaultValue = "false") boolean includeArchived) {
+            @RequestParam(defaultValue = "false") boolean includeArchived,
+            @RequestParam(defaultValue = "false") boolean onlyArchived) {
         permissionGuard.require(PermissionCodes.API_EVENT_LIST);
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 100);
-        return ApiResponse.ok(eventService.queryEvents(externalEventId, safePage, safeSize, status, urgencyLevel, startDate, endDate, areaId, excludeHidden, includeArchived, sourceSystem));
+        return ApiResponse.ok(eventService.queryEvents(externalEventId, safePage, safeSize, status, urgencyLevel, startDate, endDate, areaId, excludeHidden, includeArchived, sourceSystem, onlyArchived));
     }
 
     /**

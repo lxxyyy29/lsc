@@ -73,7 +73,10 @@
           </el-button>
         </div>
         <p v-if="errors.location" class="field-error">{{ errors.location }}</p>
-        <div id="eventMap" style="height:250px;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;"></div>
+        <div style="position:relative;">
+          <div id="eventMap" style="height:250px;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;"></div>
+          <button type="button" @click="backToCenter" title="回到社区中心点" style="position:absolute;top:8px;right:8px;padding:4px 10px;border:1px solid #1890ff;border-radius:6px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2);z-index:10;"><i class="fas fa-home"></i> 回到中心</button>
+        </div>
         <p style="font-size:11px;color:#9ca3af;margin-top:4px;">点击地图标记位置，或拖动标记调整</p>
         <div v-if="form.longitude && form.latitude" style="font-size:11px;color:#52c41a;margin-top:4px;">
           已定位：{{ form.longitude.toFixed(6) }}, {{ form.latitude.toFixed(6) }}
@@ -122,6 +125,7 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createEvent, getGridTree, getDictItems, uploadEventImage } from '../api'
+import http from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { locateWithFallback } from '../utils/geolocation'
 import { showMessage } from '../utils/message'
@@ -177,6 +181,8 @@ function removeImage(idx: number) {
 let mapInstance: any = null
 let markerInstance: any = null
 let AMapLib: any = null
+// 地图初始中心点：优先读系统配置，失败时用默认坐标（拔蛟窝社区）
+let mapInitCenter: [number, number] = [113.939521, 22.971231]
 
 // 必填项校验错误提示：提交时逐项标红并在字段下方展示 tips，输入后自动清除
 const errors = reactive({ title: '', eventType: '', occurredAt: '', location: '', reportSource: '' })
@@ -229,9 +235,18 @@ async function initMap() {
     version: '2.0',
     plugins: ['AMap.Marker', 'AMap.Geocoder', 'AMap.Geolocation', 'AMap.CitySearch']
   })
+  // 读取系统配置的地图中心点（与网格管理页一致），失败时保持默认坐标
+  try {
+    const [lng, lat] = await Promise.all([
+      http.get('/system/config/map.center.lng'),
+      http.get('/system/config/map.center.lat'),
+    ])
+    const nLng = Number(lng), nLat = Number(lat)
+    if (!isNaN(nLng) && !isNaN(nLat)) mapInitCenter = [nLng, nLat]
+  } catch (e) { /* 接口失败保持默认值 */ }
   mapInstance = new AMapLib.Map('eventMap', {
     zoom: 15,
-    center: [113.939521, 22.971231],
+    center: mapInitCenter,
     mapStyle: 'amap://styles/normal',
     // 小尺寸选点地图用 2D 渲染，降低开销；弹窗内嵌入时容器尺寸由父级确定，延迟 resize 保证铺满
     viewMode: '2D',
@@ -249,7 +264,7 @@ async function initMap() {
 
   // 初始标记
   markerInstance = new AMapLib.Marker({
-    position: [113.939521, 22.971231],
+    position: mapInitCenter,
     draggable: true,
     map: mapInstance
   })
@@ -262,6 +277,12 @@ async function initMap() {
     form.value.latitude = lat
     reverseGeocode(lng, lat)
   })
+}
+
+// 快速回到地图中心点（系统配置的社区位置）
+function backToCenter() {
+  if (!mapInstance) return
+  mapInstance.setZoomAndCenter(15, mapInitCenter)
 }
 
 function setMarker(lng: number, lat: number) {

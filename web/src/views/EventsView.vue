@@ -15,7 +15,7 @@
     <div class="card">
       <!-- 筛选栏 -->
       <div class="filter-bar">
-        <select v-model="filters.status" class="filter-select">
+        <select v-model="filters.status" class="filter-select" @change="page = 1; loadData()">
           <option value="">全部状态</option>
           <option value="PENDING_AUDIT">待审核</option>
           <option value="IN_AUDIT">审核中</option>
@@ -24,6 +24,11 @@
           <option value="DISPATCHED_TO_WORK_ORDER">已派单</option>
           <option value="CLOSED">已关闭</option>
           <option value="IGNORED">已忽略</option>
+        </select>
+        <select v-model="filters.archivedScope" class="filter-select" @change="page = 1; loadData()">
+          <option value="active">进行中（不含已归档）</option>
+          <option value="all">全部（含已归档）</option>
+          <option value="archived">仅已归档</option>
         </select>
         <select v-model="filters.urgencyLevel" class="filter-select">
           <option value="">全部紧急程度</option>
@@ -45,9 +50,6 @@
           value-format="YYYY-MM-DD"
         />
         <button @click="loadData" class="filter-action"><i class="fas fa-search"></i> 查询</button>
-        <label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#6b7280;margin-left:8px;white-space:nowrap;">
-          <input type="checkbox" v-model="showArchived" @change="loadData" /> 显示已归档
-        </label>
       </div>
 
       <!-- 加载中 -->
@@ -147,11 +149,14 @@
     <!-- 事件详情弹窗（列表项点击直达，派单/关闭/归档操作后自动刷新列表；通过/驳回按钮在弹窗右下角） -->
     <div v-if="detailEventId" class="modal-overlay" @click.self="detailEventId = null">
       <div class="modal-box" style="width:960px;max-width:96vw;max-height:92vh;overflow-y:auto;">
-        <EventDetailView embedded :event-id="detailEventId" @close="detailEventId = null" @changed="loadData" />
-        <!-- 审核操作：仅待审核事件显示，位于弹窗右下角 -->
-        <div v-if="detailEvent?.currentStatus === 'PENDING_AUDIT'" style="display:flex;justify-content:flex-end;gap:8px;padding-top:14px;border-top:1px solid #e5e7eb;margin-top:14px;position:sticky;bottom:0;background:#fff;">
-          <button @click="handleAudit(detailEvent.id, 'reject')" style="padding:8px 24px;border:none;border-radius:6px;background:#ff4d4f;color:#fff;font-size:13px;cursor:pointer;">驳回</button>
-          <button @click="handleAudit(detailEvent.id, 'pass')" style="padding:8px 24px;border:none;border-radius:6px;background:#52c41a;color:#fff;font-size:13px;cursor:pointer;">通过</button>
+        <EventDetailView ref="detailRef" embedded :event-id="detailEventId" @close="detailEventId = null" @changed="loadData" />
+        <!-- 操作按钮：弹窗右下角 -->
+        <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:14px;border-top:1px solid #e5e7eb;margin-top:14px;position:sticky;bottom:0;background:#fff;">
+          <template v-if="detailEvent?.currentStatus === 'PENDING_AUDIT'">
+            <button @click="handleAudit(detailEvent.id, 'reject')" style="padding:8px 24px;border:none;border-radius:6px;background:#ff4d4f;color:#fff;font-size:13px;cursor:pointer;">驳回</button>
+            <button @click="handleAudit(detailEvent.id, 'pass')" style="padding:8px 24px;border:none;border-radius:6px;background:#52c41a;color:#fff;font-size:13px;cursor:pointer;">通过</button>
+          </template>
+          <button v-else-if="['WAITING_DISPATCH', 'IN_AUDIT'].includes(detailEvent?.currentStatus)" @click="detailRef?.triggerDispatch()" style="padding:8px 24px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">派发工单</button>
         </div>
       </div>
     </div>
@@ -191,6 +196,7 @@ const totalPages = ref(0)
 const showCreateModal = ref(false)
 const createRef = ref<InstanceType<typeof EventCreateView> | null>(null)
 const createLoading = ref(false)
+const detailRef = ref<InstanceType<typeof EventDetailView> | null>(null)
 
 // 调用内嵌创建表单的 submit，并由父级管理弹窗 footer 的 loading 态
 async function onCreate() {
@@ -216,11 +222,11 @@ const filters = reactive({
   sourceSystem: '',
   startDate: '',
   endDate: '',
+  archivedScope: 'active',
 })
 
 // 日期范围筛选：[开始, 结束]，value 为 YYYY-MM-DD 字符串
 const dateRange = ref<[string, string] | null>(null)
-const showArchived = ref(false)
 
 // 字典数据接口返回格式（与 src/api/index.ts 的 DictItem 一致）
 interface DictItem {
@@ -259,11 +265,8 @@ async function loadReportSources() {
   }
 }
 
-// 前端过滤：默认隐藏已归档事件，保持办理界面清爽
-const displayList = computed(() => {
-  if (showArchived.value) return list.value
-  return list.value.filter((e: any) => !e.archived)
-})
+// 后端已通过 includeArchived 参数过滤归档事件，前端 displayList 直接使用后端返回数据即可
+const displayList = computed(() => list.value)
 
 function goDetail(e: any) {
   detailEvent.value = e
@@ -362,7 +365,13 @@ async function loadData() {
     if (filters.status) params.status = filters.status
     if (filters.urgencyLevel) params.urgencyLevel = filters.urgencyLevel
     if (filters.sourceSystem) params.sourceSystem = filters.sourceSystem
-    if (showArchived.value) params.includeArchived = true
+    // archivedScope: active=仅非归档, all=含归档, archived=仅归档
+    if (filters.archivedScope === 'all') {
+      params.includeArchived = true
+    } else if (filters.archivedScope === 'archived') {
+      params.includeArchived = true
+      params.onlyArchived = true
+    }
     if (dateRange.value && dateRange.value.length === 2) {
       if (dateRange.value[0]) params.startDate = dateRange.value[0]
       if (dateRange.value[1]) params.endDate = dateRange.value[1]

@@ -292,7 +292,7 @@ public class EventServiceImpl implements EventService {
      * @return PagedResult<EventDetailVo> 分页事件详情列表
      */
     @Override
-    public PagedResult<EventDetailVo> queryEvents(String externalEventId, int page, int size, String status, String urgencyLevel, String startDate, String endDate, Long areaId, boolean excludeHidden, boolean includeArchived, String sourceSystem) {
+    public PagedResult<EventDetailVo> queryEvents(String externalEventId, int page, int size, String status, String urgencyLevel, String startDate, String endDate, Long areaId, boolean excludeHidden, boolean includeArchived, String sourceSystem, boolean onlyArchived) {
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(size, 100));
 
@@ -307,8 +307,8 @@ public class EventServiceImpl implements EventService {
         LocalDateTime end = parseEndDate(endDate);
 
         // Get total count and current page directly from MongoDB (native pagination)
-        long total = alarmEventMongoService.countEvents(externalEventId, excludeStatuses, status, start, end, excludeHidden, urgencyLevel, includeArchived, sourceSystem);
-        List<AlarmEventDocument> pageDocuments = alarmEventMongoService.queryEvents(externalEventId, safePage, safeSize, excludeStatuses, status, start, end, excludeHidden, urgencyLevel, includeArchived, sourceSystem);
+        long total = alarmEventMongoService.countEvents(externalEventId, excludeStatuses, status, start, end, excludeHidden, urgencyLevel, includeArchived, sourceSystem, onlyArchived);
+        List<AlarmEventDocument> pageDocuments = alarmEventMongoService.queryEvents(externalEventId, safePage, safeSize, excludeStatuses, status, start, end, excludeHidden, urgencyLevel, includeArchived, sourceSystem, onlyArchived);
 
         if (pageDocuments.isEmpty()) {
             return PagedResult.of(List.of(), total, safePage, safeSize);

@@ -1,5 +1,6 @@
 package com.changping.platform.modules.party.controller;
 
+import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;
 import com.changping.platform.modules.auth.security.PermissionGuard;
@@ -84,9 +85,13 @@ public class PartyController {
     @PostMapping("/households")
     public ApiResponse<Boolean> addHousehold(@RequestBody Map<String, Object> body) {
         requirePartyManagePermission();
+        Long partyMemberId = toLong(body.get("partyMemberId"));
+        if (partyMemberId == null) {
+            throw new BusinessException("VALIDATION_ERROR", "请选择关联党员");
+        }
         jdbcTemplate.update(
             "INSERT INTO sys_party_household (party_member_id, household_name, household_address, grid_id) VALUES (?, ?, ?, ?)",
-            body.get("partyMemberId"), body.get("householdName"), body.get("householdAddress"), body.get("gridId"));
+            partyMemberId, body.get("householdName"), body.get("householdAddress"), body.get("gridId"));
         return ApiResponse.ok(true);
     }
 

@@ -4,8 +4,12 @@
     <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:12px;font-size:13px;flex-wrap:wrap;">
       <span style="font-weight:600;color:#075985;"><i class="fas fa-map-pin"></i> 地图中心点</span>
       <span style="color:#6b7280;">地图类页面（看板/GIS/大屏）默认以此坐标为中心</span>
+      <input v-model="searchKeyword" type="text" placeholder="输入标志性建筑或位置名称（如：拔蛟窝社区）" style="flex:1;min-width:200px;max-width:320px;padding:5px 10px;border:1px solid #bfdbfe;border-radius:6px;font-size:13px;box-sizing:border-box;" @keyup.enter="searchPlace" />
+      <button @click="searchPlace" style="padding:5px 12px;border:1px solid #1890ff;border-radius:6px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;"><i class="fas fa-search"></i> 搜索</button>
+      <span style="color:#e5e7eb;">|</span>
       <input v-model="centerLng" type="number" step="0.000001" placeholder="经度" style="width:120px;padding:5px 10px;border:1px solid #bfdbfe;border-radius:6px;font-size:13px;box-sizing:border-box;" />
       <input v-model="centerLat" type="number" step="0.000001" placeholder="纬度" style="width:120px;padding:5px 10px;border:1px solid #bfdbfe;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+      <button @click="togglePickOnMap" :style="pickBtnStyle"><i class="fas fa-crosshairs"></i> {{ pickOnMap ? '点击地图选点中…' : '地图选点' }}</button>
       <button @click="saveMapCenter" class="btn-primary" style="padding:5px 16px;font-size:12px;">保存中心点</button>
     </div>
     <div class="grid-manage-page" :class="{ 'no-form': !formVisible }">
@@ -21,7 +25,7 @@
           v-for="g in flatTree"
           :key="g.id"
           class="tree-node"
-          :style="{ paddingLeft: g.depth * 18 + 12 + 'px' }"
+          :style="{ paddingLeft: treeNodePadding(g) }"
           :class="{ active: selectedId === g.id }"
           @click="onTreeNodeClick(g)"
         >
@@ -126,6 +130,22 @@ import { confirmDialog } from '../utils/dialog'
 // ==================== 地图中心点配置 ====================
 const centerLng = ref('113.939521')
 const centerLat = ref('22.971231')
+const searchKeyword = ref('')
+const pickOnMap = ref(false)
+const pickBtnStyle = computed(() => ({
+  padding: '5px 12px',
+  border: '1px solid ' + (pickOnMap.value ? '#f59e0b' : '#1890ff'),
+  borderRadius: '6px',
+  background: pickOnMap.value ? '#f59e0b' : '#1890ff',
+  color: '#fff',
+  fontSize: '12px',
+  cursor: 'pointer'
+}))
+
+function treeNodePadding(g: FlatNode): string {
+  return (g.depth * 18 + 12) + 'px'
+}
+let centerPickMarker: any = null
 
 async function loadMapCenter() {
   try {
@@ -136,6 +156,71 @@ async function loadMapCenter() {
     if (lng) centerLng.value = String(lng)
     if (lat) centerLat.value = String(lat)
   } catch (e) { /* 接口失败保持默认值 */ }
+}
+
+// 搜索标志性建筑/位置，自动锁定经纬度
+async function searchPlace() {
+  const kw = searchKeyword.value.trim()
+  if (!kw) { confirmDialog({ message: '请输入要搜索的位置名称' }); return }
+  if (!AMapLib.value || !map.value) { confirmDialog({ message: '地图未加载完成，请稍后再试' }); return }
+  try {
+    const placeSearch = new AMapLib.value.PlaceSearch({
+      city: '东莞',
+      citylimit: true,
+      pageSize: 1,
+      extensions: 'base'
+    })
+    placeSearch.search(kw, (status: string, result: any) => {
+      if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
+        const poi = result.poiList.pois[0]
+        const lng = poi.location.getLng()
+        const lat = poi.location.getLat()
+        centerLng.value = String(lng)
+        centerLat.value = String(lat)
+        // 地图定位到该点并打标记
+        map.value.setZoomAndCenter(15, [lng, lat])
+        showPickMarker(lng, lat, poi.name)
+        confirmDialog({ message: `已定位到「${poi.name}」\n经度 ${lng.toFixed(6)}，纬度 ${lat.toFixed(6)}\n点击"保存中心点"生效` })
+      } else {
+        confirmDialog({ message: `未找到「${kw}」，请尝试更精确的名称（如加"东莞"前缀）` })
+      }
+    })
+  } catch (e: any) {
+    confirmDialog({ message: '搜索失败：' + (e?.message || '地图服务异常') })
+  }
+}
+
+// 切换"点击地图选点"模式
+function togglePickOnMap() {
+  if (!map.value) { confirmDialog({ message: '地图未加载完成，请稍后再试' }); return }
+  pickOnMap.value = !pickOnMap.value
+  if (pickOnMap.value) {
+    if (mapClickHandler) map.value.off(mapClickHandler)
+    mapClickHandler = map.value.on('click', (e: any) => {
+      const lng = e.lnglat.getLng()
+      const lat = e.lnglat.getLat()
+      centerLng.value = String(lng)
+      centerLat.value = String(lat)
+      showPickMarker(lng, lat, '已选中心点')
+      // 退出选点模式
+      pickOnMap.value = false
+      if (mapClickHandler) { map.value.off(mapClickHandler); mapClickHandler = null }
+    })
+    confirmDialog({ message: '已进入地图选点模式，请在地图上点击目标位置' })
+  } else {
+    if (mapClickHandler) { map.value.off(mapClickHandler); mapClickHandler = null }
+  }
+}
+
+// 在地图上显示/更新选点标记
+function showPickMarker(lng: number, lat: number, label: string) {
+  if (!AMapLib.value || !map.value) return
+  if (centerPickMarker) { map.value.remove(centerPickMarker); centerPickMarker = null }
+  centerPickMarker = new AMapLib.value.Marker({
+    position: [lng, lat],
+    map: map.value,
+    label: { content: label, direction: 'top' }
+  })
 }
 
 async function saveMapCenter() {
@@ -795,7 +880,7 @@ onMounted(async () => {
   AMapLib.value = await AMapLoader.load({
     key: '5e00e01d2d2b6ca9e1eed533a15572e4',
     version: '2.0',
-    plugins: ['AMap.Polygon', 'AMap.Polyline', 'AMap.Marker', 'AMap.PolyEditor']
+    plugins: ['AMap.Polygon', 'AMap.Polyline', 'AMap.Marker', 'AMap.PolyEditor', 'AMap.PlaceSearch', 'AMap.Geocoder', 'AMap.AutoComplete']
   })
   map.value = new AMapLib.value.Map('gridManageMap', {
     zoom: 13,
