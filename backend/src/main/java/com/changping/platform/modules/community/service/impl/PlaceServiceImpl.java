@@ -3,6 +3,8 @@ package com.changping.platform.modules.community.service.impl;
 import com.changping.platform.modules.community.entity.PlaceEntity;
 import com.changping.platform.modules.community.mapper.PlaceMapper;
 import com.changping.platform.modules.community.service.PlaceService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
@@ -14,9 +16,11 @@ public class PlaceServiceImpl implements PlaceService {
 
     private final PlaceMapper mapper;
     private final JdbcTemplate jdbcTemplate;
-    public PlaceServiceImpl(PlaceMapper mapper, JdbcTemplate jdbcTemplate) {
+    private final ObjectMapper objectMapper;
+    public PlaceServiceImpl(PlaceMapper mapper, JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
         this.mapper = mapper;
         this.jdbcTemplate = jdbcTemplate;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -38,6 +42,10 @@ public class PlaceServiceImpl implements PlaceService {
                 result.add(e);
             }
         }
+        // risk_tags 在库中是 JSON 数组，回显给前端时统一转为逗号分隔字符串
+        for (PlaceEntity e : result) {
+            e.setRiskTags(jsonToRiskTags(e.getRiskTags()));
+        }
         return result;
     }
 
@@ -56,15 +64,60 @@ public class PlaceServiceImpl implements PlaceService {
         }
     }
     @Override
-    public PlaceEntity detail(Long id) { return mapper.findById(id); }
+    public PlaceEntity detail(Long id) {
+        PlaceEntity e = mapper.findById(id);
+        if (e != null) {
+            e.setRiskTags(jsonToRiskTags(e.getRiskTags()));
+        }
+        return e;
+    }
     @Override
     public boolean create(PlaceEntity e) {
         if (e.getStatus() == null) e.setStatus("ACTIVE");
+        // cmn_place.risk_tags 是 JSON 列，写入前把逗号分隔字符串转为 JSON 数组
+        e.setRiskTags(riskTagsToJson(e.getRiskTags()));
         mapper.insert(e);
         return true;
     }
     @Override
-    public boolean update(PlaceEntity e) { return mapper.update(e) > 0; }
+    public boolean update(PlaceEntity e) {
+        e.setRiskTags(riskTagsToJson(e.getRiskTags()));
+        return mapper.update(e) > 0;
+    }
     @Override
     public boolean delete(Long id) { return mapper.deleteById(id) > 0; }
+
+    /**
+     * 用户输入的逗号/顿号分隔字符串 → JSON 数组字符串（写入 cmn_place.risk_tags JSON 列）
+     * 空字符串或纯空白返回 null，避免 MySQL 拒绝非法 JSON
+     */
+    private String riskTagsToJson(String csv) {
+        if (csv == null || csv.trim().isEmpty()) return null;
+        String[] parts = csv.trim().split("[，,、]");
+        List<String> tags = new ArrayList<>();
+        for (String p : parts) {
+            String t = p.trim();
+            if (!t.isEmpty()) tags.add(t);
+        }
+        if (tags.isEmpty()) return null;
+        try {
+            return objectMapper.writeValueAsString(tags);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    /**
+     * 数据库 JSON 数组字符串 → 逗号分隔字符串（前端展示/编辑回显用）
+     * 兼容历史脏数据（非 JSON 字符串）：解析失败时原样返回
+     */
+    private String jsonToRiskTags(String json) {
+        if (json == null || json.isBlank()) return null;
+        try {
+            List<String> tags = objectMapper.readValue(json, new TypeReference<List<String>>() {});
+            return tags == null || tags.isEmpty() ? null : String.join(",", tags);
+        } catch (Exception ex) {
+            return json;
+        }
+    }
 }
