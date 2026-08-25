@@ -13,7 +13,7 @@
         <h1 class="page-title">账号管理</h1>
         <p class="page-desc">维护 Web 管理端账号，分配角色后账号即拥有对应角色的菜单与操作权限</p>
       </div>
-      <button @click="openCreate" class="btn btn-primary">+ 新增账号</button>
+      <button type="button" @click="openCreate" class="btn btn-primary">+ 新增账号</button>
     </div>
 
     <div class="card">
@@ -70,10 +70,10 @@
             </td>
             <td>
               <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <button @click="openEdit(u)" class="btn btn-default" style="padding:4px 10px;font-size:12px;">编辑</button>
-                <button @click="openRoles(u)" class="btn btn-default" style="padding:4px 10px;font-size:12px;">分配角色</button>
-                <button @click="openResetPwd(u)" class="btn btn-default" style="padding:4px 10px;font-size:12px;">重置密码</button>
-                <button @click="handleDelete(u)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;" :disabled="isSuperAdmin(u)">删除</button>
+                <button type="button" @click.stop="openEdit(u)" class="btn btn-default" style="padding:4px 10px;font-size:12px;">编辑</button>
+                <button type="button" @click.stop="openRoles(u)" class="btn btn-default" style="padding:4px 10px;font-size:12px;">分配角色</button>
+                <button type="button" @click.stop="openResetPwd(u)" class="btn btn-default" style="padding:4px 10px;font-size:12px;">重置密码</button>
+                <button type="button" @click.stop="handleDelete(u)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;" :disabled="isSuperAdmin(u)">删除</button>
               </div>
             </td>
           </tr>
@@ -121,8 +121,8 @@
           <p v-if="formError" style="color:#ef4444;font-size:12px;margin:0;">{{ formError }}</p>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
-          <button @click="showForm = false" class="btn btn-default">取消</button>
-          <button @click="submitForm" class="btn btn-primary" :disabled="saving">{{ saving ? '保存中...' : '保存' }}</button>
+          <button type="button" @click="showForm = false" class="btn btn-default">取消</button>
+          <button type="button" @click="submitForm" class="btn btn-primary" :disabled="saving">{{ saving ? '保存中...' : '保存' }}</button>
         </div>
       </div>
     </div>
@@ -140,8 +140,8 @@
           </label>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
-          <button @click="showRoles = false" class="btn btn-default">取消</button>
-          <button @click="submitRoles" class="btn btn-primary" :disabled="saving">{{ saving ? '保存中...' : '保存' }}</button>
+          <button type="button" @click="showRoles = false" class="btn btn-default">取消</button>
+          <button type="button" @click="submitRoles" class="btn btn-primary" :disabled="saving">{{ saving ? '保存中...' : '保存' }}</button>
         </div>
       </div>
     </div>
@@ -156,8 +156,8 @@
           <p v-if="pwdError" style="color:#ef4444;font-size:12px;margin:0;">{{ pwdError }}</p>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
-          <button @click="showPwd = false" class="btn btn-default">取消</button>
-          <button @click="submitResetPwd" class="btn btn-primary" :disabled="saving">{{ saving ? '保存中...' : '确认重置' }}</button>
+          <button type="button" @click="showPwd = false" class="btn btn-default">取消</button>
+          <button type="button" @click="submitResetPwd" class="btn btn-primary" :disabled="saving">{{ saving ? '保存中...' : '确认重置' }}</button>
         </div>
       </div>
     </div>
@@ -165,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { confirmDialog } from '../utils/dialog'
 import {
   getSystemUsers, getSystemUserDetail, createSystemUser, updateSystemUser,
@@ -438,6 +438,11 @@ async function handleDelete(u: any) {
 }
 
 onMounted(fetchData)
+
+watch([showForm, showRoles, showPwd], () => {
+  const anyOpen = showForm.value || showRoles.value || showPwd.value
+  document.body.style.overflow = anyOpen ? 'hidden' : ''
+})
 </script>
 
 <style scoped>
