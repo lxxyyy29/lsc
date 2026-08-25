@@ -67,7 +67,7 @@ public class LedgerService {
         StringBuilder sql = new StringBuilder(
             "SELECT e.event_code, e.title, e.event_type, " +
             "CASE e.report_source WHEN 'GRID_MEMBER' THEN '网格员' WHEN 'PUBLIC_REPORT' THEN '居民随手拍' WHEN 'RESIDENT_REPORT' THEN '居民随手拍' WHEN '12345' THEN '12345热线' WHEN 'PROPERTY' THEN '物业上报' WHEN 'MANUAL' THEN '平台录入' ELSE COALESCE(e.report_source, '-') END AS report_source, " +
-            "CASE e.status WHEN 'PENDING_AUDIT' THEN '待审核' WHEN 'IN_AUDIT' THEN '审核中' WHEN 'AUDIT_APPROVED' THEN '已通过' WHEN 'AUDIT_REJECTED' THEN '已驳回' WHEN 'WAITING_DISPATCH' THEN '待派单' WHEN 'DISPATCHED_TO_WORK_ORDER' THEN '已派单' WHEN 'CLOSED' THEN '已关闭' WHEN 'IGNORED' THEN '已忽略' ELSE e.status END AS status, " +
+            "CASE e.status WHEN 'PENDING_AUDIT' THEN '待审核' WHEN 'IN_AUDIT' THEN '审核中' WHEN 'AUDIT_APPROVED' THEN '已通过' WHEN 'AUDIT_REJECTED' THEN '已驳回' WHEN 'WAITING_DISPATCH' THEN '待派单' WHEN 'WAITING_LEADER_REVIEW' THEN '组长审核' WHEN 'DISPATCHED_TO_WORK_ORDER' THEN '已派单' WHEN 'CLOSED' THEN '已关闭' WHEN 'IGNORED' THEN '已忽略' ELSE e.status END AS status, " +
             "CASE e.urgency_level WHEN 'GREEN' THEN '一般（绿）' WHEN 'YELLOW' THEN '重点（黄）' WHEN 'RED' THEN '紧急（红）' ELSE e.urgency_level END AS urgency_level, " +
             "g.grid_name, e.incident_address, e.occurred_at, e.created_at " +
             "FROM biz_event e LEFT JOIN cmn_grid g ON g.id = e.grid_id WHERE COALESCE(e.archived, 0) = 0");

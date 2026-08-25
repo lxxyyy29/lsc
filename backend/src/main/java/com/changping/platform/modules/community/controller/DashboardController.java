@@ -107,7 +107,7 @@ public class DashboardController {
         Map<String, Object> badges = new LinkedHashMap<>();
         // 事件闭环处置：待审核 + 审核中 + 待派单（已读后新增；与全站口径一致排除归档事件）
         badges.put("eventsPending", countUnread(user.id(), "eventsPending", "biz_event",
-                "status IN ('PENDING_AUDIT','IN_AUDIT','WAITING_DISPATCH') AND COALESCE(archived, 0) = 0"));
+                "status IN ('PENDING_AUDIT','IN_AUDIT','WAITING_DISPATCH','WAITING_LEADER_REVIEW') AND COALESCE(archived, 0) = 0"));
         // 工单中心：待接单 + 处理中（已读后新增）
         badges.put("workOrdersPending", countUnread(user.id(), "workOrdersPending", "biz_work_order",
                 "status IN ('WAITING_ACCEPT','PROCESSING')"));

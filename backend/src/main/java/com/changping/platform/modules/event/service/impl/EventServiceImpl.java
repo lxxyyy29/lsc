@@ -1065,13 +1065,38 @@ public class EventServiceImpl implements EventService {
             jdbcTemplate.update(
                     "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'AUDIT_PASS', ?, ?, NOW())",
                     id, fromStatus, EventStatus.AUDIT_APPROVED.name(), operatorName, opinion);
-            jdbcTemplate.update(
-                    "UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ? AND status = ?",
-                    EventStatus.WAITING_DISPATCH.name(), id, EventStatus.AUDIT_APPROVED.name());
-            jdbcTemplate.update(
-                    "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'WAIT_DISPATCH', ?, '审核通过，进入待派单', NOW())",
-                    id, EventStatus.AUDIT_APPROVED.name(), EventStatus.WAITING_DISPATCH.name(), operatorName);
-            alarmWorkflowStatusSyncService.syncWorkflowStatus(id, EventStatus.WAITING_DISPATCH.name());
+
+            // 地理路由：检查事件所属网格是否有组长
+            EventEntity eventEntity = eventMapper.selectDetailById(id);
+            Long gridId = eventEntity != null ? eventEntity.getGridId() : null;
+            boolean hasLeader = false;
+            if (gridId != null) {
+                Integer leaderCount = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM cmn_org_member WHERE grid_id = ? AND status = 'ACTIVE' "
+                                + "AND (position LIKE '%组长%' OR position LIKE '%网格长%' OR member_type = 'LEADER')",
+                        Integer.class, gridId);
+                hasLeader = leaderCount != null && leaderCount > 0;
+            }
+
+            if (hasLeader) {
+                // 有组长 → 进入组长审核队列
+                jdbcTemplate.update(
+                        "UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ? AND status = ?",
+                        EventStatus.WAITING_LEADER_REVIEW.name(), id, EventStatus.AUDIT_APPROVED.name());
+                jdbcTemplate.update(
+                        "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'WAIT_LEADER_REVIEW', ?, '审核通过，进入组长审核', NOW())",
+                        id, EventStatus.AUDIT_APPROVED.name(), EventStatus.WAITING_LEADER_REVIEW.name(), operatorName);
+                alarmWorkflowStatusSyncService.syncWorkflowStatus(id, EventStatus.WAITING_LEADER_REVIEW.name());
+            } else {
+                // 无组长 → 走原待派单流程
+                jdbcTemplate.update(
+                        "UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ? AND status = ?",
+                        EventStatus.WAITING_DISPATCH.name(), id, EventStatus.AUDIT_APPROVED.name());
+                jdbcTemplate.update(
+                        "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'WAIT_DISPATCH', ?, '审核通过，进入待派单', NOW())",
+                        id, EventStatus.AUDIT_APPROVED.name(), EventStatus.WAITING_DISPATCH.name(), operatorName);
+                alarmWorkflowStatusSyncService.syncWorkflowStatus(id, EventStatus.WAITING_DISPATCH.name());
+            }
         } else {
             // 驳回：待审核/审核中 → 已驳回
             int updated = jdbcTemplate.update(
@@ -1151,6 +1176,7 @@ public class EventServiceImpl implements EventService {
         // 与事件列表页口径一致：仅计未归档的活跃事件，避免各页面同类指标数量不一致
         Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0", Long.class);
         Long waiting = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'WAITING_DISPATCH'", Long.class);
+        Long waitingLeader = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'WAITING_LEADER_REVIEW'", Long.class);
         Long dispatched = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'DISPATCHED_TO_WORK_ORDER'", Long.class);
         Long closed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'CLOSED'", Long.class);
         Long ignored = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'IGNORED'", Long.class);
@@ -1160,6 +1186,7 @@ public class EventServiceImpl implements EventService {
         return new EventStatistics(
                 total != null ? total : 0,
                 waiting != null ? waiting : 0,
+                waitingLeader != null ? waitingLeader : 0,
                 dispatched != null ? dispatched : 0,
                 closed != null ? closed : 0,
                 ignored != null ? ignored : 0,
@@ -1227,6 +1254,8 @@ public class EventServiceImpl implements EventService {
             case "AUDIT_PASS" -> "审核通过";
             case "AUDIT_REJECT" -> "审核驳回";
             case "WAIT_DISPATCH" -> "进入待派单";
+            case "WAIT_LEADER_REVIEW" -> "进入组长审核";
+            case "LEADER_DISPATCH" -> "组长派单";
             case "IN_AUDIT" -> "进入审核";
             case "EVENT_INTAKE" -> "事件登记";
             case "EVENT_IGNORE" -> "忽略事件";

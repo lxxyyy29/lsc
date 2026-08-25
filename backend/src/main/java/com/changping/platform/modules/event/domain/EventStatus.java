@@ -16,6 +16,8 @@ public enum EventStatus {
     AUDIT_REJECTED,
     /** 等待派发工单 */
     WAITING_DISPATCH,
+    /** 等待网格组长审核派单（两级派单：事件先推送网格组长，再由组长派给下属网格员） */
+    WAITING_LEADER_REVIEW,
     /** 已派发至工单 */
     DISPATCHED_TO_WORK_ORDER,
     /** 已关闭 */

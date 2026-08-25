@@ -168,6 +168,7 @@ public interface EventService {
     record EventStatistics(
             long total,
             long waitingDispatch,
+            long waitingLeaderReview,
             long dispatched,
             long closed,
             long ignored,

@@ -84,8 +84,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         if (workOrderExists(eventId)) {
             throw new BusinessException("WORK_ORDER_ALREADY_EXISTS", "事件已派发为工单");
         }
-        if (!"WAITING_DISPATCH".equals(event.getStatus())) {
-            throw new BusinessException("WORK_ORDER_DISPATCH_STATUS_INVALID", "事件必须处于待派发状态才能派发");
+        if (!"WAITING_DISPATCH".equals(event.getStatus()) && !"WAITING_LEADER_REVIEW".equals(event.getStatus())) {
+            throw new BusinessException("WORK_ORDER_DISPATCH_STATUS_INVALID", "事件必须处于待派发或组长审核状态才能派发");
         }
 
         // 按事件类型智能路由：推荐受理角色（前端据此过滤人员）
@@ -115,8 +115,12 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             throw exception;
         }
 
-        updateEventStatus(eventId, "DISPATCHED_TO_WORK_ORDER", "WAITING_DISPATCH", "WORK_ORDER_DISPATCH_STATUS_INVALID", "事件必须处于待派发状态才能派发");
-        insertEventRecord(eventId, "WAITING_DISPATCH", "DISPATCHED_TO_WORK_ORDER", "WORK_ORDER_DISPATCH", actor, request.remark());
+        String fromStatus = event.getStatus();
+        boolean fromLeaderReview = "WAITING_LEADER_REVIEW".equals(fromStatus);
+        String dispatchAction = fromLeaderReview ? "LEADER_DISPATCH" : "WORK_ORDER_DISPATCH";
+        String dispatchRemark = fromLeaderReview ? "组长派单" : "派发工单";
+        updateEventStatus(eventId, "DISPATCHED_TO_WORK_ORDER", fromStatus, "WORK_ORDER_DISPATCH_STATUS_INVALID", "事件状态已变化，请刷新后重试");
+        insertEventRecord(eventId, fromStatus, "DISPATCHED_TO_WORK_ORDER", dispatchAction, actor, request.remark());
         insertProcessActionRecord(processInstanceId, null, "WORK_ORDER_DISPATCH", PROCESS_STATUS_RUNNING, request.remark(), actor, null, null);
         return getWorkOrderByEventId(eventId);
     }
@@ -834,7 +838,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         if (updatedRows == 0) {
             throw new BusinessException(code, message);
         }
-        if ("WAITING_DISPATCH".equals(targetStatus) || "DISPATCHED_TO_WORK_ORDER".equals(targetStatus) || "CLOSED".equals(targetStatus)) {
+        if ("WAITING_DISPATCH".equals(targetStatus) || "WAITING_LEADER_REVIEW".equals(targetStatus) || "DISPATCHED_TO_WORK_ORDER".equals(targetStatus) || "CLOSED".equals(targetStatus)) {
             alarmWorkflowStatusSyncService.syncWorkflowStatus(eventId, targetStatus);
         }
     }
