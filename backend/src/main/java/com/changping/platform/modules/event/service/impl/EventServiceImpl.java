@@ -1223,6 +1223,20 @@ public class EventServiceImpl implements EventService {
             case "ARCHIVE" -> "归档留存";
             case "12345_IMPORT" -> "12345 热线转办";
             case "PROPERTY_REPORT" -> "物业上报";
+            case "RESIDENT_REPORT" -> "居民上报";
+            case "AUDIT_PASS" -> "审核通过";
+            case "AUDIT_REJECT" -> "审核驳回";
+            case "WAIT_DISPATCH" -> "进入待派单";
+            case "IN_AUDIT" -> "进入审核";
+            case "EVENT_INTAKE" -> "事件登记";
+            case "EVENT_IGNORE" -> "忽略事件";
+            case "AUDIT_APPROVE" -> "审核通过";
+            case "WORK_ORDER_DISPATCH" -> "工单派发";
+            case "WORK_ORDER_NOT_TRUE" -> "工单不属实";
+            case "WORK_ORDER_NEEDS_EVIDENCE" -> "工单需补证";
+            case "WORK_ORDER_WAITING_CLOSE" -> "工单待关闭确认";
+            case "CONFIRM_CLOSE" -> "确认关闭";
+            case "REJECT_CLOSE" -> "驳回关闭";
             default -> actionType;
         };
     }
