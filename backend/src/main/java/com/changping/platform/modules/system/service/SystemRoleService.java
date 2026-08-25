@@ -127,8 +127,24 @@ public class SystemRoleService {
      */
     @Transactional
     public RoleDetail createRole(CreateRoleRequest request) {
-        // 系统仅保留 4 个内置角色，不提供自定义角色
-        throw new BusinessException("SYSTEM_ROLE_FIXED", "系统采用固定的 4 个内置角色（超级管理员/管理员/网格员/居民），不支持新增角色");
+        // 自定义角色：校验编码/名称非空 + 编码唯一性（内置角色标识已在库中，重复创建会被唯一性校验拦截）
+        String roleCode = request.roleCode() == null ? "" : request.roleCode().trim();
+        String roleName = request.roleName() == null ? "" : request.roleName().trim();
+        validateUpsertRequest(roleCode, roleName, null);
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(
+                con -> {
+                    PreparedStatement ps = con.prepareStatement(
+                            "INSERT INTO sys_role (role_code, role_name, status, remark, created_at, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                            Statement.RETURN_GENERATED_KEYS);
+                    ps.setString(1, roleCode);
+                    ps.setString(2, roleName);
+                    ps.setString(3, normalizeStatus(request.status()));
+                    ps.setString(4, normalizeRemark(request.remark()));
+                    return ps;
+                },
+                keyHolder);
+        return getRoleDetail(extractGeneratedId(keyHolder));
     }
 
     /**
