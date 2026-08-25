@@ -60,6 +60,8 @@ export const menuGroups: MenuGroup[] = [
     name: '巡查防控', icon: 'fas fa-shield-alt',
     items: [
       { path: '/patrol', name: '网格巡查', permKey: 'web:menu:patrol' },
+      { path: '/drones', name: '无人机管理', permKey: 'web:menu:drones' },
+      { path: '/video', name: '视频轮巡', permKey: 'web:menu:video' },
       { path: '/parking', name: '停车管理', permKey: 'web:menu:parking' },
     ]
   },
@@ -67,8 +69,6 @@ export const menuGroups: MenuGroup[] = [
     name: '智慧应用', icon: 'fas fa-helicopter',
     items: [
       { path: '/party', name: '智慧党建', permKey: 'web:menu:party' },
-      { path: '/drones', name: '无人机管理', permKey: 'web:menu:drones' },
-      { path: '/video', name: '视频轮巡', permKey: 'web:menu:video' },
     ]
   },
   {
