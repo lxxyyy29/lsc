@@ -178,7 +178,13 @@ public class VideoCameraService {
             result.put("streamUrl", "/api/video/stream/" + id + "/index.m3u8");
             result.put("converted", true);
         } else {
-            result.put("streamUrl", camera.get("stream_url"));
+            String raw = str(camera.get("stream_url"));
+            // HTTP(S) 外部流：统一走 Web 端 /ext-video/ 同源代理，避免 HTTPS 页面因 Mixed Content 拦截导致无画面
+            // 代理格式: /ext-video/http://host:port/path -> proxy_pass http://host:port/path (nginx-web.conf location 正则)
+            if (raw.startsWith("http://") || raw.startsWith("https://")) {
+                raw = "/ext-video/" + raw;
+            }
+            result.put("streamUrl", raw);
             result.put("converted", false);
         }
         return result;

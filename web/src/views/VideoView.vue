@@ -331,14 +331,25 @@ async function playCamera(c: Camera) {
       loadingStream.value = false
       return
     }
-    if (stream.streamType === 'FLV' && !url.endsWith('.m3u8')) {
+    if (stream.streamType === 'FLV' && !url.endsWith('.m3u8') && !url.includes('.mp4')) {
+      loadingStream.value = false
+      return
+    }
+    const session = getSession()
+    const video = document.getElementById('videoPlayer') as HTMLVideoElement
+    if (!video) { loadingStream.value = false; return }
+    // 按 URL 后缀分流: .m3u8 -> hls.js; .mp4(含.live.mp4 fMP4直播) -> 浏览器原生 video 直出
+    const urlNoQuery = url.split('?')[0]
+    if (urlNoQuery.endsWith('.mp4')) {
+      video.src = url
+      video.autoplay = true
+      video.muted = true
+      video.playsInline = true
+      video.play().catch(() => { })
       loadingStream.value = false
       return
     }
     const Hls = (await import('hls.js')).default
-    const session = getSession()
-    const video = document.getElementById('videoPlayer') as HTMLVideoElement
-    if (!video) { loadingStream.value = false; return }
     if (Hls.isSupported()) {
       hlsPlayer = new Hls({
         enableWorker: true,
