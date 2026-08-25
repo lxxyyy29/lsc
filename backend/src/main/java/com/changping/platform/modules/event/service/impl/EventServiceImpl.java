@@ -283,10 +283,11 @@ public class EventServiceImpl implements EventService {
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(size, 100));
 
-        // 事件中心列表默认排除已派单与已忽略的事件,保持列表只展示真正需要处理的事件
-        List<String> excludeStatuses = List.of(
-                EventStatus.DISPATCHED_TO_WORK_ORDER.name(),
-                EventStatus.IGNORED.name());
+        // 事件中心列表默认排除已派单与已忽略的事件,保持列表只展示真正需要处理的事件；
+        // 勾选"显示已归档"时不排除任何状态，否则归档的 IGNORED/DISPATCHED 事件仍被过滤导致筛选失效
+        List<String> excludeStatuses = includeArchived
+                ? List.of()
+                : List.of(EventStatus.DISPATCHED_TO_WORK_ORDER.name(), EventStatus.IGNORED.name());
 
         // 解析日期范围(支持 yyyy-MM-dd 或 ISO 时间格式)，结束日期取当天末尾保证全天包含
         LocalDateTime start = parseStartDate(startDate);
