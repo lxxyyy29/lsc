@@ -102,10 +102,11 @@
       </div>
 
       <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">上报来源</label>
-        <el-select v-model="form.reportSource" placeholder="请输入" clearable style="width:100%;">
+        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">上报来源 <span style="color:#ff4d4f;">*</span></label>
+        <el-select v-model="form.reportSource" placeholder="请选择" :class="{ 'is-invalid': errors.reportSource }" clearable style="width:100%;">
           <el-option v-for="opt in reportSourceOptions" :key="opt.itemValue" :value="opt.itemValue" :label="opt.itemLabel" />
         </el-select>
+        <p v-if="errors.reportSource" class="field-error">{{ errors.reportSource }}</p>
       </div>
 
       <!-- 页面模式操作栏（弹窗模式的取消/创建按钮由父级 el-dialog 的 #footer 提供） -->
