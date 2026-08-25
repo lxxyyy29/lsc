@@ -30,7 +30,7 @@
             <th>菜单权限</th>
             <th>状态</th>
             <th>备注</th>
-            <th style="width:110px;">操作</th>
+            <th>操作</th>
           </tr>
         </thead>
         <tbody>

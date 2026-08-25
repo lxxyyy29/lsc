@@ -67,7 +67,7 @@
 
       <!-- 数据表格（表体固定高度滚动，表头吸顶，撑满页面可视区） -->
       <template v-else>
-        <div class="table-scroll" style="max-height:calc(100vh - 330px);min-height:240px;overflow-y:auto;">
+        <div class="table-scroll" style="max-height:calc(100vh - 400px);min-height:240px;overflow-y:auto;">
         <table class="table">
           <thead>
             <tr>
@@ -332,6 +332,11 @@ async function confirmAudit() {
     await auditEvent(id, action, remark.trim())
     auditModal.visible = false
     showMessage(action === 'pass' ? '审核已通过' : '已驳回该事件', 'success')
+    // 驳回后事件退回上报人，外层详情弹窗一并关闭，避免停留在已失效的详情视图
+    if (action === 'reject') {
+      detailEventId.value = null
+      detailEvent.value = null
+    }
     loadData()
   } catch (e: any) {
     showMessage(e?.message || '操作失败')
