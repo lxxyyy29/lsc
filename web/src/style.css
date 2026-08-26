@@ -17,6 +17,7 @@ input, select, textarea {
 .top-nav { height: 56px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
 .top-nav h1 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
 .top-nav h1 i { color: #0284c7; }
+.top-nav .brand-logo { width: 32px; height: 32px; object-fit: contain; }
 
 .sidebar { width: 240px; position: fixed; left: 0; top: 56px; bottom: 0; background: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.06); overflow-y: auto; z-index: 50; }
 .sidebar::-webkit-scrollbar { width: 4px; }

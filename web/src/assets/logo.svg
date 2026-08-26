@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="cGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+  </defs>
+  <!-- C shape (open circle, opening on the right) -->
+  <circle cx="60" cy="60" r="42" fill="none" stroke="url(#cGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="240 264" transform="rotate(-20 60 60)"/>
+  <!-- City skyline -->
+  <g fill="#0284c7">
+    <!-- Far background buildings -->
+    <rect x="25" y="68" width="8" height="18" rx="0.5"/>
+    <rect x="34" y="62" width="7" height="24" rx="0.5"/>
+    <rect x="42" y="72" width="6" height="14" rx="0.5"/>
+    <!-- Main buildings -->
+    <rect x="33" y="55" width="12" height="38" rx="1"/>
+    <rect x="46" y="45" width="10" height="48" rx="1"/>
+    <rect x="57" y="60" width="8" height="33" rx="1"/>
+    <rect x="66" y="50" width="11" height="43" rx="1"/>
+    <rect x="78" y="58" width="9" height="35" rx="1"/>
+    <rect x="88" y="66" width="7" height="27" rx="1"/>
+    <!-- Small foreground accents -->
+    <rect x="38" y="40" width="4" height="15" rx="0.5"/>
+    <rect x="50" y="36" width="3" height="9" rx="0.5"/>
+    <rect x="70" y="43" width="4" height="7" rx="0.5"/>
+  </g>
+  <!-- Building windows (subtle) -->
+  <g fill="rgba(255,255,255,0.35)">
+    <rect x="36" y="60" width="2" height="2"/><rect x="40" y="60" width="2" height="2"/>
+    <rect x="36" y="66" width="2" height="2"/><rect x="40" y="66" width="2" height="2"/>
+    <rect x="36" y="72" width="2" height="2"/><rect x="40" y="72" width="2" height="2"/>
+    <rect x="49" y="52" width="2" height="2"/><rect x="53" y="52" width="2" height="2"/>
+    <rect x="49" y="58" width="2" height="2"/><rect x="53" y="58" width="2" height="2"/>
+    <rect x="49" y="64" width="2" height="2"/><rect x="53" y="64" width="2" height="2"/>
+    <rect x="49" y="70" width="2" height="2"/><rect x="53" y="70" width="2" height="2"/>
+    <rect x="68" y="56" width="2" height="2"/><rect x="72" y="56" width="2" height="2"/>
+    <rect x="68" y="62" width="2" height="2"/><rect x="72" y="62" width="2" height="2"/>
+    <rect x="68" y="68" width="2" height="2"/><rect x="72" y="68" width="2" height="2"/>
+    <rect x="68" y="74" width="2" height="2"/><rect x="72" y="74" width="2" height="2"/>
+  </g>
+  <!-- Ground line -->
+  <rect x="28" y="92" width="68" height="2" rx="1" fill="#0284c7" opacity="0.5"/>
+</svg>
