@@ -119,9 +119,13 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         boolean fromLeaderReview = "WAITING_LEADER_REVIEW".equals(fromStatus);
         String dispatchAction = fromLeaderReview ? "LEADER_DISPATCH" : "WORK_ORDER_DISPATCH";
         String dispatchRemark = fromLeaderReview ? "组长派单" : "派发工单";
+        log.info("[DISPATCH] 派单开始: eventId={}, fromStatus={}, assignee={}({}), dispatcher={}, type={}",
+                eventId, fromStatus, assignee.name(), assignee.id(), actor.name(),
+                fromLeaderReview ? "LEADER_DISPATCH(组长派单)" : "WORK_ORDER_DISPATCH(普通派单)");
         updateEventStatus(eventId, "DISPATCHED_TO_WORK_ORDER", fromStatus, "WORK_ORDER_DISPATCH_STATUS_INVALID", "事件状态已变化，请刷新后重试");
         insertEventRecord(eventId, fromStatus, "DISPATCHED_TO_WORK_ORDER", dispatchAction, actor, request.remark());
         insertProcessActionRecord(processInstanceId, null, "WORK_ORDER_DISPATCH", PROCESS_STATUS_RUNNING, request.remark(), actor, null, null);
+        log.info("[DISPATCH] 派单完成: eventId={}, workOrderNo={}, assignee={}, type={}", eventId, workOrderNo, assignee.name(), dispatchAction);
         return getWorkOrderByEventId(eventId);
     }
 

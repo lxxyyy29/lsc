@@ -1069,16 +1069,22 @@ public class EventServiceImpl implements EventService {
             // 地理路由：检查事件所属网格是否有组长
             EventEntity eventEntity = eventMapper.selectDetailById(id);
             Long gridId = eventEntity != null ? eventEntity.getGridId() : null;
+            log.info("[GEO-ROUTE] 审核通过触发地理路由, eventId={}, gridId={}, operator={}", id, gridId, operatorName);
             boolean hasLeader = false;
+            Integer leaderCount = 0;
             if (gridId != null) {
-                Integer leaderCount = jdbcTemplate.queryForObject(
+                leaderCount = jdbcTemplate.queryForObject(
                         "SELECT COUNT(*) FROM cmn_org_member WHERE grid_id = ? AND status = 'ACTIVE' "
                                 + "AND (position LIKE '%组长%' OR position LIKE '%网格长%' OR member_type = 'LEADER')",
                         Integer.class, gridId);
                 hasLeader = leaderCount != null && leaderCount > 0;
+                log.info("[GEO-ROUTE] 网格组长查询完成, eventId={}, gridId={}, leaderCount={}, hasLeader={}", id, gridId, leaderCount, hasLeader);
+            } else {
+                log.info("[GEO-ROUTE] 事件未关联网格, eventId={}, gridId=null, 直接走待派单流程", id);
             }
 
             if (hasLeader) {
+                log.info("[GEO-ROUTE] 路由决策: eventId={}, gridId={} → WAITING_LEADER_REVIEW (组长审核), leaderCount={}", id, gridId, leaderCount);
                 // 有组长 → 进入组长审核队列
                 jdbcTemplate.update(
                         "UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ? AND status = ?",
@@ -1087,7 +1093,9 @@ public class EventServiceImpl implements EventService {
                         "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'WAIT_LEADER_REVIEW', ?, '审核通过，进入组长审核', NOW())",
                         id, EventStatus.AUDIT_APPROVED.name(), EventStatus.WAITING_LEADER_REVIEW.name(), operatorName);
                 alarmWorkflowStatusSyncService.syncWorkflowStatus(id, EventStatus.WAITING_LEADER_REVIEW.name());
+                log.info("[GEO-ROUTE] 路由落地完成: eventId={} 已更新为 WAITING_LEADER_REVIEW", id);
             } else {
+                log.info("[GEO-ROUTE] 路由决策: eventId={}, gridId={} → WAITING_DISPATCH (无组长，走普通派单)", id, gridId);
                 // 无组长 → 走原待派单流程
                 jdbcTemplate.update(
                         "UPDATE biz_event SET status = ?, updated_at = NOW() WHERE id = ? AND status = ?",
@@ -1096,6 +1104,7 @@ public class EventServiceImpl implements EventService {
                         "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at) VALUES (?, ?, ?, 'WAIT_DISPATCH', ?, '审核通过，进入待派单', NOW())",
                         id, EventStatus.AUDIT_APPROVED.name(), EventStatus.WAITING_DISPATCH.name(), operatorName);
                 alarmWorkflowStatusSyncService.syncWorkflowStatus(id, EventStatus.WAITING_DISPATCH.name());
+                log.info("[GEO-ROUTE] 路由落地完成: eventId={} 已更新为 WAITING_DISPATCH", id);
             }
         } else {
             // 驳回：待审核/审核中 → 已驳回
@@ -1159,7 +1168,7 @@ public class EventServiceImpl implements EventService {
                 eventId);
         for (Map<String, Object> record : records) {
             String action = mapActionName((String) record.get("action_type"));
-            String status = (String) record.get("to_status");
+            String status = mapStatusLabel((String) record.get("to_status"));
             String operator = (String) record.get("operator_name");
             String remark = (String) record.get("remark");
             java.sql.Timestamp ts = (java.sql.Timestamp) record.get("created_at");
@@ -1267,6 +1276,22 @@ public class EventServiceImpl implements EventService {
             case "CONFIRM_CLOSE" -> "确认关闭";
             case "REJECT_CLOSE" -> "驳回关闭";
             default -> actionType;
+        };
+    }
+
+    private String mapStatusLabel(String status) {
+        if (status == null) return "";
+        return switch (status) {
+            case "PENDING_AUDIT" -> "待审核";
+            case "IN_AUDIT" -> "审核中";
+            case "AUDIT_APPROVED" -> "已通过";
+            case "AUDIT_REJECTED" -> "已驳回";
+            case "WAITING_DISPATCH" -> "待派单";
+            case "WAITING_LEADER_REVIEW" -> "组长审核";
+            case "DISPATCHED_TO_WORK_ORDER" -> "已派单";
+            case "CLOSED" -> "已关闭";
+            case "IGNORED" -> "已忽略";
+            default -> status;
         };
     }
 

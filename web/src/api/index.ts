@@ -175,6 +175,19 @@ export async function smartDispatchEvent(eventId: number, remark?: string) {
   return http.post(`/work-orders/${eventId}/smart-dispatch`, { remark: remark || '' })
 }
 
+// 组长两级派单：Web 端组长派单（管理员可操作任意网格）
+export async function getLeaderDispatchInfo(eventId: number) {
+  return http.get(`/work-orders/leader/events/${eventId}/dispatch-info`)
+}
+
+export async function leaderDispatch(eventId: number, data: { assigneeUserId: number; remark?: string }) {
+  return http.post(`/work-orders/leader/events/${eventId}/dispatch`, data)
+}
+
+export async function getLeaderPendingEvents() {
+  return http.get('/work-orders/leader/pending-events')
+}
+
 // 派单规则管理（事件类型 → 受理角色）
 export async function getDispatchRules() {
   return http.get('/dispatch-rules')

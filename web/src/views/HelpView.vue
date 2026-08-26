@@ -85,7 +85,7 @@ const faqs = ref([
   {
     category: 'event',
     q: '事件的状态有哪些？',
-    a: '事件共有以下状态：<br>• <strong>待审核</strong>（PENDING_AUDIT）：新上报事件等待审核<br>• <strong>审核中</strong>（IN_AUDIT）：正在审核流程中<br>• <strong>待派单</strong>（WAITING_DISPATCH）：审核通过等待派发<br>• <strong>已派单</strong>（DISPATCHED_TO_WORK_ORDER）：已生成工单<br>• <strong>已关闭</strong>（CLOSED）：事件已处置完毕',
+    a: '事件共有以下状态：<br>• <strong>待审核</strong>（PENDING_AUDIT）：新上报事件等待审核<br>• <strong>审核中</strong>（IN_AUDIT）：正在审核流程中<br>• <strong>待派单</strong>（WAITING_DISPATCH）：审核通过等待派发<br>• <strong>组长审核</strong>（WAITING_LEADER_REVIEW）：事件已推送网格组长，等待组长派单给下属网格员<br>• <strong>已派单</strong>（DISPATCHED_TO_WORK_ORDER）：已生成工单<br>• <strong>已关闭</strong>（CLOSED）：事件已处置完毕',
     open: false
   },
   {

@@ -68,6 +68,14 @@ public final class PermissionCodes {
     public static final String API_H5_WORKORDER_DETAIL = "api:h5:workorder:detail";
     /** H5端工单处理接口权限 */
     public static final String API_H5_WORKORDER_HANDLE = "api:h5:workorder:handle";
+    /** H5端组长待办事件查看权限 */
+    public static final String API_H5_LEADER_PENDING = "api:h5:leader:pending";
+    /** H5端组长派单权限 */
+    public static final String API_H5_LEADER_DISPATCH = "api:h5:leader:dispatch";
+    /** Web端组长待办事件查看权限 */
+    public static final String API_LEADER_PENDING = "api:leader:pending";
+    /** Web端组长派单权限 */
+    public static final String API_LEADER_DISPATCH = "api:leader:dispatch";
 
     /** 系统管理目录权限 */
     public static final String CATALOG_SYSTEM = "catalog:system";

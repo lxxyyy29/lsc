@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class SmartDispatchService {
+
+    private static final Logger log = LoggerFactory.getLogger(SmartDispatchService.class);
 
     /** 未配置规则时的默认受理角色：网格员 */
     private static final String DEFAULT_ROLE_CODE = "H5_WORKER";
@@ -180,14 +184,26 @@ public class SmartDispatchService {
      */
     private Map<String, Object> queryEventMeta(Long eventId) {
         List<Map<String, Object>> rows = jdbcTemplate.query(
-                "SELECT e.event_type AS eventType, e.grid_id AS gridId, g.grid_name AS gridName "
+                "SELECT e.id, e.event_type AS eventType, e.grid_id AS gridId, g.grid_name AS gridName, "
+                        + "e.title, e.event_code AS eventCode, e.status, e.urgency_level AS urgencyLevel, "
+                        + "e.incident_address AS location "
                         + "FROM biz_event e LEFT JOIN cmn_grid g ON g.id = e.grid_id WHERE e.id = ?",
                 (rs, rowNum) -> {
                     Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("id", rs.getLong("id"));
                     row.put("eventType", rs.getString("eventType"));
                     long gid = rs.getLong("gridId");
                     row.put("gridId", rs.wasNull() ? null : gid);
                     row.put("gridName", rs.getString("gridName"));
+                    row.put("title", rs.getString("title"));
+                    row.put("eventCode", rs.getString("eventCode"));
+                    String status = rs.getString("status");
+                    row.put("currentStatus", status);
+                    row.put("statusLabel", mapStatusLabel(status));
+                    String urgency = rs.getString("urgencyLevel");
+                    row.put("urgency", urgency);
+                    row.put("urgencyLabel", mapUrgencyLabel(urgency));
+                    row.put("location", rs.getString("location"));
                     return row;
                 },
                 eventId);
@@ -278,12 +294,21 @@ public class SmartDispatchService {
                     row.put("orgMemberId", rs.getLong("orgMemberId"));
                     row.put("userId", rs.getLong("userId"));
                     row.put("name", rs.getString("name"));
-                    row.put("position", rs.getString("position"));
+                    String position = rs.getString("position");
+                    row.put("position", position);
+                    row.put("positionLabel", mapPositionLabel(position));
                     row.put("gridName", rs.getString("gridName"));
                     return row;
                 },
                 gridId);
-        return leaders.isEmpty() ? null : leaders.get(0);
+        Map<String, Object> result = leaders.isEmpty() ? null : leaders.get(0);
+        if (result != null) {
+            log.info("[LEADER-LOOKUP] 网格组长查询成功: gridId={}, leader={}({}), orgMemberId={}",
+                    gridId, result.get("name"), result.get("userId"), result.get("orgMemberId"));
+        } else {
+            log.info("[LEADER-LOOKUP] 网格未找到组长: gridId={}", gridId);
+        }
+        return result;
     }
 
     /**
@@ -291,10 +316,18 @@ public class SmartDispatchService {
      */
     public List<Candidate> findLeaderSubordinates(Long leaderOrgMemberId) {
         if (leaderOrgMemberId == null) return List.of();
+        // 先获取组长的 grid_id
+        Long gridId = jdbcTemplate.queryForObject(
+                "SELECT grid_id FROM cmn_org_member WHERE id = ?",
+                Long.class, leaderOrgMemberId);
+        if (gridId == null) return List.of();
+
         List<Map<String, Object>> subordinates = jdbcTemplate.query(
                 "SELECT m.sys_user_id AS userId, m.name, m.position "
                         + "FROM cmn_org_member m "
-                        + "WHERE m.leader_id = ? AND m.status = 'ACTIVE' AND m.member_type = 'GRID_WORKER' "
+                        + "WHERE m.grid_id = ? AND m.status = 'ACTIVE' AND m.member_type = 'GRID_WORKER' "
+                        + "AND m.id != ? "
+                        + "AND NOT (m.position LIKE '%组长%' OR m.position LIKE '%网格长%') "
                         + "ORDER BY m.id ASC",
                 (rs, rowNum) -> {
                     Map<String, Object> row = new LinkedHashMap<>();
@@ -302,7 +335,7 @@ public class SmartDispatchService {
                     row.put("name", rs.getString("name"));
                     return row;
                 },
-                leaderOrgMemberId);
+                gridId, leaderOrgMemberId);
 
         List<Candidate> candidates = new ArrayList<>();
         for (Map<String, Object> sub : subordinates) {
@@ -321,19 +354,24 @@ public class SmartDispatchService {
 
     /**
      * 查询指定组长的待审核事件列表（WAITING_LEADER_REVIEW 状态）
+     * 仅返回该用户作为组长（position含组长/网格长 或 member_type=LEADER）的网格内的事件
      */
     public List<Map<String, Object>> findLeaderPendingEvents(Long leaderUserId) {
         if (leaderUserId == null) return List.of();
-        // 找组长负责的网格
+        // 找用户担任组长的网格（必须是组长身份，排除普通网格员）
         List<Long> gridIds = jdbcTemplate.queryForList(
                 "SELECT DISTINCT grid_id FROM cmn_org_member "
-                        + "WHERE sys_user_id = ? AND status = 'ACTIVE' AND grid_id IS NOT NULL",
+                        + "WHERE sys_user_id = ? AND status = 'ACTIVE' AND grid_id IS NOT NULL "
+                        + "AND (position LIKE '%组长%' OR position LIKE '%网格长%' OR member_type = 'LEADER')",
                 Long.class,
                 leaderUserId);
-        if (gridIds.isEmpty()) return List.of();
+        if (gridIds.isEmpty()) {
+            log.info("[LEADER-PENDING] 用户未在任何网格担任组长: leaderUserId={}", leaderUserId);
+            return List.of();
+        }
 
         String placeholders = String.join(",", gridIds.stream().map(id -> "?").toList());
-        return jdbcTemplate.query(
+        List<Map<String, Object>> events = jdbcTemplate.query(
                 "SELECT e.id, e.event_code, e.title, e.event_type, e.status, e.incident_address, "
                         + "e.urgency_level, e.created_at, g.grid_name AS gridName "
                         + "FROM biz_event e "
@@ -347,15 +385,63 @@ public class SmartDispatchService {
                     row.put("eventCode", rs.getString("event_code"));
                     row.put("title", rs.getString("title"));
                     row.put("eventType", rs.getString("event_type"));
-                    row.put("status", rs.getString("status"));
-                    row.put("incidentAddress", rs.getString("incident_address"));
-                    row.put("urgencyLevel", rs.getString("urgency_level"));
+                    String status = rs.getString("status");
+                    row.put("currentStatus", status);
+                    row.put("statusLabel", mapStatusLabel(status));
+                    row.put("location", rs.getString("incident_address"));
+                    String urgency = rs.getString("urgency_level");
+                    row.put("urgency", urgency);
+                    row.put("urgencyLabel", mapUrgencyLabel(urgency));
                     row.put("gridName", rs.getString("gridName"));
                     java.sql.Timestamp ts = rs.getTimestamp("created_at");
-                    row.put("createdAt", ts != null ? ts.toLocalDateTime() : null);
+                    row.put("occurredAt", ts != null ? ts.toLocalDateTime() : null);
                     return row;
                 },
                 gridIds.toArray());
+        log.info("[LEADER-PENDING] 查询组长待办完成: leaderUserId={}, grids={}, pendingCount={}", leaderUserId, gridIds, events.size());
+        return events;
+    }
+
+    /**
+     * 事件状态 → 中文标签
+     */
+    private String mapStatusLabel(String status) {
+        if (status == null) return "";
+        return switch (status) {
+            case "PENDING_AUDIT" -> "待审核";
+            case "IN_AUDIT" -> "审核中";
+            case "AUDIT_APPROVED" -> "已通过";
+            case "AUDIT_REJECTED" -> "已驳回";
+            case "WAITING_DISPATCH" -> "待派单";
+            case "WAITING_LEADER_REVIEW" -> "组长审核";
+            case "DISPATCHED_TO_WORK_ORDER" -> "已派单";
+            case "CLOSED" -> "已关闭";
+            case "IGNORED" -> "已忽略";
+            default -> status;
+        };
+    }
+
+    /**
+     * 紧急程度 → 中文标签
+     */
+    private String mapUrgencyLabel(String urgency) {
+        if (urgency == null) return "";
+        return switch (urgency) {
+            case "GREEN" -> "一般";
+            case "YELLOW" -> "重点";
+            case "RED" -> "紧急";
+            default -> urgency;
+        };
+    }
+
+    /**
+     * 职位 → 中文标签
+     */
+    private String mapPositionLabel(String position) {
+        if (position == null) return "";
+        if (position.contains("组长") || position.contains("网格长")) return "网格组长";
+        if (position.contains("网格员") || position.contains("巡查")) return "网格员";
+        return position;
     }
 
     /**
@@ -365,23 +451,35 @@ public class SmartDispatchService {
         Map<String, Object> result = new LinkedHashMap<>();
         Map<String, Object> event = queryEventMeta(eventId);
         Long gridId = (Long) event.get("gridId");
+        log.info("[LEADER-DISPATCH-INFO] 查询事件派单信息: eventId={}, gridId={}", eventId, gridId);
         if (gridId == null) {
             result.put("leaderFound", false);
             result.put("reason", "事件未关联网格");
+            log.info("[LEADER-DISPATCH-INFO] eventId={} 未关联网格，无法进行组长派单", eventId);
             return result;
         }
         Map<String, Object> leader = findGridLeader(gridId);
         if (leader == null) {
             result.put("leaderFound", false);
             result.put("reason", "网格未配置组长");
+            log.info("[LEADER-DISPATCH-INFO] eventId={} gridId={} 未配置组长", eventId, gridId);
             return result;
         }
         Long leaderOrgMemberId = (Long) leader.get("orgMemberId");
-        List<Candidate> subordinates = findLeaderSubordinates(leaderOrgMemberId);
+        List<Candidate> candidateList = findLeaderSubordinates(leaderOrgMemberId);
+        List<Map<String, Object>> subordinates = candidateList.stream().map(c -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("userId", c.id());
+            m.put("name", c.name());
+            m.put("pendingCount", c.pendingCount());
+            return m;
+        }).toList();
         result.put("leaderFound", true);
         result.put("leader", leader);
         result.put("subordinates", subordinates);
         result.put("event", event);
+        log.info("[LEADER-DISPATCH-INFO] eventId={} gridId={} leader={}({}) subordinates={}",
+                eventId, gridId, leader.get("name"), leader.get("userId"), subordinates.size());
         return result;
     }
 

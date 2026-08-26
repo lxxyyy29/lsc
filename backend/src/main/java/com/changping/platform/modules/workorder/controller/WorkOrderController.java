@@ -218,4 +218,53 @@ public class WorkOrderController {
         return ApiResponse.ok(null);
     }
 
+    /**
+     * Web端组长待办事件列表（用于事件列表中「组长审核」状态的派发操作）
+     */
+    @GetMapping("/leader/pending-events")
+    public ApiResponse<List<Map<String, Object>>> getLeaderPendingEvents() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_LEADER_PENDING);
+        Long userId = currentUserService.requireClientType(AuthService.ClientType.WEB).id();
+        return ApiResponse.ok(smartDispatchService.findLeaderPendingEvents(userId));
+    }
+
+    /**
+     * Web端组长派单：查询事件派单信息（Web端管理员可查看任意网格的派单信息）
+     */
+    @GetMapping("/leader/events/{eventId}/dispatch-info")
+    public ApiResponse<Map<String, Object>> getLeaderDispatchInfo(@PathVariable Long eventId) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_LEADER_DISPATCH);
+        Map<String, Object> info = smartDispatchService.getLeaderDispatchInfo(eventId);
+        return ApiResponse.ok(info);
+    }
+
+    /**
+     * Web端组长派单：将事件派发给下属网格员
+     */
+    @PostMapping("/leader/events/{eventId}/dispatch")
+    public ApiResponse<WorkOrderEntity> leaderDispatch(
+            @PathVariable Long eventId,
+            @RequestBody Map<String, Object> body) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_LEADER_DISPATCH);
+
+        Map<String, Object> info = smartDispatchService.getLeaderDispatchInfo(eventId);
+        if (!Boolean.TRUE.equals(info.get("leaderFound"))) {
+            throw new com.changping.platform.common.exception.BusinessException(
+                    "NO_LEADER", "该事件未配置组长，无法执行组长派单");
+        }
+
+        Long assigneeUserId = body.get("assigneeUserId") != null
+                ? Long.valueOf(body.get("assigneeUserId").toString())
+                : null;
+        String remark = body.getOrDefault("remark", "") != null
+                ? body.getOrDefault("remark", "").toString()
+                : "";
+
+        WorkOrderService.DispatchRequest req = new WorkOrderService.DispatchRequest(assigneeUserId, remark);
+        return ApiResponse.ok(workOrderService.dispatch(eventId, req));
+    }
+
 }

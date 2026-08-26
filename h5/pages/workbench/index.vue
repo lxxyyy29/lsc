@@ -127,7 +127,7 @@ import GridWorkerTabBar from '../../src/components/GridWorkerTabBar.vue'
 import AppIcon from '../../src/components/AppIcon.vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getH5Session } from '../../src/api/auth'
-import { hasMenuPermission } from '../../src/auth/permissions'
+import { hasMenuPermission, hasPermission } from '../../src/auth/permissions'
 import { getWorkbenchData, type PendingCountItem, type ShortcutItem, type WorkOrderItem } from '../../src/api/workorder'
 import { getMyReportedEvents } from '../../src/api/event'
 import { ensureAuthenticated, navigateToPath } from '../../src/uni/navigation'
@@ -197,6 +197,11 @@ const managementShortcuts = computed<ManagementShortcut[]>(() => {
   // if (hasMenuPermission('menu:h5:message:view')) {
   //   items.push({ key: 'messages', label: '信息互通', to: '/messages', icon: 'chat' })
   // }
+  // 组长派单：如果用户有组长派单权限码，显示组长工作台入口
+  const session = getH5Session()
+  if (session?.permissionCodes?.includes('api:h5:leader:dispatch')) {
+    items.push({ key: 'leader', label: '组长工作台', to: '/pages/leader/pending', icon: 'briefcase' })
+  }
   return items
 })
 const allActionCards = computed(() => [...shortcutCards.value, ...managementShortcuts.value])

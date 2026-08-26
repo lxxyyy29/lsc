@@ -58,6 +58,7 @@ function statusLabel(status: string) {
   const map: any = {
     PENDING: '待处理',
     WAITING_DISPATCH: '待派单',
+    WAITING_LEADER_REVIEW: '组长审核',
     DISPATCHED_TO_WORK_ORDER: '处理中',
     PROCESSING: '处理中',
     WAITING_CLOSE_CONFIRM: '待确认',

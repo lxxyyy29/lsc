@@ -271,3 +271,57 @@ export async function getHistoryData(): Promise<HistoryData> {
     uploadRecords: []
   }
 }
+
+// ─── 组长派单 API ────────────────────────────────────────────────────────────
+
+export interface LeaderPendingEvent {
+  id: number
+  eventCode: string
+  title: string
+  eventType: string
+  currentStatus: string
+  statusLabel: string
+  urgency: string
+  urgencyLabel: string
+  location: string
+  gridName: string
+  occurredAt: string
+}
+
+export interface LeaderDispatchSubordinate {
+  userId: number
+  name: string
+  pendingCount: number
+}
+
+export interface LeaderDispatchInfo {
+  leaderFound: boolean
+  reason?: string
+  leader?: {
+    userId: number
+    name: string
+    positionLabel: string
+  }
+  event?: {
+    id: number
+    title: string
+    currentStatus: string
+    statusLabel: string
+    urgency: string
+    urgencyLabel: string
+    location: string
+  }
+  subordinates: LeaderDispatchSubordinate[]
+}
+
+export async function getLeaderPendingEvents(): Promise<LeaderPendingEvent[]> {
+  return http.get<LeaderPendingEvent[]>('/h5/leader/pending-events')
+}
+
+export async function getLeaderDispatchInfo(eventId: number): Promise<LeaderDispatchInfo> {
+  return http.get<LeaderDispatchInfo>(`/h5/leader/events/${eventId}/dispatch-info`)
+}
+
+export async function leaderDispatch(eventId: number, assigneeUserId: number, remark?: string): Promise<any> {
+  return http.post(`/h5/leader/events/${eventId}/dispatch`, { assigneeUserId, remark: remark || '' })
+}

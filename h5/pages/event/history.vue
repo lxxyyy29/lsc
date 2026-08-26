@@ -34,6 +34,7 @@ const loading = ref(true)
 function statusLabel(status: string) {
   const map: Record<string, string> = {
     WAITING_DISPATCH: '待派单',
+    WAITING_LEADER_REVIEW: '组长审核',
     DISPATCHED_TO_WORK_ORDER: '处理中',
     PENDING_AUDIT: '待审核',
     IN_AUDIT: '审核中',
@@ -76,6 +77,7 @@ onShow(async () => {
 .record-code { font-size: 12px; color: #57b9ff; }
 .record-status { font-size: 12px; }
 .status--WAITING_DISPATCH { color: #f0c060; }
+.status--WAITING_LEADER_REVIEW { color: #57b9ff; }
 .status--DISPATCHED_TO_WORK_ORDER { color: #57b9ff; }
 .status--PENDING_AUDIT { color: #f0c060; }
 .status--IN_AUDIT { color: #f0c060; }

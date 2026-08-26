@@ -1,6 +1,7 @@
 package com.changping.platform.modules.workorder.service;
 
 import com.changping.platform.modules.workorder.entity.WorkOrderEntity;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
 
@@ -155,6 +156,32 @@ public interface WorkOrderService {
             boolean isCurrentHandler,
             String areaName,
             String urgencyLevel) {
+
+        @JsonProperty
+        public String statusLabel() {
+            if (status == null) return "";
+            return switch (status) {
+                case "PROCESSING" -> "处理中";
+                case "WAITING_ACCEPT" -> "待受理";
+                case "WAITING_CLOSE_CONFIRM" -> "待关闭确认";
+                case "WAITING_VERIFY" -> "待验证";
+                case "COMPLETED" -> "已完成";
+                case "CLOSED" -> "已关闭";
+                case "TIMEOUT" -> "已超时";
+                default -> status;
+            };
+        }
+
+        @JsonProperty
+        public String urgencyLabel() {
+            if (urgencyLevel == null) return "";
+            return switch (urgencyLevel) {
+                case "GREEN" -> "一般";
+                case "YELLOW" -> "重点";
+                case "RED" -> "紧急";
+                default -> urgencyLevel;
+            };
+        }
     }
 
     record H5ProcessNodeVo(
@@ -176,6 +203,21 @@ public interface WorkOrderService {
             Long subjectId,
             String subjectName,
             @com.fasterxml.jackson.annotation.JsonRawValue String attachments) {
+
+        @JsonProperty
+        public String actionLabel() {
+            if (action == null) return "";
+            return switch (action) {
+                case "LEADER_DISPATCH" -> "组长派单";
+                case "WORK_ORDER_DISPATCH" -> "工单派发";
+                case "WORK_ORDER_START" -> "工单创建";
+                case "HANDLE" -> "处置";
+                case "ACCEPT" -> "受理";
+                case "COMPLETE" -> "完成";
+                case "CLOSE" -> "关闭";
+                default -> action;
+            };
+        }
     }
 
     record H5WorkOrderDetail(
@@ -196,6 +238,21 @@ public interface WorkOrderService {
             boolean isCurrentHandler,
             java.util.List<H5ProcessNodeVo> processNodes,
             java.util.List<H5ActionRecordVo> actionRecords) {
+
+        @JsonProperty
+        public String statusLabel() {
+            if (status == null) return "";
+            return switch (status) {
+                case "PROCESSING" -> "处理中";
+                case "WAITING_ACCEPT" -> "待受理";
+                case "WAITING_CLOSE_CONFIRM" -> "待关闭确认";
+                case "WAITING_VERIFY" -> "待验证";
+                case "COMPLETED" -> "已完成";
+                case "CLOSED" -> "已关闭";
+                case "TIMEOUT" -> "已超时";
+                default -> status;
+            };
+        }
     }
 
     record WebWorkOrderSummary(
@@ -213,6 +270,32 @@ public interface WorkOrderService {
             String areaName,
             String urgencyLevel,
             Boolean hidden) {
+
+        @JsonProperty
+        public String statusLabel() {
+            if (status == null) return "";
+            return switch (status) {
+                case "PROCESSING" -> "处理中";
+                case "WAITING_ACCEPT" -> "待受理";
+                case "WAITING_CLOSE_CONFIRM" -> "待关闭确认";
+                case "WAITING_VERIFY" -> "待验证";
+                case "COMPLETED" -> "已完成";
+                case "CLOSED" -> "已关闭";
+                case "TIMEOUT" -> "已超时";
+                default -> status;
+            };
+        }
+
+        @JsonProperty
+        public String urgencyLabel() {
+            if (urgencyLevel == null) return "";
+            return switch (urgencyLevel) {
+                case "GREEN" -> "一般";
+                case "YELLOW" -> "重点";
+                case "RED" -> "紧急";
+                default -> urgencyLevel;
+            };
+        }
     }
 
     record PagedWorkOrders(
@@ -243,6 +326,49 @@ public interface WorkOrderService {
             java.time.LocalDateTime closedAt,
             List<WebWorkOrderFlowRecord> flowRecords,
             String urgencyLevel) {
+
+        @JsonProperty
+        public String statusLabel() {
+            if (status == null) return "";
+            return switch (status) {
+                case "PROCESSING" -> "处理中";
+                case "WAITING_ACCEPT" -> "待受理";
+                case "WAITING_CLOSE_CONFIRM" -> "待关闭确认";
+                case "WAITING_VERIFY" -> "待验证";
+                case "COMPLETED" -> "已完成";
+                case "CLOSED" -> "已关闭";
+                case "TIMEOUT" -> "已超时";
+                default -> status;
+            };
+        }
+
+        @JsonProperty
+        public String eventStatusLabel() {
+            if (eventStatus == null) return "";
+            return switch (eventStatus) {
+                case "PENDING_AUDIT" -> "待审核";
+                case "IN_AUDIT" -> "审核中";
+                case "AUDIT_APPROVED" -> "已通过";
+                case "AUDIT_REJECTED" -> "已驳回";
+                case "WAITING_DISPATCH" -> "待派单";
+                case "WAITING_LEADER_REVIEW" -> "组长审核";
+                case "DISPATCHED_TO_WORK_ORDER" -> "已派单";
+                case "CLOSED" -> "已关闭";
+                case "IGNORED" -> "已忽略";
+                default -> eventStatus;
+            };
+        }
+
+        @JsonProperty
+        public String urgencyLabel() {
+            if (urgencyLevel == null) return "";
+            return switch (urgencyLevel) {
+                case "GREEN" -> "一般";
+                case "YELLOW" -> "重点";
+                case "RED" -> "紧急";
+                default -> urgencyLevel;
+            };
+        }
     }
 
     record WebWorkOrderFlowRecord(
@@ -257,5 +383,20 @@ public interface WorkOrderService {
             Long subjectId,
             String subjectName,
             @com.fasterxml.jackson.annotation.JsonRawValue String attachments) {
+
+        @JsonProperty
+        public String actionLabel() {
+            if (action == null) return "";
+            return switch (action) {
+                case "LEADER_DISPATCH" -> "组长派单";
+                case "WORK_ORDER_DISPATCH" -> "工单派发";
+                case "WORK_ORDER_START" -> "工单创建";
+                case "HANDLE" -> "处置";
+                case "ACCEPT" -> "受理";
+                case "COMPLETE" -> "完成";
+                case "CLOSE" -> "关闭";
+                default -> action;
+            };
+        }
     }
 }

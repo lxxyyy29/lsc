@@ -111,6 +111,82 @@
         </div>
       </div>
 
+      <!-- 组长派单弹窗（WAITING_LEADER_REVIEW 状态专用） -->
+      <div v-if="showLeaderDispatch" class="modal-overlay" style="z-index:10000;">
+        <div class="modal-box" style="width:560px;">
+          <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">组长派单 · 二级派发</h3>
+
+          <!-- 加载中 -->
+          <div v-if="leaderDispatchLoading" style="text-align:center;padding:40px;color:#9ca3af;">
+            <i class="fas fa-spinner fa-spin" style="font-size:20px;"></i>
+            <p style="margin-top:8px;font-size:13px;">加载派单信息...</p>
+          </div>
+
+          <template v-else-if="leaderDispatchData">
+            <!-- 事件信息卡片 -->
+            <div class="info-card" style="background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span class="tag tag-blue">{{ leaderDispatchData.event?.statusLabel || '组长审核' }}</span>
+                <span :class="['tag', leaderDispatchData.event?.urgency === 'RED' ? 'tag-red' : leaderDispatchData.event?.urgency === 'YELLOW' ? 'tag-orange' : 'tag-green']">
+                  {{ leaderDispatchData.event?.urgencyLabel || '一般' }}
+                </span>
+              </div>
+              <div style="font-size:14px;font-weight:600;color:#374151;">{{ leaderDispatchData.event?.title }}</div>
+              <div v-if="leaderDispatchData.event?.location" style="font-size:12px;color:#6b7280;margin-top:4px;">📍 {{ leaderDispatchData.event.location }}</div>
+            </div>
+
+            <!-- 组长信息卡片 -->
+            <div v-if="leaderDispatchData.leaderFound" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                <span style="font-size:12px;background:#1890ff;color:#fff;border-radius:4px;padding:2px 8px;">网格组长</span>
+              </div>
+              <div style="font-size:14px;font-weight:600;color:#1e40af;">
+                {{ leaderDispatchData.leader?.name }}
+                <span style="font-size:12px;color:#1e40af;background:#dbeafe;border-radius:4px;padding:2px 6px;margin-left:6px;">
+                  {{ leaderDispatchData.leader?.positionLabel || '网格组长' }}
+                </span>
+              </div>
+              <div style="font-size:12px;color:#6b7280;margin-top:2px;">当前事件需由{{ leaderDispatchData.leader?.name }}组长派发下属网格员处理</div>
+            </div>
+
+            <div v-else style="background:#fff1f0;border:1px solid #ffa39e;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+              <p style="font-size:13px;color:#cf1324;">⚠️ {{ leaderDispatchData.reason || '未找到网格组长' }}</p>
+            </div>
+
+            <!-- 下属网格员选择 -->
+            <div v-if="leaderDispatchData.leaderFound" class="form-group">
+              <label class="form-label">选择下属网格员 <span class="required">*</span></label>
+              <select v-model="leaderDispatchForm.assigneeUserId" class="form-select">
+                <option :value="null">请选择下属网格员</option>
+                <option v-for="s in leaderDispatchData.subordinates" :key="s.userId" :value="s.userId">
+                  {{ s.name }}（待办 {{ s.pendingCount || 0 }} 条）
+                </option>
+              </select>
+              <p v-if="!leaderDispatchData.subordinates?.length" style="font-size:12px;color:#dc2626;margin-top:6px;">
+                ⚠️ 该网格暂无下属网格员，请先在组织管理中添加
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">派单备注</label>
+              <textarea v-model="leaderDispatchForm.remark" rows="2" placeholder="派单备注（选填）..." class="form-textarea"></textarea>
+            </div>
+
+            <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+              <button @click="showLeaderDispatch = false" class="btn btn-default">取消</button>
+              <button @click="handleLeaderDispatch" class="btn btn-primary" :disabled="!leaderDispatchForm.assigneeUserId">确认派单</button>
+            </div>
+          </template>
+
+          <template v-else>
+            <p style="font-size:13px;color:#6b7280;text-align:center;padding:20px;">无法加载派单信息</p>
+            <div style="display:flex;justify-content:flex-end;">
+              <button @click="showLeaderDispatch = false" class="btn btn-default">关闭</button>
+            </div>
+          </template>
+        </div>
+      </div>
+
       <!-- 关闭弹窗 -->
       <div v-if="showClose" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:10000;">
         <div style="background:#fff;border-radius:12px;padding:24px;width:400px;max-width:90vw;">
@@ -142,7 +218,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getSystemUsers, archiveEvent, getDispatchSuggestion, smartDispatchEvent } from '../api'
+import { getEventDetail, getEventTimeline, closeEvent, reopenEvent, dispatchEvent, getSystemUsers, archiveEvent, getDispatchSuggestion, smartDispatchEvent, getLeaderDispatchInfo, leaderDispatch } from '../api'
 import { getEventTypeName, getReportSourceName, getSourceSystemName } from '../utils/eventTypes'
 import { showMessage } from '../utils/message'
 import { confirmDialog } from '../utils/dialog'
@@ -152,7 +228,7 @@ const router = useRouter()
 // embedded=true 时作为弹窗内嵌组件：事件 id 由 props 传入，操作变更后 emit 通知父组件刷新列表
 const props = withDefaults(defineProps<{ embedded?: boolean; eventId?: string | number | null }>(), { embedded: false, eventId: null })
 const emit = defineEmits<{ (e: 'close'): void; (e: 'changed'): void }>()
-defineExpose({ triggerDispatch: () => { showDispatch.value = true } })
+defineExpose({ triggerDispatch: () => { openDispatchDialog() } })
 // 弹窗模式优先用 props 传入的 id，页面模式回退到路由参数
 const eventId = computed(() => props.eventId ?? route.params.id)
 
@@ -160,8 +236,13 @@ const event = ref<any>(null)
 const timeline = ref<any[]>([])
 const loading = ref(true)
 const showDispatch = ref(false)
+const showLeaderDispatch = ref(false)
 const showClose = ref(false)
 const closeReason = ref('')
+// 组长派单：存储派单信息（组长、下属、事件）
+const leaderDispatchData = ref<any>(null)
+const leaderDispatchForm = ref({ assigneeUserId: null as number | null, remark: '' })
+const leaderDispatchLoading = ref(false)
 // 现场照片预览：非 null 时打开全屏预览浮层，值为当前预览下标
 const previewIdx = ref<number | null>(null)
 const workers = ref<any[]>([])
@@ -207,6 +288,7 @@ function statusLabel(status: string) {
     AUDIT_APPROVED: '已通过',
     AUDIT_REJECTED: '已驳回',
     WAITING_DISPATCH: '待派单',
+    WAITING_LEADER_REVIEW: '组长审核',
     DISPATCHED_TO_WORK_ORDER: '已派单',
     CLOSED: '已关闭',
     IGNORED: '已忽略'
@@ -317,6 +399,50 @@ async function handleSmartDispatch() {
     emit('changed')
     loadData()
   } catch (e: any) { showMessage(e?.message || '智能派单失败') }
+}
+
+// 打开派单弹窗：根据状态选择组长派单或普通派单
+function openDispatchDialog() {
+  if (event.value?.currentStatus === 'WAITING_LEADER_REVIEW') {
+    showLeaderDispatch.value = true
+  } else {
+    showDispatch.value = true
+  }
+}
+
+// 组长派单：加载派单信息
+watch(showLeaderDispatch, async (visible) => {
+  if (!visible) return
+  leaderDispatchData.value = null
+  leaderDispatchForm.value = { assigneeUserId: null, remark: '' }
+  leaderDispatchLoading.value = true
+  try {
+    leaderDispatchData.value = await getLeaderDispatchInfo(Number(eventId.value))
+    const subs = leaderDispatchData.value?.subordinates || []
+    if (subs.length) {
+      leaderDispatchForm.value.assigneeUserId = subs[0].userId
+    }
+  } catch (e: any) {
+    showMessage(e?.message || '加载派单信息失败')
+    showLeaderDispatch.value = false
+  } finally {
+    leaderDispatchLoading.value = false
+  }
+})
+
+// 执行组长派单
+async function handleLeaderDispatch() {
+  if (!leaderDispatchForm.value.assigneeUserId) { showMessage('请选择下属网格员'); return }
+  try {
+    await leaderDispatch(Number(eventId.value), {
+      assigneeUserId: leaderDispatchForm.value.assigneeUserId,
+      remark: leaderDispatchForm.value.remark
+    })
+    showLeaderDispatch.value = false
+    showMessage('组长派单成功')
+    emit('changed')
+    loadData()
+  } catch (e: any) { showMessage(e?.message || '组长派单失败') }
 }
 
 onMounted(loadData)

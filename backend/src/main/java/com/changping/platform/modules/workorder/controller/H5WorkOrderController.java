@@ -7,14 +7,17 @@ import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.workorder.dto.HandleWorkOrderRequest;
 import com.changping.platform.modules.workorder.entity.WorkOrderEntity;
+import com.changping.platform.modules.workorder.service.SmartDispatchService;
 import com.changping.platform.modules.workorder.service.WorkOrderService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -29,6 +32,7 @@ public class H5WorkOrderController {
     private final WorkOrderService workOrderService;
     private final PermissionGuard permissionGuard;
     private final CurrentUserService currentUserService;
+    private final SmartDispatchService smartDispatchService;
 
     /**
      * @Author tangxinglin
@@ -40,10 +44,12 @@ public class H5WorkOrderController {
     public H5WorkOrderController(
             WorkOrderService workOrderService,
             PermissionGuard permissionGuard,
-            CurrentUserService currentUserService) {
+            CurrentUserService currentUserService,
+            SmartDispatchService smartDispatchService) {
         this.workOrderService = workOrderService;
         this.permissionGuard = permissionGuard;
         this.currentUserService = currentUserService;
+        this.smartDispatchService = smartDispatchService;
     }
 
     /**
@@ -113,6 +119,76 @@ public class H5WorkOrderController {
                                         .toList(),
                         request.subjectType(),
                         request.subjectId())));
+    }
+
+    /**
+     * H5 组长工作台：查询当前用户名下的组长待办事件
+     */
+    @GetMapping("/leader/pending-events")
+    public ApiResponse<List<Map<String, Object>>> getLeaderPendingEvents() {
+        currentUserService.requireClientType(AuthService.ClientType.H5);
+        permissionGuard.require(PermissionCodes.API_H5_LEADER_PENDING);
+        Long userId = currentUserService.requireClientType(AuthService.ClientType.H5).id();
+        return ApiResponse.ok(smartDispatchService.findLeaderPendingEvents(userId));
+    }
+
+    /**
+     * H5 组长派单：查询事件派单信息（组长+下属网格员）
+     */
+    @GetMapping("/leader/events/{eventId}/dispatch-info")
+    public ApiResponse<Map<String, Object>> getLeaderDispatchInfo(@PathVariable Long eventId) {
+        currentUserService.requireClientType(AuthService.ClientType.H5);
+        permissionGuard.require(PermissionCodes.API_H5_LEADER_DISPATCH);
+        Long userId = currentUserService.requireClientType(AuthService.ClientType.H5).id();
+        Map<String, Object> info = smartDispatchService.getLeaderDispatchInfo(eventId);
+        // 验证当前用户是否为该网格的组长
+        Object leaderObj = info.get("leader");
+        if (leaderObj == null || !Boolean.TRUE.equals(info.get("leaderFound"))) {
+            return ApiResponse.ok(info);
+        }
+        Map<String, Object> leader = (Map<String, Object>) leaderObj;
+        Long leaderUserId = (Long) leader.get("userId");
+        if (leaderUserId == null || !leaderUserId.equals(userId)) {
+            throw new com.changping.platform.common.exception.BusinessException(
+                    "NOT_LEADER_OF_THIS_GRID", "您不是该事件所属网格的组长，无权派单");
+        }
+        return ApiResponse.ok(info);
+    }
+
+    /**
+     * H5 组长派单：将事件派发给下属网格员
+     */
+    @PostMapping("/leader/events/{eventId}/dispatch")
+    public ApiResponse<WorkOrderEntity> leaderDispatch(
+            @PathVariable Long eventId,
+            @RequestBody Map<String, Object> body) {
+        currentUserService.requireClientType(AuthService.ClientType.H5);
+        permissionGuard.require(PermissionCodes.API_H5_LEADER_DISPATCH);
+        Long userId = currentUserService.requireClientType(AuthService.ClientType.H5).id();
+
+        // 验证组长身份
+        Map<String, Object> info = smartDispatchService.getLeaderDispatchInfo(eventId);
+        if (!Boolean.TRUE.equals(info.get("leaderFound"))) {
+            throw new com.changping.platform.common.exception.BusinessException(
+                    "NO_LEADER", "该事件未配置组长，无法执行组长派单");
+        }
+        Map<String, Object> leader = (Map<String, Object>) info.get("leader");
+        Long leaderUserId = (Long) leader.get("userId");
+        if (leaderUserId == null || !leaderUserId.equals(userId)) {
+            throw new com.changping.platform.common.exception.BusinessException(
+                    "NOT_LEADER_OF_THIS_GRID", "您不是该事件所属网格的组长，无权派单");
+        }
+
+        // 派发
+        Long assigneeUserId = body.get("assigneeUserId") != null
+                ? Long.valueOf(body.get("assigneeUserId").toString())
+                : null;
+        String remark = body.getOrDefault("remark", "") != null
+                ? body.getOrDefault("remark", "").toString()
+                : "";
+
+        WorkOrderService.DispatchRequest req = new WorkOrderService.DispatchRequest(assigneeUserId, remark);
+        return ApiResponse.ok(workOrderService.dispatch(eventId, req));
     }
 
 }

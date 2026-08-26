@@ -21,6 +21,7 @@
           <option value="IN_AUDIT">审核中</option>
           <option value="AUDIT_REJECTED">已驳回</option>
           <option value="WAITING_DISPATCH">待派单</option>
+          <option value="WAITING_LEADER_REVIEW">组长审核</option>
           <option value="DISPATCHED_TO_WORK_ORDER">已派单</option>
           <option value="CLOSED">已关闭</option>
           <option value="IGNORED">已忽略</option>
@@ -91,7 +92,7 @@
                 </div>
               </td>
               <td>
-                <span :class="['tag', e.currentStatus === 'CLOSED' ? 'tag-green' : e.currentStatus === 'DISPATCHED_TO_WORK_ORDER' ? 'tag-blue' : 'tag-orange']">
+                <span :class="['tag', e.currentStatus === 'CLOSED' ? 'tag-green' : (e.currentStatus === 'DISPATCHED_TO_WORK_ORDER' || e.currentStatus === 'WAITING_LEADER_REVIEW') ? 'tag-blue' : 'tag-orange']">
                   {{ statusLabel(e.currentStatus) }}
                 </span>
               </td>
@@ -104,7 +105,9 @@
               <td style="font-size:12px;color:#6b7280;">{{ e.occurredAt }}</td>
               <td>
                 <button @click="goDetail(e)" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;margin-right:4px;">详情</button>
-                <button v-if="['PENDING_AUDIT', 'WAITING_DISPATCH', 'IN_AUDIT'].includes(e.currentStatus)" @click="goDetail(e)" style="padding:4px 10px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;margin-right:4px;">操作</button>
+                <button v-if="['PENDING_AUDIT', 'WAITING_DISPATCH', 'WAITING_LEADER_REVIEW', 'IN_AUDIT'].includes(e.currentStatus)" @click="goDetail(e)" type="button" style="padding:4px 10px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;margin-right:4px;">
+                  {{ e.currentStatus === 'WAITING_LEADER_REVIEW' ? '组长派单' : '操作' }}
+                </button>
                 <button @click="toggleHidden(e)" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;margin-left:4px;color:#6b7280;">{{ e.hidden ? '显示' : '隐藏' }}</button>
                 <button @click="handleDelete(e)" style="padding:4px 10px;border:1px solid #ffccc7;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;margin-left:4px;color:#ff4d4f;">删除</button>
               </td>
@@ -156,7 +159,9 @@
             <button @click="handleAudit(detailEvent.id, 'reject')" style="padding:8px 24px;border:none;border-radius:6px;background:#ff4d4f;color:#fff;font-size:13px;cursor:pointer;">驳回</button>
             <button @click="handleAudit(detailEvent.id, 'pass')" style="padding:8px 24px;border:none;border-radius:6px;background:#52c41a;color:#fff;font-size:13px;cursor:pointer;">通过</button>
           </template>
-          <button v-else-if="['WAITING_DISPATCH', 'IN_AUDIT'].includes(detailEvent?.currentStatus)" @click="detailRef?.triggerDispatch()" style="padding:8px 24px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">派发工单</button>
+          <button v-else-if="['WAITING_DISPATCH', 'WAITING_LEADER_REVIEW', 'IN_AUDIT'].includes(detailEvent?.currentStatus)" @click="detailRef?.triggerDispatch()" type="button" style="padding:8px 24px;border:none;border-radius:6px;background:#1890ff;color:#fff;font-size:13px;cursor:pointer;">
+                {{ detailEvent?.currentStatus === 'WAITING_LEADER_REVIEW' ? '组长派单' : '派发工单' }}
+              </button>
         </div>
       </div>
     </div>
@@ -350,6 +355,7 @@ function statusLabel(status: string) {
     AUDIT_APPROVED: '已通过',
     AUDIT_REJECTED: '已驳回',
     WAITING_DISPATCH: '待派单',
+    WAITING_LEADER_REVIEW: '组长审核',
     DISPATCHED_TO_WORK_ORDER: '已派单',
     CLOSED: '已关闭',
     IGNORED: '已忽略'

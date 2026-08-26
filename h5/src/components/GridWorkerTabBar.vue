@@ -1,5 +1,7 @@
 <template>
-  <view class="grid-worker-tab-bar">
+  <!-- #ifndef MP-WEIXIN -->
+  <!-- 小程序端使用原生 tabBar（pages.json 中配置），此处仅 H5 渲染 -->
+  <view v-if="renderTabBar" class="grid-worker-tab-bar">
     <view
       v-for="item in items"
       :key="item.path"
@@ -11,9 +13,18 @@
       <text class="tab-label">{{ item.label }}</text>
     </view>
   </view>
+  <!-- #endif -->
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
+// 运行时双保险：小程序端即使模板条件编译失效也绝不渲染（小程序用原生 tabBar）
+let isMpWeixin = false
+// #ifdef MP-WEIXIN
+isMpWeixin = true
+// #endif
+
 const props = defineProps<{
   current: string
 }>()
@@ -24,6 +35,8 @@ const items = [
   { path: '/pages/patrol/checkin', icon: '🚶', label: '巡查' },
   { path: '/pages/mine/index', icon: '👤', label: '我的' }
 ]
+
+const renderTabBar = computed(() => !isMpWeixin)
 
 const isActive = (path: string) => props.current === path
 

@@ -155,7 +155,7 @@ public class LedgerController {
             "urgency_level", Map.of("GREEN", "绿色(一般)", "YELLOW", "黄色(重点)", "RED", "红色(紧急)"),
             "status", Map.ofEntries(
                     Map.entry("PENDING_AUDIT", "待审核"), Map.entry("IN_AUDIT", "审核中"),
-                    Map.entry("WAITING_DISPATCH", "待派单"), Map.entry("DISPATCHED_TO_WORK_ORDER", "已转工单"),
+                    Map.entry("WAITING_DISPATCH", "待派单"), Map.entry("WAITING_LEADER_REVIEW", "组长审核"), Map.entry("DISPATCHED_TO_WORK_ORDER", "已转工单"),
                     Map.entry("PROCESSING", "处理中"), Map.entry("PENDING_REVIEW", "待复核"),
                     Map.entry("COMPLETED", "已办结"), Map.entry("CLOSED", "已办结"),
                     Map.entry("ARCHIVED", "已归档"), Map.entry("IGNORED", "已忽略"),

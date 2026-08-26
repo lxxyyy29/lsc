@@ -27,6 +27,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -36,6 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class ProcessInstanceService {
+
+    private static final Logger log = LoggerFactory.getLogger(ProcessInstanceService.class);
 
     private static final String BUSINESS_TYPE_EVENT_AUDIT = "EVENT_AUDIT";
 
@@ -672,10 +676,35 @@ public class ProcessInstanceService {
             jdbcTemplate.update(
                     "UPDATE biz_process_instance SET status = 'APPROVED', finished_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                     instance.getId());
-            insertProcessActionRecord(instance.getId(), null, "AUDIT_COMPLETE", "APPROVED", "all required nodes approved", actor.userId(), actor.name());
-            transitionEventStatus(event.getId(), "IN_AUDIT", "AUDIT_APPROVED", "AUDIT_APPROVE", "audit approved", actor.userId(), actor.name());
-            transitionEventStatus(event.getId(), "AUDIT_APPROVED", "WAITING_DISPATCH", "WAIT_DISPATCH", "audit approved and waiting dispatch", actor.userId(), actor.name());
-            insertAuditRecord(event.getId(), instance.getId(), "APPROVE", "WAITING_DISPATCH", "all required nodes approved", actor.userId(), actor.name());
+            insertProcessActionRecord(instance.getId(), null, "AUDIT_COMPLETE", "APPROVED", "流程审批通过", actor.userId(), actor.name());
+            transitionEventStatus(event.getId(), "IN_AUDIT", "AUDIT_APPROVED", "AUDIT_APPROVE", "审核通过", actor.userId(), actor.name());
+
+            // 地理路由：检查事件所属网格是否有组长
+            String dispatchTargetStatus = "WAITING_DISPATCH";
+            String dispatchAction = "WAIT_DISPATCH";
+            String dispatchRemark = "审核通过，进入待派单";
+            Long gridId = event.getGridId();
+            log.info("[BPM-GEO-ROUTE] BPM审批完成触发地理路由, eventId={}, processInstanceId={}, gridId={}, operator={}", event.getId(), instance.getId(), gridId, actor.name());
+            if (gridId != null) {
+                Integer leaderCount = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM cmn_org_member WHERE grid_id = ? AND status = 'ACTIVE' "
+                                + "AND (position LIKE '%组长%' OR position LIKE '%网格长%' OR member_type = 'LEADER')",
+                        Integer.class, gridId);
+                log.info("[BPM-GEO-ROUTE] 网格组长查询完成, eventId={}, gridId={}, leaderCount={}", event.getId(), gridId, leaderCount);
+                if (leaderCount != null && leaderCount > 0) {
+                    dispatchTargetStatus = "WAITING_LEADER_REVIEW";
+                    dispatchAction = "WAIT_LEADER_REVIEW";
+                    dispatchRemark = "审核通过，进入组长审核";
+                    log.info("[BPM-GEO-ROUTE] 路由决策: eventId={}, gridId={} → WAITING_LEADER_REVIEW (组长审核), leaderCount={}", event.getId(), gridId, leaderCount);
+                } else {
+                    log.info("[BPM-GEO-ROUTE] 路由决策: eventId={}, gridId={} → WAITING_DISPATCH (无组长)", event.getId(), gridId);
+                }
+            } else {
+                log.info("[BPM-GEO-ROUTE] 事件未关联网格, eventId={}, gridId=null, 直接走待派单流程", event.getId());
+            }
+            transitionEventStatus(event.getId(), "AUDIT_APPROVED", dispatchTargetStatus, dispatchAction, dispatchRemark, actor.userId(), actor.name());
+            log.info("[BPM-GEO-ROUTE] 路由落地完成: eventId={} 已更新为 {}", event.getId(), dispatchTargetStatus);
+            insertAuditRecord(event.getId(), instance.getId(), "APPROVE", dispatchTargetStatus, "流程审批通过", actor.userId(), actor.name());
             return;
         }
 
@@ -725,6 +754,7 @@ public class ProcessInstanceService {
                 || "IN_AUDIT".equals(toStatus)
                 || "AUDIT_REJECTED".equals(toStatus)
                 || "WAITING_DISPATCH".equals(toStatus)
+                || "WAITING_LEADER_REVIEW".equals(toStatus)
                 || "DISPATCHED_TO_WORK_ORDER".equals(toStatus)
                 || "CLOSED".equals(toStatus)) {
             alarmWorkflowStatusSyncService.syncWorkflowStatus(eventId, toStatus);

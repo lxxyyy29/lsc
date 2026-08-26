@@ -222,7 +222,7 @@ function urgencyLabel(level: string) {
 function eventStatusLabel(status: string) {
   const map: Record<string, string> = {
     PENDING_AUDIT: '待审核', IN_AUDIT: '审核中', AUDIT_APPROVED: '已通过', AUDIT_REJECTED: '已驳回',
-    WAITING_DISPATCH: '待派单', DISPATCHED_TO_WORK_ORDER: '已派单', CLOSED: '已关闭', IGNORED: '已忽略'
+    WAITING_DISPATCH: '待派单', WAITING_LEADER_REVIEW: '组长审核', DISPATCHED_TO_WORK_ORDER: '已派单', CLOSED: '已关闭', IGNORED: '已忽略'
   }
   return map[status] || status || '未知'
 }
