@@ -19,17 +19,13 @@
           <option value="">全部状态</option>
           <option value="PENDING_AUDIT">待审核</option>
           <option value="IN_AUDIT">审核中</option>
+          <option value="AUDIT_APPROVED">已通过</option>
           <option value="AUDIT_REJECTED">已驳回</option>
           <option value="WAITING_DISPATCH">待派单</option>
           <option value="WAITING_LEADER_REVIEW">组长审核</option>
           <option value="DISPATCHED_TO_WORK_ORDER">已派单</option>
           <option value="CLOSED">已关闭</option>
           <option value="IGNORED">已忽略</option>
-        </select>
-        <select v-model="filters.archivedScope" class="filter-select" @change="page = 1; loadData()">
-          <option value="active">进行中（不含已归档）</option>
-          <option value="all">全部（含已归档）</option>
-          <option value="archived">仅已归档</option>
         </select>
         <select v-model="filters.urgencyLevel" class="filter-select">
           <option value="">全部紧急程度</option>
@@ -227,7 +223,6 @@ const filters = reactive({
   sourceSystem: '',
   startDate: '',
   endDate: '',
-  archivedScope: 'active',
 })
 
 // 日期范围筛选：[开始, 结束]，value 为 YYYY-MM-DD 字符串
@@ -376,13 +371,6 @@ async function loadData() {
     if (filters.status) params.status = filters.status
     if (filters.urgencyLevel) params.urgencyLevel = filters.urgencyLevel
     if (filters.sourceSystem) params.sourceSystem = filters.sourceSystem
-    // archivedScope: active=仅非归档, all=含归档, archived=仅归档
-    if (filters.archivedScope === 'all') {
-      params.includeArchived = true
-    } else if (filters.archivedScope === 'archived') {
-      params.includeArchived = true
-      params.onlyArchived = true
-    }
     if (dateRange.value && dateRange.value.length === 2) {
       if (dateRange.value[0]) params.startDate = dateRange.value[0]
       if (dateRange.value[1]) params.endDate = dateRange.value[1]

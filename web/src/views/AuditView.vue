@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">异常工单</h2>
+    <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">事件审核</h2>
     <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">事件审核：审核员对待审核事件进行通过 / 驳回，通过后进入待派单闭环处置</p>
 
     <!-- 统计卡片 -->

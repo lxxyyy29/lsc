@@ -112,7 +112,11 @@ public class AlarmEventMongoService {
         document.setTitle(request.title());
         document.setDescription(request.description());
         document.setStatus(status);
-        document.setUrgencyLevel(request.urgencyLevel());
+        if (StringUtils.hasText(request.urgencyLevel())) {
+            document.setUrgencyLevel(request.urgencyLevel().trim());
+        } else if (!StringUtils.hasText(document.getUrgencyLevel())) {
+            document.setUrgencyLevel("GREEN");
+        }
         document.setOccurredAt(request.occurredAt());
         AlarmEventDocument.Location location = document.getLocation() == null ? new AlarmEventDocument.Location() : document.getLocation();
         location.setAddress(request.location());
@@ -382,9 +386,13 @@ public class AlarmEventMongoService {
                 continue;
             }
             try {
+                Criteria matchCriteria = new Criteria().andOperator(
+                        Criteria.where("externalEventId").is(entry.getKey().trim()),
+                        new Criteria().orOperator(
+                                Criteria.where("urgencyLevel").exists(false),
+                                Criteria.where("urgencyLevel").is(null)));
                 var result = mongoTemplate.updateMulti(
-                        new Query(Criteria.where("externalEventId").is(entry.getKey().trim())
-                                .and("urgencyLevel").exists(false)),
+                        new Query(matchCriteria),
                         new Update().set("urgencyLevel", entry.getValue().trim()),
                         AlarmEventDocument.class);
                 updated += result.getModifiedCount();
@@ -393,6 +401,29 @@ public class AlarmEventMongoService {
             }
         }
         return updated;
+    }
+
+    /**
+     * @Description //将所有缺失或为null的urgencyLevel文档统一设置为默认值
+     * @Param [defaultValue 默认紧急程度值]
+     * @return int 更新条数
+     */
+    public int backfillMissingUrgencyLevels(String defaultValue) {
+        if (!StringUtils.hasText(defaultValue)) {
+            return 0;
+        }
+        try {
+            Criteria matchCriteria = new Criteria().orOperator(
+                    Criteria.where("urgencyLevel").exists(false),
+                    Criteria.where("urgencyLevel").is(null));
+            var result = mongoTemplate.updateMulti(
+                    new Query(matchCriteria),
+                    new Update().set("urgencyLevel", defaultValue.trim()),
+                    AlarmEventDocument.class);
+            return (int) result.getModifiedCount();
+        } catch (Exception ignore) {
+            return 0;
+        }
     }
 
     /**

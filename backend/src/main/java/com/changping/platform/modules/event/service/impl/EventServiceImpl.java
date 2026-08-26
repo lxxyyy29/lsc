@@ -82,13 +82,17 @@ public class EventServiceImpl implements EventService {
             for (Map<String, Object> row : rows) {
                 Object id = row.get("external_event_id");
                 Object level = row.get("urgency_level");
-                if (id != null && level != null) {
-                    externalIdToUrgency.put(String.valueOf(id), String.valueOf(level));
+                if (id != null) {
+                    String levelStr = (level != null && StringUtils.hasText(String.valueOf(level)))
+                            ? String.valueOf(level) : "GREEN";
+                    externalIdToUrgency.put(String.valueOf(id), levelStr);
                 }
             }
             int updated = alarmEventMongoService.backfillUrgencyLevels(externalIdToUrgency);
-            if (updated > 0) {
-                log.info("[urgency-backfill] 存量事件紧急程度回填完成，共 {} 条", updated);
+            int defaulted = alarmEventMongoService.backfillMissingUrgencyLevels("GREEN");
+            int total = updated + defaulted;
+            if (total > 0) {
+                log.info("[urgency-backfill] 存量事件紧急程度回填完成，MySQL同步 {} 条，默认补全 {} 条，共 {} 条", updated, defaulted, total);
             }
         } catch (Exception e) {
             log.warn("[urgency-backfill] 存量事件紧急程度回填失败（不影响启动）: {}", e.getMessage());
@@ -562,7 +566,7 @@ public class EventServiceImpl implements EventService {
                 entity.getAreaName(),
                 entity.getGridId(),
                 null,
-                entity.getUrgencyLevel(),
+                firstNonBlank(document.getUrgencyLevel(), entity.getUrgencyLevel()),
                 entity.getReportSource(),
                 entity.getArchived() != null && entity.getArchived() == 1,
                 Boolean.TRUE.equals(document.getHidden()));
@@ -1175,14 +1179,20 @@ public class EventServiceImpl implements EventService {
                 "SELECT action_type, from_status, to_status, operator_name, remark, created_at FROM biz_event_record WHERE event_id = ? ORDER BY created_at ASC, id ASC",
                 eventId);
         for (Map<String, Object> record : records) {
-            String action = mapActionName((String) record.get("action_type"));
+            String rawActionType = (String) record.get("action_type");
+            String action = mapActionName(rawActionType);
             String status = mapStatusLabel((String) record.get("to_status"));
             String operator = (String) record.get("operator_name");
             String remark = (String) record.get("remark");
+            // remark 为空或等于原始英文 action_type 时不拼入展示文本，避免时间轴出现英文代码
+            String displayRemark = "";
+            if (remark != null && !remark.isBlank() && !remark.equals(rawActionType)) {
+                displayRemark = remark;
+            }
             java.sql.Timestamp ts = (java.sql.Timestamp) record.get("created_at");
             timeline.add(new EventDetailVo.LifecycleRecordVo(
                     action, status != null ? status : "",
-                    (operator != null ? operator : "") + (remark != null ? " — " + remark : ""),
+                    (operator != null ? operator : "") + (displayRemark.isEmpty() ? "" : " — " + displayRemark),
                     ts != null ? ts.toLocalDateTime() : LocalDateTime.now()));
         }
         return timeline;
