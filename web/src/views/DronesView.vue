@@ -482,6 +482,8 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import http, { getSession, getJobs, createJob, pauseResumeJob, returnHome, getSpeakerFiles, playSpeaker as playSpeakerAction, stopSpeaker, setSpeakerVolume as setSpeakerVolumeAction, switchCameraMode as switchCameraModeAction, startRecording, stopRecording } from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { getEventTypeName } from '../utils/eventTypes'
+import { showMessage } from '../utils/message'
+import { confirmDialog } from '../utils/dialog'
 
 const tabs = [
   { key: 'devices', label: '无人机设备' },
@@ -513,7 +515,7 @@ function openDeviceForm(d?: any) {
   showDeviceForm.value = true
 }
 async function saveLocalDevice() {
-  if (!deviceForm.value.deviceName.trim()) { alert('请填写设备名称'); return }
+  if (!deviceForm.value.deviceName.trim()) { showMessage('请填写设备名称', 'warning'); return }
   deviceSaving.value = true
   try {
     const payload: any = { ...deviceForm.value }
@@ -526,18 +528,19 @@ async function saveLocalDevice() {
     showDeviceForm.value = false
     await loadLocalDevices()
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    showMessage(e?.message || '保存失败', 'error')
   } finally {
     deviceSaving.value = false
   }
 }
 async function deleteLocalDevice(d: any) {
-  if (!confirm(`确定删除设备档案「${d.deviceName}」吗？`)) return
+  const ok = await confirmDialog({ title: '删除设备档案', message: `确定删除设备档案「${d.deviceName}」吗？` })
+  if (!ok) return
   try {
     await http.delete(`/drone/devices/local/${d.id}`)
     await loadLocalDevices()
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    showMessage(e?.message || '删除失败', 'error')
   }
 }
 async function loadLocalDevices() {
@@ -559,15 +562,15 @@ function openWaylineForm() {
   showWaylineForm.value = true
 }
 async function saveWayline() {
-  if (!waylineForm.value.waylineName?.trim()) { alert('请填写航线名称'); return }
+  if (!waylineForm.value.waylineName?.trim()) { showMessage('请填写航线名称', 'warning'); return }
   try {
     const payload: any = { ...waylineForm.value }
     await http.post('/drone/waylines', payload)
     showWaylineForm.value = false
-    alert('航线新增成功')
+    showMessage('航线新增成功', 'success')
     loadOverview()
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    showMessage(e?.message || '保存失败', 'error')
   }
 }
 const aiAlerts = ref<any[]>([])

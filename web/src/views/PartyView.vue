@@ -452,6 +452,7 @@
 import { ref, onMounted, watch } from 'vue'
 import http from '../api'
 import { showMessage } from '../utils/message'
+import { confirmDialog } from '../utils/dialog'
 
 // 网格下拉数据源：三级网格树平铺（名称带层级前缀，便于选择）
 const gridOptions = ref<any[]>([])
@@ -618,7 +619,8 @@ function openEditMeeting(m: any) {
   showAddMeeting.value = true
 }
 async function deleteMeeting(m: any) {
-  if (!confirm(`确定删除会议「${m.title || ''}」吗？`)) return
+  const ok = await confirmDialog({ title: '删除会议', message: `确定删除会议「${m.title || ''}」吗？` })
+  if (!ok) return
   try { await http.delete(`/party/meetings/${m.id}`); loadMeetings() } catch (e: any) { showMessage(e?.message) }
 }
 async function submitTask() {

@@ -116,6 +116,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import http from '../api'
+import { showMessage } from '../utils/message'
+import { confirmDialog } from '../utils/dialog'
 
 const tabs = [
   { key: 'areas', label: '辖区' },
@@ -201,7 +203,7 @@ function openEdit(item: any) {
 
 async function handleSave() {
   const required = formFields.value.find((x: any) => x.required && !String(form.value[x.key] || '').trim())
-  if (required) { alert(`请填写${required.label}`); return }
+  if (required) { showMessage(`请填写${required.label}`, 'warning'); return }
   saving.value = true
   try {
     const payload: any = { ...form.value }
@@ -214,19 +216,20 @@ async function handleSave() {
     formVisible.value = false
     await fetchData()
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    showMessage(e?.message || '保存失败', 'error')
   } finally {
     saving.value = false
   }
 }
 
 async function handleDelete(item: any) {
-  if (!confirm(`确定删除该${currentTabLabel.value}吗？删除后不可恢复。`)) return
+  const ok = await confirmDialog({ title: '删除确认', message: `确定删除该${currentTabLabel.value}吗？删除后不可恢复。`, okText: '确定删除' })
+  if (!ok) return
   try {
     await http.delete(`${urls[activeTab.value]}/${item.id}`)
     await fetchData()
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    showMessage(e?.message || '删除失败', 'error')
   }
 }
 
