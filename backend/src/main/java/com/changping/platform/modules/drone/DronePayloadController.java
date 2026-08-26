@@ -1,4 +1,4 @@
-package com.changping.platform.modules.drone;
+﻿package com.changping.platform.modules.drone;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //无人机挂载载荷控制器，提供摄像头模式切换、开始录像及停止录像接口
  * @Date 2026/04/18 10:00
  */
@@ -30,7 +30,7 @@ public class DronePayloadController {
     private final PermissionGuard permissionGuard;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入无人机代理服务、当前用户服务及权限守卫
      * @Date 2026/04/18 10:00
      * @Param [droneProxyService 无人机代理服务, currentUserService 当前用户服务, permissionGuard 权限守卫]
@@ -46,7 +46,7 @@ public class DronePayloadController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //切换指定无人机设备的摄像头模式
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号, request 包含摄像头模式值的请求体（0-3）]
@@ -60,7 +60,7 @@ public class DronePayloadController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //启动指定无人机设备的摄像头录像
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号]
@@ -74,7 +74,7 @@ public class DronePayloadController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //停止指定无人机设备的摄像头录像
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号]

@@ -107,8 +107,8 @@
                 v-for="sub in dispatchInfo.subordinates"
                 :key="sub.userId"
                 class="sub-item"
-                :class="{ 'sub-item--active': dispatchForm.assigneeUserId === sub.userId }"
-                @click="dispatchForm.assigneeUserId = sub.userId"
+                :class="{ 'sub-item--active': dispatchForm.assigneeUserId === Number(sub.userId) }"
+                @click="dispatchForm.assigneeUserId = Number(sub.userId)"
               >
                 <view class="sub-avatar">
                   <text class="sub-avatar-text">{{ sub.name.charAt(0) }}</text>
@@ -117,7 +117,7 @@
                   <text class="sub-name">{{ sub.name }}</text>
                   <text class="sub-pending">待办 {{ sub.pendingCount || 0 }} 条</text>
                 </view>
-                <view v-if="dispatchForm.assigneeUserId === sub.userId" class="sub-check">
+                <view v-if="dispatchForm.assigneeUserId === Number(sub.userId)" class="sub-check">
                   <text class="check-icon">✓</text>
                 </view>
               </view>
@@ -194,7 +194,7 @@ async function openDispatch(evt: LeaderPendingEvent) {
     dispatchInfo.value = await getLeaderDispatchInfo(evt.id)
     const subs = dispatchInfo.value?.subordinates || []
     if (subs.length) {
-      dispatchForm.value.assigneeUserId = subs[0].userId
+      dispatchForm.value.assigneeUserId = Number(subs[0].userId)
     }
   } catch (e) {
     console.error('加载派单信息失败:', e)

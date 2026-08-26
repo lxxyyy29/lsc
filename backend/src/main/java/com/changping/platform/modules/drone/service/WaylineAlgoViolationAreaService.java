@@ -1,4 +1,4 @@
-package com.changping.platform.modules.drone.service;
+﻿package com.changping.platform.modules.drone.service;
 
 import com.changping.platform.common.geo.PointInPolygonUtil;
 import com.changping.platform.modules.drone.entity.WaylineAlgoViolationAreaEntity;
@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //航线算法绑定 ↔ 违章区域 关联服务:负责绑定行的区域配置、按告警查询命中区域判定
  * @Date 2026/04/22 00:00
  */

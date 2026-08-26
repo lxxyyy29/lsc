@@ -1,4 +1,4 @@
-package com.changping.platform.modules.integration.alarm.service;
+﻿package com.changping.platform.modules.integration.alarm.service;
 
 import com.changping.platform.modules.drone.service.WaylineAlgoViolationAreaService;
 import com.changping.platform.modules.event.entity.EventEntity;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //第三方告警摄入服务,协调MongoDB告警事件保存和SQL事件投影创建,
  * 完成告警从第三方推送到平台工作流的完整接入流程
  * @Date 2026/04/18 10:00

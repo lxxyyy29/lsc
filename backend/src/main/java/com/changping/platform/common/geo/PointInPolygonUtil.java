@@ -1,4 +1,4 @@
-package com.changping.platform.common.geo;
+﻿package com.changping.platform.common.geo;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //几何工具,提供点在多边形内判断与 roi_json 解析
  * @Date 2026/04/22 00:00
  */

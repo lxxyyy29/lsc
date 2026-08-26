@@ -57,7 +57,7 @@
         <div>
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">所属网格</label>
           <el-select v-model="form.gridId" style="width:100%;" placeholder="自动关联" clearable>
-            <el-option v-for="g in grids" :key="g.id" :value="g.id" :label="g.gridName" />
+            <el-option v-for="g in grids" :key="g.id" :value="Number(g.id)" :label="g.gridName" />
           </el-select>
         </div>
       </div>

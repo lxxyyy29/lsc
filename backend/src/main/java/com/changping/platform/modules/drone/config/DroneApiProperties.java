@@ -1,4 +1,4 @@
-package com.changping.platform.modules.drone.config;
+﻿package com.changping.platform.modules.drone.config;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //无人机API配置属性，绑定 drone.api 前缀的配置项，包含服务地址、WebSocket地址、
  * 认证账密、工作空间ID、SM4加密参数及令牌缓存时长
  * @Date 2026/04/18 10:00

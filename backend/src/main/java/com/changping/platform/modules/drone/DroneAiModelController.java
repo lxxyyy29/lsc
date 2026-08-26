@@ -1,4 +1,4 @@
-package com.changping.platform.modules.drone;
+﻿package com.changping.platform.modules.drone;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //无人机AI模型控制器，提供AI模型列表查询、航线AI绑定详情查询及千问模型绑定接口
  * @Date 2026/04/18 10:00
  */
@@ -54,7 +54,7 @@ public class DroneAiModelController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询AI算法模型列表
      * @Date 2026/04/18 10:00
      * @Param [page 页码，默认为1, pageSize 每页条数，默认为10]
@@ -70,7 +70,7 @@ public class DroneAiModelController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取指定航线的AI模型绑定详情，并将千问模型名称映射为本地模型名称
      * @Date 2026/04/18 10:00
      * @Param [flyLineId 航线ID]
@@ -127,7 +127,7 @@ public class DroneAiModelController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将千问AI模型绑定到指定航线,同时保存每条绑定的违章区域配置
      * @Date 2026/04/22 00:00
      * @Param [flyLineId 航线ID, request 包含绑定关系列表的请求体(每项可带 violationAreaIds)]

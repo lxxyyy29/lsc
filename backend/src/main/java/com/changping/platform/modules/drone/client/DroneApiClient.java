@@ -1,4 +1,4 @@
-package com.changping.platform.modules.drone.client;
+﻿package com.changping.platform.modules.drone.client;
 
 import com.changping.platform.modules.drone.config.DroneApiProperties;
 import com.changping.platform.modules.drone.exception.DroneApiException;
@@ -26,7 +26,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //无人机第三方API客户端，负责令牌获取与缓存、SM4加密认证及HTTP请求代理，
  * 所有请求自动附带有效的x-auth-token请求头
  * @Date 2026/04/18 10:00
@@ -48,7 +48,7 @@ public class DroneApiClient {
     private final Object tokenMonitor = new Object();
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //主构造函数，通过Spring注入RestTemplate和配置属性，使用系统时钟和默认ObjectMapper
      * @Date 2026/04/18 10:00
      * @Param [droneApiRestTemplate 无人机专用RestTemplate, properties 无人机API配置属性]
@@ -68,7 +68,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //测试用构造函数，支持注入自定义时钟
      * @Date 2026/04/18 10:00
      * @Param [restTemplate RestTemplate实例, properties 无人机API配置属性, clock 时钟实例]
@@ -79,7 +79,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //全参构造函数，支持注入自定义时钟和ObjectMapper，主要用于单元测试
      * @Date 2026/04/18 10:00
      * @Param [restTemplate RestTemplate实例, properties 无人机API配置属性, clock 时钟实例, objectMapper JSON序列化工具]
@@ -103,7 +103,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取上游平台的区域码
      * @Date 2026/04/18 10:00
      * @Param []
@@ -114,7 +114,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取当前有效的访问令牌字符串
      * @Date 2026/04/18 10:00
      * @Param []
@@ -125,7 +125,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从当前访问令牌的JWT Payload中提取用户ID
      * @Date 2026/04/18 10:00
      * @Param []
@@ -153,7 +153,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //以GET方式请求上游API接口
      * @Date 2026/04/18 10:00
      * @Param [path 接口路径, responseType 响应体类型]
@@ -164,7 +164,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //以multipart/form-data方式POST请求上游API接口，用于文件上传
      * @Date 2026/04/18 10:00
      * @Param [path 接口路径, requestEntity 包含文件数据的请求实体, responseType 响应体类型]
@@ -175,7 +175,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //以POST方式请求上游API接口
      * @Date 2026/04/18 10:00
      * @Param [path 接口路径, requestBody 请求体对象, responseType 响应体类型]
@@ -186,7 +186,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //通用HTTP请求方法，自动附带认证令牌并解包上游响应数据
      * @Date 2026/04/18 10:00
      * @Param [path 接口路径, method HTTP方法, requestBody 请求体对象, responseType 响应体类型]
@@ -197,7 +197,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //清除缓存的访问令牌，强制下次请求时重新获取
      * @Date 2026/04/18 10:00
      * @Param []
@@ -243,7 +243,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取有效的访问令牌，优先使用缓存，缓存过期则加锁刷新
      * @Date 2026/04/18 10:00
      * @Param []
@@ -337,7 +337,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //向上游平台请求新的访问令牌，使用SM4加密密码进行认证
      * @Date 2026/04/18 10:00
      * @Param []
@@ -372,7 +372,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构建附带认证令牌的请求实体，兼容普通请求体和已有HttpEntity两种形式
      * @Date 2026/04/18 10:00
      * @Param [requestBody 请求体对象或HttpEntity]
@@ -393,7 +393,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //解包上游响应信封，校验响应码并返回data字段，异常时抛出DroneApiException
      * @Date 2026/04/18 10:00
      * @Param [response 上游响应信封对象]
@@ -444,7 +444,7 @@ public class DroneApiClient {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将任意值安全转换为字符串，null值返回null
      * @Date 2026/04/18 10:00
      * @Param [value 原始值]

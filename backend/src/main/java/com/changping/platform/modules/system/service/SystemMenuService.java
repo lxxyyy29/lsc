@@ -1,4 +1,4 @@
-package com.changping.platform.modules.system.service;
+﻿package com.changping.platform.modules.system.service;
 
 import com.changping.platform.common.exception.BusinessException;
 import java.sql.PreparedStatement;
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //系统菜单服务，提供菜单树查询、菜单创建、更新及删除的业务逻辑
  * @Date 2026/04/18 09:55
  */
@@ -24,7 +24,7 @@ public class SystemMenuService {
     private final SystemPermissionService systemPermissionService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入数据库操作模板和权限服务
      * @Date 2026/04/18 09:55
      * @Param [jdbcTemplate 数据库操作模板, systemPermissionService 权限服务]
@@ -36,7 +36,7 @@ public class SystemMenuService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询菜单树，返回目录、菜单、按钮类型的权限树形结构
      * @Date 2026/04/18 09:55
      * @Param []
@@ -48,7 +48,7 @@ public class SystemMenuService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建菜单权限项，校验编码唯一性及字段合法性后写入数据库
      * @Date 2026/04/18 09:55
      * @Param [request 创建菜单请求，包含权限编码、名称、类型、客户端类型、路径等]
@@ -84,7 +84,7 @@ public class SystemMenuService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定菜单权限项，校验编码唯一性后更新数据库
      * @Date 2026/04/18 09:55
      * @Param [permissionId 权限ID, request 更新菜单请求]
@@ -112,7 +112,7 @@ public class SystemMenuService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除指定菜单权限项，校验无子项且未被角色引用后执行删除
      * @Date 2026/04/18 09:55
      * @Param [permissionId 权限ID]
@@ -136,7 +136,7 @@ public class SystemMenuService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验创建/更新菜单请求的字段合法性，包括编码唯一性、上级菜单存在性等
      * @Date 2026/04/18 09:55
      * @Param [permissionCode 权限编码, permissionName 权限名称, permissionType 权限类型, clientType 客户端类型, parentId 上级ID, sortOrder 排序值, permissionId 当前权限ID（更新时传入）]
@@ -172,7 +172,7 @@ public class SystemMenuService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化权限类型，转换为大写并校验合法值（CATALOG/MENU/BUTTON）
      * @Date 2026/04/18 09:55
      * @Param [permissionType 权限类型字符串]
@@ -190,7 +190,7 @@ public class SystemMenuService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化客户端类型，默认为WEB，转换为大写并校验合法值（WEB/H5）
      * @Date 2026/04/18 09:55
      * @Param [clientType 客户端类型字符串]
@@ -208,7 +208,7 @@ public class SystemMenuService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化状态值，默认为ACTIVE，转换为大写并校验合法值（ACTIVE/DISABLED）
      * @Date 2026/04/18 09:55
      * @Param [status 状态字符串]
@@ -226,7 +226,7 @@ public class SystemMenuService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化可空字符串，去除首尾空格，空白时返回null
      * @Date 2026/04/18 09:55
      * @Param [value 输入字符串]
@@ -237,7 +237,7 @@ public class SystemMenuService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从KeyHolder中提取自动生成的主键ID
      * @Date 2026/04/18 09:55
      * @Param [keyHolder 持有生成主键的KeyHolder]

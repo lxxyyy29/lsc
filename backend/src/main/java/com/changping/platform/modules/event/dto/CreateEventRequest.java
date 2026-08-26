@@ -1,4 +1,4 @@
-package com.changping.platform.modules.event.dto;
+﻿package com.changping.platform.modules.event.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //创建事件请求 DTO，包含外部事件ID、来源信息、事件类型、发生位置和证据引用等必要字段
  * @Date 2026/04/18 10:25
  */

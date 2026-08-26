@@ -18,11 +18,11 @@
         <input v-model="filters.keyword" class="filter-input" style="width:220px;" placeholder="搜索姓名 / 电话" />
         <select v-model="filters.gridId" class="filter-select" style="min-width:140px;">
           <option :value="null">全部区域</option>
-          <option v-for="g in grids" :key="g.id" :value="g.id">{{ g.gridName }}</option>
+          <option v-for="g in grids" :key="g.id" :value="Number(g.id)">{{ g.gridName }}</option>
         </select>
         <select v-model="filters.leaderId" class="filter-select" style="min-width:140px;">
           <option :value="null">全部组长</option>
-          <option v-for="l in leaderOptions" :key="l.id" :value="l.id">{{ l.name }}</option>
+          <option v-for="l in leaderOptions" :key="l.id" :value="Number(l.id)">{{ l.name }}</option>
         </select>
         <select v-model="filters.status" class="filter-select" style="min-width:110px;">
           <option value="">全部状态</option>
@@ -93,7 +93,7 @@
           <label class="form-label">所属小网格 <span class="required">*</span></label>
           <select v-model="form.gridId" class="form-select">
             <option :value="null">请选择小网格</option>
-            <option v-for="g in grids" :key="g.id" :value="g.id">{{ g.gridName }}</option>
+            <option v-for="g in grids" :key="g.id" :value="Number(g.id)">{{ g.gridName }}</option>
           </select>
           <p v-if="!grids.length" style="font-size:12px;color:#d97706;margin-top:4px;">
             ⚠️ 暂无小网格，请先添加网格数据
@@ -121,7 +121,7 @@
           <label class="form-label">选择组长 <span class="required">*</span></label>
           <select v-model="assignLeaderId" class="form-select" @change="syncCheckedByLeader">
             <option :value="null">请选择组长</option>
-            <option v-for="l in leaderCandidates" :key="l.id" :value="l.id">
+            <option v-for="l in leaderCandidates" :key="l.id" :value="Number(l.id)">
               {{ l.name }}（{{ l.position || memberTypeLabel(l.memberType) }}）
             </option>
           </select>
@@ -136,7 +136,7 @@
           </label>
           <div style="max-height:280px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:6px;padding:8px 12px;">
             <div v-for="m in assignableMembers" :key="m.id" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6;">
-              <input type="checkbox" :value="m.id" v-model="assignChecked" />
+              <input type="checkbox" :value="Number(m.id)" v-model="assignChecked" />
               <span style="flex:1;">{{ m.name }} <span style="font-size:12px;color:#999;">{{ m.position || '-' }} · {{ m.gridName || '未分配网格' }}</span></span>
               <span v-if="m.leaderName" style="font-size:12px;color:#0284c7;">当前：{{ m.leaderName }}</span>
               <button v-if="m.leaderId" @click="unassignOne(m)" class="btn btn-danger" style="padding:2px 8px;font-size:11px;">取消划分</button>

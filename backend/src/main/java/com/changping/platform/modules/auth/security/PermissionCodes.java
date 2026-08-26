@@ -1,7 +1,7 @@
-package com.changping.platform.modules.auth.security;
+﻿package com.changping.platform.modules.auth.security;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //权限码常量类，集中定义系统中所有菜单权限、API权限和按钮权限的字符串常量，供权限校验时引用
  * @Date 2026/04/18 09:55
  */
@@ -388,7 +388,7 @@ public final class PermissionCodes {
     public static final String API_QWEN_MODEL_DELETE = "api:qwen-model:delete";
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //私有构造器，防止工具类被实例化
      * @Date 2026/04/18 09:55
      * @Param []

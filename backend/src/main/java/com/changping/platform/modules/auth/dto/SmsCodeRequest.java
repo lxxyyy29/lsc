@@ -1,10 +1,10 @@
-package com.changping.platform.modules.auth.dto;
+﻿package com.changping.platform.modules.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //验证码发送请求 DTO，携带手机号
  * @Date 2026/08/11 14:00
  */

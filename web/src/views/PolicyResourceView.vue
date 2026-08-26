@@ -154,6 +154,7 @@ const POLICY_TYPES = [
   { value: 'RESCUE', label: '救助' },
   { value: 'MEDICAL', label: '医保' },
   { value: 'BENEFIT', label: '惠民' },
+  { value: 'EMPLOYMENT', label: '就业' },
   { value: 'OTHER', label: '其他' }
 ]
 
@@ -186,8 +187,23 @@ function typeLabel(value: string) {
 }
 
 function typeTagClass(value: string) {
-  const map: any = { LOW_INCOME: 'tag-blue', ELDERLY: 'tag-green', RESCUE: 'tag-red', MEDICAL: 'tag-orange', BENEFIT: 'tag-purple' }
-  return map[value] || 'tag-gray'
+  const map: Record<string, string> = {
+    LOW_INCOME: 'tag-blue',
+    ELDERLY: 'tag-green',
+    RESCUE: 'tag-red',
+    MEDICAL: 'tag-orange',
+    BENEFIT: 'tag-purple',
+    EMPLOYMENT: 'tag-cyan',
+    HOUSING: 'tag-pink',
+    EDUCATION: 'tag-indigo',
+    TRANSPORT: 'tag-amber',
+    ENVIRONMENT: 'tag-teal',
+  }
+  if (map[value]) return map[value]
+  const palette = ['tag-blue', 'tag-green', 'tag-orange', 'tag-red', 'tag-purple', 'tag-cyan', 'tag-pink', 'tag-indigo', 'tag-amber', 'tag-teal']
+  let hash = 0
+  for (let i = 0; i < value.length; i++) hash = (hash * 31 + value.charCodeAt(i)) & 0x7fffffff
+  return palette[hash % palette.length]
 }
 
 async function loadList() {

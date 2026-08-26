@@ -1,4 +1,4 @@
-package com.changping.platform.modules.drone.util;
+﻿package com.changping.platform.modules.drone.util;
 
 import com.changping.platform.modules.drone.exception.DroneApiException;
 import java.nio.charset.StandardCharsets;
@@ -11,7 +11,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //无人机SM4加密工具类，使用BouncyCastle提供SM4/CBC/PKCS7Padding算法对密码进行加密，
  * 用于向上游平台API认证时的密码保护
  * @Date 2026/04/18 10:00
@@ -28,7 +28,7 @@ public final class DroneSm4Utils {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //使用SM4/CBC/PKCS7Padding算法对明文进行加密，结果以Base64编码返回
      * @Date 2026/04/18 10:00
      * @Param [plainText 待加密明文, secretKey SM4密钥（16字节）, iv 初始向量（16字节）]

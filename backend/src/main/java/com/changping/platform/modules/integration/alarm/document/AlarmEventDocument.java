@@ -1,4 +1,4 @@
-package com.changping.platform.modules.integration.alarm.document;
+﻿package com.changping.platform.modules.integration.alarm.document;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -13,7 +13,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //MongoDB告警事件文档实体，存储第三方推送告警的完整数据，
  * 包含事件基本信息、位置、证据、摄入元数据、工作流状态和生命周期记录，
  * 通过dedupKey唯一索引防止重复摄入

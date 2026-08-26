@@ -1,4 +1,4 @@
-package com.changping.platform.modules.workorder.controller;
+﻿package com.changping.platform.modules.workorder.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //Web端工单控制器，提供工单查询、详情、派发、处理及批量删除接口
  * @Date 2026/04/18 09:05
  */
@@ -34,7 +34,7 @@ public class WorkOrderController {
     private final SmartDispatchService smartDispatchService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入工单服务、权限校验及当前用户服务
      * @Date 2026/04/18 09:05
      * @Param [workOrderService 工单服务, permissionGuard 权限校验, currentUserService 当前用户服务]
@@ -52,7 +52,7 @@ public class WorkOrderController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询Web端工单列表，支持按状态、经办人、区域过滤
      * @Date 2026/04/18 09:05
      * @Param [page 页码，默认1, pageSize 每页条数，默认10, status 工单状态筛选, assignee 经办人姓名模糊筛选, areaId 区域ID筛选]
@@ -71,7 +71,7 @@ public class WorkOrderController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //导出Web端全量工单列表（不分页）
      * @Date 2026/04/18 09:05
      * @Param []
@@ -85,7 +85,7 @@ public class WorkOrderController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取指定工单的Web端详情，包含流程流转记录
      * @Date 2026/04/18 09:05
      * @Param [id 工单ID]
@@ -99,7 +99,7 @@ public class WorkOrderController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //Web端处理工单节点，提交处理结果
      * @Date 2026/04/18 09:05
      * @Param [id 工单ID, request 处理请求对象]
@@ -115,7 +115,7 @@ public class WorkOrderController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //派发工单，将指定事件按流程模板生成工单并分配处理人
      * @Date 2026/04/18 09:05
      * @Param [eventId 事件ID, request 派发请求，包含流程模板ID和备注]
@@ -202,7 +202,7 @@ public class WorkOrderController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //批量删除工单，按ID列表逐个删除工单及其关联的流程数据
      * @Date 2026/04/18 09:05
      * @Param [ids 要删除的工单ID列表]

@@ -1,4 +1,4 @@
-package com.changping.platform.common.exception;
+﻿package com.changping.platform.common.exception;
 
 import com.changping.platform.common.response.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //全局异常处理器，统一捕获并处理业务异常、参数校验异常及未知异常，返回标准化响应体
  * @Date 2026/04/18 09:10
  */
@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //处理业务异常，根据错误码映射对应的 HTTP 状态码并返回失败响应
      * @Date 2026/04/18 09:10
      * @Param [exception 业务异常对象]
@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //处理请求体参数校验失败异常，收集所有字段错误信息并返回 400 响应
      * @Date 2026/04/18 09:10
      * @Param [exception 方法参数校验失败异常对象]
@@ -59,7 +59,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //处理约束违反异常（如路径变量、请求参数校验失败），返回 400 响应
      * @Date 2026/04/18 09:10
      * @Param [exception 约束违反异常对象]
@@ -117,7 +117,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //兜底处理所有未预期异常，记录日志并返回 500 内部服务器错误响应
      * @Date 2026/04/18 09:10
      * @Param [exception 未预期异常对象]
@@ -131,7 +131,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据业务错误码解析对应的 HTTP 状态码，认证类错误返回 401/403，其余返回 400
      * @Date 2026/04/18 09:10
      * @Param [code 业务错误码]

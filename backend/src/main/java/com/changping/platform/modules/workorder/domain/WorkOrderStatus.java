@@ -1,7 +1,7 @@
-package com.changping.platform.modules.workorder.domain;
+﻿package com.changping.platform.modules.workorder.domain;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //工单状态枚举，定义工单的生命周期状态
  * @Date 2026/04/18 09:10
  */

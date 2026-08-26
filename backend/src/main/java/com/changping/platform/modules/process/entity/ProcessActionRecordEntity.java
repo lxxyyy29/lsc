@@ -1,4 +1,4 @@
-package com.changping.platform.modules.process.entity;
+﻿package com.changping.platform.modules.process.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //流程操作记录实体，映射数据库表 biz_process_action_record，记录流程实例各节点的审批操作历史
  * @Date 2026/04/18 10:00
  */

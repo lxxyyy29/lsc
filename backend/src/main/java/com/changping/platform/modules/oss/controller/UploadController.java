@@ -1,4 +1,4 @@
-package com.changping.platform.modules.oss.controller;
+﻿package com.changping.platform.modules.oss.controller;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.ApiResponse;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //文件上传控制器，在 oss.enable=true 时提供文件上传、访问前缀获取、删除及下载接口
  * @Date 2026/04/18 10:18
  */
@@ -41,7 +41,7 @@ public class UploadController {
     private final CurrentUserService currentUserService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入 OSS 服务、OSS 配置属性和当前用户服务
      * @Date 2026/04/18 10:18
      * @Param [ossService OSS 服务, ossProperties OSS 配置属性, currentUserService 当前用户服务]
@@ -54,7 +54,7 @@ public class UploadController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //上传文件到 OSS，返回对象名称、原始文件名和文件大小
      * @Date 2026/04/18 10:18
      * @Param [file 上传的文件, bizType 业务类型，默认 common, clientType 客户端类型，用于校验]
@@ -78,7 +78,7 @@ public class UploadController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取 OSS 文件公开访问前缀 URL
      * @Date 2026/04/18 10:18
      * @Param [clientType 客户端类型，用于校验]
@@ -98,7 +98,7 @@ public class UploadController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除 OSS 中的指定文件
      * @Date 2026/04/18 10:18
      * @Param [fileUrl 文件访问 URL, clientType 客户端类型，用于校验]
@@ -113,7 +113,7 @@ public class UploadController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //代理下载 OSS 文件，将文件流写入 HTTP 响应，支持自定义文件名
      * @Date 2026/04/18 10:18
      * @Param [fileUrl 文件访问 URL, fileName 下载文件名（可选）, clientType 客户端类型，用于校验, response HTTP 响应对象]
@@ -157,7 +157,7 @@ public class UploadController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据 clientType 参数校验当前请求的客户端类型是否匹配
      * @Date 2026/04/18 10:18
      * @Param [clientType 客户端类型字符串，H5 或 WEB]
@@ -171,7 +171,7 @@ public class UploadController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验下载 URL 是否属于允许的访问前缀，防止越权下载
      * @Date 2026/04/18 10:18
      * @Param [fileUrl 待校验的文件访问 URL]

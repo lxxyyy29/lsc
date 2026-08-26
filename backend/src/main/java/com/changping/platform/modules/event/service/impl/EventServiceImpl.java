@@ -1,4 +1,4 @@
-package com.changping.platform.modules.event.service.impl;
+﻿package com.changping.platform.modules.event.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.changping.platform.common.exception.BusinessException;
@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //事件业务服务实现类，负责事件的创建、查询、分页列表及级联删除，整合MySQL与MongoDB双数据源
  * @Date 2026/04/18 10:00
  */
@@ -48,7 +48,7 @@ public class EventServiceImpl implements EventService {
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造器，注入事件Mapper、告警状态同步服务、MongoDB服务、JdbcTemplate和业务管理服务
      * @Date 2026/04/18 10:00
      * @Param [eventMapper 事件数据访问层, alarmWorkflowStatusSyncService 告警工作流状态同步服务, alarmEventMongoService MongoDB告警事件服务, jdbcTemplate JDBC模板, bizManagementService 业务管理服务]
@@ -100,7 +100,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建事件，校验证据和外部ID唯一性后持久化，并同步区域信息、证据文件、生命周期记录到MySQL和MongoDB
      * @Date 2026/04/18 10:00
      * @Param [request 创建事件请求对象]
@@ -245,7 +245,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据主键ID获取事件详情，优先从MongoDB取数据并与MySQL合并，降级为仅MySQL数据
      * @Date 2026/04/18 10:00
      * @Param [id 事件主键ID]
@@ -289,7 +289,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询事件列表，以MongoDB为主数据源分页，再用MySQL数据补全状态和工作流快照
      * @Date 2026/04/18 10:00
      * @Param [externalEventId 外部事件ID（可选）, page 页码, size 每页条数, status 状态过滤（可选）, startDate 开始日期（可选）, endDate 结束日期（可选）, areaId 区域ID（可选）]
@@ -334,7 +334,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //解析开始日期字符串，支持 yyyy-MM-dd 或 ISO 日期时间格式
      * @Date 2026/08/12 10:00
      * @Param [value 日期字符串(可为空)]
@@ -429,7 +429,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //解析结束日期字符串，日期格式时取当天 23:59:59.999，保证当天数据包含在内
      * @Date 2026/08/12 10:00
      * @Param [value 日期字符串(可为空)]
@@ -452,7 +452,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //级联删除事件及其所有关联数据（工单、审核流程、媒体文件、生命周期记录等），并清理MongoDB文档
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件主键ID]
@@ -514,7 +514,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //仅用MySQL数据构建事件详情VO（无MongoDB文档时的降级路径）
      * @Date 2026/04/18 10:00
      * @Param [entity 事件实体]
@@ -525,7 +525,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //合并MySQL事件实体和MongoDB文档构建事件详情VO（单条详情页路径）
      * @Date 2026/04/18 10:00
      * @Param [entity MySQL事件实体, document MongoDB告警事件文档]
@@ -573,7 +573,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //合并MongoDB文档和MySQL实体构建列表项VO，工作流快照从预加载Map中获取
      * @Date 2026/04/18 10:00
      * @Param [document MongoDB告警事件文档, entity MySQL事件实体（可为null）, workflowSnapshots 工作流快照Map]
@@ -619,7 +619,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //对MongoDB文档列表去重，以sqlEventId或externalEventId为键，保留最新或数据最完整的文档
      * @Date 2026/04/18 10:00
      * @Param [documents MongoDB告警事件文档列表]
@@ -638,7 +638,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //生成文档去重Key：优先使用sqlEventId，其次externalEventId，最后mongoId
      * @Date 2026/04/18 10:00
      * @Param [document MongoDB告警事件文档]
@@ -656,7 +656,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //批量构建事件ID到工作流快照的映射，查询审核流程实例当前节点状态
      * @Date 2026/04/18 10:00
      * @Param [eventIds 事件主键ID列表]
@@ -689,7 +689,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询单个事件的工作流快照（当前审核节点信息）
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件主键ID]
@@ -703,7 +703,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //判断候选文档是否应替换已存在文档：优先有sqlEventId > 有workflowStatus > 更新时间更新
      * @Date 2026/04/18 10:00
      * @Param [existing 已存在的文档, candidate 候选文档]
@@ -734,7 +734,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //用MySQL实体和证据列表构建事件详情VO（无MongoDB文档时的完整降级路径）
      * @Date 2026/04/18 10:00
      * @Param [entity MySQL事件实体, evidenceReferences 证据文件URL列表]
@@ -776,7 +776,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从MongoDB文档的生命周期记录列表转换为VO列表
      * @Date 2026/04/18 10:00
      * @Param [document MongoDB告警事件文档]
@@ -792,7 +792,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //过滤证据引用列表中的空白项，返回有效URL列表
      * @Date 2026/04/18 10:00
      * @Param [evidenceReferences 原始证据文件URL列表]
@@ -812,7 +812,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从MongoDB文档的workflowStatus中提取当前状态字符串
      * @Date 2026/04/18 10:00
      * @Param [document MongoDB告警事件文档]
@@ -826,7 +826,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从MongoDB文档的workflowStatus中提取关联的MySQL事件ID
      * @Date 2026/04/18 10:00
      * @Param [document MongoDB告警事件文档]
@@ -840,7 +840,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从MongoDB文档的location中提取地址字符串
      * @Date 2026/04/18 10:00
      * @Param [document MongoDB告警事件文档]
@@ -854,7 +854,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从MongoDB文档的location中提取经度
      * @Date 2026/04/18 10:00
      * @Param [document MongoDB告警事件文档]
@@ -868,7 +868,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从MongoDB文档的location中提取纬度
      * @Date 2026/04/18 10:00
      * @Param [document MongoDB告警事件文档]
@@ -882,7 +882,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从Map中安全读取指定key的字符串值
      * @Date 2026/04/18 10:00
      * @Param [values 键值Map, key 要读取的键]
@@ -897,7 +897,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //返回参数列表中第一个非空白的字符串
      * @Date 2026/04/18 10:00
      * @Param [values 字符串参数列表]
@@ -913,7 +913,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //返回参数列表中第一个非null的值
      * @Date 2026/04/18 10:00
      * @Param [values 泛型参数列表]
@@ -929,7 +929,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据MySQL事件ID生成兜底事件编码（格式：EVT-{id}）
      * @Date 2026/04/18 10:00
      * @Param [sqlEventId MySQL事件ID]
@@ -940,7 +940,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //使用雪花算法生成全局唯一的事件编码（格式：EVT-{snowflakeId}）
      * @Date 2026/04/18 10:00
      * @Param []
@@ -951,7 +951,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从URL路径中提取文件名，取最后一个斜杠后的部分
      * @Date 2026/04/18 10:00
      * @Param [reference 文件URL或路径字符串]

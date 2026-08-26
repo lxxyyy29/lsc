@@ -21,7 +21,7 @@
         <input v-model="searchKey" class="filter-input" placeholder="搜索姓名 / 账号 / 手机号..." autocomplete="off" />
         <select v-model="filterRoleId" class="filter-select">
           <option :value="0">全部角色</option>
-          <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.roleName }}</option>
+          <option v-for="r in roles" :key="r.id" :value="Number(r.id)">{{ r.roleName }}</option>
           <option :value="-1">未分配角色</option>
         </select>
         <button v-if="filterRoleId === -1" @click="filterRoleId = 0" class="filter-action ghost">清除筛选</button>
@@ -87,10 +87,10 @@
         <h3 style="margin:0 0 16px;font-size:16px;">{{ form.id ? '编辑账号' : '新增账号' }}</h3>
         <div style="display:flex;flex-direction:column;gap:12px;">
           <label class="form-label">登录账号 <span style="color:#ef4444;">*</span></label>
-          <input v-model="form.username" class="form-input" placeholder="登录用账号" :disabled="!!form.id" autocomplete="off" @focus="$event.target.select()" />
+          <input v-model="form.username" class="form-input" placeholder="登录用账号" :disabled="!!form.id" autocomplete="off" @focus="($event.target as HTMLInputElement).select()" />
           <template v-if="!form.id">
             <label class="form-label">初始密码 <span style="color:#ef4444;">*</span></label>
-            <input v-model="form.password" type="password" class="form-input" placeholder="6-64 位" autocomplete="new-password" @focus="$event.target.select()" />
+            <input v-model="form.password" type="password" class="form-input" placeholder="6-64 位" autocomplete="new-password" @focus="($event.target as HTMLInputElement).select()" />
           </template>
           <label class="form-label">姓名 <span style="color:#ef4444;">*</span></label>
           <input v-model="form.realName" class="form-input" placeholder="真实姓名" />
@@ -105,13 +105,13 @@
             <label class="form-label">角色 <span style="color:#ef4444;">*</span> <span style="color:#9ca3af;font-weight:400;font-size:12px;">（每个账号只能选择一个角色）</span></label>
             <select v-model="form.roleId" class="form-input">
               <option :value="null">请选择角色</option>
-              <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.roleName }}</option>
+              <option v-for="r in roles" :key="r.id" :value="Number(r.id)">{{ r.roleName }}</option>
             </select>
             <template v-if="isGridWorkerSelected">
               <label class="form-label">分配小网格 <span style="color:#9ca3af;font-weight:400;font-size:12px;">（选填；分配后自动联动我的网格/巡查任务/派单）</span></label>
               <select v-model="form.gridId" class="form-input">
                 <option :value="null">暂不分配（后续可在组织人员管理绑定）</option>
-                <option v-for="g in smallGrids" :key="g.id" :value="g.id">{{ g.gridName }}</option>
+                <option v-for="g in smallGrids" :key="g.id" :value="Number(g.id)">{{ g.gridName }}</option>
               </select>
               <p v-if="!smallGrids.length" style="color:#d97706;font-size:12px;margin:0;">⚠️ 暂无小网格，请先在网格管理页添加</p>
             </template>
@@ -132,7 +132,7 @@
         <p style="color:#6b7280;font-size:12px;margin:0 0 12px;">每个账号只能归属一个角色，重新选择后将替换原角色</p>
         <div style="display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;">
           <label v-for="r in roles" :key="r.id" style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-            <input type="radio" name="assignRole" :value="r.id" v-model="checkedRoleId" />
+            <input type="radio" name="assignRole" :value="Number(r.id)" v-model="checkedRoleId" />
             <span style="font-weight:600;">{{ r.roleName }}</span>
             <span v-if="r.remark" style="color:#9ca3af;font-size:11px;">{{ r.remark }}</span>
           </label>
@@ -278,7 +278,7 @@ async function submitForm() {
   if (!/^1\d{10}$/.test(form.value.phone.trim())) { formError.value = '请输入正确的 11 位手机号（后端必填，移动端登录要用）'; return }
   if (!form.value.id) {
     if (!form.value.password || form.value.password.length < 6) { formError.value = '初始密码至少 6 位'; return }
-    if (form.value.roleId == null || form.value.roleId === '') { formError.value = '请选择一个角色'; return }
+    if (form.value.roleId == null) { formError.value = '请选择一个角色'; return }
   }
   saving.value = true
   try {

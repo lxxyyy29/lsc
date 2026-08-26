@@ -1,4 +1,4 @@
-package com.changping.platform.modules.workorder.entity;
+﻿package com.changping.platform.modules.workorder.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //工单实体类，对应数据库表 biz_work_order，记录工单全生命周期信息
  * @Date 2026/04/18 09:20
  */

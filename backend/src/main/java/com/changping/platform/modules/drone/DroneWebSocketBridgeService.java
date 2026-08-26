@@ -1,4 +1,4 @@
-package com.changping.platform.modules.drone;
+﻿package com.changping.platform.modules.drone;
 
 import com.changping.platform.modules.drone.client.DroneApiClient;
 import com.changping.platform.modules.drone.config.DroneApiProperties;
@@ -22,7 +22,7 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //无人机WebSocket桥接服务，维护本平台前端与上游无人机平台WebSocket的双向代理连接，
  * 过滤指定业务码消息并广播给注册的前端客户端，支持断线自动重连
  * @Date 2026/04/18 10:00
@@ -41,7 +41,7 @@ public class DroneWebSocketBridgeService {
     private final Map<String, UpstreamConnection> upstreamConnections = new ConcurrentHashMap<>();
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入无人机API客户端、API配置属性及JSON序列化工具
      * @Date 2026/04/18 10:00
      * @Param [droneApiClient 无人机API客户端, droneApiProperties 无人机API配置, objectMapper JSON序列化工具]
@@ -57,7 +57,7 @@ public class DroneWebSocketBridgeService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //销毁时关闭重连调度器并断开所有上游连接
      * @Date 2026/04/18 10:00
      * @Param []
@@ -71,7 +71,7 @@ public class DroneWebSocketBridgeService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //注册前端客户端会话到指定设备的上游连接，若上游未连接则发起连接
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号, clientSession 前端WebSocket会话]
@@ -89,7 +89,7 @@ public class DroneWebSocketBridgeService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //注销前端客户端会话，若该设备无客户端连接则关闭上游连接
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号, clientSession 要注销的前端WebSocket会话]
@@ -107,7 +107,7 @@ public class DroneWebSocketBridgeService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //发起与上游无人机平台的WebSocket连接，连接失败时安排重连
      * @Date 2026/04/18 10:00
      * @Param [connection 上游连接对象]
@@ -133,7 +133,7 @@ public class DroneWebSocketBridgeService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //延迟3秒后重新尝试建立上游WebSocket连接
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号]
@@ -157,7 +157,7 @@ public class DroneWebSocketBridgeService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将上游消息广播给所有已注册的前端客户端，统一将bizCode字段名归一化为biz_code
      * @Date 2026/04/18 10:00
      * @Param [connection 上游连接对象, payload 消息内容]
@@ -192,7 +192,7 @@ public class DroneWebSocketBridgeService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //判断消息是否包含允许转发的业务码（biz_code）
      * @Date 2026/04/18 10:00
      * @Param [payload 原始消息字符串]
@@ -213,7 +213,7 @@ public class DroneWebSocketBridgeService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //静默关闭WebSocket会话，忽略关闭时的IO异常
      * @Date 2026/04/18 10:00
      * @Param [session 要关闭的WebSocket会话]

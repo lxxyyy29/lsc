@@ -1,4 +1,4 @@
-package com.changping.platform.modules.drone;
+﻿package com.changping.platform.modules.drone;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //无人机任务控制器，提供任务列表查询、创建任务、暂停恢复任务及一键返航接口
  * @Date 2026/04/18 10:00
  */
@@ -36,7 +36,7 @@ public class DroneJobController {
     private final DroneApiProperties droneApiProperties;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入无人机代理服务、当前用户服务、权限守卫及API配置属性
      * @Date 2026/04/18 10:00
      * @Param [droneProxyService 无人机代理服务, currentUserService 当前用户服务, permissionGuard 权限守卫, droneApiProperties 无人机API配置]
@@ -54,7 +54,7 @@ public class DroneJobController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询无人机执行任务列表，支持按状态筛选
      * @Date 2026/04/18 10:00
      * @Param [page 页码，默认为1, pageSize 每页条数，默认为10, status 任务状态过滤（可选）]
@@ -71,7 +71,7 @@ public class DroneJobController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建无人机立即执行任务
      * @Date 2026/04/18 10:00
      * @Param [request 创建任务请求，包含机巢序列号和航线文件ID]
@@ -85,7 +85,7 @@ public class DroneJobController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //暂停或恢复指定无人机任务
      * @Date 2026/04/18 10:00
      * @Param [jobId 任务ID, request 包含状态值的请求体（0暂停，1恢复）]
@@ -101,7 +101,7 @@ public class DroneJobController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //发送无人机一键返航指令
      * @Date 2026/04/18 10:00
      * @Param [request 包含机巢序列号的返航请求]

@@ -1,4 +1,4 @@
-package com.changping.platform.modules.workorder.controller;
+﻿package com.changping.platform.modules.workorder.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //H5移动端工单控制器，提供工作台概览、工单列表、工单详情及工单处理接口
  * @Date 2026/04/18 09:00
  */
@@ -35,7 +35,7 @@ public class H5WorkOrderController {
     private final SmartDispatchService smartDispatchService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入工单服务、权限校验及当前用户服务
      * @Date 2026/04/18 09:00
      * @Param [workOrderService 工单服务, permissionGuard 权限校验, currentUserService 当前用户服务]
@@ -53,7 +53,7 @@ public class H5WorkOrderController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取H5工作台概览，包含各状态工单计数汇总
      * @Date 2026/04/18 09:00
      * @Param []
@@ -67,7 +67,7 @@ public class H5WorkOrderController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询当前H5用户参与的工单列表
      * @Date 2026/04/18 09:00
      * @Param []
@@ -81,7 +81,7 @@ public class H5WorkOrderController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取指定工单的H5详情，包含流程节点和操作记录
      * @Date 2026/04/18 09:00
      * @Param [id 工单ID]
@@ -95,7 +95,7 @@ public class H5WorkOrderController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //处理工单节点，提交处理结果、备注及附件，支持通过或拒绝
      * @Date 2026/04/18 09:00
      * @Param [id 工单ID, request 处理请求对象，包含处理结果、备注、附件等]

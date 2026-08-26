@@ -1,4 +1,4 @@
-package com.changping.platform.modules.integration.alarm.repository;
+﻿package com.changping.platform.modules.integration.alarm.repository;
 
 import com.changping.platform.modules.integration.alarm.document.AlarmEventDocument;
 import java.util.Collection;
@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //告警事件MongoDB数据访问接口，提供按外部事件ID、去重键、SQL事件ID等维度的查询及删除操作
  * @Date 2026/04/18 10:00
  */

@@ -1,4 +1,4 @@
-package com.changping.platform.modules.workorder.service.impl;
+﻿package com.changping.platform.modules.workorder.service.impl;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.security.FoundationActorResolver;
@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //工单服务实现类，基于 JdbcTemplate 实现工单派发、处理、查询及删除的完整业务逻辑
  * @Date 2026/04/18 09:30
  */
@@ -53,7 +53,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     private final AlarmWorkflowStatusSyncService alarmWorkflowStatusSyncService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入数据库模板、操作者解析器、告警同步服务及流程模板服务
      * @Date 2026/04/18 09:30
      * @Param [jdbcTemplate 数据库操作模板, foundationActorResolver 操作者解析器, alarmWorkflowStatusSyncService 告警工作流状态同步服务, processTemplateService 流程模板服务]
@@ -69,7 +69,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //派发工单：校验事件状态、创建流程实例、插入工单记录并同步事件状态
      * @Date 2026/04/18 09:30
      * @Param [eventId 事件ID, request 派发请求，包含流程模板ID和备注]
@@ -140,7 +140,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //处理工单节点：根据结果（通过/拒绝）推进或关闭流程，更新工单和事件状态，保存附件
      * @Date 2026/04/18 09:30
      * @Param [workOrderId 工单ID, request 处理请求，包含处理结果、备注及附件]
@@ -612,7 +612,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验处理请求，处理结果不能为空，附件字段不能含空值
      * @Date 2026/04/18 09:30
      * @Param [request 处理请求]
@@ -633,7 +633,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据事件ID查询事件实体，不存在时抛出业务异常
      * @Date 2026/04/18 09:30
      * @Param [eventId 事件ID]
@@ -663,7 +663,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //判断指定事件是否已存在工单记录
      * @Date 2026/04/18 09:30
      * @Param [eventId 事件ID]
@@ -675,7 +675,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据事件ID查询对应的工单实体
      * @Date 2026/04/18 09:30
      * @Param [eventId 事件ID]
@@ -686,7 +686,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据工单ID查询工单实体，不存在时抛出业务异常
      * @Date 2026/04/18 09:30
      * @Param [workOrderId 工单ID]
@@ -701,7 +701,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //返回工单查询的 SELECT 基础语句（不含 WHERE 条件）
      * @Date 2026/04/18 09:30
      * @Param []
@@ -712,7 +712,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将 ResultSet 行映射为 WorkOrderEntity 对象
      * @Date 2026/04/18 09:30
      * @Param [rs 数据库结果集]
@@ -738,7 +738,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验当前 H5 用户是工单流程的参与者之一，否则抛出业务异常
      * @Date 2026/04/18 09:30
      * @Param [workOrder 工单实体, actor 当前 H5 用户]
@@ -762,7 +762,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取当前认证的 H5 用户操作者，userId 为空时抛出业务异常
      * @Date 2026/04/18 09:30
      * @Param []
@@ -777,7 +777,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取当前已认证的操作者，userId 为空时抛出业务异常
      * @Date 2026/04/18 09:30
      * @Param []
@@ -806,7 +806,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新工单的状态、处理人及完成/关闭时间等字段
      * @Date 2026/04/18 09:30
      * @Param [workOrderId 工单ID, status 目标状态, assigneeUserId 新处理人ID, assigneeName 新处理人姓名, completedAt 完成时间, closedAt 关闭时间, closeReason 关闭原因]
@@ -825,7 +825,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新事件状态，要求当前状态匹配预期状态，更新后同步告警工作流状态
      * @Date 2026/04/18 09:30
      * @Param [eventId 事件ID, targetStatus 目标状态, expectedFromStatus 期望的原状态, code 异常编码, message 异常消息]
@@ -848,7 +848,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //插入事件操作记录，记录事件状态流转和操作人信息
      * @Date 2026/04/18 09:30
      * @Param [eventId 事件ID, fromStatus 原状态, toStatus 目标状态, actionType 操作类型, actor 操作者, remark 备注]
@@ -867,7 +867,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //插入流程操作记录，记录节点处理结果和操作人信息，返回新记录ID
      * @Date 2026/04/18 09:30
      * @Param [processInstanceId 流程实例ID, nodeId 节点ID（可为null）, actionType 操作类型, actionResult 操作结果, remark 备注, actor 操作者, subjectType 关联主体类型, subjectId 关联主体ID]

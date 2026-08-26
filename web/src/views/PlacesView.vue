@@ -89,7 +89,7 @@
           <label class="form-label">所属网格</label>
           <select v-model="form.gridId" class="form-select" style="width:100%;">
             <option :value="null">请选择网格</option>
-            <option v-for="g in grids" :key="g.id" :value="g.id">{{ g.gridName }}</option>
+            <option v-for="g in grids" :key="g.id" :value="Number(g.id)">{{ g.gridName }}</option>
           </select>
         </div>
         <div class="form-group">

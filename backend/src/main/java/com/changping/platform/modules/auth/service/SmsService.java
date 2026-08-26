@@ -1,4 +1,4 @@
-package com.changping.platform.modules.auth.service;
+﻿package com.changping.platform.modules.auth.service;
 
 import com.aliyun.dysmsapi20170525.Client;
 import com.aliyun.dysmsapi20170525.models.SendSmsRequest;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //阿里云短信服务：发送登录验证码短信，配置从环境变量读取（docker/.env，不入库）
  * @Date 2026/08/11 18:00
  */

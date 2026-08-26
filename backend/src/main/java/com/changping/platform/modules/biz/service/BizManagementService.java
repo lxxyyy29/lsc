@@ -1,4 +1,4 @@
-package com.changping.platform.modules.biz.service;
+﻿package com.changping.platform.modules.biz.service;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.PagedResult;
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //业务管理服务，提供辖区、商户、摊贩和违规区域的完整 CRUD 能力，包含坐标点多边形归属判断和 ROI 区域缓存
  * @Date 2026/04/18 10:20
  */
@@ -38,7 +38,7 @@ public class BizManagementService {
     private final ObjectMapper objectMapper;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数注入 JDBC 模板和 JSON 序列化器
      * @Date 2026/04/18 10:20
      * @Param [jdbcTemplate JDBC 模板, objectMapper JSON 序列化器]
@@ -50,7 +50,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询全部辖区列表，按 ID 升序返回
      * @Date 2026/04/18 10:20
      * @Param []
@@ -73,7 +73,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询辖区列表，支持辖区名称关键字和状态过滤
      * @Date 2026/04/18 10:20
      * @Param [page 当前页码, pageSize 每页大小, keyword 辖区名称关键字（可为null）, status 状态过滤（可为null）]
@@ -108,7 +108,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询状态为 ACTIVE 的辖区选项列表（仅含ID和名称），用于前端下拉选择
      * @Date 2026/04/18 10:20
      * @Param []
@@ -127,7 +127,7 @@ public class BizManagementService {
      * Area polygon data is cached for 30 seconds to avoid repeated DB queries in list views.
      */
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据经纬度坐标通过射线法判断坐标落在哪个辖区多边形内，未命中时返回 null，辖区多边形数据有 30 秒本地缓存
      * @Date 2026/04/18 10:20
      * @Param [longitude 经度, latitude 纬度]
@@ -156,7 +156,7 @@ public class BizManagementService {
     private static final long CACHE_TTL_MS = 30_000;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取有效辖区多边形缓存列表，超过 30 秒 TTL 时重新从数据库加载并解析 ROI JSON
      * @Date 2026/04/18 10:20
      * @Param []
@@ -192,7 +192,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //射线法判断点 (x,y) 是否在多边形内部
      * @Date 2026/04/18 10:20
      * @Param [x 点的经度, y 点的纬度, polyX 多边形顶点经度数组, polyY 多边形顶点纬度数组]
@@ -211,7 +211,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据辖区ID查询辖区详情，不存在时抛出业务异常
      * @Date 2026/04/18 10:20
      * @Param [areaId 辖区ID]
@@ -223,7 +223,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新辖区，校验请求参数并持久化到数据库，同时清除辖区多边形缓存
      * @Date 2026/04/18 10:20
      * @Param [request 创建辖区请求]
@@ -251,7 +251,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定辖区信息，校验辖区存在性和请求参数，更新后清除多边形缓存
      * @Date 2026/04/18 10:20
      * @Param [areaId 辖区ID, request 更新辖区请求]
@@ -275,7 +275,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除指定辖区，若辖区下存在商户则拒绝删除，删除后清除多边形缓存
      * @Date 2026/04/18 10:20
      * @Param [areaId 辖区ID]
@@ -293,7 +293,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询全部商户列表，关联辖区名称，按 ID 升序返回
      * @Date 2026/04/18 10:20
      * @Param []
@@ -324,7 +324,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询商户列表，支持名称关键字、辖区ID和状态过滤
      * @Date 2026/04/18 10:20
      * @Param [page 当前页码, pageSize 每页大小, keyword 商户名称关键字（可为null）, areaId 辖区ID（可为null）, status 状态（可为null）]
@@ -368,7 +368,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据商户ID查询商户详情（含辖区名称），不存在时抛出业务异常
      * @Date 2026/04/18 10:20
      * @Param [merchantId 商户ID]
@@ -404,7 +404,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新商户，校验请求参数（含辖区状态校验）并持久化到数据库
      * @Date 2026/04/18 10:20
      * @Param [request 创建商户请求]
@@ -436,7 +436,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定商户信息，校验商户存在性和请求参数后执行更新
      * @Date 2026/04/18 10:20
      * @Param [merchantId 商户ID, request 更新商户请求]
@@ -464,7 +464,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除指定商户，校验商户存在性后执行删除
      * @Date 2026/04/18 10:20
      * @Param [merchantId 商户ID]
@@ -477,7 +477,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询全部摊贩列表，按 ID 升序返回
      * @Date 2026/04/18 10:20
      * @Param []
@@ -501,7 +501,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询摊贩列表，支持名称关键字和状态过滤
      * @Date 2026/04/18 10:20
      * @Param [page 当前页码, pageSize 每页大小, keyword 摊贩名称关键字（可为null）, status 状态（可为null）]
@@ -537,7 +537,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据摊贩ID查询摊贩详情，不存在时抛出业务异常
      * @Date 2026/04/18 10:20
      * @Param [vendorId 摊贩ID]
@@ -566,7 +566,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新摊贩，校验请求参数并持久化到数据库
      * @Date 2026/04/18 10:20
      * @Param [request 创建摊贩请求]
@@ -593,7 +593,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定摊贩信息，校验摊贩存在性和请求参数后执行更新
      * @Date 2026/04/18 10:20
      * @Param [vendorId 摊贩ID, request 更新摊贩请求]
@@ -617,7 +617,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除指定摊贩，校验摊贩存在性后执行删除
      * @Date 2026/04/18 10:20
      * @Param [vendorId 摊贩ID]
@@ -630,7 +630,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验辖区请求参数，包括名称非空、ROI JSON 格式和状态合法性
      * @Date 2026/04/18 10:20
      * @Param [request 辖区请求对象, areaId 辖区ID（更新时传入，创建时为null）]
@@ -648,7 +648,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验商户请求参数，包括名称非空、坐标对完整性、照片URL格式、区域匹配模式及绑定辖区的状态
      * @Date 2026/04/18 10:20
      * @Param [request 商户请求对象]
@@ -675,7 +675,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验摊贩请求参数，包括名称非空、照片URL格式和状态合法性
      * @Date 2026/04/18 10:20
      * @Param [request 摊贩请求对象]
@@ -694,7 +694,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //对 ROI JSON 字符串进行解析和规范化，要求至少包含 3 个有效坐标点，返回标准化后的 JSON 字符串
      * @Date 2026/04/18 10:20
      * @Param [roiJson ROI JSON 字符串]
@@ -714,7 +714,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验 ROI 坐标点列表，要求至少 3 个且每个坐标点的经纬度均不为 null
      * @Date 2026/04/18 10:20
      * @Param [roiPoints ROI 坐标点列表]
@@ -732,7 +732,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验经纬度坐标对必须同时提供或同时为 null，否则抛出校验异常
      * @Date 2026/04/18 10:20
      * @Param [longitude 经度, latitude 纬度]
@@ -745,7 +745,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据辖区ID从数据库查询辖区，不存在时抛出业务异常
      * @Date 2026/04/18 10:20
      * @Param [areaId 辖区ID]
@@ -772,7 +772,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验商户存在性，不存在时抛出业务异常
      * @Date 2026/04/18 10:20
      * @Param [merchantId 商户ID]
@@ -786,7 +786,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验摊贩存在性，不存在时抛出业务异常
      * @Date 2026/04/18 10:20
      * @Param [vendorId 摊贩ID]
@@ -800,7 +800,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化状态字段，空值默认返回 ACTIVE，非法值抛出校验异常
      * @Date 2026/04/18 10:20
      * @Param [status 原始状态字符串]
@@ -818,7 +818,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化辖区匹配模式，空值默认返回 MANUAL，非法值抛出校验异常
      * @Date 2026/04/18 10:20
      * @Param [areaMatchMode 原始匹配模式字符串]
@@ -836,7 +836,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化辖区绑定，null 时返回 null，非 null 时校验辖区存在并返回辖区ID
      * @Date 2026/04/18 10:20
      * @Param [areaId 辖区ID（可为null）]
@@ -850,7 +850,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化可空字符串，有内容时去除首尾空白返回，否则返回 null
      * @Date 2026/04/18 10:20
      * @Param [value 原始字符串]
@@ -861,7 +861,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化 URL 字符串，有内容时去除首尾空白返回，否则返回 null
      * @Date 2026/04/18 10:20
      * @Param [value 原始 URL 字符串, fieldName 字段名称（用于日志/错误提示）]
@@ -875,7 +875,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将 SQL Timestamp 转换为 LocalDateTime，null 时返回 null
      * @Date 2026/04/18 10:20
      * @Param [timestamp SQL 时间戳]
@@ -886,7 +886,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从 KeyHolder 中提取数据库自增生成的主键ID，获取失败时抛出业务异常
      * @Date 2026/04/18 10:20
      * @Param [keyHolder 主键持有者, errorCode 失败时的业务错误码, errorMessage 失败时的错误描述]
@@ -1090,7 +1090,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询全部违规区域列表，按 ID 升序返回
      * @Date 2026/04/18 10:20
      * @Param []
@@ -1112,7 +1112,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询违规区域列表，支持名称关键字和状态过滤
      * @Date 2026/04/18 10:20
      * @Param [page 当前页码, pageSize 每页大小, keyword 区域名称关键字（可为null）, status 状态（可为null）]
@@ -1147,7 +1147,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据违规区域ID查询详情，不存在时抛出业务异常
      * @Date 2026/04/18 10:20
      * @Param [id 违规区域ID]
@@ -1159,7 +1159,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新违规区域，校验请求参数并持久化到数据库
      * @Date 2026/04/18 10:20
      * @Param [request 创建违规区域请求]
@@ -1185,7 +1185,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定违规区域信息，校验区域存在性和请求参数后执行更新
      * @Date 2026/04/18 10:20
      * @Param [id 违规区域ID, request 更新违规区域请求]
@@ -1207,7 +1207,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除指定违规区域，校验区域存在性后执行删除
      * @Date 2026/04/18 10:20
      * @Param [id 违规区域ID]
@@ -1220,7 +1220,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验违规区域请求参数，包括名称非空、区域类型合法性和 ROI JSON 格式
      * @Date 2026/04/18 10:20
      * @Param [request 违规区域请求对象]
@@ -1239,7 +1239,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化违规区域类型，空值返回 null，非法值抛出校验异常
      * @Date 2026/04/18 10:20
      * @Param [areaType 原始区域类型字符串]
@@ -1257,7 +1257,7 @@ public class BizManagementService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据违规区域ID从数据库查询详情，不存在时抛出业务异常
      * @Date 2026/04/18 10:20
      * @Param [id 违规区域ID]

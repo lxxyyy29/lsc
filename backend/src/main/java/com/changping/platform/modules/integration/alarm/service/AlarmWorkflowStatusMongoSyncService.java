@@ -1,4 +1,4 @@
-package com.changping.platform.modules.integration.alarm.service;
+﻿package com.changping.platform.modules.integration.alarm.service;
 
 import com.changping.platform.modules.event.entity.EventEntity;
 import com.changping.platform.modules.event.mapper.EventMapper;
@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //告警工作流状态MongoDB同步服务，实现AlarmWorkflowStatusSyncService接口，
  * 将SQL事件的工作流状态变更同步更新到MongoDB告警事件文档
  * @Date 2026/04/18 10:00
@@ -19,7 +19,7 @@ public class AlarmWorkflowStatusMongoSyncService implements AlarmWorkflowStatusS
     private final AlarmEventMongoService alarmEventMongoService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入事件Mapper及MongoDB告警事件服务
      * @Date 2026/04/18 10:00
      * @Param [eventMapper 事件数据库Mapper, alarmEventMongoService MongoDB告警事件服务]
@@ -31,7 +31,7 @@ public class AlarmWorkflowStatusMongoSyncService implements AlarmWorkflowStatusS
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //同步工作流状态快照到MongoDB：根据SQL事件ID查找外部事件ID，再更新对应的MongoDB文档
      * @Date 2026/04/18 10:00
      * @Param [snapshot 工作流状态快照，包含SQL事件ID、当前状态和同步时间]

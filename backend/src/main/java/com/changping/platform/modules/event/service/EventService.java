@@ -1,4 +1,4 @@
-package com.changping.platform.modules.event.service;
+﻿package com.changping.platform.modules.event.service;
 
 import com.changping.platform.common.response.PagedResult;
 import com.changping.platform.modules.event.dto.CreateEventRequest;
@@ -8,14 +8,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //事件业务服务接口，提供事件的创建、查询、分页列表及删除功能
  * @Date 2026/04/18 10:00
  */
 public interface EventService {
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新事件
      * @Date 2026/04/18 10:00
      * @Param [request 创建事件请求对象]
@@ -68,7 +68,7 @@ public interface EventService {
                                      java.math.BigDecimal longitude, java.math.BigDecimal latitude);
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据主键ID获取事件详情
      * @Date 2026/04/18 10:00
      * @Param [id 事件主键ID]
@@ -82,7 +82,7 @@ public interface EventService {
     EventDetailVo getEventDetailByExternalEventId(String externalEventId);
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询事件列表，支持多条件过滤
      * @Date 2026/04/18 10:00
      * @Param [externalEventId 外部事件ID（可选）, page 页码, size 每页条数, status 事件状态（可选）, startDate 开始日期（可选）, endDate 结束日期（可选）, areaId 区域ID（可选）]
@@ -98,7 +98,7 @@ public interface EventService {
     boolean setEventHidden(Long eventId, boolean hidden);
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除事件及其所有关联的子数据（工单、审核、媒体文件等）
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件主键ID]

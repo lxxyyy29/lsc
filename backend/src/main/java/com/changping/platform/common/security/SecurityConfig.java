@@ -1,4 +1,4 @@
-package com.changping.platform.common.security;
+﻿package com.changping.platform.common.security;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.BearerTokenAuthenticationFilter;
@@ -16,7 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //Spring Security 安全配置类，配置无状态会话、请求鉴权规则、Bearer Token 过滤器及异常处理
  * @Date 2026/04/18 09:25
  */
@@ -24,7 +24,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //配置安全过滤器链，禁用 CSRF、设置无状态会话、注册 Bearer Token 过滤器并定义各路径的认证规则
      * @Date 2026/04/18 09:25
      * @Param [http Spring Security HTTP 安全构建器, bearerTokenAuthenticationFilter Bearer Token 认证过滤器, objectMapper JSON 序列化器]
@@ -100,7 +100,7 @@ public class SecurityConfig {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建 BCrypt 密码编码器 Bean，用于用户密码的加密与校验
      * @Date 2026/04/18 09:25
      * @Param []
@@ -112,7 +112,7 @@ public class SecurityConfig {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //向 HTTP 响应中写入认证/授权失败的 JSON 响应体，若响应已提交则跳过
      * @Date 2026/04/18 09:25
      * @Param [response HTTP 响应对象, objectMapper JSON 序列化器, status HTTP 状态码, code 业务错误码, message 错误描述信息]

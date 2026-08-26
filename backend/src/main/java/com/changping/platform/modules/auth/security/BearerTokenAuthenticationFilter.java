@@ -1,4 +1,4 @@
-package com.changping.platform.modules.auth.security;
+﻿package com.changping.platform.modules.auth.security;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.ApiResponse;
@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //Bearer Token 认证过滤器，每次请求时从 Authorization 头解析 JWT 令牌，验证有效性并将认证用户写入安全上下文和线程本地变量
  * @Date 2026/04/18 09:45
  */
@@ -38,7 +38,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数注入 JWT 令牌服务、认证服务和 JSON 序列化器
      * @Date 2026/04/18 09:45
      * @Param [jwtTokenService JWT 令牌服务, authService 认证服务, objectMapper JSON 序列化器]
@@ -54,7 +54,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //执行每次请求的 Token 认证逻辑：解析 Bearer Token、校验密码版本、写入安全上下文，认证失败则直接返回错误响应
      * @Date 2026/04/18 09:45
      * @Param [request HTTP 请求对象, response HTTP 响应对象, filterChain 过滤器链]
@@ -115,7 +115,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将已认证用户的角色码和权限码转换为 Spring Security 的 GrantedAuthority 集合
      * @Date 2026/04/18 09:45
      * @Param [authenticatedUser 已认证用户对象]
@@ -134,7 +134,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据业务错误码解析对应的 HTTP 状态码，权限类返回 403，其余返回 401
      * @Date 2026/04/18 09:45
      * @Param [code 业务错误码]
@@ -148,7 +148,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //向 HTTP 响应写入认证失败的 JSON 响应体，若响应已提交则跳过
      * @Date 2026/04/18 09:45
      * @Param [response HTTP 响应对象, status HTTP 状态码, code 业务错误码, message 错误描述信息]

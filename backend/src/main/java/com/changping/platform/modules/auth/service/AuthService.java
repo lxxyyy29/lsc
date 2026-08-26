@@ -1,4 +1,4 @@
-package com.changping.platform.modules.auth.service;
+﻿package com.changping.platform.modules.auth.service;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.auth.model.AuthenticatedUser;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //认证服务，负责用户登录验证、JWT令牌生成、用户权限加载及客户端类型管理，支持 Web 端和 H5 端分离的入口权限校验
  * @Date 2026/04/18 10:05
  */
@@ -37,7 +37,7 @@ public class AuthService {
     private final LoginAttemptService loginAttemptService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数注入 JDBC 模板、密码编码器和 JWT 令牌服务
      * @Date 2026/04/18 10:05
      * @Param [jdbcTemplate JDBC 模板, passwordEncoder 密码编码器, jwtTokenService JWT 令牌服务]
@@ -57,7 +57,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //用户登录：校验账号密码、验证用户状态、加载角色和权限、校验客户端入口权限，成功后生成 JWT 令牌并返回登录响应
      * @Date 2026/04/18 10:05
      * @Param [account 登录账号, rawPassword 明文密码, clientType 客户端类型（WEB 或 H5）]
@@ -104,7 +104,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //手机号验证码登录：按手机号查用户、校验状态、加载角色权限、按角色决定客户端类型（网格员=H5/居民=WEB），生成 JWT
      * @Date 2026/08/11 14:00
      * @Param [phone 手机号]
@@ -146,7 +146,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将已认证用户对象转换为当前用户视图对象，过滤出菜单类权限码
      * @Date 2026/04/18 10:05
      * @Param [user 已认证用户对象]
@@ -167,7 +167,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据用户ID从数据库加载用户并转换为当前用户视图对象
      * @Date 2026/04/18 10:05
      * @Param [userId 用户ID]
@@ -179,7 +179,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据用户ID从数据库加载已认证用户对象（不含客户端类型）
      * @Date 2026/04/18 10:05
      * @Param [userId 用户ID]
@@ -192,7 +192,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据用户ID和客户端类型从数据库加载已认证用户对象，校验用户状态并加载角色权限
      * @Date 2026/04/18 10:05
      * @Param [userId 用户ID, clientType 客户端类型字符串]
@@ -205,7 +205,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据账号或手机号查询用户记录（支持手机号登录），账号不存在时抛出凭证错误业务异常
      * @Date 2026/04/18 10:05
      * @Param [account 登录账号（账号或手机号）]
@@ -231,7 +231,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据手机号查询用户记录，手机号未绑定账号时抛出凭证错误业务异常
      * @Date 2026/08/11 14:00
      * @Param [phone 手机号]
@@ -260,7 +260,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据用户ID查询用户记录，用户不存在时抛出令牌无效业务异常
      * @Date 2026/04/18 10:05
      * @Param [userId 用户ID]
@@ -286,7 +286,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验用户账号状态，非 ACTIVE 状态时抛出用户已禁用业务异常
      * @Date 2026/04/18 10:05
      * @Param [user 用户数据库记录]
@@ -303,7 +303,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验明文密码与数据库存储的哈希密码是否匹配，不匹配时抛出凭证错误业务异常
      * @Date 2026/04/18 10:05
      * @Param [rawPassword 明文密码, passwordHash 数据库中的密码哈希]
@@ -316,7 +316,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //加载用户的角色码列表，优先通过关联表查询，关联表为空时回退到旧版单角色字段
      * @Date 2026/04/18 10:05
      * @Param [userId 用户ID, legacyRoleId 旧版角色ID（可为null）]
@@ -337,7 +337,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //加载用户所有角色对应的权限码列表，通过角色权限关联表查询状态为 ACTIVE 的权限
      * @Date 2026/04/18 10:05
      * @Param [userId 用户ID, legacyRoleId 旧版角色ID（可为null）]
@@ -364,7 +364,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验用户是否具有登录对应客户端所需的入口权限，不满足时抛出登录禁止业务异常
      * @Date 2026/04/18 10:05
      * @Param [clientType 客户端类型, permissionCodes 用户权限码列表]
@@ -388,7 +388,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从全量权限码列表中过滤出以 "menu:" 前缀开头的菜单权限码
      * @Date 2026/04/18 10:05
      * @Param [permissionCodes 全量权限码列表]
@@ -401,7 +401,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据权限码和客户端类型解析可访问菜单树，H5 当前返回空树以保持兼容
      * @Date 2026/05/21 10:00
      * @Param [permissionCodes 权限码列表, clientType 客户端类型]
@@ -429,7 +429,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将数据库用户记录和客户端类型转换为已认证用户对象，包含角色码和权限码
      * @Date 2026/04/18 10:05
      * @Param [user 用户数据库记录, clientType 客户端类型字符串（可为null）]
@@ -461,7 +461,7 @@ public class AuthService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //客户端类型枚举，区分 Web 管理端和 H5 移动端，用于入口权限校验和令牌隔离
      * @Date 2026/04/18 10:05
      */

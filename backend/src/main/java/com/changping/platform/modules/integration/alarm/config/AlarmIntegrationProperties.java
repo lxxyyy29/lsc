@@ -1,11 +1,11 @@
-package com.changping.platform.modules.integration.alarm.config;
+﻿package com.changping.platform.modules.integration.alarm.config;
 
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //告警集成配置属性，绑定 drone.alarm-integration 前缀配置项，
  * 包含来源系统标识、默认事件类型及回调验证相关参数
  * @Date 2026/04/18 10:00

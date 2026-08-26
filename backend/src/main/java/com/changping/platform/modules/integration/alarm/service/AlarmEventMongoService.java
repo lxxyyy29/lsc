@@ -1,4 +1,4 @@
-package com.changping.platform.modules.integration.alarm.service;
+﻿package com.changping.platform.modules.integration.alarm.service;
 
 import com.changping.platform.modules.event.dto.CreateEventRequest;
 import com.changping.platform.modules.integration.alarm.config.AlarmIntegrationProperties;
@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //告警事件MongoDB服务，提供告警事件的保存、更新、查询及归一化解析功能，
  * 支持第三方推送告警和手动创建事件两种来源，通过dedupKey防重入
  * @Date 2026/04/18 10:00
@@ -37,7 +37,7 @@ public class AlarmEventMongoService {
     private final MongoTemplate mongoTemplate;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入告警事件MongoDB仓库、集成配置属性及MongoTemplate
      * @Date 2026/04/18 10:00
      * @Param [alarmEventRepository 告警事件MongoDB仓库, properties 告警集成配置属性, mongoTemplate MongoDB模板]
@@ -50,7 +50,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将归一化的告警事件保存为新的MongoDB文档，重复摄入时返回已存在文档
      * @Date 2026/04/18 10:00
      * @Param [normalizedEvent 归一化的告警事件, verified 是否通过签名验证]
@@ -96,7 +96,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据手动创建事件请求插入或更新MongoDB告警文档，绑定SQL事件ID和工作流状态
      * @Date 2026/04/18 10:00
      * @Param [request 创建事件请求, sqlEventId 关联的SQL事件ID, eventCode 事件编码, status 当前状态]
@@ -155,7 +155,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据外部事件ID查询告警事件文档
      * @Date 2026/04/18 10:00
      * @Param [externalEventId 外部事件ID]
@@ -166,7 +166,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据外部事件ID删除对应的MongoDB告警文档，ID为空时直接返回
      * @Date 2026/04/18 10:00
      * @Param [externalEventId 外部事件ID]
@@ -180,7 +180,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据SQL事件ID查询关联的MongoDB告警文档
      * @Date 2026/04/18 10:00
      * @Param [sqlEventId SQL事件ID]
@@ -195,7 +195,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询告警事件列表，支持按外部事件ID模糊过滤，按发生时间倒序排列
      * @Date 2026/04/18 10:00
      * @Param [externalEventId 外部事件ID模糊关键字（可选）, page 页码（从1开始）, size 每页条数]
@@ -206,7 +206,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询告警事件列表,支持按外部事件ID模糊过滤,并可排除指定工作流状态
      * @Date 2026/04/22 00:00
      * @Param [externalEventId 外部事件ID模糊关键字(可选), page 页码(从1开始), size 每页条数, excludeStatuses 需要排除的工作流状态(可为空)]
@@ -233,7 +233,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //统计告警事件总数,支持按外部事件ID模糊过滤
      * @Date 2026/04/18 10:00
      * @Param [externalEventId 外部事件ID模糊关键字(可选)]
@@ -244,7 +244,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //统计告警事件总数,支持按外部事件ID模糊过滤,并可排除指定工作流状态
      * @Date 2026/04/22 00:00
      * @Param [externalEventId 外部事件ID模糊关键字(可选), excludeStatuses 需要排除的工作流状态(可为空)]
@@ -267,7 +267,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询告警事件列表，支持按外部事件ID模糊过滤、排除指定工作流状态、按状态与发生时间范围过滤
      * @Date 2026/08/12 10:00
      * @Param [externalEventId 外部事件ID模糊关键字(可选), page 页码(从1开始), size 每页条数, excludeStatuses 需要排除的工作流状态(可为空), status 工作流状态精确过滤(可为空), startDate 开始时间(可为空), endDate 结束时间(可为空)]
@@ -327,7 +327,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //统计告警事件总数，支持按外部事件ID模糊过滤、排除指定工作流状态、按状态与发生时间范围过滤
      * @Date 2026/08/12 10:00
      * @Param [externalEventId 外部事件ID模糊关键字(可选), excludeStatuses 需要排除的工作流状态(可为空), status 工作流状态精确过滤(可为空), startDate 开始时间(可为空), endDate 结束时间(可为空)]
@@ -477,7 +477,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构建告警事件查询条件：外部事件ID模糊、排除状态、状态精确匹配、发生时间范围
      * @Date 2026/08/12 10:00
      * @Param [externalEventId 外部事件ID模糊关键字(可选), excludeStatuses 需要排除的工作流状态(可为空), status 工作流状态精确过滤(可为空), startDate 开始时间(可为空), endDate 结束时间(可为空)]
@@ -587,7 +587,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定外部事件ID对应的MongoDB文档的工作流状态，并追加生命周期记录
      * @Date 2026/04/18 10:00
      * @Param [externalEventId 外部事件ID, sqlEventId 关联的SQL事件ID, currentStatus 当前工作流状态, syncedAt 同步时间]
@@ -613,7 +613,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将第三方原始告警载荷归一化为平台统一的NormalizedAlarmEvent，
      * 兼容多种字段名称和时间格式，自动合成缺失的externalEventId和dedupKey
      * @Date 2026/04/18 10:00
@@ -693,7 +693,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建一条生命周期记录
      * @Date 2026/04/18 10:00
      * @Param [action 操作名称, status 状态, remark 备注]
@@ -709,7 +709,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //深拷贝Map，source为null时返回空LinkedHashMap
      * @Date 2026/04/18 10:00
      * @Param [source 源Map]
@@ -720,7 +720,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从原始值中提取证据引用列表，兼容List和单个字符串两种格式
      * @Date 2026/04/18 10:00
      * @Param [value 原始证据值]
@@ -742,7 +742,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从载荷中按父子键路径取嵌套值
      * @Date 2026/04/18 10:00
      * @Param [payload 源载荷Map, parent 父键名, child 子键名]
@@ -756,7 +756,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从载荷中按父子键路径取嵌套字符串值
      * @Date 2026/04/18 10:00
      * @Param [payload 源载荷Map, parent 父键名, child 子键名]
@@ -767,7 +767,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //返回两个值中第一个非null值
      * @Date 2026/04/18 10:00
      * @Param [first 第一个值, second 第二个值]
@@ -778,7 +778,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //用短横线拼接两个非空字符串，任一为空则返回另一个
      * @Date 2026/04/18 10:00
      * @Param [left 左值, right 右值]
@@ -792,7 +792,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //用冒号拼接两个非空字符串，任一为空则返回另一个
      * @Date 2026/04/18 10:00
      * @Param [left 左值, right 右值]
@@ -806,7 +806,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从可变参数中返回第一个非空非空白字符串
      * @Date 2026/04/18 10:00
      * @Param [values 候选字符串列表]
@@ -822,7 +822,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将任意值安全转换为字符串，null值返回null
      * @Date 2026/04/18 10:00
      * @Param [value 原始值]
@@ -833,7 +833,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将任意值解析为BigDecimal，null或格式非法时返回null
      * @Date 2026/04/18 10:00
      * @Param [value 原始值]
@@ -851,7 +851,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将任意值解析为LocalDateTime，支持ISO8601、带偏移量及自定义格式，解析失败返回null
      * @Date 2026/04/18 10:00
      * @Param [value 原始值]
@@ -884,7 +884,7 @@ public class AlarmEventMongoService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将毫秒时间戳解析为LocalDateTime，解析失败返回null
      * @Date 2026/04/18 10:00
      * @Param [value 毫秒时间戳（数字或字符串）]

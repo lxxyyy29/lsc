@@ -42,7 +42,7 @@
             <div v-if="event.evidenceReferences && event.evidenceReferences.length" style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6;">
               <span style="color:#9ca3af;">现场照片（{{ event.evidenceReferences.length }}）：</span>
               <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-                <img v-for="(url, idx) in event.evidenceReferences" :key="idx" :src="url" @click="previewIdx = idx" title="点击预览大图" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;cursor:zoom-in;" />
+                <img v-for="(url, idx) in event.evidenceReferences" :key="idx" :src="url" @click="previewIdx = Number(idx)" title="点击预览大图" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;cursor:zoom-in;" />
               </div>
             </div>
           </div>
@@ -90,7 +90,7 @@
             <label class="form-label">选择受派人员 <span class="required">*</span></label>
             <select v-model="dispatchForm.assigneeUserId" class="form-select">
               <option :value="null">请选择受派人员</option>
-              <option v-for="u in filteredWorkers" :key="u.id" :value="u.id">{{ u.realName || u.username }}{{ u.roleNames ? `（${u.roleNames}）` : '' }}</option>
+              <option v-for="u in filteredWorkers" :key="u.id" :value="Number(u.id)">{{ u.realName || u.username }}{{ u.roleNames ? `（${u.roleNames}）` : '' }}</option>
             </select>
             <p style="font-size:12px;color:#1890ff;margin-top:6px;">
               ℹ️ 该事件为{{ recommendedRoleCode === 'EVENT_OPERATOR' ? '重点事件' : '简易事件' }}，建议派{{ recommendedRoleLabel }}处理
@@ -158,7 +158,7 @@
               <label class="form-label">选择下属网格员 <span class="required">*</span></label>
               <select v-model="leaderDispatchForm.assigneeUserId" class="form-select">
                 <option :value="null">请选择下属网格员</option>
-                <option v-for="s in leaderDispatchData.subordinates" :key="s.userId" :value="s.userId">
+                <option v-for="s in leaderDispatchData.subordinates" :key="s.userId" :value="Number(s.userId)">
                   {{ s.name }}（待办 {{ s.pendingCount || 0 }} 条）
                 </option>
               </select>
@@ -313,7 +313,7 @@ async function loadData() {
       workers.value = (Array.isArray(users) ? users : []).filter((user: any) => user.status === 'ACTIVE')
       // 默认选中推荐角色的第一个人员
       if (!dispatchForm.value.assigneeUserId && filteredWorkers.value.length) {
-        dispatchForm.value.assigneeUserId = filteredWorkers.value[0].id
+        dispatchForm.value.assigneeUserId = Number(filteredWorkers.value[0].id)
       }
     } catch (e) {
       console.error('加载人员失败:', e)
@@ -382,7 +382,7 @@ watch(showDispatch, async (visible) => {
     dispatchSuggestion.value = await getDispatchSuggestion(Number(eventId.value))
     // 推荐人有且当前未选中时，默认选中推荐人
     if (dispatchSuggestion.value?.recommendedUserId && !dispatchForm.value.assigneeUserId) {
-      dispatchForm.value.assigneeUserId = dispatchSuggestion.value.recommendedUserId
+      dispatchForm.value.assigneeUserId = Number(dispatchSuggestion.value.recommendedUserId)
     }
   } catch (e) {
     dispatchSuggestion.value = null
@@ -420,7 +420,7 @@ watch(showLeaderDispatch, async (visible) => {
     leaderDispatchData.value = await getLeaderDispatchInfo(Number(eventId.value))
     const subs = leaderDispatchData.value?.subordinates || []
     if (subs.length) {
-      leaderDispatchForm.value.assigneeUserId = subs[0].userId
+      leaderDispatchForm.value.assigneeUserId = Number(subs[0].userId)
     }
   } catch (e: any) {
     showMessage(e?.message || '加载派单信息失败')

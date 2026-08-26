@@ -29,7 +29,7 @@
         </select>
         <select v-model="filters.gridId" class="filter-select">
           <option :value="null">全部网格</option>
-          <option v-for="g in grids" :key="g.id" :value="g.id">{{ g.gridName }}</option>
+          <option v-for="g in grids" :key="g.id" :value="Number(g.id)">{{ g.gridName }}</option>
         </select>
         <button @click="fetchData" class="filter-action"><i class="fas fa-search"></i> 查询</button>
         <button @click="resetFilters" class="filter-action ghost">重置</button>
@@ -127,7 +127,7 @@
           <label class="form-label">所属网格</label>
           <select v-model="form.gridId" class="form-select" style="width:100%;">
             <option :value="null">请选择网格</option>
-            <option v-for="g in grids" :key="g.id" :value="g.id">{{ g.gridName }}</option>
+            <option v-for="g in grids" :key="g.id" :value="Number(g.id)">{{ g.gridName }}</option>
           </select>
         </div>
         <div class="form-group">

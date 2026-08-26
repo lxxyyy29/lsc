@@ -1,4 +1,4 @@
-package com.changping.platform.modules.drone;
+﻿package com.changping.platform.modules.drone;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.drone.client.DroneApiClient;
@@ -19,7 +19,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //无人机代理服务，封装对无人机第三方平台API的所有代理调用，包括工作空间、设备、航线、任务、AI模型、喊话器、载荷及媒体文件等功能
  * @Date 2026/04/18 10:00
  */
@@ -52,7 +52,7 @@ public class DroneProxyService {
     private final ObjectMapper objectMapper;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入无人机API客户端及JSON序列化工具
      * @Date 2026/04/18 10:00
      * @Param [droneApiClient 无人机API客户端, objectMapper JSON序列化工具]
@@ -64,7 +64,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询工作空间列表
      * @Date 2026/04/18 10:00
      * @Param [page 页码, pageSize 每页条数]
@@ -84,7 +84,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询指定工作空间下的无人机设备列表
      * @Date 2026/04/18 10:00
      * @Param [workspaceId 工作空间ID, page 页码, pageSize 每页条数]
@@ -105,7 +105,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询指定工作空间下的航线列表
      * @Date 2026/04/18 10:00
      * @Param [workspaceId 工作空间ID, page 页码, pageSize 每页条数]
@@ -118,7 +118,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取指定工作空间和航线ID的航点坐标列表，返回经纬度坐标数组
      * @Date 2026/04/18 10:00
      * @Param [workspaceId 工作空间ID, waylineId 航线ID]
@@ -145,7 +145,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询指定工作空间下的任务列表，支持按状态过滤
      * @Date 2026/04/18 10:00
      * @Param [workspaceId 工作空间ID, page 页码, pageSize 每页条数, status 任务状态过滤（可选）]
@@ -169,7 +169,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建无人机立即执行任务
      * @Date 2026/04/18 10:00
      * @Param [workspaceId 工作空间ID, dockSn 机巢序列号, fileId 航线文件ID]
@@ -183,7 +183,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //暂停或恢复指定任务
      * @Date 2026/04/18 10:00
      * @Param [jobId 任务ID, workspaceId 工作空间ID, status 操作状态（0暂停，1恢复）]
@@ -197,7 +197,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //向指定机巢发送一键返航指令
      * @Date 2026/04/18 10:00
      * @Param [dockSn 机巢序列号]
@@ -208,7 +208,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询指定工作空间的AI算法模型列表
      * @Date 2026/04/18 10:00
      * @Param [workspaceId 工作空间ID, page 页码, pageSize 每页条数]
@@ -230,7 +230,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取指定航线的AI模型绑定详情，合并普通算法绑定和千问算法绑定
      * @Date 2026/04/18 10:00
      * @Param [flyLineId 航线ID]
@@ -263,7 +263,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将千问AI模型绑定到指定航线，键名转换为snake_case后提交到上游平台
      * @Date 2026/04/18 10:00
      * @Param [flyLineId 航线ID, qwenBindings 千问模型绑定关系列表]
@@ -292,7 +292,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询喊话器音频文件列表
      * @Date 2026/04/18 10:00
      * @Param [page 页码, pageSize 每页条数]
@@ -306,7 +306,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //上传喊话器音频文件到上游平台
      * @Date 2026/04/18 10:00
      * @Param [file 要上传的音频文件]
@@ -337,7 +337,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除指定ID的喊话器音频文件
      * @Date 2026/04/18 10:00
      * @Param [id 音频文件ID]
@@ -348,7 +348,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //控制指定设备的喊话器播放指定音频文件
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号, fileId 音频文件ID]
@@ -359,7 +359,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //停止指定设备喊话器的播放
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号]
@@ -370,7 +370,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //设置指定设备喊话器的音量
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号, volume 音量值（0-100）]
@@ -381,7 +381,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //切换指定设备的摄像头模式
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号, cameraMode 摄像头模式值]
@@ -394,7 +394,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //启动指定设备的摄像头录像
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号]
@@ -405,7 +405,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //停止指定设备的摄像头录像
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号]
@@ -416,7 +416,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询媒体文件夹列表，支持按文件名和时间范围过滤，第三方返回Map结构时转换为统一列表格式
      * @Date 2026/04/18 10:00
      * @Param [workspaceId 工作空间ID, fileName 文件名过滤（可选）, startTime 开始时间（可选）, endTime 结束时间（可选）]
@@ -454,7 +454,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据任务ID获取指定工作空间下该任务的所有媒体文件列表
      * @Date 2026/04/18 10:00
      * @Param [workspaceId 工作空间ID, jobId 任务ID]
@@ -470,7 +470,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将任意数据对象转换为Map列表，兼容List和Map两种上游返回结构
      * @Date 2026/04/18 10:00
      * @Param [data 上游返回的原始数据]
@@ -491,7 +491,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将原始媒体文件夹数据映射为统一的输出字段结构
      * @Date 2026/04/18 10:00
      * @Param [item 原始媒体文件夹数据]
@@ -507,7 +507,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将原始媒体文件数据映射为统一的输出字段结构
      * @Date 2026/04/18 10:00
      * @Param [item 原始媒体文件数据]
@@ -528,7 +528,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //向指定设备发送载荷控制指令
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号, body 指令请求体]
@@ -539,7 +539,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将原始工作空间数据映射为统一的输出字段结构
      * @Date 2026/04/18 10:00
      * @Param [item 原始工作空间数据]
@@ -558,7 +558,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将原始设备数据映射为统一的输出字段结构，包含嵌套的无人机信息
      * @Date 2026/04/18 10:00
      * @Param [item 原始设备数据]
@@ -590,7 +590,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将原始航线数据映射为统一的输出字段结构
      * @Date 2026/04/18 10:00
      * @Param [item 原始航线数据]
@@ -606,7 +606,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将原始任务数据映射为统一的输出字段结构
      * @Date 2026/04/18 10:00
      * @Param [item 原始任务数据]
@@ -633,7 +633,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将原始AI模型数据映射为统一的输出字段结构
      * @Date 2026/04/18 10:00
      * @Param [item 原始AI模型数据]
@@ -653,7 +653,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //解析标签列表字段，兼容List类型和JSON字符串两种格式
      * @Date 2026/04/18 10:00
      * @Param [rawValue 原始标签值]
@@ -679,7 +679,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构建分页结果，从上游分页元数据中提取总数，若总数为0但有数据则以实际条数为准
      * @Date 2026/04/18 10:00
      * @Param [data 上游原始数据, items 已提取的数据项列表, page 当前页码, pageSize 每页条数]
@@ -695,7 +695,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从上游响应数据中提取数据项列表，兼容多种键名（items/list/records等）
      * @Date 2026/04/18 10:00
      * @Param [data 上游原始Map数据]
@@ -717,7 +717,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从源Map中按多个候选键名提取嵌套Map对象
      * @Date 2026/04/18 10:00
      * @Param [source 源Map, keys 候选键名列表]
@@ -730,7 +730,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从源Map中按多个候选键名顺序取第一个非null值
      * @Date 2026/04/18 10:00
      * @Param [source 源Map, keys 候选键名列表]
@@ -749,7 +749,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //以POST方式调用上游API并将响应反序列化为Map
      * @Date 2026/04/18 10:00
      * @Param [path 接口路径, request 请求体]
@@ -765,7 +765,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //以GET方式调用上游API并将响应反序列化为Map
      * @Date 2026/04/18 10:00
      * @Param [path 接口路径]
@@ -781,7 +781,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //对null源Map做空Map保护，避免NPE
      * @Date 2026/04/18 10:00
      * @Param [source 源Map]
@@ -792,7 +792,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将任意值转换为字符串，null值返回null
      * @Date 2026/04/18 10:00
      * @Param [value 原始值]
@@ -811,7 +811,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将任意值转换为long类型，null或格式错误时返回0
      * @Date 2026/04/18 10:00
      * @Param [value 原始值]
@@ -832,7 +832,7 @@ public class DroneProxyService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将任意值转换为Integer类型，null或格式错误时返回null
      * @Date 2026/04/18 10:00
      * @Param [value 原始值]

@@ -1,4 +1,4 @@
-package com.changping.platform.modules.auth.security;
+﻿package com.changping.platform.modules.auth.security;
 
 import com.changping.platform.common.exception.BusinessException;
 import java.util.Arrays;
@@ -7,7 +7,7 @@ import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //权限守卫组件，提供编程式权限检查方法，基于当前线程的已认证用户权限码集合进行校验
  * @Date 2026/04/18 10:00
  */
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class PermissionGuard {
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //检查当前用户是否拥有指定权限码
      * @Date 2026/04/18 10:00
      * @Param [permissionCode 待检查的权限码]
@@ -31,7 +31,7 @@ public class PermissionGuard {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //检查当前用户是否拥有给定权限码列表中的任意一个权限
      * @Date 2026/04/18 10:00
      * @Param [permissionCodes 待检查的权限码列表]
@@ -49,7 +49,7 @@ public class PermissionGuard {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //断言当前用户必须拥有指定权限码，否则抛出权限拒绝业务异常
      * @Date 2026/04/18 10:00
      * @Param [permissionCode 必须拥有的权限码]
@@ -62,7 +62,7 @@ public class PermissionGuard {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //断言当前用户必须拥有给定权限码列表中的任意一个权限，否则抛出权限拒绝业务异常
      * @Date 2026/04/18 10:00
      * @Param [permissionCodes 至少需要拥有其中一个的权限码列表]

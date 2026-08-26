@@ -1,4 +1,4 @@
-package com.changping.platform.common.security;
+﻿package com.changping.platform.common.security;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.auth.model.AuthenticatedUser;
@@ -15,7 +15,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  * Replace with real authenticated principal resolution when auth is implemented.
  */
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //操作人解析器，优先从 Bearer Token 认证上下文中获取当前操作人，作为记录操作日志的身份来源；
  *              开发阶段兼容 X-Foundation-* 请求头作为回退策略
  * @Date 2026/04/18 09:20
@@ -28,7 +28,7 @@ public class FoundationActorResolver {
     private static final String TEST_SCENARIO_ATTRIBUTE = "foundationActorResolver.testScenario";
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //解析当前请求的操作人信息，优先使用 Bearer Token 认证用户，其次回退至请求头，均无则返回内部虚拟操作人
      * @Date 2026/04/18 09:20
      * @Param []
@@ -66,7 +66,7 @@ public class FoundationActorResolver {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //判断当前请求是否允许使用 X-Foundation-* 请求头作为身份回退，仅测试场景下允许
      * @Date 2026/04/18 09:20
      * @Param [request 当前 HTTP 请求对象]

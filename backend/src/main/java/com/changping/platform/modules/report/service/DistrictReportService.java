@@ -1,4 +1,4 @@
-package com.changping.platform.modules.report.service;
+﻿package com.changping.platform.modules.report.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //区域报告服务，按区域聚合事件和工单的统计数据，支持日期范围和区域过滤
  * @Date 2026/04/18 10:00
  */
@@ -20,7 +20,7 @@ public class DistrictReportService {
     private final JdbcTemplate jdbcTemplate;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造器，注入 JdbcTemplate
      * @Date 2026/04/18 10:00
      * @Param [jdbcTemplate JDBC模板]
@@ -31,7 +31,7 @@ public class DistrictReportService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //按区域聚合事件和工单统计数据，支持按日期范围和区域过滤，返回各区域的汇总信息
      * @Date 2026/04/18 10:00
      * @Param [startDate 开始日期（可选）, endDate 结束日期（可选）, areaId 区域ID（可选）]

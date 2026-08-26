@@ -1,4 +1,4 @@
-package com.changping.platform.modules.event.entity;
+﻿package com.changping.platform.modules.event.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //事件实体，映射数据库表 biz_event，记录平台接收的各类告警/事件信息
  * @Date 2026/04/18 10:00
  */

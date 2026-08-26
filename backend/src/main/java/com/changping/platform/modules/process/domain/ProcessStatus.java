@@ -1,7 +1,7 @@
-package com.changping.platform.modules.process.domain;
+﻿package com.changping.platform.modules.process.domain;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //流程实例运行时状态枚举，描述审核流程实例在执行阶段的各种状态
  * @Date 2026/04/18 10:00
  */

@@ -1,4 +1,4 @@
-package com.changping.platform.modules.resident.controller;
+﻿package com.changping.platform.modules.resident.controller;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.ApiResponse;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //居民小程序端互动控制器：志愿活动报名/取消、政策查询、志愿积分、便民报修
  * @Date 2026/08/07 15:00
  */
@@ -32,7 +32,7 @@ public class ResidentController {
     private final EventService eventService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入 JDBC 模板、当前用户服务、政策资源服务与事件服务
      * @Date 2026/08/07 15:00
      */
@@ -47,7 +47,7 @@ public class ResidentController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询志愿活动列表，含当前用户报名状态与报名人数（返回驼峰字段供小程序端使用）
      * @Date 2026/08/07 15:00
      * @Param []
@@ -72,7 +72,7 @@ public class ResidentController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //当前居民报名志愿活动，重复报名时幂等返回成功
      * @Date 2026/08/07 15:00
      * @Param [id 活动ID]
@@ -95,7 +95,7 @@ public class ResidentController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //当前居民取消志愿活动报名
      * @Date 2026/08/07 15:00
      * @Param [id 活动ID]
@@ -112,7 +112,7 @@ public class ResidentController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //当前居民对已报名志愿活动签到，限活动期间（活动当天至结束后2天）且仅一次，成功后发放20积分
      * @Date 2026/08/17 16:00
      * @Param [id 活动ID]
@@ -127,7 +127,7 @@ public class ResidentController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //签到校验与积分发放公共逻辑：校验报名状态与活动窗口，幂等返回已签到，成功后更新签到状态、累计积分并写入流水。供居民端与H5端复用
      * @Date 2026/08/17 16:00
      * @Param [activityId 活动ID, userId 签到用户ID]
@@ -182,7 +182,7 @@ public class ResidentController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //政策资源列表（仅启用状态），供居民查询惠民政策
      * @Date 2026/08/07 15:00
      * @Param []
@@ -195,7 +195,7 @@ public class ResidentController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询当前居民的志愿积分账户与最近积分流水
      * @Date 2026/08/07 15:00
      * @Param []
@@ -230,7 +230,7 @@ public class ResidentController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //当前居民提交便民报修，报修人姓名取账号真实姓名
      * @Date 2026/08/07 15:00
      * @Param [body 报修表单：repairType/title/description/address/reporterPhone]
@@ -269,7 +269,7 @@ public class ResidentController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询当前居民提交的报修列表（返回驼峰字段供小程序端使用）
      * @Date 2026/08/07 15:00
      * @Param []
@@ -290,7 +290,7 @@ public class ResidentController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询当前居民报修详情（仅本人可见）
      * @Date 2026/08/07 15:00
      * @Param [id 报修单ID]

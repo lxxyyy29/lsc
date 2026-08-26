@@ -1,4 +1,4 @@
-package com.changping.platform.modules.qwen;
+﻿package com.changping.platform.modules.qwen;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.PagedResult;
@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //千问算法模型服务，提供模型的分页查询、启用列表、详情、创建、更新及逻辑删除功能
  * @Date 2026/04/18 10:28
  */
@@ -26,7 +26,7 @@ public class QwenAlgorithmModelService {
     private final JdbcTemplate jdbcTemplate;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入数据库操作模板
      * @Date 2026/04/18 10:28
      * @Param [jdbcTemplate 数据库操作模板]
@@ -41,7 +41,7 @@ public class QwenAlgorithmModelService {
     private static final String FROM_TABLE = " FROM qwen_algorithm_model WHERE deleted = 0";
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询千问算法模型列表（仅返回未删除的记录）
      * @Date 2026/04/18 10:28
      * @Param [page 页码, pageSize 每页条数]
@@ -62,7 +62,7 @@ public class QwenAlgorithmModelService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据 ID 获取千问算法模型详情，不存在时抛出业务异常
      * @Date 2026/04/18 10:28
      * @Param [id 模型ID]
@@ -74,7 +74,7 @@ public class QwenAlgorithmModelService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询所有已启用（status=1）的千问算法模型列表
      * @Date 2026/04/18 10:28
      * @Param []
@@ -88,7 +88,7 @@ public class QwenAlgorithmModelService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新的千问算法模型，校验字段后写入数据库
      * @Date 2026/04/18 10:28
      * @Param [req 创建模型请求，包含名称、标签、采集间隔、状态和描述]
@@ -114,7 +114,7 @@ public class QwenAlgorithmModelService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定千问算法模型的信息
      * @Date 2026/04/18 10:28
      * @Param [id 模型ID, req 更新模型请求]
@@ -136,7 +136,7 @@ public class QwenAlgorithmModelService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //逻辑删除指定千问算法模型，设置 deleted=1
      * @Date 2026/04/18 10:28
      * @Param [id 模型ID]
@@ -151,7 +151,7 @@ public class QwenAlgorithmModelService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据 ID 查询模型记录，不存在时抛出业务异常
      * @Date 2026/04/18 10:28
      * @Param [id 模型ID]
@@ -169,7 +169,7 @@ public class QwenAlgorithmModelService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将 ResultSet 行映射为 ModelItem 对象
      * @Date 2026/04/18 10:28
      * @Param [rs 数据库结果集]
@@ -188,7 +188,7 @@ public class QwenAlgorithmModelService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验创建模型请求的字段，名称和标签不能为空
      * @Date 2026/04/18 10:28
      * @Param [req 创建模型请求]
@@ -207,7 +207,7 @@ public class QwenAlgorithmModelService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验更新模型请求的字段，名称和标签不能为空
      * @Date 2026/04/18 10:28
      * @Param [req 更新模型请求]
@@ -226,7 +226,7 @@ public class QwenAlgorithmModelService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化可空字符串，空白时返回null
      * @Date 2026/04/18 10:28
      * @Param [value 输入字符串]
@@ -237,7 +237,7 @@ public class QwenAlgorithmModelService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将 Timestamp 转换为 LocalDateTime，为 null 时返回 null
      * @Date 2026/04/18 10:28
      * @Param [timestamp 数据库时间戳]
@@ -248,7 +248,7 @@ public class QwenAlgorithmModelService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从KeyHolder中提取自动生成的主键ID
      * @Date 2026/04/18 10:28
      * @Param [keyHolder 持有生成主键的KeyHolder]

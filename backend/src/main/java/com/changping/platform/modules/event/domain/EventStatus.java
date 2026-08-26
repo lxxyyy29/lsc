@@ -1,7 +1,7 @@
-package com.changping.platform.modules.event.domain;
+﻿package com.changping.platform.modules.event.domain;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //事件生命周期状态枚举，定义事件从接入到最终关闭的全部阶段状态
  * @Date 2026/04/18 10:25
  */

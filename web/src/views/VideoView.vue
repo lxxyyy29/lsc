@@ -152,7 +152,7 @@
             <span>所属网格</span>
             <select v-model="form.gridId" @change="syncGridName">
               <option :value="null">未关联</option>
-              <option v-for="g in gridOptions" :key="g.id" :value="g.id">{{ g.gridName }}</option>
+              <option v-for="g in gridOptions" :key="g.id" :value="Number(g.id)">{{ g.gridName }}</option>
             </select>
           </label>
           <label class="form-item">

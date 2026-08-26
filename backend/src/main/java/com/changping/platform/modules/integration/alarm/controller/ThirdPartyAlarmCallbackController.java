@@ -1,4 +1,4 @@
-package com.changping.platform.modules.integration.alarm.controller;
+﻿package com.changping.platform.modules.integration.alarm.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.integration.alarm.dto.ThirdPartyAlarmIngestResult;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //第三方告警回调控制器，接收第三方系统推送的告警事件，
  * 完成签名验证、数据解析及告警摄入，返回上游兼容的整型响应码格式
  * @Date 2026/04/18 10:00
@@ -29,7 +29,7 @@ public class ThirdPartyAlarmCallbackController {
     private final ObjectMapper objectMapper;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入告警摄入服务、回调验证器及JSON序列化工具
      * @Date 2026/04/18 10:00
      * @Param [thirdPartyAlarmIngestService 告警摄入服务, thirdPartyCallbackVerifier 回调验证器, objectMapper JSON序列化工具]
@@ -45,7 +45,7 @@ public class ThirdPartyAlarmCallbackController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //接收第三方告警回调，完成验证和摄入，返回上游兼容的整型响应码格式
      * @Date 2026/04/18 10:00
      * @Param [rawBody 原始请求体字符串, request HTTP请求对象（用于读取验证头）]
@@ -68,7 +68,7 @@ public class ThirdPartyAlarmCallbackController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将原始请求体字符串解析为Map，空体时返回空Map
      * @Date 2026/04/18 10:00
      * @Param [rawBody 原始JSON字符串]

@@ -1,4 +1,4 @@
-package com.changping.platform.modules.process.service;
+﻿package com.changping.platform.modules.process.service;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.PagedResult;
@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //流程模板服务，负责流程模板及其节点的增删改查，包含校验逻辑和按事件类型查询启用模板的功能
  * @Date 2026/04/18 10:00
  */
@@ -35,7 +35,7 @@ public class ProcessTemplateService {
     private final JdbcTemplate jdbcTemplate;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造器，注入 JdbcTemplate
      * @Date 2026/04/18 10:00
      * @Param [jdbcTemplate JDBC模板]
@@ -46,7 +46,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建流程模板及其节点配置，校验请求合法性后持久化并返回完整模板信息
      * @Date 2026/04/18 10:00
      * @Param [request 创建模板请求对象，包含名称、事件类型、版本和节点配置]
@@ -83,7 +83,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询所有流程模板列表（含节点），按ID升序排列
      * @Date 2026/04/18 10:00
      * @Param []
@@ -117,7 +117,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询流程模板列表，支持按模板名称关键词模糊过滤
      * @Date 2026/04/18 10:00
      * @Param [page 页码, pageSize 每页条数, keyword 关键词（可选）]
@@ -168,7 +168,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询与指定事件类型匹配的所有已启用（ACTIVE）流程模板
      * @Date 2026/04/18 10:00
      * @Param [eventType 事件类型]
@@ -194,7 +194,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新流程模板信息，删除原有节点并重建新节点配置
      * @Date 2026/04/18 10:00
      * @Param [templateId 模板主键ID, request 更新请求对象]
@@ -219,7 +219,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //全量替换模板节点：先删除旧节点,再按请求插入新节点。实例节点的 template_node_id 是弱引用(V22 移除了外键),此处删除不会影响已存在的流程实例及其节点快照。
      * @Date 2026/04/22 00:00
      * @Param [templateId 模板ID, nodeRequests 节点请求]
@@ -231,7 +231,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除流程模板及其所有节点配置
      * @Date 2026/04/18 10:00
      * @Param [templateId 模板主键ID]
@@ -265,7 +265,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据主键ID查询流程模板详情（含节点），未找到则抛出业务异常
      * @Date 2026/04/18 10:00
      * @Param [templateId 模板主键ID]
@@ -303,7 +303,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //批量插入模板节点配置，并验证负责人存在且状态正常
      * @Date 2026/04/18 10:00
      * @Param [templateId 模板ID, nodeRequests 节点配置请求列表]
@@ -338,7 +338,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //批量加载模板列表的节点配置，并挂载到对应模板实体上
      * @Date 2026/04/18 10:00
      * @Param [templates 需要附加节点的模板列表]
@@ -377,7 +377,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //为模板实体填充派生字段（enabled、eventType、version）及节点扩展字段
      * @Date 2026/04/18 10:00
      * @Param [entity 流程模板实体]
@@ -394,7 +394,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //为模板节点实体填充 nodeMode 派生字段（固定为顺序模式）
      * @Date 2026/04/18 10:00
      * @Param [node 流程模板节点实体]
@@ -407,7 +407,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从 KeyHolder 中提取自动生成的主键ID
      * @Date 2026/04/18 10:00
      * @Param [keyHolder 包含生成键的持有者]
@@ -426,7 +426,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验创建模板请求的合法性
      * @Date 2026/04/18 10:00
      * @Param [request 创建模板请求对象]
@@ -438,7 +438,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验更新模板请求的合法性
      * @Date 2026/04/18 10:00
      * @Param [request 更新模板请求对象]
@@ -453,7 +453,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //通用模板请求校验：名称非空、版本号大于0、节点非空且节点序号连续从1开始
      * @Date 2026/04/18 10:00
      * @Param [templateName 模板名称, version 版本号, nodes 节点请求列表]
@@ -512,7 +512,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化事件类型，空值时返回默认值 DEFAULT
      * @Date 2026/04/18 10:00
      * @Param [eventType 事件类型字符串]
@@ -526,7 +526,7 @@ public class ProcessTemplateService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验指定用户存在且状态为 ACTIVE，返回其真实姓名
      * @Date 2026/04/18 10:00
      * @Param [userId 用户主键ID]

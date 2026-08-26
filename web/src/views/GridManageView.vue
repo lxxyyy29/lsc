@@ -79,7 +79,7 @@
           <label>父级网格</label>
           <select v-model="form.parentId" @change="onParentChange">
             <option :value="null">（顶级·社区）</option>
-            <option v-for="opt in parentOptions" :key="opt.id" :value="opt.id" :disabled="opt.id === form.id">{{ opt.label }}</option>
+            <option v-for="opt in parentOptions" :key="opt.id" :value="Number(opt.id)" :disabled="opt.id === form.id">{{ opt.label }}</option>
           </select>
         </div>
         <div class="field">

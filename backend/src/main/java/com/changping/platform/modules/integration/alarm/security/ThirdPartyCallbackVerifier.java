@@ -1,4 +1,4 @@
-package com.changping.platform.modules.integration.alarm.security;
+﻿package com.changping.platform.modules.integration.alarm.security;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.integration.alarm.config.AlarmIntegrationProperties;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //第三方回调验证器，根据配置支持令牌验证和HMAC-SHA256签名验证两种方式，
  * 未启用验证时直接放行
  * @Date 2026/04/18 10:00
@@ -21,7 +21,7 @@ public class ThirdPartyCallbackVerifier {
     private final AlarmIntegrationProperties properties;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入告警集成配置属性
      * @Date 2026/04/18 10:00
      * @Param [properties 告警集成配置属性]
@@ -32,7 +32,7 @@ public class ThirdPartyCallbackVerifier {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //验证第三方回调请求的合法性，支持令牌验证和HMAC-SHA256签名验证，未启用验证时直接返回true
      * @Date 2026/04/18 10:00
      * @Param [request HTTP请求对象, rawBody 请求原始体字符串]
@@ -65,7 +65,7 @@ public class ThirdPartyCallbackVerifier {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //计算内容的HMAC-SHA256签名并返回十六进制字符串
      * @Date 2026/04/18 10:00
      * @Param [content 待签名内容, secret 签名密钥]

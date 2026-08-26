@@ -116,7 +116,7 @@
             </div>
             <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:6px 0 2px 24px;">
               <label v-for="p in group.items" :key="p.id" style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="checkbox" :value="p.id" v-model="checkedPermIds" />
+                <input type="checkbox" :value="Number(p.id)" v-model="checkedPermIds" />
                 {{ p.permissionName }}
               </label>
             </div>

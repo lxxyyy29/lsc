@@ -1,4 +1,4 @@
-package com.changping.platform.modules.process.entity;
+﻿package com.changping.platform.modules.process.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -10,7 +10,7 @@ import java.util.List;
 import lombok.Data;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //流程模板实体，映射数据库表 biz_process_template，存储审核流程的模板定义及其节点配置
  * @Date 2026/04/18 10:00
  */

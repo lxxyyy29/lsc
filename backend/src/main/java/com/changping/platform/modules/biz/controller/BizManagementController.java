@@ -1,4 +1,4 @@
-package com.changping.platform.modules.biz.controller;
+﻿package com.changping.platform.modules.biz.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.common.response.PagedResult;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //Web端业务管理控制器，提供辖区、商户、摊贩和违规区域的增删改查接口，仅限 Web 端访问
  * @Date 2026/04/18 10:15
  */
@@ -32,7 +32,7 @@ public class BizManagementController {
     private final PermissionGuard permissionGuard;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数注入业务管理服务、当前用户服务和权限守卫
      * @Date 2026/04/18 10:15
      * @Param [bizManagementService 业务管理服务, currentUserService 当前用户服务, permissionGuard 权限守卫]
@@ -48,7 +48,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询全部辖区列表（不分页），需要 API_BIZ_AREA_LIST 权限
      * @Date 2026/04/18 10:15
      * @Param []
@@ -62,7 +62,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询辖区列表，支持关键字和状态过滤，需要 API_BIZ_AREA_LIST 权限
      * @Date 2026/04/18 10:15
      * @Param [page 当前页码, pageSize 每页大小, keyword 辖区名称关键字（可选）, status 状态过滤（可选）]
@@ -80,7 +80,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询辖区下拉选项列表（仅返回ID和名称），需要 API_BIZ_AREA_LIST 权限
      * @Date 2026/04/18 10:15
      * @Param []
@@ -94,7 +94,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据ID查询辖区详情，需要 API_BIZ_AREA_DETAIL 权限
      * @Date 2026/04/18 10:15
      * @Param [id 辖区ID]
@@ -108,7 +108,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新辖区，需要 API_BIZ_AREA_CREATE 权限
      * @Date 2026/04/18 10:15
      * @Param [request 创建辖区请求，包含辖区名称、负责人、ROI坐标等信息]
@@ -122,7 +122,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定辖区信息，需要 API_BIZ_AREA_UPDATE 权限
      * @Date 2026/04/18 10:15
      * @Param [id 辖区ID, request 更新辖区请求]
@@ -138,7 +138,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除指定辖区，若辖区下存在商户则禁止删除，需要 API_BIZ_AREA_DELETE 权限
      * @Date 2026/04/18 10:15
      * @Param [id 辖区ID]
@@ -153,7 +153,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询全部商户列表（不分页），需要 API_BIZ_MERCHANT_LIST 权限
      * @Date 2026/04/18 10:15
      * @Param []
@@ -167,7 +167,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询商户列表，支持关键字、辖区和状态过滤，需要 API_BIZ_MERCHANT_LIST 权限
      * @Date 2026/04/18 10:15
      * @Param [page 当前页码, pageSize 每页大小, keyword 商户名称关键字（可选）, areaId 辖区ID（可选）, status 状态过滤（可选）]
@@ -186,7 +186,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据ID查询商户详情，需要 API_BIZ_MERCHANT_DETAIL 权限
      * @Date 2026/04/18 10:15
      * @Param [id 商户ID]
@@ -200,7 +200,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新商户，需要 API_BIZ_MERCHANT_CREATE 权限
      * @Date 2026/04/18 10:15
      * @Param [request 创建商户请求，包含商户名称、经纬度、法人信息等]
@@ -214,7 +214,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定商户信息，需要 API_BIZ_MERCHANT_UPDATE 权限
      * @Date 2026/04/18 10:15
      * @Param [id 商户ID, request 更新商户请求]
@@ -230,7 +230,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除指定商户，需要 API_BIZ_MERCHANT_DELETE 权限
      * @Date 2026/04/18 10:15
      * @Param [id 商户ID]
@@ -245,7 +245,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询全部摊贩列表（不分页），需要 API_BIZ_VENDOR_LIST 权限
      * @Date 2026/04/18 10:15
      * @Param []
@@ -259,7 +259,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询摊贩列表，支持关键字和状态过滤，需要 API_BIZ_VENDOR_LIST 权限
      * @Date 2026/04/18 10:15
      * @Param [page 当前页码, pageSize 每页大小, keyword 摊贩名称关键字（可选）, status 状态过滤（可选）]
@@ -277,7 +277,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据ID查询摊贩详情，需要 API_BIZ_VENDOR_DETAIL 权限
      * @Date 2026/04/18 10:15
      * @Param [id 摊贩ID]
@@ -291,7 +291,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新摊贩，需要 API_BIZ_VENDOR_CREATE 权限
      * @Date 2026/04/18 10:15
      * @Param [request 创建摊贩请求，包含摊贩名称、法人信息等]
@@ -305,7 +305,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定摊贩信息，需要 API_BIZ_VENDOR_UPDATE 权限
      * @Date 2026/04/18 10:15
      * @Param [id 摊贩ID, request 更新摊贩请求]
@@ -321,7 +321,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除指定摊贩，需要 API_BIZ_VENDOR_DELETE 权限
      * @Date 2026/04/18 10:15
      * @Param [id 摊贩ID]
@@ -338,7 +338,7 @@ public class BizManagementController {
     // ---- Violation Area ----
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询全部违规区域列表（不分页），需要 API_BIZ_VIOLATION_AREA_LIST 权限
      * @Date 2026/04/18 10:15
      * @Param []
@@ -352,7 +352,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询违规区域列表，支持关键字和状态过滤，需要 API_BIZ_VIOLATION_AREA_LIST 权限
      * @Date 2026/04/18 10:15
      * @Param [page 当前页码, pageSize 每页大小, keyword 区域名称关键字（可选）, status 状态过滤（可选）]
@@ -370,7 +370,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据ID查询违规区域详情，需要 API_BIZ_VIOLATION_AREA_DETAIL 权限
      * @Date 2026/04/18 10:15
      * @Param [id 违规区域ID]
@@ -384,7 +384,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新违规区域，需要 API_BIZ_VIOLATION_AREA_CREATE 权限
      * @Date 2026/04/18 10:15
      * @Param [request 创建违规区域请求，包含区域名称、类型和ROI坐标等]
@@ -398,7 +398,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定违规区域信息，需要 API_BIZ_VIOLATION_AREA_UPDATE 权限
      * @Date 2026/04/18 10:15
      * @Param [id 违规区域ID, request 更新违规区域请求]
@@ -414,7 +414,7 @@ public class BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除指定违规区域，需要 API_BIZ_VIOLATION_AREA_DELETE 权限
      * @Date 2026/04/18 10:15
      * @Param [id 违规区域ID]

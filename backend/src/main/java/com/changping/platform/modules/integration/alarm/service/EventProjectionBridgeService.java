@@ -1,4 +1,4 @@
-package com.changping.platform.modules.integration.alarm.service;
+﻿package com.changping.platform.modules.integration.alarm.service;
 
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.changping.platform.modules.biz.service.BizManagementService;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //事件投影桥接服务，将已归一化的告警事件投影为SQL事件表中的EventEntity，
  * 若同一外部事件ID已存在则复用，并同步工作流状态快照到MongoDB
  * @Date 2026/04/18 10:00
@@ -30,7 +30,7 @@ public class EventProjectionBridgeService {
     private final JdbcTemplate jdbcTemplate;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入事件Mapper、MongoDB告警服务、业务管理服务及JdbcTemplate
      * @Date 2026/04/18 10:00
      * @Param [eventMapper 事件数据库Mapper, alarmEventMongoService MongoDB告警事件服务, bizManagementService 业务管理服务, jdbcTemplate JDBC模板]
@@ -45,7 +45,7 @@ public class EventProjectionBridgeService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据归一化告警事件创建或复用SQL事件投影，若已存在则同步工作流状态并返回，
      * 若不存在则插入新事件、解析区域、保存证据引用并触发状态同步
      * @Date 2026/04/18 10:00
@@ -94,7 +94,7 @@ public class EventProjectionBridgeService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将SQL事件的当前工作流状态同步到MongoDB告警文档
      * @Date 2026/04/18 10:00
      * @Param [externalEventId 外部事件ID, sqlEventId SQL事件ID, currentStatus 当前工作流状态]
@@ -105,7 +105,7 @@ public class EventProjectionBridgeService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从证据引用URL中提取文件名，无法提取时返回默认值"evidence"
      * @Date 2026/04/18 10:00
      * @Param [reference 证据引用URL]

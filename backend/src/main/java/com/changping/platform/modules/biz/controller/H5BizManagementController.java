@@ -1,4 +1,4 @@
-package com.changping.platform.modules.biz.controller;
+﻿package com.changping.platform.modules.biz.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //H5端业务管理控制器，为移动端字段人员提供商户和摊贩的增删改查接口及辖区选项查询，仅限 H5 端访问
  * @Date 2026/04/18 10:15
  */
@@ -30,7 +30,7 @@ public class H5BizManagementController {
     private final PermissionGuard permissionGuard;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数注入业务管理服务、当前用户服务和权限守卫
      * @Date 2026/04/18 10:15
      * @Param [bizManagementService 业务管理服务, currentUserService 当前用户服务, permissionGuard 权限守卫]
@@ -48,7 +48,7 @@ public class H5BizManagementController {
     // ─── Area Options (for merchant form) ─────────────────────────────────────
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询辖区下拉选项列表，供 H5 端商户表单使用，需要 API_H5_MERCHANT_LIST 权限
      * @Date 2026/04/18 10:15
      * @Param []
@@ -64,7 +64,7 @@ public class H5BizManagementController {
     // ─── Merchants ────────────────────────────────────────────────────────────
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //H5端查询全部商户列表，需要 API_H5_MERCHANT_LIST 权限
      * @Date 2026/04/18 10:15
      * @Param []
@@ -78,7 +78,7 @@ public class H5BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //H5端根据ID查询商户详情，需要 API_H5_MERCHANT_DETAIL 权限
      * @Date 2026/04/18 10:15
      * @Param [id 商户ID]
@@ -92,7 +92,7 @@ public class H5BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //H5端创建新商户，需要 API_H5_MERCHANT_CREATE 权限
      * @Date 2026/04/18 10:15
      * @Param [request 创建商户请求，包含商户名称、经纬度、法人信息等]
@@ -107,7 +107,7 @@ public class H5BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //H5端更新指定商户信息，需要 API_H5_MERCHANT_UPDATE 权限
      * @Date 2026/04/18 10:15
      * @Param [id 商户ID, request 更新商户请求]
@@ -123,7 +123,7 @@ public class H5BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //H5端删除指定商户，需要 API_H5_MERCHANT_DELETE 权限
      * @Date 2026/04/18 10:15
      * @Param [id 商户ID]
@@ -140,7 +140,7 @@ public class H5BizManagementController {
     // ─── Mobile Vendors ───────────────────────────────────────────────────────
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //H5端查询全部摊贩列表，需要 API_H5_VENDOR_LIST 权限
      * @Date 2026/04/18 10:15
      * @Param []
@@ -154,7 +154,7 @@ public class H5BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //H5端根据ID查询摊贩详情，需要 API_H5_VENDOR_DETAIL 权限
      * @Date 2026/04/18 10:15
      * @Param [id 摊贩ID]
@@ -168,7 +168,7 @@ public class H5BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //H5端创建新摊贩，需要 API_H5_VENDOR_CREATE 权限
      * @Date 2026/04/18 10:15
      * @Param [request 创建摊贩请求，包含摊贩名称、法人信息等]
@@ -183,7 +183,7 @@ public class H5BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //H5端更新指定摊贩信息，需要 API_H5_VENDOR_UPDATE 权限
      * @Date 2026/04/18 10:15
      * @Param [id 摊贩ID, request 更新摊贩请求]
@@ -199,7 +199,7 @@ public class H5BizManagementController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //H5端删除指定摊贩，需要 API_H5_VENDOR_DELETE 权限
      * @Date 2026/04/18 10:15
      * @Param [id 摊贩ID]

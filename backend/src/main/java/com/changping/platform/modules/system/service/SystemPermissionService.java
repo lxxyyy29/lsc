@@ -1,4 +1,4 @@
-package com.changping.platform.modules.system.service;
+﻿package com.changping.platform.modules.system.service;
 
 import com.changping.platform.common.exception.BusinessException;
 import java.util.ArrayList;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //系统权限服务，提供权限树查询、菜单树查询、权限记录获取及权限ID校验等功能
  * @Date 2026/04/18 10:00
  */
@@ -24,7 +24,7 @@ public class SystemPermissionService {
     private final JdbcTemplate jdbcTemplate;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入数据库操作模板
      * @Date 2026/04/18 10:00
      * @Param [jdbcTemplate 数据库操作模板]
@@ -35,7 +35,7 @@ public class SystemPermissionService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询权限树，支持按权限类型过滤，不传则返回全量权限树
      * @Date 2026/04/18 10:00
      * @Param [permissionType 权限类型筛选，可为null]
@@ -69,7 +69,7 @@ public class SystemPermissionService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询菜单树，仅返回类型为CATALOG/MENU/BUTTON的权限树
      * @Date 2026/04/18 10:00
      * @Param []
@@ -96,7 +96,7 @@ public class SystemPermissionService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据当前用户权限码返回指定客户端可访问菜单树，包含已授权菜单的祖先目录，避免树结构断裂
      * @Date 2026/05/21 10:00
      * @Param [permissionCodes 当前用户权限码列表, clientType 客户端类型]
@@ -157,7 +157,7 @@ public class SystemPermissionService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据ID获取单条权限记录，不存在时抛出业务异常
      * @Date 2026/04/18 10:00
      * @Param [permissionId 权限ID]
@@ -189,7 +189,7 @@ public class SystemPermissionService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验权限ID列表的合法性，确保所有ID在数据库中存在，返回去重后的ID列表
      * @Date 2026/04/18 10:00
      * @Param [permissionIds 权限ID列表]
@@ -212,7 +212,7 @@ public class SystemPermissionService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //加载所有权限记录，按排序值和ID升序排列
      * @Date 2026/04/18 10:00
      * @Param []
@@ -239,7 +239,7 @@ public class SystemPermissionService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将权限记录列表构建为树形结构，无父节点或父节点不在列表中的记录作为根节点
      * @Date 2026/04/18 10:00
      * @Param [permissions 权限记录列表]

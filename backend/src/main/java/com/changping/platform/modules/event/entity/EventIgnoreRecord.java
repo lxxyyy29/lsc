@@ -1,10 +1,10 @@
-package com.changping.platform.modules.event.entity;
+﻿package com.changping.platform.modules.event.entity;
 
 import java.time.LocalDateTime;
 import lombok.Data;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //事件忽略记录实体，映射数据库表 biz_event_ignore_record，记录事件被标记为误报的操作信息
  * @Date 2026/04/18 10:00
  */

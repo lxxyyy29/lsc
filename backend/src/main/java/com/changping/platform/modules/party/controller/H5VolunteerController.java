@@ -1,4 +1,4 @@
-package com.changping.platform.modules.party.controller;
+﻿package com.changping.platform.modules.party.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.AuthenticatedUserContextHolder;
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //H5移动端志愿服务控制器，提供志愿活动列表、报名/取消报名及志愿积分查询接口
  * @Date 2026/08/07 10:00
  */
@@ -30,7 +30,7 @@ public class H5VolunteerController {
     private final ResidentController residentController;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入 JDBC 模板、当前用户服务、权限校验及居民端控制器（复用签到积分逻辑）
      * @Date 2026/08/07 10:00
      */
@@ -45,7 +45,7 @@ public class H5VolunteerController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询志愿活动列表，包含当前用户报名状态与报名人数
      * @Date 2026/08/07 10:00
      * @Param []
@@ -68,7 +68,7 @@ public class H5VolunteerController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //当前 H5 用户报名志愿活动，重复报名时幂等返回成功
      * @Date 2026/08/07 10:00
      * @Param [id 活动ID]
@@ -92,7 +92,7 @@ public class H5VolunteerController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //当前 H5 用户取消志愿活动报名
      * @Date 2026/08/07 10:00
      * @Param [id 活动ID]
@@ -110,7 +110,7 @@ public class H5VolunteerController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //当前 H5 用户对已报名志愿活动签到，限活动期间（活动当天至结束后2天）且仅一次，成功后发放20积分
      * @Date 2026/08/17 16:00
      * @Param [id 活动ID]
@@ -127,7 +127,7 @@ public class H5VolunteerController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询当前 H5 用户的志愿积分账户与最近积分流水
      * @Date 2026/08/07 10:00
      * @Param []

@@ -1,4 +1,4 @@
-package com.changping.platform.common.async;
+﻿package com.changping.platform.common.async;
 
 import jakarta.annotation.PreDestroy;
 import java.util.ArrayList;
@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //通用异步批量插入写入器：内存队列攒批，定时批量落库，降低高频单条 INSERT 对数据库的压力。
  * 适用于通知、审计日志等允许轻微延迟（毫秒级）且失败可重试的写入场景。
  * - 自管理守护线程，不占用 Spring 调度线程池

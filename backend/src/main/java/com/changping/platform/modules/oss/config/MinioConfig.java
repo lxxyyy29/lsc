@@ -1,4 +1,4 @@
-package com.changping.platform.modules.oss.config;
+﻿package com.changping.platform.modules.oss.config;
 
 import io.minio.MinioClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //MinIO 客户端配置类，在 oss.enable=true 时向容器注册 MinioClient Bean
  * @Date 2026/04/18 10:15
  */
@@ -17,7 +17,7 @@ public class MinioConfig {
     private final OssProperties ossProperties;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入 OSS 配置属性
      * @Date 2026/04/18 10:15
      * @Param [ossProperties OSS 配置属性]
@@ -28,7 +28,7 @@ public class MinioConfig {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建并配置 MinioClient Bean，使用 endpoint、accessKey、secretKey 和 region
      * @Date 2026/04/18 10:15
      * @Param []

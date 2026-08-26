@@ -1,4 +1,4 @@
-package com.changping.platform.modules.drone;
+﻿package com.changping.platform.modules.drone;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //无人机航线控制器，提供航线列表分页查询及航线航点坐标获取接口
  * @Date 2026/04/18 10:00
  */
@@ -28,7 +28,7 @@ public class DroneWaylineController {
     private final DroneApiProperties droneApiProperties;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入无人机代理服务、当前用户服务、权限守卫及API配置属性
      * @Date 2026/04/18 10:00
      * @Param [droneProxyService 无人机代理服务, currentUserService 当前用户服务, permissionGuard 权限守卫, droneApiProperties 无人机API配置]
@@ -46,7 +46,7 @@ public class DroneWaylineController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询无人机航线列表
      * @Date 2026/04/18 10:00
      * @Param [page 页码，默认为1, pageSize 每页条数，默认为10]
@@ -62,7 +62,7 @@ public class DroneWaylineController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取指定航线的航点坐标列表
      * @Date 2026/04/18 10:00
      * @Param [id 航线ID]

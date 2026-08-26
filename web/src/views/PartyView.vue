@@ -241,7 +241,7 @@
         <label class="form-label">所属网格 <span style="color:#ff4d4f;">*</span></label>
         <select v-model="householdForm.gridId" class="form-select">
           <option :value="null">请选择网格</option>
-          <option v-for="g in gridOptions" :key="g.id" :value="g.id">{{ g.label }}</option>
+          <option v-for="g in gridOptions" :key="g.id" :value="Number(g.id)">{{ g.label }}</option>
         </select>
       </div>
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
@@ -277,7 +277,7 @@
         <label class="form-label">所属网格 <span style="color:#ff4d4f;">*</span></label>
         <select v-model="activityForm.gridId" class="form-select">
           <option :value="null">请选择网格</option>
-          <option v-for="g in gridOptions" :key="g.id" :value="g.id">{{ g.label }}</option>
+          <option v-for="g in gridOptions" :key="g.id" :value="Number(g.id)">{{ g.label }}</option>
         </select>
       </div>
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
@@ -353,7 +353,7 @@
           <label class="form-label">所属网格 <span style="color:#ff4d4f;">*</span></label>
           <select v-model="taskForm.gridId" class="form-select">
             <option :value="null">请选择网格</option>
-            <option v-for="g in gridOptions" :key="g.id" :value="g.id">{{ g.label }}</option>
+            <option v-for="g in gridOptions" :key="g.id" :value="Number(g.id)">{{ g.label }}</option>
           </select>
         </div>
       </div>
@@ -384,7 +384,7 @@
         <label class="form-label">所属网格 <span style="color:#ff4d4f;">*</span></label>
         <select v-model="deliberationForm.gridId" class="form-select">
           <option :value="null">请选择网格</option>
-          <option v-for="g in gridOptions" :key="g.id" :value="g.id">{{ g.label }}</option>
+          <option v-for="g in gridOptions" :key="g.id" :value="Number(g.id)">{{ g.label }}</option>
         </select>
       </div>
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
@@ -424,7 +424,7 @@
       <div class="form-group">
         <label class="form-label">选择政策</label>
         <select v-model.number="pushForm.policyId" class="form-select">
-          <option v-for="p in policyOptions" :key="p.id" :value="p.id">{{ p.title }} ({{ p.policyType }})</option>
+          <option v-for="p in policyOptions" :key="p.id" :value="Number(p.id)">{{ p.title }} ({{ p.policyType }})</option>
         </select>
       </div>
       <div class="form-group">

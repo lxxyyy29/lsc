@@ -1,11 +1,11 @@
-package com.changping.platform.modules.workorder.dto;
+﻿package com.changping.platform.modules.workorder.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //工单处理请求DTO，包含处理结果、备注、附件列表及关联主体信息
  * @Date 2026/04/18 09:17
  */

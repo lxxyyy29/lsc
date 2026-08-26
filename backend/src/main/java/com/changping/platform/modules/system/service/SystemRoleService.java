@@ -1,4 +1,4 @@
-package com.changping.platform.modules.system.service;
+﻿package com.changping.platform.modules.system.service;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.PagedResult;
@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //系统角色服务，提供角色列表查询、创建、更新及权限分配的业务逻辑
  * @Date 2026/04/18 10:05
  */
@@ -29,7 +29,7 @@ public class SystemRoleService {
     private final SystemPermissionService systemPermissionService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入数据库操作模板和权限服务
      * @Date 2026/04/18 10:05
      * @Param [jdbcTemplate 数据库操作模板, systemPermissionService 权限服务]
@@ -41,7 +41,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询所有角色列表，包含每个角色的用户数和权限数统计
      * @Date 2026/04/18 10:05
      * @Param []
@@ -66,7 +66,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询角色列表
      * @Date 2026/04/18 10:05
      * @Param [page 页码, pageSize 每页条数]
@@ -97,7 +97,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取指定角色的详情，包含关联权限的ID、编码和名称列表
      * @Date 2026/04/18 10:05
      * @Param [roleId 角色ID]
@@ -119,7 +119,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新角色，校验编码唯一性后写入数据库
      * @Date 2026/04/18 10:05
      * @Param [request 创建角色请求，包含角色编码、名称、状态和备注]
@@ -148,7 +148,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定角色的基本信息
      * @Date 2026/04/18 10:05
      * @Param [roleId 角色ID, request 更新角色请求]
@@ -174,7 +174,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //为指定角色批量分配权限，先清空原有权限再插入新权限
      * @Date 2026/04/18 10:05
      * @Param [roleId 角色ID, request 权限分配请求，包含权限ID列表]
@@ -216,7 +216,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验角色ID列表合法性，确保所有ID在数据库中存在，返回去重后的ID列表
      * @Date 2026/04/18 10:05
      * @Param [roleIds 角色ID列表]
@@ -244,7 +244,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据角色ID查询角色记录，不存在时抛出业务异常
      * @Date 2026/04/18 10:05
      * @Param [roleId 角色ID]
@@ -268,7 +268,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //加载指定角色关联的权限记录列表
      * @Date 2026/04/18 10:05
      * @Param [roleId 角色ID]
@@ -313,7 +313,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验创建/更新角色请求的字段合法性，包括编码唯一性校验
      * @Date 2026/04/18 10:05
      * @Param [roleCode 角色编码, roleName 角色名称, roleId 当前角色ID（更新时传入）]
@@ -338,7 +338,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化角色状态，默认为ACTIVE，校验合法值（ACTIVE/DISABLED）
      * @Date 2026/04/18 10:05
      * @Param [status 状态字符串]
@@ -356,7 +356,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化备注字段，空白时返回null
      * @Date 2026/04/18 10:05
      * @Param [remark 备注字符串]
@@ -367,7 +367,7 @@ public class SystemRoleService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从KeyHolder中提取自动生成的主键ID
      * @Date 2026/04/18 10:05
      * @Param [keyHolder 持有生成主键的KeyHolder]

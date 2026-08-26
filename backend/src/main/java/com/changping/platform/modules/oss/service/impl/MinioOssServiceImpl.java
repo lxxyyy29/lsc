@@ -1,4 +1,4 @@
-package com.changping.platform.modules.oss.service.impl;
+﻿package com.changping.platform.modules.oss.service.impl;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.oss.config.OssProperties;
@@ -18,7 +18,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //基于 MinIO 的 OSS 服务实现，提供文件上传、删除和访问 URL 生成功能
  * @Date 2026/04/18 10:22
  */
@@ -30,7 +30,7 @@ public class MinioOssServiceImpl implements OssService {
     private final OssProperties ossProperties;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入 MinIO 客户端和 OSS 配置属性
      * @Date 2026/04/18 10:22
      * @Param [minioClient MinIO 客户端, ossProperties OSS 配置属性]
@@ -42,7 +42,7 @@ public class MinioOssServiceImpl implements OssService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //上传 MultipartFile 文件到 MinIO，返回 OSS 对象名称
      * @Date 2026/04/18 10:22
      * @Param [file 上传的文件对象, bizType 业务类型，用于构建对象路径前缀]
@@ -58,7 +58,7 @@ public class MinioOssServiceImpl implements OssService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //上传输入流到 MinIO，自动确保存储桶存在后执行上传，返回对象名称
      * @Date 2026/04/18 10:22
      * @Param [inputStream 文件输入流, fileName 原始文件名, contentType 文件 MIME 类型, bizType 业务类型]
@@ -82,7 +82,7 @@ public class MinioOssServiceImpl implements OssService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从 MinIO 删除文件，支持传入完整 URL 或对象名称，失败时返回 false
      * @Date 2026/04/18 10:22
      * @Param [fileUrlOrObjectName 文件访问 URL 或对象名称]
@@ -110,7 +110,7 @@ public class MinioOssServiceImpl implements OssService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据对象名称拼接完整的文件访问 URL
      * @Date 2026/04/18 10:22
      * @Param [objectName OSS 对象名称]
@@ -129,7 +129,7 @@ public class MinioOssServiceImpl implements OssService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //确保存储桶存在，若不存在则自动创建
      * @Date 2026/04/18 10:22
      * @Param []
@@ -147,7 +147,7 @@ public class MinioOssServiceImpl implements OssService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //生成 OSS 对象名称，格式为 bizType/yyyy/MM/dd/随机8位UUID+扩展名
      * @Date 2026/04/18 10:22
      * @Param [bizType 业务类型, fileName 原始文件名]
@@ -165,7 +165,7 @@ public class MinioOssServiceImpl implements OssService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从完整 URL 中提取 OSS 对象名称，优先剥离访问前缀，次用存储桶路径解析
      * @Date 2026/04/18 10:22
      * @Param [fileUrl 文件访问 URL]

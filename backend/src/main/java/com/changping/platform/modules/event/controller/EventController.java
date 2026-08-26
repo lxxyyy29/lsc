@@ -1,4 +1,4 @@
-package com.changping.platform.modules.event.controller;
+﻿package com.changping.platform.modules.event.controller;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.ApiResponse;
@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //事件控制器，提供事件的创建、查询、派单、忽略（误报）及批量删除接口
  * @Date 2026/04/18 10:00
  */
@@ -60,7 +60,7 @@ public class EventController {
     private final com.changping.platform.modules.audit.service.AuditLogService auditLogService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造器，注入事件服务、忽略服务、工单服务、权限守卫和当前用户服务
      * @Date 2026/04/18 10:00
      * @Param [eventService 事件服务, eventIgnoreService 事件忽略服务, workOrderService 工单服务, permissionGuard 权限守卫, currentUserService 当前用户服务]
@@ -86,7 +86,7 @@ public class EventController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建事件接口
      * @Date 2026/04/18 10:00
      * @Param [request 创建事件请求对象]
@@ -137,7 +137,7 @@ public class EventController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据ID获取事件详情接口
      * @Date 2026/04/18 10:00
      * @Param [id 事件主键ID]
@@ -159,7 +159,7 @@ public class EventController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询事件列表接口，支持按外部事件ID、状态、日期范围和区域过滤
      * @Date 2026/04/18 10:00
      * @Param [externalEventId 外部事件ID（可选）, page 页码（默认1）, size 每页条数（默认20）, status 事件状态（可选）, startDate 开始日期（可选）, endDate 结束日期（可选）, areaId 区域ID（可选）]
@@ -198,7 +198,7 @@ public class EventController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将事件派单给工单处理接口，仅限Web端用户操作
      * @Date 2026/04/18 10:00
      * @Param [id 事件主键ID, request 派单请求对象，包含受派人信息]
@@ -214,7 +214,7 @@ public class EventController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将事件标记为误报（忽略）接口，仅限Web端用户操作
      * @Date 2026/04/18 10:00
      * @Param [id 事件主键ID, request 忽略事件请求对象，包含忽略原因]
@@ -231,7 +231,7 @@ public class EventController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询误报（已忽略）事件记录列表，仅限Web端用户操作
      * @Date 2026/04/18 10:00
      * @Param [page 页码（默认1）, size 每页条数（默认20）]
@@ -247,7 +247,7 @@ public class EventController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //批量删除事件接口，仅限Web端用户操作，需填写删除原因并记录审计日志
      * @Date 2026/04/18 10:00
      * @Param [body 包含 ids(事件主键ID列表) 和 reason(删除原因)]

@@ -1,4 +1,4 @@
-package com.changping.platform.modules.audit.entity;
+﻿package com.changping.platform.modules.audit.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //审核记录实体，对应数据库表 biz_audit_record，记录每次审核节点的决策、审核人和意见等信息
  * @Date 2026/04/18 10:10
  */

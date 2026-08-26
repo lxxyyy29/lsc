@@ -1,4 +1,4 @@
-package com.changping.platform.modules.workorder.service;
+﻿package com.changping.platform.modules.workorder.service;
 
 import com.changping.platform.modules.workorder.entity.WorkOrderEntity;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //工单服务接口，定义工单派发、处理、查询及删除等核心业务操作
  * @Date 2026/04/18 09:25
  */
 public interface WorkOrderService {
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将事件派发为工单，创建流程实例并分配首个节点处理人
      * @Date 2026/04/18 09:25
      * @Param [eventId 事件ID, request 派发请求，包含流程模板ID和备注]
@@ -37,7 +37,7 @@ public interface WorkOrderService {
     WorkOrderEntity rejectClose(Long workOrderId, String remark);
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //处理工单节点，根据结果推进或关闭流程
      * @Date 2026/04/18 09:25
      * @Param [workOrderId 工单ID, request 处理请求，包含处理结果、备注及附件]
@@ -46,7 +46,7 @@ public interface WorkOrderService {
     WorkOrderEntity handle(Long workOrderId, HandleRequest request);
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询Web端全量工单列表（不分页）
      * @Date 2026/04/18 09:25
      * @Param []
@@ -55,7 +55,7 @@ public interface WorkOrderService {
     List<WebWorkOrderSummary> queryWebWorkOrders();
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询Web端工单列表，支持多条件过滤
      * @Date 2026/04/18 09:25
      * @Param [page 页码, pageSize 每页条数, status 状态筛选, assignee 经办人筛选, areaId 区域ID筛选]
@@ -64,7 +64,7 @@ public interface WorkOrderService {
     PagedWorkOrders queryWebWorkOrdersPaged(int page, int pageSize, String status, String assignee, Long areaId);
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取Web端工单详情，包含流程流转记录
      * @Date 2026/04/18 09:25
      * @Param [workOrderId 工单ID]
@@ -73,7 +73,7 @@ public interface WorkOrderService {
     WebWorkOrderDetail getWebWorkOrderDetail(Long workOrderId);
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询H5端当前用户参与的工单列表
      * @Date 2026/04/18 09:25
      * @Param []
@@ -82,7 +82,7 @@ public interface WorkOrderService {
     List<H5WorkOrderListItem> queryH5WorkOrders();
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取工单实体（H5侧，会校验当前用户是否为参与者）
      * @Date 2026/04/18 09:25
      * @Param [workOrderId 工单ID]
@@ -91,7 +91,7 @@ public interface WorkOrderService {
     WorkOrderEntity getWorkOrderDetail(Long workOrderId);
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除工单及其关联的流程实例、节点、操作记录和媒体文件
      * @Date 2026/04/18 09:25
      * @Param [workOrderId 工单ID]
@@ -100,7 +100,7 @@ public interface WorkOrderService {
     void deleteWorkOrder(Long workOrderId);
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取H5端工单详情，包含流程节点和操作记录
      * @Date 2026/04/18 09:25
      * @Param [workOrderId 工单ID]
@@ -109,7 +109,7 @@ public interface WorkOrderService {
     H5WorkOrderDetail getH5WorkOrderDetail(Long workOrderId);
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取H5工作台统计数据，汇总各状态工单数量
      * @Date 2026/04/18 09:25
      * @Param []

@@ -1,4 +1,4 @@
-package com.changping.platform.modules.auth.security;
+﻿package com.changping.platform.modules.auth.security;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.auth.model.AuthenticatedUser;
@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //JWT 令牌服务，负责生成访问令牌和解析令牌中的已认证用户信息，签名密钥和有效期从配置文件读取
  * @Date 2026/04/18 09:50
  */
@@ -26,7 +26,7 @@ public class JwtTokenService {
     private final Duration accessTokenTtl;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，从配置文件读取 JWT 密钥和令牌有效期，初始化 HMAC-SHA 签名密钥
      * @Date 2026/04/18 09:50
      * @Param [jwtSecret JWT 签名密钥字符串（至少32字符）, accessTokenExpireMinutes 访问令牌有效期（分钟）]
@@ -40,7 +40,7 @@ public class JwtTokenService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据已认证用户信息生成 JWT 访问令牌，令牌中包含用户ID、账号、姓名、客户端类型和密码版本等声明
      * @Date 2026/04/18 09:50
      * @Param [user 已认证用户对象]
@@ -62,7 +62,7 @@ public class JwtTokenService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //解析 JWT 令牌并构造已认证用户对象（仅包含基础声明信息，角色和权限码为空列表），令牌无效时抛出业务异常
      * @Date 2026/04/18 09:50
      * @Param [token JWT 令牌字符串]
@@ -90,7 +90,7 @@ public class JwtTokenService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //对 JWT 密钥字符串进行规范化处理，去除首尾空白并校验长度不少于 32 字符
      * @Date 2026/04/18 09:50
      * @Param [jwtSecret 原始 JWT 密钥字符串]

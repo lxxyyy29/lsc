@@ -1,4 +1,4 @@
-package com.changping.platform.modules.system.service;
+﻿package com.changping.platform.modules.system.service;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.PagedResult;
@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //系统用户服务，提供用户查询、创建、更新、状态切换、角色分配及密码修改的业务逻辑
  * @Date 2026/04/18 10:10
  */
@@ -33,7 +33,7 @@ public class SystemUserService {
     private final AuthService authService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入数据库模板、密码编码器、角色服务和认证服务
      * @Date 2026/04/18 10:10
      * @Param [jdbcTemplate 数据库操作模板, passwordEncoder 密码编码器, systemRoleService 角色服务, authService 认证服务]
@@ -51,7 +51,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询所有用户列表，包含角色编码和角色名称
      * @Date 2026/04/18 10:10
      * @Param []
@@ -78,7 +78,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询用户列表，支持按关键字（用户名/姓名/手机号）和状态过滤
      * @Date 2026/04/18 10:10
      * @Param [page 页码, pageSize 每页条数, keyword 关键字，可为null, status 状态，可为null]
@@ -128,7 +128,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取指定用户详情，包含角色列表和Web端权限编码列表
      * @Date 2026/04/18 10:10
      * @Param [userId 用户ID]
@@ -143,7 +143,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新用户，加密密码后写入数据库并关联角色
      * @Date 2026/04/18 10:10
      * @Param [request 创建用户请求，包含用户名、密码、姓名、手机号、状态和角色ID列表]
@@ -222,7 +222,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定用户的基本信息（用户名、姓名、手机号、状态）
      * @Date 2026/04/18 10:10
      * @Param [userId 用户ID, request 更新用户请求]
@@ -243,7 +243,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //切换指定用户的账号状态（启用/禁用）
      * @Date 2026/04/18 10:10
      * @Param [userId 用户ID, request 状态更新请求，包含目标状态]
@@ -260,7 +260,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //修改指定用户的登录密码，密码长度须在6到64位之间
      * @Date 2026/04/18 10:10
      * @Param [userId 用户ID, newPassword 新密码]
@@ -283,7 +283,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //逻辑删除系统用户：禁止删除当前登录用户，清空角色绑定、停用账号并提升密码版本使存量令牌失效
      * @Date 2026/05/21 17:40
      * @Param [userId 用户ID, currentUserId 当前登录用户ID]
@@ -305,7 +305,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //为指定用户分配角色，先清空原有角色关系再插入新角色
      * @Date 2026/04/18 10:10
      * @Param [userId 用户ID, request 角色分配请求，包含角色ID列表]
@@ -319,7 +319,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据用户ID查询用户记录，不存在时抛出业务异常
      * @Date 2026/04/18 10:10
      * @Param [userId 用户ID]
@@ -343,7 +343,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //内部分配角色逻辑：清空用户原有角色并批量插入新角色，同步更新主角色ID
      * @Date 2026/04/18 10:10
      * @Param [userId 用户ID, roleIds 角色ID列表]
@@ -366,7 +366,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //加载指定用户关联的角色列表
      * @Date 2026/04/18 10:10
      * @Param [userId 用户ID]
@@ -380,7 +380,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验创建用户请求的字段，包括用户名唯一性、密码非空及基础字段
      * @Date 2026/04/18 10:10
      * @Param [request 创建用户请求]
@@ -403,7 +403,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验更新用户请求的字段，包括用户名唯一性和基础字段
      * @Date 2026/04/18 10:10
      * @Param [request 更新用户请求, userId 当前用户ID]
@@ -416,7 +416,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验用户名非空及唯一性
      * @Date 2026/04/18 10:10
      * @Param [username 用户名, userId 当前用户ID（更新时传入）]
@@ -465,7 +465,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验用户姓名和状态字段的合法性
      * @Date 2026/04/18 10:10
      * @Param [realName 姓名, status 状态]
@@ -479,7 +479,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化用户状态，默认为ACTIVE，校验合法值（ACTIVE/DISABLED）
      * @Date 2026/04/18 10:10
      * @Param [status 状态字符串]
@@ -497,7 +497,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //规范化可空字符串，空白时返回null
      * @Date 2026/04/18 10:10
      * @Param [value 输入字符串]
@@ -508,7 +508,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将逗号分隔的字符串拆分为列表，过滤空白项
      * @Date 2026/04/18 10:10
      * @Param [value 逗号分隔字符串]
@@ -522,7 +522,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将用户记录、角色分配和权限编码列表组装为UserDetail对象
      * @Date 2026/04/18 10:10
      * @Param [user 用户记录, roles 角色分配列表, permissionCodes 权限编码列表]
@@ -542,7 +542,7 @@ public class SystemUserService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从KeyHolder中提取自动生成的主键ID
      * @Date 2026/04/18 10:10
      * @Param [keyHolder 持有生成主键的KeyHolder]

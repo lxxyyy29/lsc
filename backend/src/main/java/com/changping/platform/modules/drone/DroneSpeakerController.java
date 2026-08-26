@@ -1,4 +1,4 @@
-package com.changping.platform.modules.drone;
+﻿package com.changping.platform.modules.drone;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //无人机喊话器控制器，提供喊话器音频文件的上传、删除、列表查询及播放、停止、音量设置接口
  * @Date 2026/04/18 10:00
  */
@@ -35,7 +35,7 @@ public class DroneSpeakerController {
     private final PermissionGuard permissionGuard;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入无人机代理服务、当前用户服务及权限守卫
      * @Date 2026/04/18 10:00
      * @Param [droneProxyService 无人机代理服务, currentUserService 当前用户服务, permissionGuard 权限守卫]
@@ -51,7 +51,7 @@ public class DroneSpeakerController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询喊话器音频文件列表
      * @Date 2026/04/18 10:00
      * @Param [page 页码，默认为1, pageSize 每页条数，默认为10]
@@ -67,7 +67,7 @@ public class DroneSpeakerController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //上传喊话器音频文件（PCM格式）
      * @Date 2026/04/18 10:00
      * @Param [file 上传的音频文件]
@@ -81,7 +81,7 @@ public class DroneSpeakerController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除指定ID的喊话器音频文件
      * @Date 2026/04/18 10:00
      * @Param [id 音频文件ID]
@@ -95,7 +95,7 @@ public class DroneSpeakerController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //控制指定设备的喊话器播放指定音频文件
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号, request 包含音频文件ID的播放请求]
@@ -109,7 +109,7 @@ public class DroneSpeakerController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //停止指定设备的喊话器播放
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号]
@@ -123,7 +123,7 @@ public class DroneSpeakerController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //设置指定设备喊话器的音量
      * @Date 2026/04/18 10:00
      * @Param [deviceSn 设备序列号, request 包含音量值的请求体（0-100）]

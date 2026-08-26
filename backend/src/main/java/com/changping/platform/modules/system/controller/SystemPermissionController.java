@@ -1,4 +1,4 @@
-package com.changping.platform.modules.system.controller;
+﻿package com.changping.platform.modules.system.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //系统权限控制器，提供权限树查询接口，支持按权限类型过滤
  * @Date 2026/04/18 09:40
  */
@@ -26,7 +26,7 @@ public class SystemPermissionController {
     private final PermissionGuard permissionGuard;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入权限服务、当前用户服务及权限校验
      * @Date 2026/04/18 09:40
      * @Param [systemPermissionService 权限服务, currentUserService 当前用户服务, permissionGuard 权限校验]
@@ -42,7 +42,7 @@ public class SystemPermissionController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询权限树，支持按权限类型过滤（如 MENU、API 等）
      * @Date 2026/04/18 09:40
      * @Param [permissionType 权限类型筛选，可选]

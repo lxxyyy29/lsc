@@ -568,7 +568,7 @@ async function saveWayline() {
     await http.post('/drone/waylines', payload)
     showWaylineForm.value = false
     showMessage('航线新增成功', 'success')
-    loadOverview()
+    loadData()
   } catch (e: any) {
     showMessage(e?.message || '保存失败', 'error')
   }

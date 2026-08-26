@@ -1,9 +1,9 @@
-package com.changping.platform.modules.auth.dto;
+﻿package com.changping.platform.modules.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //登录请求 DTO，携带用户账号和密码，均不允许为空
  * @Date 2026/04/18 09:35
  */

@@ -1,10 +1,10 @@
-package com.changping.platform.modules.oss.config;
+﻿package com.changping.platform.modules.oss.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //OSS 配置属性类，绑定 application.yml 中 oss.* 前缀的配置项
  * @Date 2026/04/18 10:16
  */

@@ -1,4 +1,4 @@
-package com.changping.platform.modules.system.controller;
+﻿package com.changping.platform.modules.system.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.common.response.PagedResult;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //系统用户控制器，提供用户列表、详情、创建、更新、状态切换、角色分配及密码修改接口
  * @Date 2026/04/18 09:50
  */
@@ -33,7 +33,7 @@ public class SystemUserController {
     private final PermissionGuard permissionGuard;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入用户服务、当前用户服务及权限校验
      * @Date 2026/04/18 09:50
      * @Param [systemUserService 用户服务, currentUserService 当前用户服务, permissionGuard 权限校验]
@@ -49,7 +49,7 @@ public class SystemUserController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询所有用户列表（不分页），包含角色信息
      * @Date 2026/04/18 09:50
      * @Param []
@@ -63,7 +63,7 @@ public class SystemUserController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询用户列表，支持按关键字（用户名/姓名/手机号）和状态过滤
      * @Date 2026/04/18 09:50
      * @Param [page 页码，默认1, pageSize 每页条数，默认10, keyword 关键字筛选，可选, status 用户状态筛选，可选]
@@ -81,7 +81,7 @@ public class SystemUserController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取指定用户详情，包含角色及权限编码列表
      * @Date 2026/04/18 09:50
      * @Param [id 用户ID]
@@ -95,7 +95,7 @@ public class SystemUserController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建新用户，并关联角色
      * @Date 2026/04/18 09:50
      * @Param [request 创建用户请求，包含用户名、密码、姓名、手机号、状态和角色ID列表]
@@ -109,7 +109,7 @@ public class SystemUserController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新指定用户的基本信息（用户名、姓名、手机号、状态）
      * @Date 2026/04/18 09:50
      * @Param [id 用户ID, request 更新用户请求]
@@ -125,7 +125,7 @@ public class SystemUserController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //切换指定用户的启用/禁用状态
      * @Date 2026/04/18 09:50
      * @Param [id 用户ID, request 状态更新请求，包含目标状态]
@@ -141,7 +141,7 @@ public class SystemUserController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //为指定用户分配角色，覆盖原有角色列表
      * @Date 2026/04/18 09:50
      * @Param [id 用户ID, request 角色分配请求，包含角色ID列表]
@@ -157,7 +157,7 @@ public class SystemUserController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //修改指定用户的登录密码
      * @Date 2026/04/18 09:50
      * @Param [id 用户ID, request 密码修改请求，包含新密码]

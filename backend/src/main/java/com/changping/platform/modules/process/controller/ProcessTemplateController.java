@@ -1,4 +1,4 @@
-package com.changping.platform.modules.process.controller;
+﻿package com.changping.platform.modules.process.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.common.response.PagedResult;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //流程模板控制器，提供流程模板的创建、查询、分页查询、更新和删除接口
  * @Date 2026/04/18 10:00
  */
@@ -30,7 +30,7 @@ public class ProcessTemplateController {
     private final PermissionGuard permissionGuard;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造器，注入流程模板服务和权限守卫
      * @Date 2026/04/18 10:00
      * @Param [processTemplateService 流程模板服务, permissionGuard 权限守卫]
@@ -42,7 +42,7 @@ public class ProcessTemplateController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //创建流程模板接口
      * @Date 2026/04/18 10:00
      * @Param [request 创建模板请求对象，包含模板名称、节点配置等信息]
@@ -55,7 +55,7 @@ public class ProcessTemplateController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询所有流程模板列表（不分页）
      * @Date 2026/04/18 10:00
      * @Param []
@@ -68,7 +68,7 @@ public class ProcessTemplateController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询流程模板列表，支持按关键词过滤
      * @Date 2026/04/18 10:00
      * @Param [page 页码（默认1）, pageSize 每页条数（默认10）, keyword 关键词（可选，按模板名称模糊匹配）]
@@ -84,7 +84,7 @@ public class ProcessTemplateController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据ID获取流程模板详情
      * @Date 2026/04/18 10:00
      * @Param [id 流程模板主键ID]
@@ -97,7 +97,7 @@ public class ProcessTemplateController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //更新流程模板接口，会重建节点配置
      * @Date 2026/04/18 10:00
      * @Param [id 流程模板主键ID, request 更新模板请求对象]
@@ -112,7 +112,7 @@ public class ProcessTemplateController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //删除流程模板及其所有节点配置接口
      * @Date 2026/04/18 10:00
      * @Param [id 流程模板主键ID]

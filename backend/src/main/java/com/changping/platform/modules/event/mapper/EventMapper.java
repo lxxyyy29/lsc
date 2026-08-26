@@ -1,4 +1,4 @@
-package com.changping.platform.modules.event.mapper;
+﻿package com.changping.platform.modules.event.mapper;
 
 import com.changping.platform.modules.event.entity.EventEntity;
 import java.sql.PreparedStatement;
@@ -17,7 +17,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //事件数据访问层，基于 JdbcTemplate 实现对 biz_event 及相关表的增删查操作
  * @Date 2026/04/18 10:00
  */
@@ -63,7 +63,7 @@ public class EventMapper {
     private final JdbcTemplate jdbcTemplate;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造器，注入 JdbcTemplate
      * @Date 2026/04/18 10:00
      * @Param [jdbcTemplate Spring JDBC模板]
@@ -74,7 +74,7 @@ public class EventMapper {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据外部事件ID查询单条事件记录
      * @Date 2026/04/18 10:00
      * @Param [externalEventId 外部系统事件ID]
@@ -91,7 +91,7 @@ public class EventMapper {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据主键ID查询单条事件详情
      * @Date 2026/04/18 10:00
      * @Param [id 事件主键ID]
@@ -108,7 +108,7 @@ public class EventMapper {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据主键ID列表批量查询事件，返回以ID为键的Map
      * @Date 2026/04/18 10:00
      * @Param [eventIds 事件主键ID列表]
@@ -134,7 +134,7 @@ public class EventMapper {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据外部事件ID列表批量查询事件，返回以外部事件ID为键的Map
      * @Date 2026/04/18 10:00
      * @Param [externalEventIds 外部系统事件ID列表]
@@ -165,7 +165,7 @@ public class EventMapper {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询事件列表，可按外部事件ID过滤，按ID倒序排列
      * @Date 2026/04/18 10:00
      * @Param [externalEventId 外部事件ID（为空则查全部）, offset 偏移量, limit 每页条数]
@@ -201,7 +201,7 @@ public class EventMapper {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询指定事件的证据文件URL列表
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件主键ID]
@@ -215,7 +215,7 @@ public class EventMapper {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //批量查询多个事件的证据文件URL列表，返回以事件ID为键的Map
      * @Date 2026/04/18 10:00
      * @Param [eventIds 事件主键ID列表]
@@ -240,7 +240,7 @@ public class EventMapper {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //为事件插入一条证据文件引用记录
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件主键ID, fileName 文件名称, fileUrl 文件访问URL]
@@ -256,7 +256,7 @@ public class EventMapper {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //插入事件流转记录到 biz_event_record
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件主键ID, fromStatus 流转前状态, toStatus 流转后状态, actionType 操作类型, remark 备注]
@@ -274,7 +274,7 @@ public class EventMapper {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //插入事件实体到数据库，并将自动生成的主键回填到实体对象
      * @Date 2026/04/18 10:00
      * @Param [entity 待插入的事件实体]

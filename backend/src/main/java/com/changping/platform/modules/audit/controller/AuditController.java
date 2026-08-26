@@ -1,4 +1,4 @@
-package com.changping.platform.modules.audit.controller;
+﻿package com.changping.platform.modules.audit.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //审核控制器，提供针对事件的审核发起和审核详情查询接口，需要对应 API 权限码
  * @Date 2026/04/18 10:10
  */
@@ -33,7 +33,7 @@ public class AuditController {
     private final JdbcTemplate jdbcTemplate;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数注入流程实例服务和权限守卫
      * @Date 2026/04/18 10:10
      * @Param [processInstanceService 流程实例服务, permissionGuard 权限守卫]
@@ -46,7 +46,7 @@ public class AuditController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //针对指定事件发起审核流程，可选传入流程模板ID，需要 API_AUDIT_START 权限
      * @Date 2026/04/18 10:10
      * @Param [eventId 事件ID, request 发起审核请求（可选，包含流程模板ID和是否强制重新发起标志）]
@@ -64,7 +64,7 @@ public class AuditController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询指定事件的审核流程详情，需要 API_AUDIT_DETAIL 权限
      * @Date 2026/04/18 10:10
      * @Param [eventId 事件ID]

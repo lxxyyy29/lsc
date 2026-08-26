@@ -1,7 +1,7 @@
-package com.changping.platform.modules.report.service;
+﻿package com.changping.platform.modules.report.service;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //区域汇总视图对象，聚合单个区域的事件总量、各状态分类统计、工单数量及平均处理时长
  * @Date 2026/04/18 10:00
  */

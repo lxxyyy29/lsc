@@ -1,4 +1,4 @@
-package com.changping.platform.modules.process.service;
+﻿package com.changping.platform.modules.process.service;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.security.FoundationActorResolver;
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //流程实例服务，负责审核流程实例的创建、节点推进、审批/驳回及事件状态联动，当前审核流程已废弃并统一抛出业务异常
  * @Date 2026/04/18 10:00
  */
@@ -50,7 +50,7 @@ public class ProcessInstanceService {
     private final AlarmWorkflowStatusSyncService alarmWorkflowStatusSyncService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造器，注入JDBC模板、流程模板服务、操作者解析器、权限守卫和告警状态同步服务
      * @Date 2026/04/18 10:00
      * @Param [jdbcTemplate JDBC模板, processTemplateService 流程模板服务, foundationActorResolver 操作者解析器, permissionGuard 权限守卫, alarmWorkflowStatusSyncService 告警工作流状态同步服务]
@@ -70,7 +70,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //启动事件审核流程（已废弃），当前统一抛出业务异常
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件主键ID, request 启动审核请求对象]
@@ -82,7 +82,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //获取事件审核流程详情（已废弃），当前统一抛出业务异常
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件主键ID]
@@ -93,7 +93,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //审批通过指定流程实例节点（已废弃），当前统一抛出业务异常
      * @Date 2026/04/18 10:00
      * @Param [processInstanceId 流程实例主键ID, request 审批决策请求对象]
@@ -105,7 +105,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //驳回指定流程实例节点（已废弃），当前统一抛出业务异常
      * @Date 2026/04/18 10:00
      * @Param [processInstanceId 流程实例主键ID, request 审批决策请求对象]
@@ -117,7 +117,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据模板和操作者信息创建新的流程实例，并初始化节点和首条操作记录
      * @Date 2026/04/18 10:00
      * @Param [event 事件实体, template 流程模板实体, actor 当前操作者信息]
@@ -164,7 +164,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //重置已有流程实例（驳回后重新发起），归档当前节点并按新模板创建新周期节点
      * @Date 2026/04/18 10:00
      * @Param [instance 已有流程实例, template 使用的模板, actor 当前操作者]
@@ -184,7 +184,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据模板节点定义为流程实例创建节点实例记录
      * @Date 2026/04/18 10:00
      * @Param [processInstanceId 流程实例ID, templateNodes 模板节点列表, cycleNo 当前审批周期编号]
@@ -210,7 +210,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将当前活跃节点标记为非当前（归档），用于驳回重新发起时归档上一周期节点
      * @Date 2026/04/18 10:00
      * @Param [processInstanceId 流程实例ID]
@@ -223,7 +223,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询当前流程实例已存在的最大审批周期编号，并返回下一周期编号
      * @Date 2026/04/18 10:00
      * @Param [processInstanceId 流程实例ID]
@@ -238,7 +238,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将事件状态流转为"审核中"，并写入事件流转记录和同步MongoDB状态
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件ID, fromStatus 原状态, actionType 操作类型, actor 当前操作者]
@@ -264,7 +264,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //解析初次提交审核时使用的流程模板，支持显式指定或按事件类型自动匹配
      * @Date 2026/04/18 10:00
      * @Param [event 事件实体, request 启动审核请求（可含指定模板ID）]
@@ -287,7 +287,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //解析驳回后重新提交审核时使用的流程模板，默认复用冻结快照，支持授权覆盖
      * @Date 2026/04/18 10:00
      * @Param [event 事件实体, existing 已有流程实例, request 启动审核请求（可含指定模板ID）]
@@ -308,7 +308,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验当前用户是否具备模板覆盖权限
      * @Date 2026/04/18 10:00
      * @Param []
@@ -321,7 +321,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从已有流程实例的最新周期节点快照构建冻结模板定义，用于驳回重提时复用原模板
      * @Date 2026/04/18 10:00
      * @Param [existing 已有流程实例, eventType 事件类型]
@@ -361,7 +361,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //加载流程实例最新审批周期的节点列表
      * @Date 2026/04/18 10:00
      * @Param [processInstanceId 流程实例ID]
@@ -384,7 +384,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验所选模板是否启用且与事件类型匹配
      * @Date 2026/04/18 10:00
      * @Param [template 流程模板, eventType 事件类型]
@@ -400,7 +400,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //加载流程实例详情，包含节点列表和关联事件状态
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件ID, processInstanceId 流程实例ID]
@@ -442,7 +442,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验审批决策请求不为空且包含节点ID
      * @Date 2026/04/18 10:00
      * @Param [request 审批决策请求]
@@ -455,7 +455,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据主键ID加载流程实例基本信息
      * @Date 2026/04/18 10:00
      * @Param [processInstanceId 流程实例主键ID]
@@ -485,7 +485,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //对流程实例加行级锁（SELECT FOR UPDATE），防止并发审批冲突
      * @Date 2026/04/18 10:00
      * @Param [processInstanceId 流程实例ID]
@@ -502,7 +502,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验流程实例和关联事件均处于可审批状态
      * @Date 2026/04/18 10:00
      * @Param [instance 流程实例, event 关联事件]
@@ -518,7 +518,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验目标节点尚未被处理（状态不为 APPROVED 或 REJECTED）
      * @Date 2026/04/18 10:00
      * @Param [targetNode 目标审批节点]
@@ -531,7 +531,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //解析当前已认证的操作者，未认证时抛出业务异常
      * @Date 2026/04/18 10:00
      * @Param []
@@ -546,7 +546,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验目标节点是否指派给当前操作者，若指派但不匹配则拒绝
      * @Date 2026/04/18 10:00
      * @Param [targetNode 目标审批节点, actor 当前操作者]
@@ -562,7 +562,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从节点列表中找到指定ID的目标节点，未找到则抛出业务异常
      * @Date 2026/04/18 10:00
      * @Param [nodes 节点列表, nodeId 目标节点ID]
@@ -576,7 +576,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验目标节点是否允许执行审批通过操作
      * @Date 2026/04/18 10:00
      * @Param [instance 流程实例, targetNode 目标节点, nodes 当前所有节点]
@@ -607,7 +607,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //校验目标节点是否允许执行驳回操作（复用审批通过校验逻辑）
      * @Date 2026/04/18 10:00
      * @Param [instance 流程实例, targetNode 目标节点, nodes 当前所有节点]
@@ -621,7 +621,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将目标节点状态从 PENDING 更新为指定状态，若节点已被其他请求处理则抛出异常
      * @Date 2026/04/18 10:00
      * @Param [nodeId 节点ID, status 目标状态]
@@ -638,7 +638,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //审批通过后推进流程：若当前节点组全部通过则激活下一节点组，若全部完成则关闭流程并流转事件状态
      * @Date 2026/04/18 10:00
      * @Param [instance 流程实例, event 关联事件, nodes 当前所有节点, actor 操作者]
@@ -719,7 +719,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //流转事件状态并写入流转记录，同步特定目标状态到MongoDB
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件ID, fromStatus 原状态, toStatus 目标状态, actionType 操作类型, remark 备注, operatorUserId 操作人ID, operatorName 操作人名称]
@@ -762,7 +762,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //加载流程实例当前周期的活跃节点列表，按节点序号和ID升序排列
      * @Date 2026/04/18 10:00
      * @Param [processInstanceId 流程实例ID]
@@ -777,7 +777,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将ResultSet一行数据映射为流程实例节点实体
      * @Date 2026/04/18 10:00
      * @Param [rs 数据库结果集]
@@ -805,7 +805,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //从 KeyHolder 中提取自动生成的主键ID
      * @Date 2026/04/18 10:00
      * @Param [keyHolder 包含生成键的持有者]
@@ -824,7 +824,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据事件ID查询该事件关联的审核流程实例（取第一条）
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件主键ID]
@@ -851,7 +851,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据事件ID查询事件实体，未找到则抛出业务异常
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件主键ID]
@@ -882,7 +882,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //插入一条流程操作记录到 biz_process_action_record
      * @Date 2026/04/18 10:00
      * @Param [processInstanceId 流程实例ID, processInstanceNodeId 节点ID（可为null）, actionType 操作类型, actionResult 操作结果, remark 备注, operatorUserId 操作人ID, operatorName 操作人名称]
@@ -916,7 +916,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //插入一条审核记录到 biz_audit_record
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件ID, processInstanceId 流程实例ID, decision 审批决定, status 审核后状态, opinion 审批意见, auditorUserId 审批人ID, auditorName 审批人名称]
@@ -952,7 +952,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //判断数据完整性异常是否由业务唯一约束（同一事件不能重复创建审核实例）触发
      * @Date 2026/04/18 10:00
      * @Param [exception 数据完整性异常]
@@ -973,7 +973,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //检查异常消息中是否包含业务实例唯一约束关键字
      * @Date 2026/04/18 10:00
      * @Param [message 异常消息字符串]
@@ -990,7 +990,7 @@ public class ProcessInstanceService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //安全读取ResultSet中可为NULL的Long型列值
      * @Date 2026/04/18 10:00
      * @Param [rs 数据库结果集, column 列名]

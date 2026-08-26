@@ -1,4 +1,4 @@
-package com.changping.platform.modules.event.vo;
+﻿package com.changping.platform.modules.event.vo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //事件详情视图对象，聚合MySQL事件数据与MongoDB告警文档数据，用于前端展示
  * @Date 2026/04/18 10:00
  */

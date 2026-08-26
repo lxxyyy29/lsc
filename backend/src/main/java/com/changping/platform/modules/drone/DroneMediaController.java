@@ -1,4 +1,4 @@
-package com.changping.platform.modules.drone;
+﻿package com.changping.platform.modules.drone;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //无人机媒体文件控制器，提供媒体文件夹列表查询、按任务ID获取媒体文件及打包下载接口
  * @Date 2026/04/18 10:00
  */
@@ -42,7 +42,7 @@ public class DroneMediaController {
     private final DroneApiProperties droneApiProperties;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造函数，注入无人机代理服务、当前用户服务、权限守卫及API配置属性
      * @Date 2026/04/18 10:00
      * @Param [droneProxyService 无人机代理服务, currentUserService 当前用户服务, permissionGuard 权限守卫, droneApiProperties 无人机API配置]
@@ -60,7 +60,7 @@ public class DroneMediaController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //查询媒体文件夹列表，支持按文件名、时间范围过滤
      * @Date 2026/04/18 10:00
      * @Param [fileName 文件名过滤（可选）, startTime 开始时间（可选）, endTime 结束时间（可选）]
@@ -78,7 +78,7 @@ public class DroneMediaController {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //根据任务ID获取该任务下的所有媒体文件列表
      * @Date 2026/04/18 10:00
      * @Param [jobId 任务ID]

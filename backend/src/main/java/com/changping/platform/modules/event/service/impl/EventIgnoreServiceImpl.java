@@ -1,4 +1,4 @@
-package com.changping.platform.modules.event.service.impl;
+﻿package com.changping.platform.modules.event.service.impl;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.PagedResult;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * @Author tangxinglin
+ * @Author lxy
  * @Description //事件忽略（误报）服务实现类，处理将事件标记为误报的完整业务逻辑，包括状态校验、记录写入和MongoDB同步
  * @Date 2026/04/18 10:00
  */
@@ -45,7 +45,7 @@ public class EventIgnoreServiceImpl implements EventIgnoreService {
     private final AlarmEventMongoService alarmEventMongoService;
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //构造器，注入事件Mapper、JdbcTemplate、告警工作流同步服务和MongoDB告警服务
      * @Date 2026/04/18 10:00
      * @Param [eventMapper 事件数据访问层, jdbcTemplate JDBC模板, alarmWorkflowStatusSyncService 告警工作流状态同步服务, alarmEventMongoService MongoDB告警事件服务]
@@ -63,7 +63,7 @@ public class EventIgnoreServiceImpl implements EventIgnoreService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //将事件标记为误报，校验状态合法性后更新事件状态、写入忽略记录和生命周期记录，并同步至MongoDB
      * @Date 2026/04/18 10:00
      * @Param [eventId 事件主键ID, operatorId 操作人用户ID, operatorName 操作人名称, reason 忽略原因]
@@ -115,7 +115,7 @@ public class EventIgnoreServiceImpl implements EventIgnoreService {
     }
 
     /**
-     * @Author tangxinglin
+     * @Author lxy
      * @Description //分页查询误报事件记录列表，联表查询事件基本信息
      * @Date 2026/04/18 10:00
      * @Param [page 页码, size 每页条数]
