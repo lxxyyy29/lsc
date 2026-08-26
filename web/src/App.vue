@@ -2,7 +2,7 @@
   <div v-if="session?.token" style="height:100vh;display:flex;flex-direction:column;">
     <!-- 顶部导航 -->
     <nav class="top-nav">
-      <h1><i class="fas fa-building"></i>东莞杰瑞智慧网格治理平台</h1>
+      <h1><img :src="logoSvg" alt="logo" class="brand-logo" />东莞杰瑞智慧网格治理平台</h1>
       <div style="display:flex;align-items:center;gap:16px;">
         <router-link to="/help" style="font-size:16px;color:#6b7280;text-decoration:none;padding:6px;" title="帮助中心">
           <i class="fas fa-question-circle"></i>
@@ -106,6 +106,7 @@ import { menuGroups, visibleGroupsFor, isSuperAdminSession } from './menu'
 import LoginView from './views/LoginView.vue'
 import NotificationBell from './components/NotificationBell.vue'
 import { showMessage } from './utils/message'
+import logoSvg from './assets/logo.svg'
 
 const session = ref(getSession())
 const route = useRoute()
