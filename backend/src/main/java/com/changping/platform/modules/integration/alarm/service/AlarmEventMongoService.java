@@ -87,6 +87,7 @@ public class AlarmEventMongoService {
         document.setLifecycle(new ArrayList<>(List.of(lifecycleRecord("EVENT_INTAKE", normalizedEvent.status(), "callback received"))));
         document.setCreatedAt(LocalDateTime.now());
         document.setUpdatedAt(LocalDateTime.now());
+        document.setUrgencyLevel(resolveUrgencyLevel(normalizedEvent.normalizedPayload(), normalizedEvent.rawPayload()));
         try {
             return alarmEventRepository.save(document);
         } catch (DuplicateKeyException exception) {
@@ -502,7 +503,40 @@ public class AlarmEventMongoService {
         if (ands.isEmpty()) {
             return new Criteria();
         }
-        return new Criteria().andOperator(ands.toArray(new Criteria[0]));
+        if (ands.size() == 1) {
+            return ands.get(0);
+        }
+        Criteria first = ands.get(0);
+        return first.andOperator(ands.subList(1, ands.size()).toArray(new Criteria[0]));
+    }
+
+    /**
+     * 从归一化载荷或原始载荷中提取紧急程度（GREEN/YELLOW/RED），
+     * 兼容多种命名：urgencyLevel/urgency_level/severity/priority/level
+     */
+    private String resolveUrgencyLevel(Map<String, Object> normalizedMap, Map<String, Object> raw) {
+        String[] urgencyKeys = {"urgencyLevel", "urgency_level", "severity", "priority", "level", "urgency"};
+        for (String key : urgencyKeys) {
+            String value = extractString(normalizedMap, key);
+            if (value == null) value = extractString(raw, key);
+            if (StringUtils.hasText(value)) {
+                String upper = value.trim().toUpperCase();
+                if (List.of("GREEN", "YELLOW", "RED").contains(upper)) {
+                    return upper;
+                }
+                if (List.of("一般", "普通", "LOW", "L1", "LEVEL1").contains(upper)) return "GREEN";
+                if (List.of("重点", "中等", "MEDIUM", "M", "L2", "LEVEL2").contains(upper)) return "YELLOW";
+                if (List.of("紧急", "高", "HIGH", "H", "L3", "LEVEL3").contains(upper)) return "RED";
+            }
+        }
+        return "GREEN";
+    }
+
+    private String extractString(Map<String, Object> map, String key) {
+        if (map == null) return null;
+        Object value = map.get(key);
+        if (value instanceof String s && StringUtils.hasText(s)) return s.trim();
+        return null;
     }
 
     /**
