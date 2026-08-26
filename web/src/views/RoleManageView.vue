@@ -139,6 +139,7 @@ import {
 } from '../api'
 import http from '../api'
 import { menuGroups } from '../menu'
+import { confirmDialog } from '../utils/dialog'
 
 // 菜单权限总数（与分配弹窗可勾选项一一对应，来自 menu.ts 单一数据源）
 const totalMenuPerms = menuGroups.reduce((n, g) => n + g.items.length, 0)
@@ -210,7 +211,12 @@ async function submitRole() {
   }
 }
 async function handleDelete(r: any) {
-  if (!confirm(`确定删除角色「${r.roleName}」吗？该角色下的用户将失去对应权限。`)) return
+  const ok = await confirmDialog({
+    title: '删除角色',
+    message: `确定删除角色「${r.roleName}」吗？该角色下的用户将失去对应权限。`,
+    okText: '确定删除',
+  })
+  if (!ok) return
   try {
     await http.delete(`/system/roles/${r.id}`)
     notify('角色已删除', 'success')
