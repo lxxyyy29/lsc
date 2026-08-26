@@ -608,7 +608,7 @@ public class EventServiceImpl implements EventService {
                 entity == null ? null : entity.getAreaName(),
                 entity == null ? null : entity.getGridId(),
                 null,
-                entity == null ? null : entity.getUrgencyLevel(),
+                firstNonBlank(entity == null ? null : entity.getUrgencyLevel(), document.getUrgencyLevel()),
                 entity == null ? null : entity.getReportSource(),
                 entity != null && entity.getArchived() != null && entity.getArchived() == 1,
                 Boolean.TRUE.equals(document.getHidden()));
