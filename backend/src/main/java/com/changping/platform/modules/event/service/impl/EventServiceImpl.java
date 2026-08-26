@@ -608,7 +608,7 @@ public class EventServiceImpl implements EventService {
                 entity == null ? null : entity.getAreaName(),
                 entity == null ? null : entity.getGridId(),
                 null,
-                firstNonBlank(entity == null ? null : entity.getUrgencyLevel(), document.getUrgencyLevel()),
+                firstNonBlank(document.getUrgencyLevel(), entity == null ? null : entity.getUrgencyLevel()),
                 entity == null ? null : entity.getReportSource(),
                 entity != null && entity.getArchived() != null && entity.getArchived() == 1,
                 Boolean.TRUE.equals(document.getHidden()));
@@ -971,6 +971,10 @@ public class EventServiceImpl implements EventService {
         if (rows == 0) {
             throw new BusinessException("EVENT_NOT_FOUND", "事件不存在");
         }
+        EventEntity entity = eventMapper.selectDetailById(eventId);
+        if (entity != null && entity.getExternalEventId() != null) {
+            alarmEventMongoService.updateUrgencyLevel(entity.getExternalEventId(), urgencyLevel);
+        }
         return true;
     }
 
@@ -978,11 +982,12 @@ public class EventServiceImpl implements EventService {
     public void autoEscalateUrgency() {
         // 获取所有活跃事件（未关闭且未归档的）；created_at 允许为空，避免单条脏数据 NPE 中断整轮扫描
         List<EventEntity> activeEvents = jdbcTemplate.query(
-            "SELECT id, urgency_level, created_at FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status NOT IN ('CLOSED', 'COMPLETED')",
+            "SELECT id, urgency_level, created_at, external_event_id FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status NOT IN ('CLOSED', 'COMPLETED')",
             (rs, rowNum) -> {
                 EventEntity e = new EventEntity();
                 e.setId(rs.getLong("id"));
                 e.setUrgencyLevel(rs.getString("urgency_level"));
+                e.setExternalEventId(rs.getString("external_event_id"));
                 java.sql.Timestamp createdAt = rs.getTimestamp("created_at");
                 e.setCreatedAt(createdAt == null ? null : createdAt.toLocalDateTime());
                 return e;
@@ -1008,6 +1013,9 @@ public class EventServiceImpl implements EventService {
             if (!newLevel.equals(currentLevel)) {
                 jdbcTemplate.update("UPDATE biz_event SET urgency_level = ?, updated_at = NOW() WHERE id = ?",
                     newLevel, event.getId());
+                if (event.getExternalEventId() != null) {
+                    alarmEventMongoService.updateUrgencyLevel(event.getExternalEventId(), newLevel);
+                }
                 // 写入督办记录，便于追溯并向责任人预警
                 jdbcTemplate.update(
                     "INSERT INTO biz_event_record (event_id, from_status, to_status, action_type, operator_name, remark, created_at, updated_at) VALUES (?, ?, ?, 'SUPERVISION_ESCALATE', '系统', ?, NOW(), NOW())",

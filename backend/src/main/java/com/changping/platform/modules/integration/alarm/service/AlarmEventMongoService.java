@@ -430,6 +430,22 @@ public class AlarmEventMongoService {
     }
 
     /**
+     * @Description //更新MongoDB文档的紧急程度（与MySQL同步）
+     * @Param [externalEventId 外部事件ID, urgencyLevel 紧急程度(GREEN/YELLOW/RED)]
+     * @return boolean 是否命中并更新了文档
+     */
+    public boolean updateUrgencyLevel(String externalEventId, String urgencyLevel) {
+        if (!StringUtils.hasText(externalEventId) || !StringUtils.hasText(urgencyLevel)) {
+            return false;
+        }
+        Update update = new Update().set("urgencyLevel", urgencyLevel.trim()).set("updatedAt", LocalDateTime.now());
+        return mongoTemplate.updateFirst(
+                new Query(Criteria.where("externalEventId").is(externalEventId.trim())),
+                update,
+                AlarmEventDocument.class).getModifiedCount() > 0;
+    }
+
+    /**
      * @Author tangxinglin
      * @Description //构建告警事件查询条件：外部事件ID模糊、排除状态、状态精确匹配、发生时间范围
      * @Date 2026/08/12 10:00
