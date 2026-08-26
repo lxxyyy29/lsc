@@ -1,173 +1,192 @@
 <template>
-  <div>
-    <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">GIS网格可视化</h2>
-    <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">社区总面积 2.50 km²，精准划分三级网格单元（悬停查看面积，点击查看详情）</p>
+  <div style="position:absolute;top:0;left:240px;right:0;bottom:0;overflow:hidden;">
+    <!-- 全屏地图背景 -->
+    <div id="gisMapLarge" style="position:absolute;inset:0;z-index:0;"></div>
 
-    <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;">
-      <!-- 地图区域 -->
-      <div class="card" style="position:relative;padding:0;overflow:hidden;">
-        <div id="gisMapLarge" style="height:calc(100vh - 200px);border-radius:12px;overflow:hidden;"></div>
-        <!-- 地图加载失败提示（常见原因：高德 key 域名白名单未包含当前访问域名） -->
-        <div v-if="mapError" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;padding:24px 32px;border-radius:12px;background:rgba(255,255,255,0.97);box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:200;">
-          <div style="font-size:28px;margin-bottom:10px;">🗺️</div>
-          <div style="font-size:14px;font-weight:600;color:#374151;margin-bottom:6px;">地图加载失败</div>
-          <div style="font-size:12px;color:#6b7280;max-width:280px;line-height:1.7;">{{ mapError }}<br/>请在浏览器 F12 控制台查看具体报错（INVALID_USER_SCODE = 高德 key 未授权当前域名）</div>
+    <!-- 顶部标题栏（悬浮） -->
+    <div style="position:absolute;top:0;left:0;right:0;height:48px;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.4) 70%, transparent 100%);pointer-events:none;">
+      <div style="pointer-events:auto;">
+        <h2 style="font-size:16px;font-weight:600;margin:0;color:#111827;display:inline-flex;align-items:center;gap:8px;">
+          <i class="fas fa-map-marked-alt" style="color:#0284c7;"></i>
+          GIS网格可视化
+        </h2>
+        <span style="font-size:12px;color:#6b7280;margin-left:12px;">社区总面积 {{ communityArea }} km² · 三级网格单元</span>
+      </div>
+    </div>
+
+    <!-- 右侧统计面板组（悬浮） -->
+    <div style="position:absolute;top:64px;right:16px;bottom:80px;z-index:15;display:flex;flex-direction:column;gap:10px;width:300px;pointer-events:auto;">
+      <!-- 面积总览 KPI 卡片 -->
+      <div class="glass-panel" style="padding:14px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:#0284c7;display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-chart-pie"></i>面积总览
         </div>
-
-        <!-- 悬停提示框 -->
-        <div v-if="hoverInfo.visible" :style="{
-          position: 'absolute', left: hoverInfo.x + 'px', top: hoverInfo.y + 'px',
-          transform: 'translate(-50%, calc(-100% - 14px))',
-          background: 'rgba(17,24,39,0.92)', color: '#fff', padding: '8px 14px',
-          borderRadius: '8px', fontSize: '13px', fontWeight: '600',
-          pointerEvents: 'none', zIndex: 1000, whiteSpace: 'nowrap',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
-        }">
-          {{ hoverInfo.name }}
-          <div v-if="hoverInfo.area" style="font-size:11px;font-weight:400;color:#93c5fd;margin-top:2px;">
-            面积: {{ hoverInfo.area }} km²
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="background:#eff6ff;border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#0284c7;">{{ communityArea }}</div>
+            <div style="font-size:11px;color:#6b7280;margin-top:2px;">总面积 km²</div>
           </div>
-          <div style="position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid rgba(17,24,39,0.92);"></div>
+          <div style="background:#f0fdf4;border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#059669;">{{ totalGrids }}</div>
+            <div style="font-size:11px;color:#6b7280;margin-top:2px;">网格总数</div>
+          </div>
+          <div style="background:#fffbeb;border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#d97706;">{{ largeGridCount }}</div>
+            <div style="font-size:11px;color:#6b7280;margin-top:2px;">大网格</div>
+          </div>
+          <div style="background:#f5f3ff;border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#7c3aed;">{{ smallGridCount }}</div>
+            <div style="font-size:11px;color:#6b7280;margin-top:2px;">小网格</div>
+          </div>
         </div>
+      </div>
 
-        <!-- 点击选中信息面板 -->
-        <div v-if="selectedGrid" :style="{
-          position: 'absolute', top: '16px', right: '16px', background: '#fff',
-          borderRadius: '12px', padding: '16px 20px', minWidth: '240px', zIndex: 100,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.18)'
-        }">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <span style="font-size:15px;font-weight:700;color:#111827;">{{ selectedGrid.gridName }}</span>
-            <button @click="selectedGrid = null" style="border:none;background:none;cursor:pointer;color:#9ca3af;font-size:16px;padding:0 4px;">&times;</button>
-          </div>
-          <div style="font-size:12px;color:#6b7280;line-height:2;">
-            <div>网格编码：<strong style="color:#374151;">{{ selectedGrid.gridCode || '-' }}</strong></div>
-            <div>层级：<strong style="color:#374151;">{{ levelText(selectedGrid.gridLevel) }}</strong></div>
-            <div>面积：<strong style="color:#0284c7;font-size:14px;">{{ selectedGrid.area }} km²</strong></div>
-            <div>人口：<strong style="color:#374151;">{{ selectedGrid.population?.toLocaleString() || '-' }} 人</strong></div>
-            <div>楼栋：<strong style="color:#374151;">{{ selectedGrid.buildingCount || '-' }} 栋</strong></div>
-            <div>状态：<strong :style="selectedGrid.status === 'ACTIVE' ? 'color:#52c41a;' : 'color:#f5222d;'">{{ selectedGrid.status === 'ACTIVE' ? '启用中' : '已停用' }}</strong></div>
-          </div>
-          <button @click="focusGrid(selectedGrid)" style="margin-top:12px;width:100%;padding:7px 0;border:none;border-radius:6px;background:#0284c7;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">
-            聚焦到此网格
-          </button>
+      <!-- 大网格面积排行 -->
+      <div class="glass-panel" style="padding:14px;flex:1;overflow-y:auto;max-height:calc(100vh - 420px);">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:#f59e0b;display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-layer-group"></i>大网格排行
         </div>
-
-        <!-- 图层切换 -->
-        <div class="layer-control">
-          <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">图层控制</div>
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#374151;">
-              <input type="checkbox" v-model="showHeatmap" style="accent-color:#ff4d4f;" />
-              <span style="width:12px;height:12px;border-radius:50%;background:#ff4d4f;opacity:0.7;"></span>
-              事件热力图
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#374151;">
-              <input type="checkbox" v-model="showTrajectories" style="accent-color:#0284c7;" />
-              <span style="width:12px;height:12px;border-radius:50%;background:#0284c7;opacity:0.7;"></span>
-              巡查轨迹
-            </label>
-            <!-- 轨迹时间范围：避免历史轨迹堆积重叠占满地图，默认只看近 7 天 -->
-            <div v-if="showTrajectories" style="display:flex;gap:4px;margin:2px 0 0 20px;">
-              <button v-for="opt in rangeOptions" :key="opt.value" @click="trajectoryRange = opt.value"
-                style="padding:2px 7px;font-size:11px;border-radius:10px;border:1px solid #d1d5db;cursor:pointer;"
-                :style="trajectoryRange === opt.value ? 'background:#0284c7;color:#fff;border-color:#0284c7;' : 'background:#fff;color:#6b7280;'">
-                {{ opt.label }}
-              </button>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div v-for="(grid, idx) in largeGridsByArea" :key="grid.id"
+            style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:all 0.2s;"
+            :style="selectedGrid?.id === grid.id ? 'background:#eff6ff;' : 'background:rgba(249,250,251,0.8);'"
+            @click="selectGrid(grid)">
+            <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;"
+              :style="`background:${areaColor(idx)};`">
+              {{ idx + 1 }}
             </div>
-          </div>
-        </div>
-
-        <!-- 图例 -->
-        <div class="gis-legend">
-          <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">网格层级</div>
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div style="width:14px;height:14px;border-radius:3px;background:#0284c7;opacity:0.6;"></div>
-              <span style="font-size:12px;color:#6b7280;">社区边界</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:600;color:#111827;">{{ grid.gridName }}</div>
+              <div style="font-size:10px;color:#9ca3af;">{{ grid.gridCode }}</div>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div style="width:14px;height:14px;border-radius:3px;background:#f59e0b;opacity:0.7;"></div>
-              <span style="font-size:12px;color:#6b7280;">大网格 (0.38-0.42 km²)</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div style="width:14px;height:14px;border-radius:3px;background:#10b981;opacity:0.6;"></div>
-              <span style="font-size:12px;color:#6b7280;">小网格 (0.19-0.21 km²)</span>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:13px;font-weight:700;color:#0284c7;">{{ grid.area }}</div>
+              <div style="font-size:9px;color:#9ca3af;">km²</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 右侧面积统计面板 -->
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <!-- 社区总览 -->
-        <div class="card" style="padding:16px;">
-          <h3 style="font-size:14px;font-weight:600;margin:0 0 12px;color:#111827;">
-            <i class="fas fa-chart-pie" style="color:#0284c7;margin-right:6px;"></i>面积总览
-          </h3>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <div style="background:#eff6ff;border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:20px;font-weight:700;color:#0284c7;">{{ communityArea }}</div>
-              <div style="font-size:11px;color:#6b7280;margin-top:2px;">总面积 km²</div>
-            </div>
-            <div style="background:#f0fdf4;border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:20px;font-weight:700;color:#059669;">{{ totalGrids }}</div>
-              <div style="font-size:11px;color:#6b7280;margin-top:2px;">网格总数</div>
-            </div>
-            <div style="background:#fffbeb;border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:20px;font-weight:700;color:#d97706;">{{ largeGridCount }}</div>
-              <div style="font-size:11px;color:#6b7280;margin-top:2px;">大网格</div>
-            </div>
-            <div style="background:#f5f3ff;border-radius:8px;padding:10px;text-align:center;">
-              <div style="font-size:20px;font-weight:700;color:#7c3aed;">{{ smallGridCount }}</div>
-              <div style="font-size:11px;color:#6b7280;margin-top:2px;">小网格</div>
-            </div>
-          </div>
+      <!-- 小网格列表 -->
+      <div class="glass-panel" style="padding:14px;max-height:220px;overflow-y:auto;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:#10b981;display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-th"></i>小网格列表
         </div>
-
-        <!-- 大网格面积排行 -->
-        <div class="card" style="padding:16px;flex:1;overflow-y:auto;">
-          <h3 style="font-size:14px;font-weight:600;margin:0 0 12px;color:#111827;">
-            <i class="fas fa-layer-group" style="color:#f59e0b;margin-right:6px;"></i>大网格面积排行
-          </h3>
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            <div v-for="(grid, idx) in largeGridsByArea" :key="grid.id"
-              style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background 0.15s;"
-              :style="selectedGrid?.id === grid.id ? 'background:#eff6ff;' : 'background:#f9fafb;'"
-              @click="selectGrid(grid)">
-              <div style="width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;"
-                :style="`background:${areaColor(idx)};`">
-                {{ idx + 1 }}
-              </div>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:13px;font-weight:600;color:#111827;">{{ grid.gridName }}</div>
-                <div style="font-size:11px;color:#9ca3af;">{{ grid.gridCode }}</div>
-              </div>
-              <div style="text-align:right;flex-shrink:0;">
-                <div style="font-size:14px;font-weight:700;color:#0284c7;">{{ grid.area }}</div>
-                <div style="font-size:10px;color:#9ca3af;">km²</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 小网格列表 -->
-        <div class="card" style="padding:16px;max-height:260px;overflow-y:auto;">
-          <h3 style="font-size:14px;font-weight:600;margin:0 0 12px;color:#111827;">
-            <i class="fas fa-th" style="color:#10b981;margin-right:6px;"></i>小网格列表
-          </h3>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-            <div v-for="grid in smallGrids" :key="grid.id"
-              style="padding:6px 8px;background:#f0fdf4;border-radius:6px;cursor:pointer;font-size:11px;"
-              :style="selectedGrid?.id === grid.id ? 'background:#d1fae5;' : 'background:#f0fdf4;'"
-              @click="selectGrid(grid)">
-              <div style="font-weight:600;color:#065f46;">{{ grid.gridName }}</div>
-              <div style="color:#6b7280;">{{ grid.area }} km² · {{ grid.population }}人</div>
-            </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div v-for="grid in smallGrids" :key="grid.id"
+            style="padding:6px 8px;border-radius:6px;cursor:pointer;font-size:11px;transition:all 0.2s;"
+            :style="selectedGrid?.id === grid.id ? 'background:#d1fae5;' : 'background:rgba(240,253,244,0.8);'"
+            @click="selectGrid(grid)">
+            <div style="font-weight:600;color:#065f46;">{{ grid.gridName }}</div>
+            <div style="color:#6b7280;">{{ grid.area }} km² · {{ grid.population }}人</div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 地图加载失败提示 -->
+    <div v-if="mapError" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;padding:24px 32px;border-radius:12px;background:rgba(255,255,255,0.97);box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:200;">
+      <div style="font-size:28px;margin-bottom:10px;">🗺️</div>
+      <div style="font-size:14px;font-weight:600;color:#374151;margin-bottom:6px;">地图加载失败</div>
+      <div style="font-size:12px;color:#6b7280;max-width:280px;line-height:1.7;">{{ mapError }}<br/>请在浏览器 F12 控制台查看具体报错（INVALID_USER_SCODE = 高德 key 未授权当前域名）</div>
+    </div>
+
+    <!-- 悬停提示框 -->
+    <div v-if="hoverInfo.visible" :style="{
+      position: 'absolute', left: hoverInfo.x + 'px', top: hoverInfo.y + 'px',
+      transform: 'translate(-50%, calc(-100% - 14px))',
+      background: 'rgba(17,24,39,0.92)', color: '#fff', padding: '8px 14px',
+      borderRadius: '8px', fontSize: '13px', fontWeight: '600',
+      pointerEvents: 'none', zIndex: 1000, whiteSpace: 'nowrap',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
+    }">
+      {{ hoverInfo.name }}
+      <div v-if="hoverInfo.area" style="font-size:11px;font-weight:400;color:#93c5fd;margin-top:2px;">
+        面积: {{ hoverInfo.area }} km²
+      </div>
+      <div style="position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid rgba(17,24,39,0.92);"></div>
+    </div>
+
+    <!-- 点击选中信息面板（悬浮） - 调整位置避免与右侧面板重叠 -->
+    <div v-if="selectedGrid" :style="{
+      position: 'absolute',
+      top: '64px',
+      right: selectedGrid ? '324px' : '16px',
+      width: selectedGrid ? '260px' : '280px',
+      zIndex: 20,
+      background: 'rgba(255, 255, 255, 0.7)',
+      border: '1px solid rgba(2, 132, 199, 0.12)',
+      borderRadius: '12px',
+      padding: '14px 18px',
+      boxShadow: '0 8px 24px rgba(15, 23, 42, 0.10)',
+      transition: 'background 0.25s ease'
+    }"
+    @mouseenter="$event.target.style.background = 'rgba(255, 255, 255, 0.92)'"
+    @mouseleave="$event.target.style.background = 'rgba(255, 255, 255, 0.7)'">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-size:14px;font-weight:700;color:#111827;display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-map-pin" style="color:#0284c7;"></i>
+          {{ selectedGrid.gridName }}
+        </span>
+        <button @click="selectedGrid = null" style="border:none;background:none;cursor:pointer;color:#9ca3af;font-size:16px;padding:0 4px;line-height:1;">&times;</button>
+      </div>
+      <div style="font-size:12px;color:#6b7280;line-height:2;">
+        <div>网格编码：<strong style="color:#374151;">{{ selectedGrid.gridCode || '-' }}</strong></div>
+        <div>层级：<strong style="color:#374151;">{{ levelText(selectedGrid.gridLevel) }}</strong></div>
+        <div>面积：<strong style="color:#0284c7;font-size:14px;">{{ selectedGrid.area }} km²</strong></div>
+        <div>人口：<strong style="color:#374151;">{{ selectedGrid.population?.toLocaleString() || '-' }} 人</strong></div>
+        <div>楼栋：<strong style="color:#374151;">{{ selectedGrid.buildingCount || '-' }} 栋</strong></div>
+        <div>状态：<strong :style="selectedGrid.status === 'ACTIVE' ? 'color:#52c41a;' : 'color:#f5222d;'">{{ selectedGrid.status === 'ACTIVE' ? '启用中' : '已停用' }}</strong></div>
+      </div>
+      <button @click="focusGrid(selectedGrid)" style="margin-top:12px;width:100%;padding:7px 0;border:none;border-radius:6px;background:#0284c7;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">
+        聚焦到此网格
+      </button>
+    </div>
+
+    <!-- 图层切换（左上角悬浮） -->
+    <div class="layer-control">
+      <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">图层控制</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#374151;">
+          <input type="checkbox" v-model="showHeatmap" style="accent-color:#ff4d4f;" />
+          <span style="width:12px;height:12px;border-radius:50%;background:#ff4d4f;opacity:0.7;"></span>
+          事件热力图
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#374151;">
+          <input type="checkbox" v-model="showTrajectories" style="accent-color:#0284c7;" />
+          <span style="width:12px;height:12px;border-radius:50%;background:#0284c7;opacity:0.7;"></span>
+          巡查轨迹
+        </label>
+        <!-- 轨迹时间范围：避免历史轨迹堆积重叠占满地图，默认只看近 7 天 -->
+        <div v-if="showTrajectories" style="display:flex;gap:4px;margin:2px 0 0 20px;">
+          <button v-for="opt in rangeOptions" :key="opt.value" @click="trajectoryRange = opt.value"
+            style="padding:2px 7px;font-size:11px;border-radius:10px;border:1px solid #d1d5db;cursor:pointer;"
+            :style="trajectoryRange === opt.value ? 'background:#0284c7;color:#fff;border-color:#0284c7;' : 'background:#fff;color:#6b7280;'">
+            {{ opt.label }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 网格层级图例（左下角悬浮） -->
+    <div class="gis-legend">
+      <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">网格层级</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:14px;height:14px;border-radius:3px;background:#0284c7;opacity:0.6;"></div>
+          <span style="font-size:12px;color:#6b7280;">社区边界</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:14px;height:14px;border-radius:3px;background:#f59e0b;opacity:0.7;"></div>
+          <span style="font-size:12px;color:#6b7280;">大网格 (0.38-0.42 km²)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:14px;height:14px;border-radius:3px;background:#10b981;opacity:0.6;"></div>
+          <span style="font-size:12px;color:#6b7280;">小网格 (0.19-0.21 km²)</span>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -612,26 +631,84 @@ function drawGridPolygon(map: any, grid: any, fillColor: string, strokeColor: st
 </script>
 
 <style scoped>
+/* ================= 玻璃面板通用（与首页统一） ================= */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(2, 132, 199, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+  transition: background 0.25s ease;
+}
+.glass-panel:hover,
+.glass-panel:active {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+/* ================= 图层控制（左上角悬浮，z-index高于右侧面板） ================= */
 .layer-control {
   position: absolute;
-  top: 16px;
+  top: 64px;
   left: 16px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(2, 132, 199, 0.12);
   border-radius: 10px;
   padding: 12px 16px;
-  z-index: 100;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(8px);
+  z-index: 25;  /* 高于右侧面板(z-index:15) */
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+  transition: background 0.25s ease;
 }
+.layer-control:hover,
+.layer-control:active {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+/* ================= 网格层级图例（左下角悬浮，z-index高于右侧面板） ================= */
 .gis-legend {
   position: absolute;
-  bottom: 16px;
+  bottom: 80px;
   left: 16px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(2, 132, 199, 0.12);
   border-radius: 10px;
   padding: 12px 16px;
+  z-index: 25;  /* 高于右侧面板(z-index:15) */
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+  transition: background 0.25s ease;
+}
+.gis-legend:hover,
+.gis-legend:active {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+/* ================= 滚动条美化 ================= */
+.glass-panel::-webkit-scrollbar,
+.gis-legend::-webkit-scrollbar,
+.layer-control::-webkit-scrollbar {
+  width: 4px;
+}
+.glass-panel::-webkit-scrollbar-thumb,
+.gis-legend::-webkit-scrollbar-thumb,
+.layer-control::-webkit-scrollbar-thumb {
+  background: rgba(2, 132, 199, 0.25);
+  border-radius: 2px;
+}
+
+/* ================= 选中网格信息面板（右上角悬浮） ================= */
+.selected-grid-info {
+  position: absolute;
+  top: 64px;
+  right: 320px;
+  width: 260px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(2, 132, 199, 0.12);
+  border-radius: 12px;
+  padding: 14px 18px;
   z-index: 100;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+  transition: background 0.25s ease;
+}
+.selected-grid-info:hover,
+.selected-grid-info:active {
+  background: rgba(255, 255, 255, 0.92);
 }
 </style>

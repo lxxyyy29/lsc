@@ -1391,9 +1391,14 @@ function toggleLayerDock() {
 
 /* ================= 玻璃面板通用 ================= */
 .glass-panel {
-  background: rgba(255,255,255,0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  background: rgba(255,255,255,0.5);
   border: 1px solid rgba(2,132,199,0.12); border-radius: 16px;
   box-shadow: 0 10px 32px rgba(15,23,42,0.09); color: #334155;
+  transition: background 0.25s ease;
+}
+.glass-panel:hover,
+.glass-panel:active {
+  background: rgba(255,255,255,0.92);
 }
 .panel-empty { font-size: 12px; color: #94a3b8; text-align: center; padding: 18px 0; margin: 0; }
 
@@ -1401,9 +1406,14 @@ function toggleLayerDock() {
 .left-dock {
   position: absolute; left: 16px; top: 96px; z-index: 24;
   display: flex; flex-direction: column; gap: 4px; padding: 8px 6px;
-  background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  background: rgba(255,255,255,0.5);
   border: 1px solid rgba(2,132,199,0.14); border-radius: 14px;
   box-shadow: 0 8px 26px rgba(15,23,42,0.08); pointer-events: auto;
+  transition: background 0.25s ease;
+}
+.left-dock:hover,
+.left-dock:active {
+  background: rgba(255,255,255,0.92);
 }
 .dock-logo {
   width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
@@ -1520,9 +1530,14 @@ function toggleLayerDock() {
 .timeline-panel:not(.open) {
   width: 44px; height: 44px; opacity: 1; transform: none; pointer-events: auto;
   justify-content: center; align-items: center; overflow: visible;
-  background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  background: rgba(255,255,255,0.5);
   border: 1px solid rgba(2,132,199,0.18); border-radius: 12px;
   box-shadow: 0 6px 18px rgba(15,23,42,0.10);
+  transition: background 0.25s ease;
+}
+.timeline-panel:not(.open):hover,
+.timeline-panel:not(.open):active {
+  background: rgba(255,255,255,0.92);
 }
 .timeline-panel:not(.open) .panel-head-r,
 .timeline-panel:not(.open) .filter-chips,
@@ -1640,12 +1655,13 @@ function toggleLayerDock() {
 }
 .mc-btn {
   width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,0.92); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  background: rgba(255,255,255,0.5);
   border: 1px solid rgba(2,132,199,0.18); border-radius: 9px;
-  color: #0284c7; font-size: 13px; cursor: pointer; transition: all 0.2s;
+  color: #0284c7; font-size: 13px; cursor: pointer; transition: all 0.25s;
   box-shadow: 0 2px 8px rgba(15,23,42,0.06);
 }
-.mc-btn:hover { background: #0284c7; color: #fff; transform: scale(1.05); }
+.mc-btn:hover,
+.mc-btn:active { background: rgba(255,255,255,0.92); color: #0284c7; transform: scale(1.05); }
 .mc-btn.active { background: #0284c7; color: #fff; border-color: #0284c7; box-shadow: 0 2px 12px rgba(2,132,199,0.35); }
 
 /* ================= 网格详情 HUD 弹窗（地图上方，与事件流顶部对齐） =================

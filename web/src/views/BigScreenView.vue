@@ -476,7 +476,7 @@ onUnmounted(() => {
 
 /* ============ 半透明悬浮面板通用样式（白色调） ============ */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(2, 132, 199, 0.12);
