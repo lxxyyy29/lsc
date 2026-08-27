@@ -165,6 +165,16 @@
             {{ opt.label }}
           </button>
         </div>
+        <!-- 巡查打卡图例：不同网格员不同颜色 -->
+        <div v-if="showTrajectories && trajectoryLegend.length" style="margin-top:8px;padding-top:8px;border-top:1px dashed #e5e7eb;">
+          <div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px;">网格员打卡</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div v-for="item in trajectoryLegend" :key="item.name" style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280;">
+              <span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;" :style="{background: item.color}"></span>
+              {{ item.name }}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -227,6 +237,8 @@ const showTrajectories = ref(false)
 let heatmapInstance: any = null
 let trajectoryPolylines: any[] = []
 let trajectoryMarkers: any[] = []
+// 巡查打卡图例：网格员姓名 ↔ 专属颜色
+const trajectoryLegend = ref<{ name: string; color: string }[]>([])
 
 // 巡查轨迹时间范围（默认近 7 天，避免历史轨迹堆积重叠）
 const trajectoryRange = ref<'today' | '7d' | '30d' | 'all'>('7d')
@@ -257,10 +269,11 @@ function clearTrajectories() {
   trajectoryMarkers = trajectoryMarkers.filter(m => m._isHeatmapMarker)
 }
 
-// ==================== 巡查轨迹（按时间范围拉取，切换范围时清除重绘） ====================
+// ==================== 巡查打卡（按时间范围拉取，切换范围时清除重绘） ====================
 async function loadTrajectories() {
   if (!AMapLib || !mapInstance) return
   clearTrajectories()
+  trajectoryLegend.value = []
   try {
     const startDate = trajectoryStartDate()
     const data: any = await getPatrolTrajectories(startDate ? { startDate } : {})
@@ -270,11 +283,13 @@ async function loadTrajectories() {
     let colorIdx = 0
     for (const track of data) {
       const coords = track.coords
-      if (!coords || coords.length < 2) continue
+      if (!coords || !coords.length) continue
       const color = colors[colorIdx % colors.length]
       colorIdx++
+      const workerName = track.userName || `网格员${track.userId}`
+      trajectoryLegend.value.push({ name: workerName, color })
 
-      // 绘制轨迹线（更细更美观：带白色描边 + 半透明彩色线）
+      // 轨迹线（更细更美观：带白色描边 + 半透明彩色线）
       // 底层白色描边（加粗）
       const outline = new AMapLib.Polyline({
         path: coords,
@@ -300,39 +315,28 @@ async function loadTrajectories() {
       })
       trajectoryPolylines.push(polyline)
 
-      // 起点标记（绿色圆点）
-      const startMarker = new AMapLib.CircleMarker({
-        center: coords[0],
-        radius: 5,
-        fillColor: '#ffffff',
-        fillOpacity: 1,
-        strokeColor: '#52c41a',
-        strokeWeight: 2,
-        zIndex: 20,
-        bubble: true,
-        map
-      })
-      trajectoryMarkers.push(startMarker)
-
-      // 终点标记（红色圆点）
-      const endMarker = new AMapLib.CircleMarker({
-        center: coords[coords.length - 1],
-        radius: 5,
-        fillColor: '#ffffff',
-        fillOpacity: 1,
-        strokeColor: '#ff4d4f',
-        strokeWeight: 2,
-        zIndex: 20,
-        bubble: true,
-        map
-      })
-      trajectoryMarkers.push(endMarker)
+      // 每个打卡点：以网格员专属颜色圆点显示（不同网格员不同颜色）
+      for (const c of coords) {
+        const pointMarker = new AMapLib.CircleMarker({
+          center: c,
+          radius: 6,
+          fillColor: color,
+          fillOpacity: 0.9,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+          zIndex: 21,
+          bubble: true,
+          map
+        })
+        pointMarker._workerName = workerName
+        trajectoryMarkers.push(pointMarker)
+      }
 
       // 轨迹中点标签（显示网格员姓名）
       const midIdx = Math.floor(coords.length / 2)
       const midPoint = coords[midIdx]
       const textLabel = new AMapLib.Text({
-        text: track.userName,
+        text: workerName,
         position: midPoint,
         offset: [0, -12],
         style: {

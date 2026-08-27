@@ -137,7 +137,16 @@
           当前筛选条件下暂无带定位的打卡记录
         </p>
       </div>
-      <p style="font-size:12px;color:#9ca3af;margin:8px 0 0;">绿点为起点、红点为终点；悬停圆点可查看该次打卡的内容与时间，点击下表记录可在地图上定位</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:8px;">
+        <p style="font-size:12px;color:#9ca3af;margin:0;">不同颜色圆点代表不同网格员；绿点为起点、红点为终点；悬停圆点可查看打卡内容与时间，点击下表记录可在地图上定位</p>
+        <div v-if="trackLegend.length" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:#6b7280;">网格员：</span>
+          <span v-for="item in trackLegend" :key="item.name" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#374151;">
+            <span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;" :style="{background: item.color}"></span>
+            {{ item.name }}
+          </span>
+        </div>
+      </div>
     </div>
 
     <!-- 巡查记录 -->
@@ -211,6 +220,24 @@ const userList = computed(() => {
   return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
 })
 
+// 网格员专属颜色（按 userId 稳定映射，不同网格员不同颜色）
+const WORKER_COLORS = ['#0284c7', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
+function workerColor(userId: number | string | null | undefined): string {
+  if (userId == null) return '#1890ff'
+  const n = typeof userId === 'number' ? userId : Number(userId)
+  return WORKER_COLORS[Math.abs(Number.isFinite(n) ? n : 0) % WORKER_COLORS.length]
+}
+// 当前筛选范围内的网格员颜色图例
+const trackLegend = computed(() => {
+  const map = new Map<number, string>()
+  for (const r of trackRecords.value) {
+    if (r.userId != null && !map.has(Number(r.userId))) {
+      map.set(Number(r.userId), r.userName || `用户${r.userId}`)
+    }
+  }
+  return Array.from(map.entries()).map(([id, name]) => ({ name, color: workerColor(id) }))
+})
+
 // 按人 + 时间范围筛选并按时间正序（连线顺序）
 const trackRecords = computed(() => {
   let list = geoRecords.value
@@ -244,7 +271,7 @@ function clearTrackOverlays() {
   trackOverlays = []
 }
 
-/** 绘制当前筛选结果的轨迹：连线 + 逐打卡点圆点（悬停看内容） */
+/** 绘制当前筛选结果的轨迹：连线 + 逐打卡点圆点（按网格员着色，悬停看内容） */
 function drawTrack() {
   if (!AMapLib || !trackMap) return
   clearTrackOverlays()
@@ -263,11 +290,14 @@ function drawTrack() {
   list.forEach((r, idx) => {
     const isStart = idx === 0
     const isEnd = idx === list.length - 1
-    const strokeColor = isStart ? '#52c41a' : isEnd && !isStart ? '#ff4d4f' : '#1890ff'
+    // 填充色 = 网格员专属颜色（不同网格员不同颜色）
+    const fillColor = workerColor(r.userId)
+    // 描边保留起终点语义：起点绿 / 终点红 / 中间白
+    const strokeColor = isStart ? '#52c41a' : isEnd && !isStart ? '#ff4d4f' : '#ffffff'
     const circle = new AMapLib.CircleMarker({
       center: [Number(r.longitude), Number(r.latitude)],
       radius: isStart || isEnd ? 6 : 5,
-      fillColor: '#ffffff', fillOpacity: 1,
+      fillColor, fillOpacity: 1,
       strokeColor, strokeWeight: 2.5, zIndex: 20, cursor: 'pointer', map: trackMap
     })
     circle.on('mouseover', (e: any) => {
