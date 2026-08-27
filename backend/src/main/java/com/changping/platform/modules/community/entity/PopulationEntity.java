@@ -26,9 +26,21 @@ public class PopulationEntity {
 
     private String gender;
 
+    /** 年龄（出生日期自动推算 + 可手动修改） */
+    private Integer age;
+
     private LocalDate birthday;
 
     private String householdType;
+
+    /** 是否特殊人群 0否1是 */
+    private Integer specialPopulation;
+
+    /** 特殊人群类型（预置+自定义，逗号分隔） */
+    private String specialPopulationType;
+
+    /** 与户主关系（户主/妻/长子/女等） */
+    private String relation;
 
     private String address;
 

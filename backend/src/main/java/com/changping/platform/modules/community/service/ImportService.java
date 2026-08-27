@@ -87,9 +87,12 @@ public class ImportService {
             data.put("idCard", getCellString(row, 1));
             data.put("phone", getCellString(row, 2));
             data.put("householdType", getCellString(row, 3));
-            data.put("address", getCellString(row, 4));
-            data.put("gridName", getCellString(row, 5));
-            data.put("tags", getCellString(row, 6));
+            data.put("specialPopulation", getCellString(row, 4));
+            data.put("specialPopulationType", getCellString(row, 5));
+            data.put("relation", getCellString(row, 6));
+            data.put("address", getCellString(row, 7));
+            data.put("gridName", getCellString(row, 8));
+            data.put("tags", getCellString(row, 9));
 
             String err = validatePopulationRow(data);
             if (err != null) {
@@ -113,10 +116,10 @@ public class ImportService {
             try {
                 String name = getCellString(row, 0);
                 String idCard = getCellString(row, 1);
-                String phone = getCellString(row, 2);
-                if (name.isBlank() || idCard.isBlank() || phone.isBlank()) {
+                // 身份证为必备条件（需求8.4）；姓名保持必填，手机改为选填
+                if (name.isBlank() || idCard.isBlank()) {
                     fail++;
-                    errorList.add("第" + i + "行: 必填项为空");
+                    errorList.add("第" + i + "行: 姓名、身份证号为必填项");
                     continue;
                 }
 
@@ -130,14 +133,19 @@ public class ImportService {
                 PopulationEntity entity = new PopulationEntity();
                 entity.setName(name);
                 entity.setIdCard(idCard);
-                entity.setPhone(phone);
+                entity.setPhone(getCellString(row, 2));
                 entity.setHouseholdType(getCellString(row, 3));
-                entity.setAddress(getCellString(row, 4));
-                entity.setTags(getCellString(row, 6));
+                // 特殊人群：第4列填 是/否/1/0
+                String sp = getCellString(row, 4);
+                entity.setSpecialPopulation("是".equals(sp) || "1".equals(sp) ? 1 : 0);
+                entity.setSpecialPopulationType(getCellString(row, 5));
+                entity.setRelation(getCellString(row, 6));
+                entity.setAddress(getCellString(row, 7));
+                entity.setTags(getCellString(row, 9));
                 entity.setStatus("ACTIVE");
 
                 // 根据网格名查找 grid_id
-                String gridName = getCellString(row, 5);
+                String gridName = getCellString(row, 8);
                 Long gridId = findGridIdByName(gridName);
                 entity.setGridId(gridId);
 
@@ -154,8 +162,7 @@ public class ImportService {
 
     private String validatePopulationRow(Map<String, Object> data) {
         if (data.get("name") == null || data.get("name").toString().isBlank()) return "姓名不能为空";
-        if (data.get("idCard") == null || data.get("idCard").toString().isBlank()) return "身份证号不能为空";
-        if (data.get("phone") == null || data.get("phone").toString().isBlank()) return "手机号不能为空";
+        if (data.get("idCard") == null || data.get("idCard").toString().isBlank()) return "身份证号不能为空（必备）";
         return null;
     }
 

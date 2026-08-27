@@ -106,6 +106,7 @@ import { showMessage } from '../utils/message'
 const props = defineProps<{
   visible: boolean
   type: string  // population / buildings / places
+  columns?: string[]  // 可选：人口库字段配置器动态列
 }>()
 
 const emit = defineEmits<{
@@ -122,12 +123,12 @@ const typeLabels: Record<string, string> = {
 const typeLabel = computed(() => typeLabels[props.type] || props.type)
 
 const allColumns: Record<string, string[]> = {
-  population: ['name', 'idCard', 'phone', 'householdType', 'address', 'gridName', 'tags'],
+  population: ['name', 'idCard', 'phone', 'householdType', 'specialPopulation', 'specialPopulationType', 'relation', 'address', 'gridName', 'tags'],
   buildings: ['buildingNo', 'address', 'landlordName', 'landlordPhone', 'fireRiskLevel', 'isGroupRental', 'gridName'],
   places: ['placeName', 'contactName', 'contactPhone', 'address', 'remark', 'gridName']
 }
 
-const currentColumns = computed(() => allColumns[props.type] || [])
+const currentColumns = computed(() => props.columns && props.columns.length ? props.columns : (allColumns[props.type] || []))
 
 const fileInput = ref<HTMLInputElement>()
 const selectedFile = ref<File | null>(null)
@@ -155,9 +156,9 @@ function formatSize(bytes: number) {
 
 function downloadTemplate() {
   // 简单的 CSV 模板下载
-  const cols = allColumns[props.type] || []
+  const cols = currentColumns.value
   const headers: Record<string, string> = {
-    population: '姓名,身份证号,手机号,户籍类型,地址,网格,标签',
+    population: '姓名*,身份证号*,手机号,户籍类型,是否特殊人群(是/否),特殊人群类型,与户主关系,地址,网格,标签',
     buildings: '楼栋编号,地址,房东姓名,房东电话,消防风险等级,是否群租,网格',
     places: '场所名称,负责人,负责人电话,地址,备注,网格'
   }

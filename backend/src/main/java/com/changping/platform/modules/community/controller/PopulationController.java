@@ -40,11 +40,13 @@ public class PopulationController {
     @GetMapping
     public ApiResponse<List<PopulationEntity>> list(@RequestParam(required = false) Long gridId,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String householdType) {
+            @RequestParam(required = false) String householdType,
+            @RequestParam(required = false) String populationType) {
         requirePopulationPermission();
-        // 带搜索条件时走台账条件查询（模糊搜索 + 户籍类型/网格筛选）
-        if ((keyword != null && !keyword.isBlank()) || (householdType != null && !householdType.isBlank()) || gridId != null) {
-            return ApiResponse.ok(populationService.search(keyword, householdType, gridId));
+        // 带搜索条件时走台账条件查询（模糊搜索 + 户籍类型/人口类型/网格筛选）
+        if ((keyword != null && !keyword.isBlank()) || (householdType != null && !householdType.isBlank())
+                || (populationType != null && !populationType.isBlank()) || gridId != null) {
+            return ApiResponse.ok(populationService.search(keyword, householdType, gridId, populationType));
         }
         return ApiResponse.ok(populationService.list(null));
     }
@@ -61,9 +63,10 @@ public class PopulationController {
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportPopulation(@RequestParam(required = false) String keyword,
             @RequestParam(required = false) String householdType,
+            @RequestParam(required = false) String populationType,
             @RequestParam(required = false) Long gridId) throws Exception {
         requirePopulationPermission();
-        List<PopulationEntity> rows = populationService.search(keyword, householdType, gridId);
+        List<PopulationEntity> rows = populationService.search(keyword, householdType, gridId, populationType);
 
         try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             Sheet sheet = wb.createSheet("实有人口台账");
@@ -74,7 +77,7 @@ public class PopulationController {
             headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-            String[] headers = {"序号", "姓名", "性别", "出生日期", "身份证号", "联系电话", "户籍类型", "居住地址", "楼栋/房号", "所属网格", "备注", "登记时间"};
+            String[] headers = {"序号", "姓名", "性别", "年龄", "出生日期", "身份证号", "联系电话", "户籍类型", "特殊人群", "特殊人群类型", "与户主关系", "居住地址", "楼栋/房号", "所属网格", "备注", "登记时间"};
             Row headerRow = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) {
                 Cell c = headerRow.createCell(i);
@@ -87,17 +90,21 @@ public class PopulationController {
                 row.createCell(0).setCellValue(rn);
                 row.createCell(1).setCellValue(nvl(p.getName()));
                 row.createCell(2).setCellValue(nvl(p.getGender()));
-                row.createCell(3).setCellValue(p.getBirthday() != null ? p.getBirthday().toString() : "");
-                row.createCell(4).setCellValue(nvl(p.getIdCard()));
-                row.createCell(5).setCellValue(nvl(p.getPhone()));
-                row.createCell(6).setCellValue(p.getHouseholdType() != null
+                row.createCell(3).setCellValue(p.getAge() != null ? String.valueOf(p.getAge()) : "");
+                row.createCell(4).setCellValue(p.getBirthday() != null ? p.getBirthday().toString() : "");
+                row.createCell(5).setCellValue(nvl(p.getIdCard()));
+                row.createCell(6).setCellValue(nvl(p.getPhone()));
+                row.createCell(7).setCellValue(p.getHouseholdType() != null
                         ? HOUSEHOLD_LABELS.getOrDefault(p.getHouseholdType(), p.getHouseholdType()) : "");
-                row.createCell(7).setCellValue(nvl(p.getAddress()));
+                row.createCell(8).setCellValue(p.getSpecialPopulation() != null && p.getSpecialPopulation() == 1 ? "是" : "否");
+                row.createCell(9).setCellValue(nvl(p.getSpecialPopulationType()));
+                row.createCell(10).setCellValue(nvl(p.getRelation()));
+                row.createCell(11).setCellValue(nvl(p.getAddress()));
                 String room = (nvl(p.getBuildingNo()) + (p.getRoomNo() != null ? "-" + p.getRoomNo() : "")).trim();
-                row.createCell(8).setCellValue(room.isEmpty() ? "-" : room);
-                row.createCell(9).setCellValue(nvl(p.getGridName()));
-                row.createCell(10).setCellValue(nvl(p.getRemark()));
-                row.createCell(11).setCellValue(p.getCreatedAt() != null ? p.getCreatedAt().toString().replace('T', ' ') : "");
+                row.createCell(12).setCellValue(room.isEmpty() ? "-" : room);
+                row.createCell(13).setCellValue(nvl(p.getGridName()));
+                row.createCell(14).setCellValue(nvl(p.getRemark()));
+                row.createCell(15).setCellValue(p.getCreatedAt() != null ? p.getCreatedAt().toString().replace('T', ' ') : "");
                 rn++;
             }
             for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);

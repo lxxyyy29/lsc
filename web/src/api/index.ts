@@ -541,6 +541,14 @@ export async function executeImport(type: string, file: File) {
   return http.post('/community/import/execute', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
 }
 
+// 表单字段配置器（人口库）
+export async function getFormFieldConfig(module: string) {
+  return http.get('/community/form-field-config', { params: { module } })
+}
+export async function saveFormFieldConfig(fields: any[]) {
+  return http.post('/community/form-field-config', fields)
+}
+
 // 综合监管大屏
 export async function getBigScreenData() {
   return http.get('/community/dashboard/big-screen')

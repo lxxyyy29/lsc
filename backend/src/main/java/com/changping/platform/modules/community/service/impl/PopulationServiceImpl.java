@@ -25,8 +25,8 @@ public class PopulationServiceImpl implements PopulationService {
     }
 
     @Override
-    public List<PopulationEntity> search(String keyword, String householdType, Long gridId) {
-        return populationMapper.search(keyword, householdType, gridId);
+    public List<PopulationEntity> search(String keyword, String householdType, Long gridId, String populationType) {
+        return populationMapper.search(keyword, householdType, gridId, populationType);
     }
 
     @Override
