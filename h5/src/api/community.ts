@@ -75,10 +75,21 @@ export interface PatrolRecord {
   address?: string
   content?: string
   photoUrls?: string | string[]
+  remark?: string
   status?: string
   createdAt?: string
   /** 客户端请求ID(离线重试幂等) */
   clientRequestId?: string
+}
+
+/** 巡查打卡地址联想：历史地址 + 网格名（输入时下拉） */
+export function getAddressSuggestions(keyword: string) {
+  // #ifndef MP-WEIXIN
+  return webApi.get<{ success: boolean; data: string[] }>('/community/patrol-records/address-suggestions', { params: { keyword } }).then(res => res.data.data)
+  // #endif
+  // #ifdef MP-WEIXIN
+  return requestWeb<string[]>('GET', '/community/patrol-records/address-suggestions', { keyword })
+  // #endif
 }
 
 export function getPatrolRecords() {

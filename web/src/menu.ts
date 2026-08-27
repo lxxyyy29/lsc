@@ -61,8 +61,9 @@ export const menuGroups: MenuGroup[] = [
     items: [
       { path: '/patrol', name: '网格巡查', permKey: 'web:menu:patrol' },
       { path: '/drones', name: '无人机管理', permKey: 'web:menu:drones' },
-      { path: '/video', name: '视频轮巡', permKey: 'web:menu:video' },
-      { path: '/parking', name: '停车管理', permKey: 'web:menu:parking' },
+      // 停车管理、视频轮巡已取消（需求11），保留代码便于追溯
+      // { path: '/video', name: '视频轮巡', permKey: 'web:menu:video' },
+      // { path: '/parking', name: '停车管理', permKey: 'web:menu:parking' },
     ]
   },
   {

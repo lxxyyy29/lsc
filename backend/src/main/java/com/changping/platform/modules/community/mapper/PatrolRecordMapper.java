@@ -21,6 +21,7 @@ public class PatrolRecordMapper {
         e.setLatitude(rs.getBigDecimal("latitude"));
         e.setAddress(rs.getString("address"));
         e.setContent(rs.getString("content"));
+        e.setRemark(rs.getString("remark"));
         e.setPhotoUrls(rs.getString("photo_urls"));
         e.setClientRequestId(rs.getString("client_request_id"));
         e.setStatus(rs.getString("status"));
@@ -55,9 +56,9 @@ public class PatrolRecordMapper {
     }
 
     public Long insert(PatrolRecordEntity e) {
-        String sql = "INSERT INTO cmn_patrol_record (grid_id, user_id, patrol_type, longitude, latitude, address, content, photo_urls, client_request_id, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW())";
+        String sql = "INSERT INTO cmn_patrol_record (grid_id, user_id, patrol_type, longitude, latitude, address, content, remark, photo_urls, client_request_id, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())";
         jdbcTemplate.update(sql, e.getGridId(), e.getUserId(), e.getPatrolType(),
-                e.getLongitude(), e.getLatitude(), e.getAddress(), e.getContent(),
+                e.getLongitude(), e.getLatitude(), e.getAddress(), e.getContent(), e.getRemark(),
                 e.getPhotoUrls(), e.getClientRequestId(), e.getStatus());
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
     }

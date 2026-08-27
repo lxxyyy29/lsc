@@ -31,6 +31,9 @@ public class PatrolRecordEntity {
 
     private String content;
 
+    /** 备注（非必填） */
+    private String remark;
+
     @JsonDeserialize(using = PhotoUrlsDeserializer.class)
     private String photoUrls;
 

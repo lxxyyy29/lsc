@@ -34,15 +34,13 @@ const routes: RouteRecordRaw[] = [
       { path: 'ledger', component: () => import('../views/LedgerView.vue') },
  
       { path: 'drones', component: () => import('../views/DronesView.vue') },
-      { path: 'video', component: () => import('../views/VideoView.vue') },
       { path: 'patrol', component: () => import('../views/PatrolView.vue') },
  
       { path: 'resident-reports', component: () => import('../views/ResidentReportView.vue') },
       { path: 'policy-resources', component: () => import('../views/PolicyResourceView.vue') },
  
       { path: 'party', component: () => import('../views/PartyView.vue') },
-      { path: 'parking', component: () => import('../views/ParkingView.vue') },
- 
+
       { path: 'reports', component: () => import('../views/ReportsView.vue') },
       { path: 'assessment', component: () => import('../views/AssessmentView.vue') },
       { path: 'trend-alerts', component: () => import('../views/TrendAlertView.vue') },

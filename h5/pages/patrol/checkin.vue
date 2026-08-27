@@ -32,6 +32,24 @@
         </view>
       </view>
 
+      <!-- 地址输入 + 关键词联想（历史地址 + 网格名） -->
+      <view class="form-item">
+        <text class="label">打卡地址</text>
+        <input
+          v-model="address"
+          class="text-input"
+          placeholder="请输入打卡地址"
+          @input="onAddressInput"
+          @focus="onAddressInput"
+          @blur="closeSuggestions"
+        />
+        <view v-if="suggestions.length" class="suggest-list">
+          <view v-for="(s, idx) in suggestions" :key="idx" class="suggest-item" @mousedown.prevent="selectAddress(s)">
+            {{ s }}
+          </view>
+        </view>
+      </view>
+
       <view class="form-item">
         <text class="label">现场照片</text>
         <view class="photo-grid">
@@ -50,6 +68,11 @@
         <text class="label">巡查内容</text>
         <textarea v-model="content" class="textarea" placeholder="描述现场情况..." />
       </view>
+
+      <view class="form-item">
+        <text class="label">备注<text style="color:#5a7a9a;font-size:11px;">（非必填）</text></text>
+        <textarea v-model="remark" class="textarea" rows="2" placeholder="选填备注..." />
+      </view>
     </view>
 
     <view class="btn-submit" @click="handleSubmit">确认打卡</view>
@@ -60,7 +83,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import GridWorkerTabBar from '../../src/components/GridWorkerTabBar.vue'
-import { getGridTree, createPatrolRecord, GridTreeVo, PatrolRecord } from '../../src/api/community'
+import { getGridTree, createPatrolRecord, getAddressSuggestions, GridTreeVo, PatrolRecord } from '../../src/api/community'
 import { getH5Session } from '../../src/api/auth'
 import { locateWithFallback } from '../../src/utils/geolocation'
 import { enqueueOfflineTask, isNetworkError } from '../../src/utils/offlineQueue'
@@ -79,6 +102,11 @@ const longitude = ref<number | null>(null)
 const latitude = ref<number | null>(null)
 const photos = ref<string[]>([])
 const content = ref('')
+// 打卡地址（手动输入 + 关键词联想）
+const address = ref('')
+const remark = ref('')
+const suggestions = ref<string[]>([])
+let suggestionTimer: any = null
 
 // 小程序地图状态
 const mapLat = ref(22.971231)
@@ -128,6 +156,33 @@ function onGridChange(e: any) {
   }
 }
 
+// ==================== 地址关键词联想（历史地址 + 网格名） ====================
+function onAddressInput() {
+  clearTimeout(suggestionTimer)
+  const kw = address.value.trim()
+  if (!kw) {
+    suggestions.value = []
+    return
+  }
+  suggestionTimer = setTimeout(async () => {
+    try {
+      suggestions.value = await getAddressSuggestions(kw) || []
+    } catch (e) {
+      suggestions.value = []
+    }
+  }, 200)
+}
+
+function selectAddress(s: string) {
+  address.value = s
+  suggestions.value = []
+}
+
+function closeSuggestions() {
+  // 延迟关闭，保证点击联想项先触发 selectAddress
+  setTimeout(() => { suggestions.value = [] }, 150)
+}
+
 function getLocation() {
   locationText.value = '定位中...'
   locateWithFallback().then((res) => {
@@ -154,6 +209,11 @@ function chooseLocation() {
       latitude.value = Number(res.latitude.toFixed(6))
       updateMapMarker(Number(res.latitude), Number(res.longitude))
       locationText.value = res.address || res.name || `${res.latitude.toFixed(6)}, ${res.longitude.toFixed(6)}`
+      // 选点地址同步填入"打卡地址"输入框
+      if (res.address || res.name) {
+        address.value = res.address || res.name
+        suggestions.value = []
+      }
     },
     fail: () => {
       uni.showToast({ title: '取消选点', icon: 'none' })
@@ -222,8 +282,8 @@ async function handleSubmit() {
     uni.showToast({ title: '请选择网格', icon: 'none' })
     return
   }
-  if (!content.value) {
-    uni.showToast({ title: '请填写巡查内容', icon: 'none' })
+  if (!address.value.trim()) {
+    uni.showToast({ title: '请输入打卡地址', icon: 'none' })
     return
   }
 
@@ -231,8 +291,9 @@ async function handleSubmit() {
     gridId: selectedGridId.value!,
     longitude: longitude.value || undefined,
     latitude: latitude.value || undefined,
-    address: locationText.value,
+    address: address.value.trim(),
     content: content.value,
+    remark: remark.value || undefined,
     photoUrls: photos.value,
     // 离线重试幂等键:同一次打卡重复提交只落一条记录
     clientRequestId: 'CKI-' + Date.now()
@@ -245,7 +306,7 @@ async function handleSubmit() {
   } catch (e: any) {
     if (isNetworkError(e)) {
       // 网络信号差:离线保存,恢复网络后自动同步
-      enqueueOfflineTask('CHECKIN', record, `巡查打卡:${locationText.value || selectedGridId.value}`)
+      enqueueOfflineTask('CHECKIN', record, `巡查打卡:${address.value.trim() || selectedGridId.value}`)
       uni.showModal({
         title: '已离线保存',
         content: '当前网络不可用,打卡记录已保存在本地,恢复网络后将自动上报。',
@@ -277,6 +338,10 @@ onMounted(async () => {
 .form-item { margin-bottom: 16px; }
 .label { display: block; font-size: 13px; color: #cfe5fb; margin-bottom: 8px; }
 .picker-text { background: #0a1d33; border-radius: 8px; padding: 10px; color: #eaf5ff; font-size: 14px; }
+.text-input { width: 100%; background: #0a1d33; border-radius: 8px; padding: 10px; color: #eaf5ff; font-size: 14px; box-sizing: border-box; }
+.suggest-list { margin-top: 6px; background: #0a1d33; border-radius: 8px; overflow: hidden; }
+.suggest-item { padding: 10px 12px; color: #cfe5fb; font-size: 13px; border-bottom: 1px solid #12263f; }
+.suggest-item:active { background: #14304f; }
 .location-text { font-size: 12px; color: #7ea4c8; margin-bottom: 4px; }
 .location-map { width: 100%; height: 380rpx; border-radius: 12rpx; margin-bottom: 8rpx; }
 .location-actions { display: flex; align-items: center; gap: 12rpx; }

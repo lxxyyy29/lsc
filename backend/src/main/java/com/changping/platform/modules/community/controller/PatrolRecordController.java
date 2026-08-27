@@ -46,6 +46,32 @@ public class PatrolRecordController {
     }
 
     /**
+     * 巡查打卡地址联想：历史打卡地址（去重）+ 网格名称，按关键词模糊匹配
+     * 供小程序端打卡输入地址时下拉联想
+     */
+    @GetMapping("/address-suggestions")
+    public ApiResponse<List<String>> addressSuggestions(@RequestParam(required = false) String keyword) {
+        currentUserService.requireClientType(AuthService.ClientType.H5);
+        List<String> result = new ArrayList<>();
+        String kw = keyword == null ? "" : keyword.trim();
+        String like = "%" + kw + "%";
+        // 历史打卡地址（去重，非空）
+        List<String> addresses = jdbcTemplate.queryForList(
+                "SELECT DISTINCT address FROM cmn_patrol_record " +
+                "WHERE address IS NOT NULL AND TRIM(address) <> '' AND address LIKE ? " +
+                "ORDER BY address LIMIT 20", String.class, like);
+        result.addAll(addresses);
+        // 网格名称
+        List<String> grids = jdbcTemplate.queryForList(
+                "SELECT grid_name FROM cmn_grid WHERE status = 'ACTIVE' AND grid_name LIKE ? ORDER BY grid_name LIMIT 20",
+                String.class, like);
+        // 合并去重
+        Set<String> seen = new LinkedHashSet<>(result);
+        seen.addAll(grids);
+        return ApiResponse.ok(new ArrayList<>(seen));
+    }
+
+    /**
      * 巡查轨迹：按用户分组返回有坐标的巡查记录，用于地图轨迹绘制
      */
     @GetMapping("/trajectories")
