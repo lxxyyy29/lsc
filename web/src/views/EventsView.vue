@@ -129,12 +129,12 @@
         </div>
       </template>
     </div>
-    <!-- 创建事件弹窗：使用 Element Plus el-dialog（下拉浮层 z-index 由 EP 统一管理，解决原生遮罩压住下拉的问题） -->
+    <!-- 创建事件弹窗 -->
     <el-dialog
       v-model="showCreateModal"
       title="创建事件"
       width="760px"
-      class="create-dialog"
+      class="create-dialog ui-dialog"
       :close-on-click-modal="false"
       @close="showCreateModal = false"
     >

@@ -166,3 +166,67 @@ input, select, textarea {
 .modal-box { background: #fff; border-radius: 16px; padding: 28px; width: 440px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.15); animation: slideUp 0.2s ease-out; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===== EP 弹窗统一外观 ===== */
+.ui-dialog { border-radius: 16px; }
+.ui-dialog .el-dialog__title { font-size: 16px; font-weight: 600; color: #1f2937; }
+.ui-dialog .el-input__wrapper,
+.ui-dialog .el-select__wrapper {
+  height: auto;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: none;
+  background: #fff;
+}
+.ui-dialog .el-input__wrapper:hover,
+.ui-dialog .el-select__wrapper:hover { border-color: #0284c7; }
+.ui-dialog .el-input__wrapper.is-focus,
+.ui-dialog .el-select__wrapper.is-focused {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+}
+.ui-dialog .el-input__inner,
+.ui-dialog .el-select__selected-item,
+.ui-dialog .el-select__placeholder { font-size: 13px; }
+.ui-dialog .el-textarea__inner {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 13px;
+}
+.ui-dialog .el-textarea__inner:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+}
+.ui-dialog .el-checkbox { font-size: 13px; min-height: 42px; display: flex; align-items: center; }
+.ui-dialog .el-form-item { margin-bottom: 16px; }
+.ui-dialog .el-form-item__label { font-size: 13px; font-weight: 600; color: #374151; line-height: 1.4; margin-bottom: 6px; }
+/* 按钮对齐 .btn 系列 */
+.ui-dialog .el-button {
+  height: 32px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.ui-dialog .el-button--primary {
+  --el-button-bg-color: #0284c7;
+  --el-button-border-color: #0284c7;
+  --el-button-hover-bg-color: #0369a1;
+  --el-button-hover-border-color: #0369a1;
+  --el-button-active-bg-color: #0369a1;
+  --el-button-active-border-color: #0369a1;
+}
+/* 默认按钮对齐 .btn-default */
+.ui-dialog .el-button--default {
+  --el-button-bg-color: #f3f4f6;
+  --el-button-text-color: #374151;
+  --el-button-border-color: transparent;
+  --el-button-hover-bg-color: #e5e7eb;
+  --el-button-hover-text-color: #374151;
+  --el-button-hover-border-color: transparent;
+  --el-button-active-bg-color: #e5e7eb;
+  --el-button-active-border-color: transparent;
+}

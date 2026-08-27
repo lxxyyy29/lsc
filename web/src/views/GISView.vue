@@ -121,8 +121,8 @@
       boxShadow: '0 8px 24px rgba(15, 23, 42, 0.10)',
       transition: 'background 0.25s ease'
     }"
-    @mouseenter="$event.target.style.background = 'rgba(255, 255, 255, 0.92)'"
-    @mouseleave="$event.target.style.background = 'rgba(255, 255, 255, 0.7)'">
+    @mouseenter="setPanelBg($event, 'rgba(255, 255, 255, 0.92)')"
+    @mouseleave="setPanelBg($event, 'rgba(255, 255, 255, 0.7)')">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <span style="font-size:14px;font-weight:700;color:#111827;display:flex;align-items:center;gap:6px;">
           <i class="fas fa-map-pin" style="color:#0284c7;"></i>
@@ -408,6 +408,10 @@ function levelText(level?: number) {
   if (level === 2) return '大网格'
   if (level === 3) return '小网格'
   return '未知'
+}
+
+function setPanelBg(e: Event, color: string) {
+  ;(e.target as HTMLElement).style.background = color
 }
 
 function selectGrid(grid: GridInfo) {

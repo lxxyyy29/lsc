@@ -216,7 +216,8 @@ function toggleGroup(name: string) {
 function handleLogout() {
   logout()
   session.value = null
-  showUserMenu.value = window.location.hash = '#/login'
+  window.location.hash = '#/login'
+  showUserMenu.value = false
 }
 
 const showPwdModal = ref(false)

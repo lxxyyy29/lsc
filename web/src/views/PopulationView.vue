@@ -137,57 +137,69 @@
       </template>
     </div>
 
-    <!-- 新增/编辑弹窗（按字段配置动态渲染） -->
-    <div v-if="showForm" class="modal-overlay">
-      <div class="modal-box" style="width:600px;max-height:88vh;overflow-y:auto;">
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ form.id ? '编辑人员' : '新增人员' }}</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+    <!-- 新增/编辑弹窗（EP 弹层） -->
+    <el-dialog v-model="showForm" :title="form.id ? '编辑人员' : '新增人员'" width="680px"
+               class="pop-form-dialog ui-dialog" align-center :close-on-click-modal="false">
+      <el-form ref="formRef" :model="form" :rules="formRules" label-position="top">
+        <el-row :gutter="16">
           <template v-for="f in formFields" :key="f.fieldKey">
-            <div v-if="isFormVisible(f)" class="form-group" :style="f.fieldKey === 'address' || f.fieldKey === 'gridId' || f.fieldKey === 'remark' ? 'grid-column:1 / -1;' : ''">
-              <label class="form-label">{{ f.fieldLabel }} <span v-if="f.required" class="required">*</span></label>
-              <!-- 特殊人群勾选 -->
-              <div v-if="f.fieldKey === 'special_population'" class="form-checkbox">
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                  <input type="checkbox" :checked="form.specialPopulation == 1" @change="form.specialPopulation = ($event.target as HTMLInputElement).checked ? 1 : 0" />
-                  是特殊人群
-                </label>
-              </div>
-              <!-- 户籍类型：流动库隐藏 -->
-              <select v-else-if="f.fieldKey === 'householdType'" v-model="form.householdType" class="form-select">
-                <option value="">请选择</option>
-                <option v-for="t in residentHouseholdTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
-              </select>
-              <!-- 出生日期 -->
-              <input v-else-if="f.fieldType === 'date'" v-model="form.birthday" type="date" class="form-input" @change="autoFillAge" />
-              <!-- 特殊人群类型 / 关系下拉（支持自定义） -->
-              <div v-else-if="f.fieldKey === 'special_population_type' || f.fieldKey === 'relation'" class="form-custom-select">
-                <select v-if="!customEditing[f.fieldKey]" v-model="form[f.fieldKey]" class="form-select" @change="startCustom(f.fieldKey, String(form[f.fieldKey]))">
-                  <option value="">请选择</option>
-                  <option v-for="opt in selectOptions(f)" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-                </select>
-                <div v-else style="display:flex;gap:6px;align-items:center;">
-                  <input v-model="form[f.fieldKey]" class="form-input" :placeholder="'请输入' + f.fieldLabel" style="flex:1;" @keyup.enter="customEditing[f.fieldKey] = false" />
-                  <button type="button" class="btn btn-default" style="padding:4px 10px;font-size:12px;" @click="customEditing[f.fieldKey] = false">确定</button>
-                </div>
-              </div>
-              <!-- 性别/户籍下拉 -->
-              <select v-else-if="f.fieldType === 'select'" v-model="form[f.fieldKey]" class="form-select">
-                <option value="">请选择</option>
-                <option v-for="opt in selectOptions(f)" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-              </select>
-              <!-- 文本域 -->
-              <textarea v-else-if="f.fieldType === 'textarea'" v-model="form[f.fieldKey]" class="form-textarea" rows="2" placeholder="选填"></textarea>
-              <!-- 通用输入 -->
-              <input v-else v-model="form[f.fieldKey]" class="form-input" :placeholder="'请输入' + f.fieldLabel" />
-            </div>
+            <el-col v-if="isFormVisible(f) && !(isKey(f, 'specialPopulationType') && form.specialPopulation != 1)" :span="isFullField(f) ? 24 : 12">
+              <el-form-item :label="f.fieldLabel" :required="f.required == 1" :prop="camel(f.fieldKey)">
+                <!-- 特殊人群勾选 -->
+                <el-checkbox v-if="isKey(f, 'specialPopulation')" v-model="form.specialPopulation"
+                             :true-value="1" :false-value="0" @change="onSpecialChange">是特殊人群</el-checkbox>
+                <!-- 特殊人群类型（勾选后显示，支持自定义） -->
+                <template v-else-if="isKey(f, 'specialPopulationType') && form.specialPopulation == 1">
+                  <el-select v-if="!customEditing['specialPopulationType']"
+                             :model-value="form.specialPopulationType" placeholder="请选择" style="width:100%;"
+                             @update:model-value="onTypeUpdate($event, 'specialPopulationType')">
+                    <el-option v-for="opt in selectOptions(f)" :key="opt.value" :label="opt.label" :value="opt.value" />
+                  </el-select>
+                  <div v-else style="display:flex;gap:6px;align-items:center;">
+                    <el-input v-model="form.specialPopulationType" placeholder="请输入特殊人群类型" style="flex:1;" />
+                    <el-button style="height:42px;flex-shrink:0;" @click="confirmCustom('specialPopulationType')">确定</el-button>
+                  </div>
+                </template>
+                <!-- 户籍类型：流动库隐藏 -->
+                <el-select v-else-if="isKey(f, 'householdType')" v-model="form.householdType" placeholder="请选择" style="width:100%;">
+                  <el-option v-for="t in residentHouseholdTypes" :key="t.value" :label="t.label" :value="t.value" />
+                </el-select>
+                <!-- 出生日期 -->
+                <el-date-picker v-else-if="f.fieldType === 'date'" v-model="form.birthday" type="date"
+                                value-format="YYYY-MM-DD" placeholder="选择出生日期" style="width:100%;" @change="autoFillAge" />
+                <!-- 与户主关系（支持自定义） -->
+                <template v-else-if="isKey(f, 'relation')">
+                  <el-select v-if="!customEditing['relation']"
+                             :model-value="form.relation" placeholder="请选择" style="width:100%;"
+                             @update:model-value="onTypeUpdate($event, 'relation')">
+                    <el-option v-for="opt in selectOptions(f)" :key="opt.value" :label="opt.label" :value="opt.value" />
+                  </el-select>
+                  <div v-else style="display:flex;gap:6px;align-items:center;">
+                    <el-input v-model="form.relation" :placeholder="'请输入' + f.fieldLabel" style="flex:1;" />
+                    <el-button style="height:42px;flex-shrink:0;" @click="confirmCustom('relation')">确定</el-button>
+                  </div>
+                </template>
+                <!-- 通用下拉（含网格） -->
+                <el-select v-else-if="f.fieldType === 'select'" v-model="form[camel(f.fieldKey)]" placeholder="请选择" style="width:100%;">
+                  <el-option v-for="opt in selectOptions(f)" :key="opt.value" :label="opt.label" :value="opt.value" />
+                </el-select>
+                <!-- 文本域 -->
+                <el-input v-else-if="f.fieldType === 'textarea'" v-model="form[camel(f.fieldKey)]" type="textarea" :rows="2" placeholder="选填" />
+                <!-- 通用输入 -->
+                <el-input v-else v-model="form[camel(f.fieldKey)]" :placeholder="'请输入' + f.fieldLabel" />
+              </el-form-item>
+            </el-col>
           </template>
+        </el-row>
+      </el-form>
+      <!-- 按钮固定右下角 -->
+      <template #footer>
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+          <el-button @click="showForm = false">取消</el-button>
+          <el-button type="primary" :loading="saving" @click="handleSubmit">{{ form.id ? '保存' : '添加' }}</el-button>
         </div>
-        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
-          <button @click="showForm = false" class="btn btn-default">取消</button>
-          <button @click="handleSubmit" class="btn btn-primary" :disabled="saving">{{ form.id ? '保存' : '添加' }}</button>
-        </div>
-      </div>
-    </div>
+      </template>
+    </el-dialog>
 
     <!-- 字段配置弹窗 -->
     <div v-if="showConfig" class="modal-overlay">
@@ -221,7 +233,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import http from '../api'
 import { getHouseholdTypeName } from '../utils/eventTypes'
 import { getFormFieldConfig, saveFormFieldConfig } from '../api'
@@ -233,7 +245,7 @@ import { confirmDialog } from '../utils/dialog'
 const populationTabs = [
   { value: 'RESIDENT', label: '常驻人口' },
   { value: 'FLOATING', label: '流动人口' },
-]
+] as const
 const activeTab = ref<'RESIDENT' | 'FLOATING'>('RESIDENT')
 const isResidentTab = computed(() => activeTab.value === 'RESIDENT')
 
@@ -260,9 +272,32 @@ const showImport = ref(false)
 const showForm = ref(false)
 const showConfig = ref(false)
 
+// 字段键归一化（snake↔camel）
+function camel(fieldKey: any): any {
+  return String(fieldKey || '').replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
+}
+// 键匹配判断（兼容命名）
+function isKey(f: any, key: string) {
+  return camel(f.fieldKey) === key
+}
+// 整行字段（占满两列）
+function isFullField(f: any) {
+  return ['address', 'gridId', 'remark'].includes(camel(f.fieldKey))
+}
+
 // 字段配置器数据
 const configFields = ref<any[]>([])
-const formFields = computed(() => configFields.value.filter(f => f.enabled == 1))
+// 关系排在特殊人群前
+const formFields = computed(() => {
+  const enabled = configFields.value.filter(f => f.enabled == 1)
+  const relIdx = enabled.findIndex(f => isKey(f, 'relation'))
+  const spIdx = enabled.findIndex(f => isKey(f, 'specialPopulation'))
+  if (relIdx > -1 && spIdx > -1 && relIdx > spIdx) {
+    const [rel] = enabled.splice(relIdx, 1)
+    enabled.splice(spIdx, 0, rel)
+  }
+  return enabled
+})
 
 // 导入列：固定完整列序（与后端 ImportService 固定索引 0..9 对齐），避免动态缩减导致列错位
 const IMPORT_COLUMNS = ['name', 'idCard', 'phone', 'householdType', 'specialPopulation', 'specialPopulationType', 'relation', 'address', 'gridName', 'tags']
@@ -283,16 +318,54 @@ const emptyForm = () => ({
   status: 'ACTIVE',
 })
 const form = ref(emptyForm())
+const formRef = ref<any>()
+
+// 必填校验（按字段配置）
+const formRules = computed<Record<string, any>>(() => {
+  const rules: Record<string, any> = {}
+  for (const f of formFields.value) {
+    if (f.required == 1) {
+      const key = String(camel(f.fieldKey))
+      rules[key] = f.fieldType === 'select'
+        ? { required: true, message: '请选择' + f.fieldLabel, trigger: 'change' }
+        : { required: true, message: '请输入' + f.fieldLabel, trigger: 'blur' }
+      if (key === 'idCard') {
+        rules[key] = [
+          { required: true, message: '请输入身份证号', trigger: 'blur' },
+          { validator: validateIdCard, trigger: 'blur' },
+        ]
+      }
+    }
+  }
+  return rules
+})
+
+// 身份证号校验（18 位 + 校验位）
+function validateIdCard(_rule: any, value: any, callback: any) {
+  const v = String(value || '').trim()
+  if (!v) return callback()
+  if (!/^\d{17}[\dXx]$/.test(v)) return callback(new Error('身份证号格式不正确'))
+  const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
+  const codes = '10X98765432'
+  let sum = 0
+  for (let i = 0; i < 17; i++) sum += Number(v[i]) * weights[i]
+  if (v[17].toUpperCase() !== codes[sum % 11]) return callback(new Error('身份证号校验位不正确'))
+  callback()
+}
 
 // 字段配置器中 select 类型解析选项
 function selectOptions(f: any) {
-  if (f.fieldKey === 'special_population_type') {
+  if (isKey(f, 'specialPopulationType')) {
     return [...specialPopulationTypes.map(v => ({ value: v, label: v })), { value: '__custom__', label: '自定义...' }]
   }
-  if (f.fieldKey === 'relation') {
+  if (isKey(f, 'relation')) {
     return [...relationTypes.map(v => ({ value: v, label: v })), { value: '__custom__', label: '自定义...' }]
   }
-  if (f.fieldKey === 'householdType') return residentHouseholdTypes
+  if (isKey(f, 'householdType')) return residentHouseholdTypes
+  // 网格选项取列表
+  if (isKey(f, 'gridId')) {
+    return grids.value.map(g => ({ value: Number(g.id), label: g.gridName }))
+  }
   if (f.options) {
     return f.options.split(',').map((o: string) => {
       const [value, label] = o.split(':')
@@ -302,19 +375,36 @@ function selectOptions(f: any) {
   return []
 }
 
-// 自定义输入模式（特殊人群类型/关系选中"自定义..."时切换为内联输入）
+// 自定义...转内联输入（不落 __custom__ 值）
 const customEditing = reactive<Record<string, boolean>>({})
-function startCustom(field: 'special_population_type' | 'relation', val: string) {
-  if (val === '__custom__') {
+function onTypeUpdate(v: any, field: 'specialPopulationType' | 'relation') {
+  if (v === '__custom__') {
     form.value[field] = ''
     customEditing[field] = true
+  } else {
+    form.value[field] = v
   }
 }
 
-// 是否在表单中显示该字段（流动库隐藏户籍类型）
+// 自定义确认：非空才退出编辑态
+function confirmCustom(field: 'specialPopulationType' | 'relation') {
+  if (!String(form.value[field] || '').trim()) {
+    showMessage(`请填写${field === 'specialPopulationType' ? '特殊人群类型' : '与户主关系'}`, 'warning')
+    return
+  }
+  customEditing[field] = false
+}
+
+// 流动库隐藏户籍类型
 function isFormVisible(f: any) {
-  if (f.fieldKey === 'householdType' && !isResidentTab.value) return false
+  if (isKey(f, 'householdType') && !isResidentTab.value) return false
   return true
+}
+
+// 勾选联动：取消清空类型与自定义态
+function onSpecialChange(v: any) {
+  if (!v) form.value.specialPopulationType = ''
+  customEditing['specialPopulationType'] = false
 }
 
 // 是否户主（用于列表高亮）
@@ -441,6 +531,7 @@ async function saveConfig() {
 function openCreate() {
   form.value = emptyForm()
   showForm.value = true
+  nextTick(() => formRef.value?.clearValidate())
 }
 
 function openEdit(p: any) {
@@ -457,11 +548,15 @@ function openEdit(p: any) {
     status: p.status || 'ACTIVE',
   }
   showForm.value = true
+  nextTick(() => formRef.value?.clearValidate())
 }
 
 async function handleSubmit() {
-  if (!form.value.name.trim()) { showMessage('请输入姓名'); return }
-  if (!form.value.idCard.trim()) { showMessage('身份证号必填'); return }
+  try {
+    await formRef.value?.validate()
+  } catch {
+    return
+  }
   saving.value = true
   try {
     const payload: any = { ...form.value }
@@ -531,3 +626,13 @@ onMounted(() => {
   loadFieldConfig()
 })
 </script>
+
+<style>
+/* 表单滚动，按钮固定右下角；外观见 .ui-dialog */
+.pop-form-dialog .el-dialog__body {
+  max-height: calc(88vh - 150px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 8px 0;
+}
+</style>

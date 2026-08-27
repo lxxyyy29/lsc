@@ -67,7 +67,7 @@
         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事发地点 <span style="color:#ff4d4f;">*</span></label>
         <div style="display:flex;gap:8px;margin-bottom:8px;">
           <el-input v-model="form.location" @input="errors.location = ''" placeholder="点击地图选择位置或手动输入地址" :class="{ 'is-invalid': errors.location }" style="flex:1;" />
-          <el-button @click="locateMe" type="default" plain style="white-space:nowrap;">
+          <el-button @click="locateMe" type="default" plain style="white-space:nowrap;height:42px;">
             <i class="fas fa-crosshairs"></i> 定位
           </el-button>
         </div>
