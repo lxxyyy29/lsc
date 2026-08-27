@@ -323,29 +323,8 @@ export async function rateEvent(eventId: number | string, data: { rating: number
 
 // ==================== 居民互动 ====================
 
-export async function getResidentActivities(): Promise<any[]> {
-  return request<any[]>('get', '/resident/activities')
-}
-
-export async function signupActivity(activityId: number): Promise<unknown> {
-  return request('post', `/resident/activities/${activityId}/signup`, {})
-}
-
-export async function cancelActivitySignup(activityId: number): Promise<unknown> {
-  return request('delete', `/resident/activities/${activityId}/signup`)
-}
-
-/** 活动签到（限活动当天至结束后2天，仅一次，成功后发放积分） */
-export async function checkinActivity(activityId: number): Promise<unknown> {
-  return request('post', `/resident/activities/${activityId}/checkin`, {})
-}
-
 export async function getResidentPolicies(): Promise<any[]> {
   return request<any[]>('get', '/resident/policy-resources')
-}
-
-export async function getMyPoints(): Promise<unknown> {
-  return request('get', '/resident/points')
 }
 
 export async function submitRepair(data: Record<string, unknown>): Promise<unknown> {

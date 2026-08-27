@@ -42,7 +42,6 @@ const ALL_PAGES = [
   { path: 'pages/map/index', style: { navigationStyle: 'custom', navigationBarTitleText: '移动 GIS' } },
   { path: 'pages/message/index', style: { navigationStyle: 'custom', navigationBarTitleText: '信息互通' } },
   { path: 'pages/notice/index', style: { navigationStyle: 'default', navigationBarTitleText: '消息通知' } },
-  { path: 'pages/volunteer/index', style: { navigationStyle: 'default', navigationBarTitleText: '志愿服务' } },
 
   // ---- 居民端 ----
   { path: 'pages/resident/login/index', style: { navigationStyle: 'custom' } },
@@ -50,11 +49,9 @@ const ALL_PAGES = [
   { path: 'pages/resident/report/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/resident/history/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/resident/services/index', style: { navigationStyle: 'custom' } },
-  { path: 'pages/resident/activities/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/resident/repairs/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/resident/repairs/form', style: { navigationStyle: 'default', navigationBarTitleText: '提交报修' } },
   { path: 'pages/resident/policies/index', style: { navigationStyle: 'custom' } },
-  { path: 'pages/resident/points/index', style: { navigationStyle: 'custom' } },
   { path: 'pages/resident/mine/index', style: { navigationStyle: 'custom' } }
 ]
 

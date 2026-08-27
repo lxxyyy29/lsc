@@ -106,8 +106,9 @@ export function toPageUrl(path: string) {
       return '/pages/patrol/checkin'
     case '/mine':
       return '/pages/mine/index'
-    case '/volunteer':
-      return '/pages/volunteer/index'
+    // 志愿服务已取消（需求12.2），保留代码便于追溯后续开发
+    // case '/volunteer':
+    //   return '/pages/volunteer/index'
     // 信息互通（实时聊天）功能暂不启用，保留代码后续开发
     // case '/messages':
     //   return '/pages/message/index'

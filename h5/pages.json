@@ -141,13 +141,6 @@
       }
     },
     {
-      "path": "pages/volunteer/index",
-      "style": {
-        "navigationStyle": "default",
-        "navigationBarTitleText": "志愿服务"
-      }
-    },
-    {
       "path": "pages/resident/login/index",
       "style": {
         "navigationStyle": "custom"
@@ -178,12 +171,6 @@
       }
     },
     {
-      "path": "pages/resident/activities/index",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
       "path": "pages/resident/repairs/index",
       "style": {
         "navigationStyle": "custom"
@@ -198,12 +185,6 @@
     },
     {
       "path": "pages/resident/policies/index",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/resident/points/index",
       "style": {
         "navigationStyle": "custom"
       }

@@ -37,12 +37,11 @@ const items = [
   { path: '/pages/resident/mine/index', icon: '👤', label: '我的' }
 ]
 
-// 服务子页面（活动/报修/政策/积分）时也高亮"服务"
+// 服务子页面（报修/政策）时也高亮"服务"
 const isActive = (path: string) => {
   if (path === '/pages/resident/services/index') {
-    return props.current.startsWith('/pages/resident/services') || props.current === '/pages/resident/activities/index'
+    return props.current.startsWith('/pages/resident/services')
       || props.current === '/pages/resident/repairs/index' || props.current === '/pages/resident/policies/index'
-      || props.current === '/pages/resident/points/index'
   }
   return props.current === path
 }
@@ -55,10 +54,8 @@ const visible = computed(() => {
     || c === '/pages/resident/history/index'
     || c === '/pages/resident/mine/index'
     || c.startsWith('/pages/resident/services')
-    || c === '/pages/resident/activities/index'
     || c === '/pages/resident/repairs/index'
     || c === '/pages/resident/policies/index'
-    || c === '/pages/resident/points/index'
 })
 
 function go(path: string) {
