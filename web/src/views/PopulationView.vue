@@ -148,15 +148,15 @@
                 <!-- 特殊人群勾选 -->
                 <el-checkbox v-if="isKey(f, 'specialPopulation')" v-model="form.specialPopulation"
                              :true-value="1" :false-value="0" @change="onSpecialChange">是特殊人群</el-checkbox>
-                <!-- 特殊人群类型（勾选后显示，支持自定义） -->
+                <!-- 特殊人群类型（勾选后显示；自定义...为显式入口） -->
                 <template v-else-if="isKey(f, 'specialPopulationType') && form.specialPopulation == 1">
                   <el-select v-if="!customEditing['specialPopulationType']"
-                             :model-value="form.specialPopulationType" placeholder="请选择" style="width:100%;"
+                             :model-value="form.specialPopulationType" placeholder="请选择" clearable style="width:100%;"
                              @update:model-value="onTypeUpdate($event, 'specialPopulationType')">
                     <el-option v-for="opt in selectOptions(f)" :key="opt.value" :label="opt.label" :value="opt.value" />
                   </el-select>
                   <div v-else style="display:flex;gap:6px;align-items:center;">
-                    <el-input v-model="form.specialPopulationType" placeholder="请输入特殊人群类型" style="flex:1;" />
+                    <el-input v-model="form.specialPopulationType" placeholder="请输入特殊人群类型" style="flex:1;" @keyup.enter="confirmCustom('specialPopulationType')" />
                     <el-button style="height:42px;flex-shrink:0;" @click="confirmCustom('specialPopulationType')">确定</el-button>
                   </div>
                 </template>
@@ -167,15 +167,15 @@
                 <!-- 出生日期 -->
                 <el-date-picker v-else-if="f.fieldType === 'date'" v-model="form.birthday" type="date"
                                 value-format="YYYY-MM-DD" placeholder="选择出生日期" style="width:100%;" @change="autoFillAge" />
-                <!-- 与户主关系（支持自定义） -->
+                <!-- 与户主关系（自定义...为显式入口） -->
                 <template v-else-if="isKey(f, 'relation')">
                   <el-select v-if="!customEditing['relation']"
-                             :model-value="form.relation" placeholder="请选择" style="width:100%;"
+                             :model-value="form.relation" placeholder="请选择" clearable style="width:100%;"
                              @update:model-value="onTypeUpdate($event, 'relation')">
                     <el-option v-for="opt in selectOptions(f)" :key="opt.value" :label="opt.label" :value="opt.value" />
                   </el-select>
                   <div v-else style="display:flex;gap:6px;align-items:center;">
-                    <el-input v-model="form.relation" :placeholder="'请输入' + f.fieldLabel" style="flex:1;" />
+                    <el-input v-model="form.relation" :placeholder="'请输入' + f.fieldLabel" style="flex:1;" @keyup.enter="confirmCustom('relation')" />
                     <el-button style="height:42px;flex-shrink:0;" @click="confirmCustom('relation')">确定</el-button>
                   </div>
                 </template>
@@ -375,7 +375,7 @@ function selectOptions(f: any) {
   return []
 }
 
-// 自定义...转内联输入（不落 __custom__ 值）
+// 自定义...转内联输入（拦截哨兵值，不落 v-model）
 const customEditing = reactive<Record<string, boolean>>({})
 function onTypeUpdate(v: any, field: 'specialPopulationType' | 'relation') {
   if (v === '__custom__') {
@@ -386,10 +386,15 @@ function onTypeUpdate(v: any, field: 'specialPopulationType' | 'relation') {
   }
 }
 
-// 自定义确认：非空才退出编辑态
+// 自定义确认：非空且非哨兵值才退出
 function confirmCustom(field: 'specialPopulationType' | 'relation') {
-  if (!String(form.value[field] || '').trim()) {
+  const v = String(form.value[field] || '').trim()
+  if (!v) {
     showMessage(`请填写${field === 'specialPopulationType' ? '特殊人群类型' : '与户主关系'}`, 'warning')
+    return
+  }
+  if (v === '__custom__') {
+    showMessage('请勿输入保留字', 'warning')
     return
   }
   customEditing[field] = false
