@@ -99,7 +99,8 @@ public class AssessmentController {
     }
 
     /**
-     * 网格员效能考核
+     * 网格员效能考核：仅统计网格员（cmn_org_member.member_type='GRID_WORKER'），
+     * 账号列展示为所属网格名称（gridName）
      */
     @GetMapping("/worker-performance")
     public ApiResponse<List<Map<String, Object>>> workerPerformance() {
@@ -108,15 +109,17 @@ public class AssessmentController {
                 "SELECT " +
                 "  u.id as userId, " +
                 "  u.real_name as realName, " +
-                "  u.username, " +
+                "  COALESCE(g.grid_name, '未分配网格') as gridName, " +
                 "  COUNT(DISTINCT wo.id) as totalOrders, " +
                 "  SUM(CASE WHEN wo.status = 'COMPLETED' THEN 1 ELSE 0 END) as completedOrders, " +
                 "  SUM(CASE WHEN wo.status = 'PROCESSING' THEN 1 ELSE 0 END) as processingOrders, " +
                 "  ROUND(SUM(CASE WHEN wo.status = 'COMPLETED' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(DISTINCT wo.id), 0), 1) as completionRate " +
                 "FROM sys_user u " +
+                "JOIN cmn_org_member om ON om.sys_user_id = u.id AND om.member_type = 'GRID_WORKER' AND om.status = 'ACTIVE' " +
+                "LEFT JOIN cmn_grid g ON g.id = om.grid_id " +
                 "LEFT JOIN biz_work_order wo ON wo.assignee_user_id = u.id " +
                 "WHERE u.status = 'ACTIVE' " +
-                "GROUP BY u.id, u.real_name, u.username " +
+                "GROUP BY u.id, u.real_name, g.grid_name " +
                 "ORDER BY completedOrders DESC");
         return ApiResponse.ok(result);
     }
