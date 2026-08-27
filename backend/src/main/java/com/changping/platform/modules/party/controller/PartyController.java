@@ -45,11 +45,13 @@ public class PartyController {
         Long householdCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_party_household", Long.class);
         Long activityCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_volunteer_activity", Long.class);
         Long meetingCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_party_meeting", Long.class);
+        Long branchCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_party_branch WHERE status = 'ACTIVE'", Long.class);
 
         result.put("memberCount", memberCount != null ? memberCount : 0);
         result.put("householdCount", householdCount != null ? householdCount : 0);
         result.put("activityCount", activityCount != null ? activityCount : 0);
         result.put("meetingCount", meetingCount != null ? meetingCount : 0);
+        result.put("branchCount", branchCount != null ? branchCount : 0);
 
         // 志愿服务活动统计
         Long plannedActivities = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_volunteer_activity WHERE status = 'PLANNED'", Long.class);
@@ -505,6 +507,306 @@ public class PartyController {
 
         Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_party_assessment WHERE assessment_month = ?", Long.class, month);
         return ApiResponse.ok(count != null ? count.intValue() : 0);
+    }
+
+    // ==================== 党支部管理 V101 ====================
+
+    /**
+     * 党支部列表（支持按名称模糊搜索）
+     */
+    @GetMapping("/branches")
+    public ApiResponse<List<Map<String, Object>>> listBranches(@RequestParam(required = false) String keyword) {
+        requirePartyViewPermission();
+        StringBuilder sql = new StringBuilder(
+            "SELECT b.*, g.grid_name as gridName, " +
+            "  u.real_name as secretaryName, " +
+            "  (SELECT COUNT(*) FROM sys_party_branch_member m WHERE m.branch_id = b.id) AS memberCount, " +
+            "  (SELECT COUNT(*) FROM sys_party_branch_member m WHERE m.branch_id = b.id AND m.role = 'SECRETARY') AS hasSecretary " +
+            "FROM sys_party_branch b " +
+            "LEFT JOIN cmn_grid g ON g.id = b.grid_id " +
+            "LEFT JOIN sys_party_branch_member sm ON sm.branch_id = b.id AND sm.role = 'SECRETARY' " +
+            "LEFT JOIN sys_party_member pm ON pm.id = sm.party_member_id " +
+            "LEFT JOIN sys_user u ON u.id = pm.user_id " +
+            "WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append(" AND b.branch_name LIKE ?");
+            params.add("%" + keyword.trim() + "%");
+        }
+        sql.append(" ORDER BY b.id ASC");
+        return ApiResponse.ok(jdbcTemplate.queryForList(sql.toString(), params.toArray()));
+    }
+
+    /**
+     * 党支部详情（含书记、成员列表）
+     */
+    @GetMapping("/branches/{id}")
+    public ApiResponse<Map<String, Object>> getBranchDetail(@PathVariable Long id) {
+        requirePartyViewPermission();
+        Map<String, Object> branch = jdbcTemplate.queryForMap(
+            "SELECT b.*, g.grid_name as gridName, " +
+            "  u.real_name as secretaryName " +
+            "FROM sys_party_branch b " +
+            "LEFT JOIN cmn_grid g ON g.id = b.grid_id " +
+            "LEFT JOIN sys_party_branch_member sm ON sm.branch_id = b.id AND sm.role = 'SECRETARY' " +
+            "LEFT JOIN sys_party_member pm ON pm.id = sm.party_member_id " +
+            "LEFT JOIN sys_user u ON u.id = pm.user_id " +
+            "WHERE b.id = ?", id);
+
+        List<Map<String, Object>> members = jdbcTemplate.queryForList(
+            "SELECT m.id as relId, m.role, m.joined_date AS joinedDate, " +
+            "  pm.id AS memberId, u.real_name AS memberName, u.username AS memberAccount, " +
+            "  pm.join_date AS partyJoinDate " +
+            "FROM sys_party_branch_member m " +
+            "JOIN sys_party_member pm ON pm.id = m.party_member_id " +
+            "JOIN sys_user u ON u.id = pm.user_id " +
+            "WHERE m.branch_id = ? " +
+            "ORDER BY (m.role='SECRETARY') DESC, m.id ASC", id);
+
+        List<Map<String, Object>> availableMembers = jdbcTemplate.queryForList(
+            "SELECT pm.id AS memberId, u.real_name AS memberName, u.username AS memberAccount, " +
+            "  pm.party_branch AS currentBranch, pm.status " +
+            "FROM sys_party_member pm " +
+            "JOIN sys_user u ON u.id = pm.user_id " +
+            "WHERE pm.status = 'ACTIVE' " +
+            "  AND pm.id NOT IN (SELECT party_member_id FROM sys_party_branch_member WHERE branch_id = ?) " +
+            "ORDER BY u.real_name", id);
+
+        Map<String, Object> result = new HashMap<>(branch);
+        result.put("members", members);
+        result.put("availableMembers", availableMembers);
+        return ApiResponse.ok(result);
+    }
+
+    /**
+     * 创建党支部（以党支部名称为必填）
+     */
+    @PostMapping("/branches")
+    public ApiResponse<Long> createBranch(@RequestBody Map<String, Object> body) {
+        requirePartyManagePermission();
+        String name = (String) body.get("branchName");
+        if (name == null || name.trim().isEmpty()) {
+            throw new BusinessException("VALIDATION_ERROR", "党支部名称必填");
+        }
+        Long exists = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM sys_party_branch WHERE branch_name = ?", Long.class, name.trim());
+        if (exists != null && exists > 0) {
+            throw new BusinessException("VALIDATION_ERROR", "党支部名称已存在：" + name);
+        }
+        jdbcTemplate.update(
+            "INSERT INTO sys_party_branch (branch_name, secretary_member_id, grid_id, address, phone, establish_date, remark, status) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE(?, 'ACTIVE'))",
+            name.trim(),
+            toLong(body.get("secretaryMemberId")),
+            toLong(body.get("gridId")),
+            body.get("address"),
+            body.get("phone"),
+            body.get("establishDate"),
+            body.get("remark"),
+            body.get("status"));
+        Long id = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+
+        // 如果指定了书记，直接写入支部-党员关联
+        Long secretaryMemberId = toLong(body.get("secretaryMemberId"));
+        if (secretaryMemberId != null && id != null) {
+            jdbcTemplate.update(
+                "INSERT INTO sys_party_branch_member (branch_id, party_member_id, role, joined_date) VALUES (?, ?, 'SECRETARY', COALESCE(?, CURDATE())) " +
+                "ON DUPLICATE KEY UPDATE role = 'SECRETARY', joined_date = VALUES(joined_date)",
+                id, secretaryMemberId, body.get("establishDate"));
+            jdbcTemplate.update("UPDATE sys_party_branch SET secretary_member_id = ? WHERE id = ?", secretaryMemberId, id);
+        }
+        return ApiResponse.ok(id);
+    }
+
+    /**
+     * 更新党支部
+     */
+    @PutMapping("/branches/{id}")
+    public ApiResponse<Boolean> updateBranch(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        requirePartyManagePermission();
+        String name = (String) body.get("branchName");
+        if (name == null || name.trim().isEmpty()) {
+            throw new BusinessException("VALIDATION_ERROR", "党支部名称必填");
+        }
+        // 名称唯一性校验（排除自身）
+        Long exists = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM sys_party_branch WHERE branch_name = ? AND id <> ?",
+            Long.class, name.trim(), id);
+        if (exists != null && exists > 0) {
+            throw new BusinessException("VALIDATION_ERROR", "党支部名称已存在：" + name);
+        }
+        jdbcTemplate.update(
+            "UPDATE sys_party_branch SET branch_name = ?, grid_id = ?, address = ?, phone = ?, establish_date = ?, remark = ?, status = ?, updated_at = NOW() " +
+            "WHERE id = ?",
+            name.trim(),
+            toLong(body.get("gridId")),
+            body.get("address"),
+            body.get("phone"),
+            body.get("establishDate"),
+            body.get("remark"),
+            body.get("status"),
+            id);
+
+        // 同步书记变动
+        Long newSecretaryId = toLong(body.get("secretaryMemberId"));
+        // 1) 清掉旧书记标记
+        jdbcTemplate.update("UPDATE sys_party_branch_member SET role = 'MEMBER' WHERE branch_id = ? AND role = 'SECRETARY'", id);
+        // 2) 新任书记
+        if (newSecretaryId != null) {
+            jdbcTemplate.update(
+                "INSERT INTO sys_party_branch_member (branch_id, party_member_id, role, joined_date) VALUES (?, ?, 'SECRETARY', CURDATE()) " +
+                "ON DUPLICATE KEY UPDATE role = 'SECRETARY'",
+                id, newSecretaryId);
+            jdbcTemplate.update("UPDATE sys_party_branch SET secretary_member_id = ?, updated_at = NOW() WHERE id = ?", newSecretaryId, id);
+        } else {
+            jdbcTemplate.update("UPDATE sys_party_branch SET secretary_member_id = NULL, updated_at = NOW() WHERE id = ?", id);
+        }
+        return ApiResponse.ok(true);
+    }
+
+    /**
+     * 删除党支部（同时移除支部-党员关联）
+     */
+    @DeleteMapping("/branches/{id}")
+    public ApiResponse<Boolean> deleteBranch(@PathVariable Long id) {
+        requirePartyManagePermission();
+        jdbcTemplate.update("DELETE FROM sys_party_branch_member WHERE branch_id = ?", id);
+        jdbcTemplate.update("DELETE FROM sys_party_branch WHERE id = ?", id);
+        return ApiResponse.ok(true);
+    }
+
+    /**
+     * 导入党支部（批量以名称创建，已存在的跳过）
+     * body.branches: [{ branchName, gridId?, secretaryMemberId?, address?, phone?, establishDate?, remark? }]
+     * 返回 { created: N, skipped: N, total: N, errors: [...] }
+     */
+    @PostMapping("/branches/import")
+    public ApiResponse<Map<String, Object>> importBranches(@RequestBody Map<String, Object> body) {
+        requirePartyManagePermission();
+        Object raw = body.get("branches");
+        if (!(raw instanceof List)) {
+            throw new BusinessException("VALIDATION_ERROR", "缺少导入数据 branches");
+        }
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> list = (List<Map<String, Object>>) raw;
+        int created = 0, skipped = 0;
+        List<String> errors = new ArrayList<>();
+        for (int i = 0; i < list.size(); i++) {
+            Map<String, Object> row = list.get(i);
+            String name = row.get("branchName") != null ? row.get("branchName").toString().trim() : "";
+            if (name.isEmpty()) {
+                errors.add("第" + (i + 1) + "行：党支部名称为空，已跳过");
+                skipped++;
+                continue;
+            }
+            try {
+                Long exists = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys_party_branch WHERE branch_name = ?", Long.class, name);
+                if (exists != null && exists > 0) {
+                    skipped++;
+                    continue;
+                }
+                jdbcTemplate.update(
+                    "INSERT INTO sys_party_branch (branch_name, grid_id, address, phone, establish_date, remark, status) VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')",
+                    name, toLong(row.get("gridId")), row.get("address"), row.get("phone"),
+                    row.get("establishDate"), row.get("remark"));
+                Long newId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+                Long secId = toLong(row.get("secretaryMemberId"));
+                if (secId != null && newId != null) {
+                    jdbcTemplate.update(
+                        "INSERT INTO sys_party_branch_member (branch_id, party_member_id, role, joined_date) VALUES (?, ?, 'SECRETARY', CURDATE()) " +
+                        "ON DUPLICATE KEY UPDATE role = 'SECRETARY'",
+                        newId, secId);
+                    jdbcTemplate.update("UPDATE sys_party_branch SET secretary_member_id = ? WHERE id = ?", secId, newId);
+                }
+                created++;
+            } catch (Exception e) {
+                errors.add("第" + (i + 1) + "行（" + name + "）：" + e.getMessage());
+                skipped++;
+            }
+        }
+        Map<String, Object> res = new HashMap<>();
+        res.put("total", list.size());
+        res.put("created", created);
+        res.put("skipped", skipped);
+        res.put("errors", errors);
+        return ApiResponse.ok(res);
+    }
+
+    /**
+     * 向党支部添加党员（指定角色：SECRETARY / MEMBER）
+     */
+    @PostMapping("/branches/{id}/members")
+    public ApiResponse<Boolean> addBranchMember(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        requirePartyManagePermission();
+        Long memberId = toLong(body.get("memberId"));
+        if (memberId == null) throw new BusinessException("VALIDATION_ERROR", "请选择党员");
+        String role = body.get("role") != null ? body.get("role").toString().toUpperCase() : "MEMBER";
+        if (!"SECRETARY".equals(role) && !"MEMBER".equals(role)) {
+            throw new BusinessException("VALIDATION_ERROR", "角色仅支持 SECRETARY 或 MEMBER");
+        }
+        // 如果要设为书记，先把现有书记降为成员（避免双书记）
+        if ("SECRETARY".equals(role)) {
+            jdbcTemplate.update("UPDATE sys_party_branch_member SET role = 'MEMBER' WHERE branch_id = ? AND role = 'SECRETARY'", id);
+        }
+        jdbcTemplate.update(
+            "INSERT INTO sys_party_branch_member (branch_id, party_member_id, role, joined_date) VALUES (?, ?, ?, CURDATE()) " +
+            "ON DUPLICATE KEY UPDATE role = VALUES(role)",
+            id, memberId, role);
+        // 同步支部表的 secretary_member_id 字段
+        if ("SECRETARY".equals(role)) {
+            jdbcTemplate.update("UPDATE sys_party_branch SET secretary_member_id = ?, updated_at = NOW() WHERE id = ?", memberId, id);
+        } else {
+            // 如果被降级的那位正好是主记录书记，清除
+            Long curSec = jdbcTemplate.queryForObject(
+                "SELECT secretary_member_id FROM sys_party_branch WHERE id = ?", Long.class, id);
+            if (curSec != null) {
+                Long stillSecretary = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys_party_branch_member WHERE branch_id = ? AND party_member_id = ? AND role = 'SECRETARY'",
+                    Long.class, id, curSec);
+                if (stillSecretary == null || stillSecretary == 0) {
+                    jdbcTemplate.update("UPDATE sys_party_branch SET secretary_member_id = NULL, updated_at = NOW() WHERE id = ?", id);
+                }
+            }
+        }
+        return ApiResponse.ok(true);
+    }
+
+    /**
+     * 从党支部移除党员
+     */
+    @DeleteMapping("/branches/{id}/members/{memberId}")
+    public ApiResponse<Boolean> removeBranchMember(@PathVariable Long id, @PathVariable Long memberId) {
+        requirePartyManagePermission();
+        jdbcTemplate.update("DELETE FROM sys_party_branch_member WHERE branch_id = ? AND party_member_id = ?", id, memberId);
+        // 如果删除的是书记，清理支部主记录引用
+        Long curSec = jdbcTemplate.queryForObject(
+            "SELECT secretary_member_id FROM sys_party_branch WHERE id = ?", Long.class, id);
+        if (curSec != null && curSec.equals(memberId)) {
+            jdbcTemplate.update("UPDATE sys_party_branch SET secretary_member_id = NULL, updated_at = NOW() WHERE id = ?", id);
+        }
+        return ApiResponse.ok(true);
+    }
+
+    /**
+     * 未归属支部的在册党员列表（添加人员到支部时下拉选择）
+     */
+    @GetMapping("/members/available")
+    public ApiResponse<List<Map<String, Object>>> availableMembers(@RequestParam(required = false) Long excludeBranchId) {
+        requirePartyViewPermission();
+        StringBuilder sql = new StringBuilder(
+            "SELECT pm.id AS memberId, u.real_name AS memberName, u.username AS memberAccount, " +
+            "  pm.party_branch AS currentBranch, pm.status, pm.join_date AS joinDate " +
+            "FROM sys_party_member pm " +
+            "JOIN sys_user u ON u.id = pm.user_id " +
+            "WHERE pm.status = 'ACTIVE'");
+        List<Object> params = new ArrayList<>();
+        if (excludeBranchId != null) {
+            sql.append(" AND pm.id NOT IN (SELECT party_member_id FROM sys_party_branch_member WHERE branch_id = ?)");
+            params.add(excludeBranchId);
+        }
+        sql.append(" ORDER BY u.real_name");
+        return ApiResponse.ok(jdbcTemplate.queryForList(sql.toString(), params.toArray()));
     }
 
     private void requirePartyViewPermission() {
