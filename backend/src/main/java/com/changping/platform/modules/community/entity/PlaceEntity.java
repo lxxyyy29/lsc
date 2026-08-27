@@ -21,6 +21,9 @@ public class PlaceEntity {
 
     private String placeType;
 
+    /** 经营类别（台账来源 cmn_place_ledger.extra_data.place_type） */
+    private String businessCategory;
+
     private String address;
 
     private String contactName;

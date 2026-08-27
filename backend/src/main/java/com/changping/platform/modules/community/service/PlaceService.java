@@ -4,7 +4,8 @@ import com.changping.platform.modules.community.entity.PlaceEntity;
 import java.util.List;
 
 public interface PlaceService {
-    List<PlaceEntity> list(Long gridId);
+    List<PlaceEntity> list(Long gridId, String keyword, String placeType, String businessCategory);
+    List<String> listBusinessCategories();
     PlaceEntity detail(Long id);
     boolean create(PlaceEntity entity);
     boolean update(PlaceEntity entity);

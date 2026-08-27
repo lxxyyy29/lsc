@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class PlaceServiceImpl implements PlaceService {
@@ -24,17 +25,19 @@ public class PlaceServiceImpl implements PlaceService {
     }
 
     @Override
-    public List<PlaceEntity> list(Long gridId) {
+    public List<PlaceEntity> list(Long gridId, String keyword, String placeType, String businessCategory) {
         List<PlaceEntity> result = new ArrayList<>(gridId != null ? mapper.findByGridId(gridId) : mapper.findAllActive());
         // 场所资源库同时展示场所台账（cmn_place_ledger）导入的真实数据，避免台账与资源库数据割裂
         if (gridId == null) {
             List<Map<String, Object>> ledgerRows = jdbcTemplate.queryForList(
-                    "SELECT place_name, place_category, address, responsible_person, responsible_phone "
-                            + "FROM cmn_place_ledger ORDER BY id");
+                    "SELECT place_name, place_category, address, responsible_person, responsible_phone, " +
+                    "JSON_UNQUOTE(JSON_EXTRACT(extra_data, '$.place_type')) AS business_category " +
+                    "FROM cmn_place_ledger ORDER BY id");
             for (Map<String, Object> row : ledgerRows) {
                 PlaceEntity e = new PlaceEntity();
                 e.setPlaceName((String) row.get("place_name"));
                 e.setPlaceType(categoryLabel((String) row.get("place_category")));
+                e.setBusinessCategory(trimToNull((String) row.get("business_category")));
                 e.setAddress((String) row.get("address"));
                 e.setContactName((String) row.get("responsible_person"));
                 e.setContactPhone((String) row.get("responsible_phone"));
@@ -46,7 +49,44 @@ public class PlaceServiceImpl implements PlaceService {
         for (PlaceEntity e : result) {
             e.setRiskTags(jsonToRiskTags(e.getRiskTags()));
         }
-        return result;
+        // 关键词 / 场所类型 / 经营类别 筛选（资源库与台账数据统一过滤）
+        return result.stream()
+                .filter(e -> keyword == null || keyword.isBlank()
+                        || contains(e.getPlaceName(), keyword)
+                        || contains(e.getAddress(), keyword)
+                        || contains(e.getContactName(), keyword))
+                .filter(e -> placeType == null || placeType.isBlank() || placeType.equals(e.getPlaceType()))
+                .filter(e -> businessCategory == null || businessCategory.isBlank() || businessCategory.equals(e.getBusinessCategory()))
+                .toList();
+    }
+
+    /**
+     * 经营类别下拉选项：取台账 extra_data.place_type 去重（剔除空值/纯空白）
+     */
+    @Override
+    public List<String> listBusinessCategories() {
+        List<String> categories = jdbcTemplate.queryForList(
+                "SELECT DISTINCT JSON_UNQUOTE(JSON_EXTRACT(extra_data, '$.place_type')) " +
+                "FROM cmn_place_ledger WHERE extra_data IS NOT NULL " +
+                "AND JSON_UNQUOTE(JSON_EXTRACT(extra_data, '$.place_type')) IS NOT NULL " +
+                "AND TRIM(JSON_UNQUOTE(JSON_EXTRACT(extra_data, '$.place_type'))) <> ''",
+                String.class);
+        return categories.stream()
+                .map(this::trimToNull)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
+    private String trimToNull(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    private boolean contains(String value, String keyword) {
+        return value != null && value.contains(keyword);
     }
 
     /** 台账场所分类代码 → 中文展示名 */

@@ -17,6 +17,7 @@ public class PlaceMapper {
         e.setGridId(rs.getLong("grid_id"));
         e.setPlaceName(rs.getString("place_name"));
         e.setPlaceType(rs.getString("place_type"));
+        e.setBusinessCategory(rs.getString("business_category"));
         e.setAddress(rs.getString("address"));
         e.setContactName(rs.getString("contact_name"));
         e.setContactPhone(rs.getString("contact_phone"));
@@ -43,15 +44,15 @@ public class PlaceMapper {
         return jdbcTemplate.queryForObject("SELECT * FROM cmn_place WHERE id = ?", ROW_MAPPER, id);
     }
     public Long insert(PlaceEntity e) {
-        String sql = "INSERT INTO cmn_place (grid_id, place_name, place_type, address, contact_name, contact_phone, fire_facilities, risk_tags, longitude, latitude, status, remark, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())";
-        jdbcTemplate.update(sql, e.getGridId(), e.getPlaceName(), e.getPlaceType(), e.getAddress(),
+        String sql = "INSERT INTO cmn_place (grid_id, place_name, place_type, business_category, address, contact_name, contact_phone, fire_facilities, risk_tags, longitude, latitude, status, remark, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())";
+        jdbcTemplate.update(sql, e.getGridId(), e.getPlaceName(), e.getPlaceType(), e.getBusinessCategory(), e.getAddress(),
                 e.getContactName(), e.getContactPhone(), e.getFireFacilities(), e.getRiskTags(),
                 e.getLongitude(), e.getLatitude(), e.getStatus(), e.getRemark());
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
     }
     public int update(PlaceEntity e) {
-        String sql = "UPDATE cmn_place SET grid_id=?, place_name=?, place_type=?, address=?, contact_name=?, contact_phone=?, fire_facilities=?, risk_tags=?, longitude=?, latitude=?, status=?, remark=?, updated_at=NOW() WHERE id=?";
-        return jdbcTemplate.update(sql, e.getGridId(), e.getPlaceName(), e.getPlaceType(), e.getAddress(),
+        String sql = "UPDATE cmn_place SET grid_id=?, place_name=?, place_type=?, business_category=?, address=?, contact_name=?, contact_phone=?, fire_facilities=?, risk_tags=?, longitude=?, latitude=?, status=?, remark=?, updated_at=NOW() WHERE id=?";
+        return jdbcTemplate.update(sql, e.getGridId(), e.getPlaceName(), e.getPlaceType(), e.getBusinessCategory(), e.getAddress(),
                 e.getContactName(), e.getContactPhone(), e.getFireFacilities(), e.getRiskTags(),
                 e.getLongitude(), e.getLatitude(), e.getStatus(), e.getRemark(), e.getId());
     }

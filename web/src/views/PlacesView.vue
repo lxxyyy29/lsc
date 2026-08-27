@@ -15,6 +15,24 @@
       </div>
     </div>
     <div class="card">
+      <!-- 筛选栏 -->
+      <div class="filter-bar" style="margin-bottom:16px;flex-wrap:wrap;">
+        <input v-model="filterKeyword" class="form-input" placeholder="搜索名称/地址/联系人" style="width:220px;" @keyup.enter="fetchData" />
+        <select v-model="filterType" class="filter-select" @change="fetchData">
+          <option value="">全部场所类型</option>
+          <option v-for="t in placeTypes" :key="t" :value="t">{{ t }}</option>
+        </select>
+        <select v-model="filterCategory" class="filter-select" @change="fetchData">
+          <option value="">全部经营类别</option>
+          <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+        </select>
+        <button @click="fetchData" class="filter-action ghost">
+          <i class="fas fa-search"></i> 查询
+        </button>
+        <button @click="resetFilters" class="filter-action ghost" style="border-color:#d1d5db;">
+          <i class="fas fa-undo"></i> 重置
+        </button>
+      </div>
       <div v-if="loading" style="text-align:center;padding:40px;color:#9ca3af;">
         <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
         <p style="margin-top:12px;font-size:13px;">加载中...</p>
@@ -26,11 +44,12 @@
       </div>
       <template v-else>
         <table class="table">
-          <thead><tr><th>名称</th><th>类型</th><th>地址</th><th>联系人</th><th>电话</th><th>操作</th></tr></thead>
+          <thead><tr><th>名称</th><th>类型</th><th>经营类别</th><th>地址</th><th>联系人</th><th>电话</th><th>操作</th></tr></thead>
           <tbody>
             <tr v-for="(p, idx) in list" :key="p.id || ('ledger-' + idx)">
               <td>{{ p.placeName }}</td>
               <td><span class="tag tag-blue">{{ p.placeType || '-' }}</span></td>
+              <td><span v-if="p.businessCategory" class="tag tag-green">{{ p.businessCategory }}</span><span v-else>-</span></td>
               <td>{{ p.address || '-' }}</td>
               <td>{{ p.contactName || '-' }}</td>
               <td>{{ p.contactPhone || '-' }}</td>
@@ -62,6 +81,13 @@
             <select v-model="form.placeType" class="form-select">
               <option value="">请选择</option>
               <option v-for="t in placeTypes" :key="t" :value="t">{{ t }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">经营类别</label>
+            <select v-model="form.businessCategory" class="form-select">
+              <option value="">请选择</option>
+              <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
             </select>
           </div>
           <div class="form-group">
@@ -120,15 +146,20 @@ const placeTypes = ['出租屋', '小档口', '小娱乐场所', '小作坊', '�
 
 const list = ref<any[]>([])
 const grids = ref<any[]>([])
+const categories = ref<string[]>([])
 const loading = ref(true)
 const error = ref('')
 const saving = ref(false)
 const showImport = ref(false)
 const showForm = ref(false)
+// 筛选条件
+const filterKeyword = ref('')
+const filterType = ref('')
+const filterCategory = ref('')
 
 const emptyForm = () => ({
   id: null as number | null,
-  placeName: '', placeType: '', address: '',
+  placeName: '', placeType: '', businessCategory: '', address: '',
   contactName: '', contactPhone: '',
   fireFacilities: '', riskTags: '',
   gridId: null as number | null, remark: '',
@@ -140,12 +171,29 @@ async function fetchData() {
   loading.value = true
   error.value = ''
   try {
-    list.value = await http.get('/community/places') || []
+    const params: any = {}
+    if (filterKeyword.value.trim()) params.keyword = filterKeyword.value.trim()
+    if (filterType.value) params.placeType = filterType.value
+    if (filterCategory.value) params.businessCategory = filterCategory.value
+    list.value = await http.get('/community/places', { params }) || []
   } catch(e: any) {
     error.value = e?.message || '加载失败，请稍后重试'
   } finally {
     loading.value = false
   }
+}
+
+function resetFilters() {
+  filterKeyword.value = ''
+  filterType.value = ''
+  filterCategory.value = ''
+  fetchData()
+}
+
+async function fetchCategories() {
+  try {
+    categories.value = await http.get('/community/places/categories') || []
+  } catch(e) {}
 }
 
 async function fetchGrids() {
@@ -171,7 +219,7 @@ function openCreate() {
 function openEdit(p: any) {
   form.value = {
     id: p.id,
-    placeName: p.placeName || '', placeType: p.placeType || '', address: p.address || '',
+    placeName: p.placeName || '', placeType: p.placeType || '', businessCategory: p.businessCategory || '', address: p.address || '',
     contactName: p.contactName || '', contactPhone: p.contactPhone || '',
     fireFacilities: p.fireFacilities || '', riskTags: p.riskTags || '',
     gridId: p.gridId || null, remark: p.remark || '',
@@ -216,5 +264,6 @@ async function handleDelete(p: any) {
 onMounted(() => {
   fetchData()
   fetchGrids()
+  fetchCategories()
 })
 </script>

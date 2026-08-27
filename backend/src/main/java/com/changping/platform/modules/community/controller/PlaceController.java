@@ -25,9 +25,18 @@ public class PlaceController {
     }
 
     @GetMapping
-    public ApiResponse<List<PlaceEntity>> list(@RequestParam(required = false) Long gridId) {
+    public ApiResponse<List<PlaceEntity>> list(@RequestParam(required = false) Long gridId,
+                                               @RequestParam(required = false) String keyword,
+                                               @RequestParam(required = false) String placeType,
+                                               @RequestParam(required = false) String businessCategory) {
         requirePlacePermission();
-        return ApiResponse.ok(service.list(gridId));
+        return ApiResponse.ok(service.list(gridId, keyword, placeType, businessCategory));
+    }
+    /** 经营类别下拉选项（从台账提取去重） */
+    @GetMapping("/categories")
+    public ApiResponse<List<String>> categories() {
+        requirePlacePermission();
+        return ApiResponse.ok(service.listBusinessCategories());
     }
     @GetMapping("/{id}")
     public ApiResponse<PlaceEntity> detail(@PathVariable Long id) {
