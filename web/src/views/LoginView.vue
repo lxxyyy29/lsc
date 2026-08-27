@@ -169,8 +169,6 @@ function switchMode(m: 'login' | 'register') {
   regOk.value = false
 }
 
-const emit = defineEmits(['success'])
-
 async function handleLogin() {
   if (!form.account.trim()) {
     error.value = '请输入账号'
@@ -185,7 +183,6 @@ async function handleLogin() {
   error.value = ''
   try {
     await login(form.account, form.password)
-    emit('success')
     // 跳转到该用户第一个有权限的菜单（避免无看板权限的角色落在 / 上）
     router.push(firstVisiblePath(getSession()))
   } catch (e: any) {
