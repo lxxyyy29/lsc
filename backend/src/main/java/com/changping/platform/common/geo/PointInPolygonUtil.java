@@ -1,4 +1,4 @@
-﻿package com.changping.platform.common.geo;
+package com.changping.platform.common.geo;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

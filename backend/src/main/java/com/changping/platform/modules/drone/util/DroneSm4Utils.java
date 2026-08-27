@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.drone.util;
+package com.changping.platform.modules.drone.util;
 
 import com.changping.platform.modules.drone.exception.DroneApiException;
 import java.nio.charset.StandardCharsets;

@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.event.service;
+package com.changping.platform.modules.event.service;
 
 import com.changping.platform.common.response.PagedResult;
 import com.changping.platform.modules.event.dto.CreateEventRequest;

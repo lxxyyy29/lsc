@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.drone;
+package com.changping.platform.modules.drone;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;

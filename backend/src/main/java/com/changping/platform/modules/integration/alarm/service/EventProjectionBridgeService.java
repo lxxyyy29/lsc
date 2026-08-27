@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.integration.alarm.service;
+package com.changping.platform.modules.integration.alarm.service;
 
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.changping.platform.modules.biz.service.BizManagementService;

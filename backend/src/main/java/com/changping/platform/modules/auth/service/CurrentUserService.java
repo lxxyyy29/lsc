@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.auth.service;
+package com.changping.platform.modules.auth.service;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.auth.model.AuthenticatedUser;

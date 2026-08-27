@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.event.service;
+package com.changping.platform.modules.event.service;
 
 import java.time.LocalDateTime;
 

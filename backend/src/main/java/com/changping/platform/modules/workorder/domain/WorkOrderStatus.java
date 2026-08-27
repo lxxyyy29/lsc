@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.workorder.domain;
+package com.changping.platform.modules.workorder.domain;
 
 /**
  * @Author lxy

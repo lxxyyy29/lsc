@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.audit.entity;
+package com.changping.platform.modules.audit.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

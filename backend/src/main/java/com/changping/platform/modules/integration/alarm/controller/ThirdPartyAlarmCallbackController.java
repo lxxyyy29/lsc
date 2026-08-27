@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.integration.alarm.controller;
+package com.changping.platform.modules.integration.alarm.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.integration.alarm.dto.ThirdPartyAlarmIngestResult;

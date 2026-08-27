@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.process.domain;
+package com.changping.platform.modules.process.domain;
 
 /**
  * @Author lxy

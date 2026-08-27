@@ -1,4 +1,4 @@
-﻿package com.changping.platform.common.security;
+package com.changping.platform.common.security;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.BearerTokenAuthenticationFilter;

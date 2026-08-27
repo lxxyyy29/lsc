@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.process.entity;
+package com.changping.platform.modules.process.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;

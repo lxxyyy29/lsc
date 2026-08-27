@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.drone;
+package com.changping.platform.modules.drone;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.drone.client.DroneApiClient;

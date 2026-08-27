@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.integration.alarm.repository;
+package com.changping.platform.modules.integration.alarm.repository;
 
 import com.changping.platform.modules.integration.alarm.document.AlarmEventDocument;
 import java.util.Collection;

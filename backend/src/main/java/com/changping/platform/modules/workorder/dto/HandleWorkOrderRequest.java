@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.workorder.dto;
+package com.changping.platform.modules.workorder.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

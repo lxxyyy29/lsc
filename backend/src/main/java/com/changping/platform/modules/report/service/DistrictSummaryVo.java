@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.report.service;
+package com.changping.platform.modules.report.service;
 
 /**
  * @Author lxy

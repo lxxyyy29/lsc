@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.integration.alarm.service;
+package com.changping.platform.modules.integration.alarm.service;
 
 import com.changping.platform.modules.event.dto.CreateEventRequest;
 import com.changping.platform.modules.integration.alarm.config.AlarmIntegrationProperties;

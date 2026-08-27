@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.auth.vo;
+package com.changping.platform.modules.auth.vo;
 
 import com.changping.platform.modules.system.service.SystemPermissionService;
 import java.util.List;

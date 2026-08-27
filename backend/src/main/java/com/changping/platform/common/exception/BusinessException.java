@@ -1,4 +1,4 @@
-﻿package com.changping.platform.common.exception;
+package com.changping.platform.common.exception;
 
 /**
  * @Author lxy

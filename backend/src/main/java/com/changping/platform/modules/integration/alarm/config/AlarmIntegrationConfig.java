@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.integration.alarm.config;
+package com.changping.platform.modules.integration.alarm.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;

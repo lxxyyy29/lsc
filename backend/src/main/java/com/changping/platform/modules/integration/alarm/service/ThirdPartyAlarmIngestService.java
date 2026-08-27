@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.integration.alarm.service;
+package com.changping.platform.modules.integration.alarm.service;
 
 import com.changping.platform.modules.drone.service.WaylineAlgoViolationAreaService;
 import com.changping.platform.modules.event.entity.EventEntity;

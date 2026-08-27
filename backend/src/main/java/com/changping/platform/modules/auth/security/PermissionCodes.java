@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.auth.security;
+package com.changping.platform.modules.auth.security;
 
 /**
  * @Author lxy

@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.auth.model;
+package com.changping.platform.modules.auth.model;
 
 import java.util.List;
 

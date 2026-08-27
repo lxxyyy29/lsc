@@ -1,4 +1,4 @@
-﻿package com.changping.platform.common.async;
+package com.changping.platform.common.async;
 
 import jakarta.annotation.PreDestroy;
 import java.util.ArrayList;

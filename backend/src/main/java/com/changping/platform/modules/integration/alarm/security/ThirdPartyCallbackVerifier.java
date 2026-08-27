@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.integration.alarm.security;
+package com.changping.platform.modules.integration.alarm.security;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.integration.alarm.config.AlarmIntegrationProperties;

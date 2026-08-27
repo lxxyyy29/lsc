@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.oss.config;
+package com.changping.platform.modules.oss.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

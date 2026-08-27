@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.qwen;
+package com.changping.platform.modules.qwen;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.PagedResult;

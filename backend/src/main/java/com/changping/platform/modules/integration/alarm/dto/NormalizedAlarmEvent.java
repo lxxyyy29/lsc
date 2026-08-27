@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.integration.alarm.dto;
+package com.changping.platform.modules.integration.alarm.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

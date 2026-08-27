@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.drone.client;
+package com.changping.platform.modules.drone.client;
 
 import com.changping.platform.modules.drone.config.DroneApiProperties;
 import com.changping.platform.modules.drone.exception.DroneApiException;

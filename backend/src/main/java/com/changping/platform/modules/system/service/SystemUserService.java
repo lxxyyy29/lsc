@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.system.service;
+package com.changping.platform.modules.system.service;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.PagedResult;

@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.event.vo;
+package com.changping.platform.modules.event.vo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;

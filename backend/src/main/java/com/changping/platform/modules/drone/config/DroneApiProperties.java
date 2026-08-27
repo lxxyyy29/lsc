@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.drone.config;
+package com.changping.platform.modules.drone.config;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

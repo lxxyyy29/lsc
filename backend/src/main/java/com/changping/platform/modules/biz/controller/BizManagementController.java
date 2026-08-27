@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.biz.controller;
+package com.changping.platform.modules.biz.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.common.response.PagedResult;

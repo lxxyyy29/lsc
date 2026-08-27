@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.workorder.service;
+package com.changping.platform.modules.workorder.service;
 
 import com.changping.platform.modules.workorder.entity.WorkOrderEntity;
 import com.fasterxml.jackson.annotation.JsonProperty;

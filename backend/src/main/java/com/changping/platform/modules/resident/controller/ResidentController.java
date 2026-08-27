@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.resident.controller;
+package com.changping.platform.modules.resident.controller;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.common.response.ApiResponse;

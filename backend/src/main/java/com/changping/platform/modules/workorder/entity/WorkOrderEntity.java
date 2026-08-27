@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.workorder.entity;
+package com.changping.platform.modules.workorder.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

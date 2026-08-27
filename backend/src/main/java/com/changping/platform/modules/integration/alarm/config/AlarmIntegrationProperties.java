@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.integration.alarm.config;
+package com.changping.platform.modules.integration.alarm.config;
 
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;

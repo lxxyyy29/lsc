@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.drone.service;
+package com.changping.platform.modules.drone.service;
 
 import com.changping.platform.common.geo.PointInPolygonUtil;
 import com.changping.platform.modules.drone.entity.WaylineAlgoViolationAreaEntity;

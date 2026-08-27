@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.event.domain;
+package com.changping.platform.modules.event.domain;
 
 /**
  * @Author lxy

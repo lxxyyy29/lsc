@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.event.dto;
+package com.changping.platform.modules.event.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

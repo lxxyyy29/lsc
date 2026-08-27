@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.auth.security;
+package com.changping.platform.modules.auth.security;
 
 import com.changping.platform.modules.auth.model.AuthenticatedUser;
 import java.util.Optional;

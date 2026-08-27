@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.workorder.dto;
+package com.changping.platform.modules.workorder.dto;
 
 /**
  * @Author lxy

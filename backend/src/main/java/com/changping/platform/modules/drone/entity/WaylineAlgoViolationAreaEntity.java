@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.drone.entity;
+package com.changping.platform.modules.drone.entity;
 
 import java.time.LocalDateTime;
 import lombok.Data;

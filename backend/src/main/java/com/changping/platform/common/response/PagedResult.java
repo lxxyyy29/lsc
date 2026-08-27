@@ -1,4 +1,4 @@
-﻿package com.changping.platform.common.response;
+package com.changping.platform.common.response;
 import java.util.List;
 /**
  * @Author lxy

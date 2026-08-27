@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.oss.service.impl;
+package com.changping.platform.modules.oss.service.impl;
 
 import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.oss.config.OssProperties;

@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.drone.config;
+package com.changping.platform.modules.drone.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.client.RestTemplateBuilder;

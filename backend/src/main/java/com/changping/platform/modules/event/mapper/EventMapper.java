@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.event.mapper;
+package com.changping.platform.modules.event.mapper;
 
 import com.changping.platform.modules.event.entity.EventEntity;
 import java.sql.PreparedStatement;

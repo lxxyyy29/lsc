@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.oss.config;
+package com.changping.platform.modules.oss.config;
 
 import io.minio.MinioClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

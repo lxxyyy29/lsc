@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.workorder.controller;
+package com.changping.platform.modules.workorder.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.PermissionCodes;

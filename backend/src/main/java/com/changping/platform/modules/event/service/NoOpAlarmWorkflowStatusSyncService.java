@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.event.service;
+package com.changping.platform.modules.event.service;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Service;

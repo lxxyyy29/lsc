@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.event.service.impl;
+package com.changping.platform.modules.event.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.changping.platform.common.exception.BusinessException;

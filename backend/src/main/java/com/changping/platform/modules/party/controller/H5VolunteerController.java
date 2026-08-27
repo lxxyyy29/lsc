@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.party.controller;
+package com.changping.platform.modules.party.controller;
 
 import com.changping.platform.common.response.ApiResponse;
 import com.changping.platform.modules.auth.security.AuthenticatedUserContextHolder;

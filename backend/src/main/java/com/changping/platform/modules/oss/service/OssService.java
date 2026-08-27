@@ -1,4 +1,4 @@
-﻿package com.changping.platform.modules.oss.service;
+package com.changping.platform.modules.oss.service;
 
 import java.io.InputStream;
 import org.springframework.web.multipart.MultipartFile;
