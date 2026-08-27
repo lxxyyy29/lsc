@@ -58,29 +58,69 @@
         <button @click="fetchData" style="margin-top:12px;padding:6px 16px;border:1px solid #d9d9d9;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;">重试</button>
       </div>
       <template v-else>
-        <table class="table">
+        <!-- 常驻：按居住地址分组卡片式展示（户主+成员） -->
+        <template v-if="isResidentTab">
+          <div v-for="(group, gi) in householdGroups" :key="'h-' + gi" class="card" style="margin-bottom:16px;padding:0;overflow:hidden;">
+            <!-- 户头信息 -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#fffbe6;border-bottom:1px solid #f3d9a4;">
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:#ad6800;">
+                <i class="fas fa-home"></i>
+                <span>{{ group.address || '未填写地址' }}</span>
+                <span style="font-weight:400;color:#b4893a;font-size:12px;">共 {{ group.members.length }} 人</span>
+              </div>
+              <span v-if="group.head" class="tag tag-red">户主：{{ group.head.name }}</span>
+              <span v-else class="tag tag-gray">未指定户主</span>
+            </div>
+            <table class="table" style="margin:0;">
+              <thead><tr>
+                <th>姓名</th><th>性别</th><th>年龄</th><th>电话</th>
+                <th v-if="isResidentTab">户籍类型</th>
+                <th v-if="isResidentTab">特殊人群</th>
+                <th v-if="isResidentTab">与户主关系</th>
+                <th>楼栋/房号</th><th>网格</th><th>操作</th>
+              </tr></thead>
+              <tbody>
+                <tr v-for="p in group.members" :key="p.id" :style="isHead(p) ? 'background:#fff9e6;font-weight:600;' : ''">
+                  <td>
+                    {{ p.name }}
+                    <span v-if="isHead(p)" class="tag tag-red" style="margin-left:4px;">户主</span>
+                  </td>
+                  <td>{{ p.gender || '-' }}</td>
+                  <td>{{ p.age != null ? p.age : '-' }}</td>
+                  <td>{{ p.phone || '-' }}</td>
+                  <td v-if="isResidentTab"><span class="tag tag-blue">{{ getHouseholdTypeName(p.householdType) }}</span></td>
+                  <td v-if="isResidentTab">
+                    <span v-if="p.specialPopulation == 1" class="tag tag-orange">{{ p.specialPopulationType || '特殊人群' }}</span>
+                    <span v-else>-</span>
+                  </td>
+                  <td v-if="isResidentTab">{{ p.relation || '-' }}</td>
+                  <td>{{ p.buildingNo ? p.buildingNo + (p.roomNo ? '-' + p.roomNo : '') : '-' }}</td>
+                  <td>{{ p.gridName || '-' }}</td>
+                  <td>
+                    <div style="display:flex;gap:6px;">
+                      <button @click="openEdit(p)" class="btn btn-default" style="padding:4px 10px;font-size:12px;">编辑</button>
+                      <button @click="handleDelete(p)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;">删除</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-if="!householdGroups.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无数据</p>
+        </template>
+
+        <!-- 流动：普通列表 -->
+        <table v-else class="table">
           <thead><tr>
             <th>姓名</th><th>性别</th><th>年龄</th><th>电话</th>
-            <th v-if="isResidentTab">户籍类型</th>
-            <th v-if="isResidentTab">特殊人群</th>
-            <th v-if="isResidentTab">与户主关系</th>
             <th>地址</th><th>楼栋/房号</th><th>网格</th><th>操作</th>
           </tr></thead>
           <tbody>
-            <tr v-for="p in list" :key="p.id" :style="isHead(p) ? 'background:#fffbe6;' : ''">
-              <td>
-                {{ p.name }}
-                <span v-if="isHead(p)" class="tag tag-red" style="margin-left:4px;">户主</span>
-              </td>
+            <tr v-for="p in list" :key="p.id">
+              <td>{{ p.name }}</td>
               <td>{{ p.gender || '-' }}</td>
               <td>{{ p.age != null ? p.age : '-' }}</td>
               <td>{{ p.phone || '-' }}</td>
-              <td v-if="isResidentTab"><span class="tag tag-blue">{{ getHouseholdTypeName(p.householdType) }}</span></td>
-              <td v-if="isResidentTab">
-                <span v-if="p.specialPopulation == 1" class="tag tag-orange">{{ p.specialPopulationType || '特殊人群' }}</span>
-                <span v-else>-</span>
-              </td>
-              <td v-if="isResidentTab">{{ p.relation || '-' }}</td>
               <td>{{ p.address || '-' }}</td>
               <td>{{ p.buildingNo ? p.buildingNo + (p.roomNo ? '-' + p.roomNo : '') : '-' }}</td>
               <td>{{ p.gridName || '-' }}</td>
@@ -93,7 +133,7 @@
             </tr>
           </tbody>
         </table>
-        <p v-if="!list.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无数据</p>
+        <p v-if="!isResidentTab && !list.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无数据</p>
       </template>
     </div>
 
@@ -281,6 +321,30 @@ function isFormVisible(f: any) {
 function isHead(p: any) {
   return isResidentTab.value && p.relation === '户主'
 }
+
+// 按居住地址分组为"户"：同地址成员归组，找出户主；无地址归入"未填写地址"
+const householdGroups = computed(() => {
+  const groups: { address: string; members: any[]; head: any }[] = []
+  const map = new Map<string, { address: string; members: any[]; head: any }>()
+  for (const p of list.value) {
+    const key = p.address || ''
+    let g = map.get(key)
+    if (!g) {
+      g = { address: key, members: [], head: null }
+      map.set(key, g)
+      groups.push(g)
+    }
+    g.members.push(p)
+    if (p.relation === '户主') g.head = p
+  }
+  // 户主排本组首位（无户主组保持原序）
+  for (const g of groups) {
+    if (g.head) {
+      g.members = [g.head, ...g.members.filter(m => m !== g.head)]
+    }
+  }
+  return groups
+})
 
 // 出生日期自动推算年龄
 function autoFillAge() {
