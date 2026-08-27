@@ -58,55 +58,47 @@
         <button @click="fetchData" style="margin-top:12px;padding:6px 16px;border:1px solid #d9d9d9;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;">重试</button>
       </div>
       <template v-else>
-        <!-- 常驻：按居住地址分组卡片式展示（户主+成员） -->
+        <!-- 常驻：按户主对应树状结构（一级=户，二级=家庭成员） -->
         <template v-if="isResidentTab">
-          <div v-for="(group, gi) in householdGroups" :key="'h-' + gi" class="card" style="margin-bottom:16px;padding:0;overflow:hidden;">
-            <!-- 户头信息 -->
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#fffbe6;border-bottom:1px solid #f3d9a4;">
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:#ad6800;">
-                <i class="fas fa-home"></i>
-                <span>{{ group.address || '未填写地址' }}</span>
-                <span style="font-weight:400;color:#b4893a;font-size:12px;">共 {{ group.members.length }} 人</span>
+          <div class="card" style="padding:16px 24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-size:13px;color:#6b7280;">共 <strong>{{ list.length }}</strong> 人 / <strong>{{ householdTree.length }}</strong> 户</div>
+              <div style="display:flex;gap:12px;font-size:12px;color:#6b7280;">
+                <span><i class="fas fa-home" style="color:#ad6800;"></i> 户（地址）</span>
+                <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4d4f;"></span> 户主</span>
               </div>
-              <span v-if="group.head" class="tag tag-red">户主：{{ group.head.name }}</span>
-              <span v-else class="tag tag-gray">未指定户主</span>
             </div>
-            <table class="table" style="margin:0;">
-              <thead><tr>
-                <th>姓名</th><th>性别</th><th>年龄</th><th>电话</th>
-                <th v-if="isResidentTab">户籍类型</th>
-                <th v-if="isResidentTab">特殊人群</th>
-                <th v-if="isResidentTab">与户主关系</th>
-                <th>楼栋/房号</th><th>网格</th><th>操作</th>
-              </tr></thead>
-              <tbody>
-                <tr v-for="p in group.members" :key="p.id" :style="isHead(p) ? 'background:#fff9e6;font-weight:600;' : ''">
-                  <td>
-                    {{ p.name }}
-                    <span v-if="isHead(p)" class="tag tag-red" style="margin-left:4px;">户主</span>
-                  </td>
-                  <td>{{ p.gender || '-' }}</td>
-                  <td>{{ p.age != null ? p.age : '-' }}</td>
-                  <td>{{ p.phone || '-' }}</td>
-                  <td v-if="isResidentTab"><span class="tag tag-blue">{{ getHouseholdTypeName(p.householdType) }}</span></td>
-                  <td v-if="isResidentTab">
-                    <span v-if="p.specialPopulation == 1" class="tag tag-orange">{{ p.specialPopulationType || '特殊人群' }}</span>
-                    <span v-else>-</span>
-                  </td>
-                  <td v-if="isResidentTab">{{ p.relation || '-' }}</td>
-                  <td>{{ p.buildingNo ? p.buildingNo + (p.roomNo ? '-' + p.roomNo : '') : '-' }}</td>
-                  <td>{{ p.gridName || '-' }}</td>
-                  <td>
-                    <div style="display:flex;gap:6px;">
-                      <button @click="openEdit(p)" class="btn btn-default" style="padding:4px 10px;font-size:12px;">编辑</button>
-                      <button @click="handleDelete(p)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;">删除</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <el-tree
+              :data="householdTree"
+              :props="{ label: 'label', children: 'children' }"
+              node-key="id"
+              default-expand-all
+              :expand-on-click-node="false"
+              class="household-tree"
+            >
+              <template #default="{ node, data }">
+                <!-- 一级节点：户 -->
+                <div v-if="data.isHouse" style="display:flex;align-items:center;gap:8px;width:100%;">
+                  <i class="fas fa-home" style="color:#ad6800;"></i>
+                  <span style="font-weight:600;color:#ad6800;">{{ data.label }}</span>
+                  <span v-if="data.head" class="tag tag-red" style="margin-left:4px;">户主：{{ data.head.name }}</span>
+                  <span v-else class="tag tag-gray">未指定户主</span>
+                  <span style="color:#9ca3af;font-size:12px;">共 {{ data.children?.length || 0 }} 人</span>
+                </div>
+                <!-- 二级节点：家庭成员 -->
+                <div v-else style="display:flex;align-items:center;gap:8px;width:100%;">
+                  <span :style="{display:'inline-block',width:'8px',height:'8px',borderRadius:'50%',background: data.isHead ? '#ff4d4f' : '#d1d5db'}"></span>
+                  <span :style="{fontWeight: data.isHead ? 600 : 400}">{{ data.label }}</span>
+                  <span v-if="data.person.specialPopulation == 1" class="tag tag-orange" style="margin-left:4px;">{{ data.person.specialPopulationType || '特殊人群' }}</span>
+                  <span style="margin-left:auto;display:flex;gap:6px;">
+                    <el-button size="small" link type="primary" @click.stop="openEdit(data.person)">编辑</el-button>
+                    <el-button size="small" link type="danger" @click.stop="handleDelete(data.person)">删除</el-button>
+                  </span>
+                </div>
+              </template>
+            </el-tree>
+            <p v-if="!householdTree.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无数据</p>
           </div>
-          <p v-if="!householdGroups.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无数据</p>
         </template>
 
         <!-- 流动：普通列表 -->
@@ -417,8 +409,8 @@ function isHead(p: any) {
   return isResidentTab.value && p.relation === '户主'
 }
 
-// 按居住地址分组为"户"：同地址成员归组，找出户主；无地址归入"未填写地址"
-const householdGroups = computed(() => {
+// 按居住地址分组为"户"树：一级=户（地址+户主），二级=家庭成员
+const householdTree = computed(() => {
   const groups: { address: string; members: any[]; head: any }[] = []
   const map = new Map<string, { address: string; members: any[]; head: any }>()
   for (const p of list.value) {
@@ -438,7 +430,22 @@ const householdGroups = computed(() => {
       g.members = [g.head, ...g.members.filter(m => m !== g.head)]
     }
   }
-  return groups
+  return groups.map((g, gi) => {
+    const head = g.head
+    return {
+      id: 'house-' + gi,
+      label: g.address || '未填写地址',
+      isHouse: true,
+      address: g.address,
+      head: head || null,
+      children: g.members.map(m => ({
+        id: 'person-' + m.id,
+        label: `${m.name || '-'}（${m.gender || '未知'}${m.age != null ? ' ' + m.age + '岁' : ''}${m.relation ? ' · ' + m.relation : ''}）`,
+        person: m,
+        isHead: m.relation === '户主'
+      }))
+    }
+  })
 })
 
 // 出生日期自动推算年龄
