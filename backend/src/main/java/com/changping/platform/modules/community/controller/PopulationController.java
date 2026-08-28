@@ -38,11 +38,15 @@ public class PopulationController {
     }
 
     @GetMapping
-    public ApiResponse<List<PopulationEntity>> list(@RequestParam(required = false) Long gridId,
+    public ApiResponse<?> list(@RequestParam(required = false) Long gridId,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String householdType,
             @RequestParam(required = false) String populationType) {
         requirePopulationPermission();
+        // 常住人口：返回"户→成员"树（一级=户带 children，二级=家庭成员），前端直接渲染 el-tree
+        if ("RESIDENT".equalsIgnoreCase(populationType)) {
+            return ApiResponse.ok(populationService.tree(keyword, householdType, gridId));
+        }
         // 带搜索条件时走台账条件查询（模糊搜索 + 户籍类型/人口类型/网格筛选）
         if ((keyword != null && !keyword.isBlank()) || (householdType != null && !householdType.isBlank())
                 || (populationType != null && !populationType.isBlank()) || gridId != null) {

@@ -186,6 +186,26 @@ public class EventController {
     }
 
     /**
+     * 四类工单工作台列表（Web 端事件工单整理）：
+     * closed-loop 事件闭环处置 / audit 事件审核 / completed 已完成工单 / abnormal 异常工单
+     */
+    @GetMapping("/sections/{section}")
+    public ApiResponse<PagedResult<Map<String, Object>>> querySectionEvents(
+            @PathVariable String section,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String workOrderStatus,
+            @RequestParam(required = false) String urgencyLevel,
+            @RequestParam(required = false) String sourceSystem,
+            @RequestParam(required = false) String searchKey,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        permissionGuard.require(PermissionCodes.API_EVENT_LIST);
+        return ApiResponse.ok(eventService.querySectionEvents(section, page, size, status, workOrderStatus, urgencyLevel, sourceSystem, searchKey, startDate, endDate));
+    }
+
+    /**
      * @Description //设置事件展示隐藏：隐藏后仅事件闭环/工单中心可见，大屏/GIS 等面板不再展示
      * @Param [id 事件主键ID, body hidden=true 隐藏 / false 恢复显示]
      * @return ApiResponse<Boolean> 操作结果
@@ -271,7 +291,7 @@ public class EventController {
         com.changping.platform.modules.auth.vo.CurrentUserVo user =
                 currentUserService.getCurrentUser(AuthService.ClientType.WEB, PermissionCodes.API_EVENT_CREATE);
         for (Long id : ids) {
-            eventService.deleteEvent(id);
+            eventService.deleteEvent(id, reason);
             auditLogService.logQuickChange(
                     "biz_event", String.valueOf(id), "DELETE",
                     null, null, user.id(), user.realName(), reason);

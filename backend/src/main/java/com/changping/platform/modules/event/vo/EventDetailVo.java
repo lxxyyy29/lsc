@@ -40,7 +40,9 @@ public record EventDetailVo(
         String urgencyLevel,
         String reportSource,
         Boolean archived,
-        Boolean hidden) {
+        Boolean hidden,
+        Boolean deleted,
+        String deletedReason) {
 
     @JsonProperty
     public String statusLabel() {

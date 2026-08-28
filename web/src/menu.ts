@@ -26,9 +26,9 @@ export const menuGroups: MenuGroup[] = [
     name: '事件工单', icon: 'fas fa-tasks',
     items: [
       { path: '/events', name: '事件闭环处置', badgeKey: 'eventsPending', permKey: 'web:menu:events' },
-      { path: '/work-orders', name: '工单处置', badgeKey: 'workOrdersPending', permKey: 'web:menu:work-orders' },
       { path: '/audits', name: '事件审核', badgeKey: 'auditsPending', permKey: 'web:menu:audits' },
-      { path: '/dispatch-rules', name: '智能派单规则', permKey: 'web:menu:dispatch-rules' },
+      { path: '/work-orders', name: '已完成工单', badgeKey: 'workOrdersPending', permKey: 'web:menu:work-orders' },
+      { path: '/abnormal-orders', name: '异常工单', permKey: 'web:menu:abnormal-orders' },
     ]
   },
   {

@@ -66,4 +66,13 @@ public class EventEntity {
     private Integer archived;
     /** 展示隐藏：0=显示 1=隐藏（仅事件闭环/工单中心可见） */
     private Integer hidden;
+
+    /** 软删除标记：0=正常 1=已删除（异常工单可见） */
+    private Integer deleted;
+
+    /** 删除原因 */
+    private String deletedReason;
+
+    /** 删除时间 */
+    private LocalDateTime deletedAt;
 }

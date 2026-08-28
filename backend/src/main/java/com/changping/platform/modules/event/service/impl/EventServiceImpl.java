@@ -14,6 +14,7 @@ import com.changping.platform.modules.event.service.EventService;
 import com.changping.platform.modules.event.vo.EventDetailVo;
 import com.changping.platform.modules.integration.alarm.document.AlarmEventDocument;
 import com.changping.platform.modules.integration.alarm.service.AlarmEventMongoService;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -334,6 +335,99 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
+     * 四类工单工作台分页查询：基于 MySQL 直接聚合（闭环处置/事件审核/已完成/异常），
+     * 依据「事件状态 + 最新工单状态」精确划分，供 Web 端四个工单页面复用。
+     */
+    @Override
+    public PagedResult<Map<String, Object>> querySectionEvents(String section, int page, int size,
+            String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String searchKey, String startDate, String endDate) {
+        int safePage = Math.max(1, page);
+        int safeSize = Math.max(1, Math.min(size, 100));
+
+        List<String> where = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        switch (section == null ? "" : section) {
+            // 未被网格员手机端处理过的事件：待审核/审核中/已通过/待派单/组长审核，或已派单但工单尚未处理完成
+            case "closed-loop" -> where.add(
+                    "(e.status IN ('PENDING_AUDIT','IN_AUDIT','AUDIT_APPROVED','WAITING_DISPATCH','WAITING_LEADER_REVIEW')"
+                    + " OR (e.status = 'DISPATCHED_TO_WORK_ORDER' AND EXISTS (SELECT 1 FROM biz_work_order wo WHERE wo.source_event_id = e.id AND wo.status IN ('WAITING_ACCEPT','PROCESSING','NEEDS_MORE_EVIDENCE'))))");
+            // 网格员手机端已处理、待 PC 端审核（工单待核实/待关闭确认）
+            case "audit" -> where.add(
+                    "EXISTS (SELECT 1 FROM biz_work_order wo WHERE wo.source_event_id = e.id AND wo.status IN ('WAITING_VERIFY','WAITING_CLOSE_CONFIRM'))");
+            // 审核通过、已办结关闭（工单已完成/已关闭，或事件已关闭）
+            case "completed" -> where.add(
+                    "(EXISTS (SELECT 1 FROM biz_work_order wo WHERE wo.source_event_id = e.id AND wo.status IN ('COMPLETED','CLOSED')) OR e.status = 'CLOSED')");
+            // 异常工单：审核驳回 或 软删除
+            case "abnormal" -> where.add(
+                    "(e.deleted = 1 OR e.status = 'AUDIT_REJECTED')");
+            default -> throw new BusinessException("INVALID_PARAM", "不支持的工单分类: " + section);
+        }
+
+        // 通用过滤：非异常分类均排除已删除与已归档事件
+        if (!"abnormal".equals(section)) {
+            where.add("e.deleted = 0");
+            where.add("COALESCE(e.archived, 0) = 0");
+        }
+        if (status != null && !status.isBlank()) {
+            where.add("e.status = ?");
+            params.add(status.trim());
+        }
+        // 工单状态过滤：按最新工单状态精确匹配
+        if (workOrderStatus != null && !workOrderStatus.isBlank()) {
+            where.add("EXISTS (SELECT 1 FROM biz_work_order wo WHERE wo.source_event_id = e.id AND wo.status = ?)");
+            params.add(workOrderStatus.trim());
+        }
+        if (urgencyLevel != null && !urgencyLevel.isBlank()) {
+            where.add("e.urgency_level = ?");
+            params.add(urgencyLevel.trim());
+        }
+        if (sourceSystem != null && !sourceSystem.isBlank()) {
+            where.add("e.source_system = ?");
+            params.add(sourceSystem.trim());
+        }
+        // 关键词搜索：事件编号 / 标题模糊匹配
+        if (searchKey != null && !searchKey.isBlank()) {
+            where.add("(e.event_code LIKE ? OR e.title LIKE ?)");
+            params.add("%" + searchKey.trim() + "%");
+            params.add("%" + searchKey.trim() + "%");
+        }
+        LocalDateTime start = parseStartDate(startDate);
+        LocalDateTime end = parseEndDate(endDate);
+        if (start != null) {
+            where.add("e.occurred_at >= ?");
+            params.add(Timestamp.valueOf(start));
+        }
+        if (end != null) {
+            where.add("e.occurred_at <= ?");
+            params.add(Timestamp.valueOf(end));
+        }
+
+        String whereSql = " WHERE " + String.join(" AND ", where);
+
+        Long total = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM biz_event e" + whereSql, Long.class, params.toArray());
+
+        List<Object> pageParams = new ArrayList<>(params);
+        pageParams.add(safeSize);
+        pageParams.add((long) (safePage - 1) * safeSize);
+
+        String selectSql = "SELECT e.id, e.event_code AS eventCode, e.title, e.status, e.urgency_level AS urgencyLevel, e.source_system AS sourceSystem, "
+                + "e.occurred_at AS occurredAt, e.created_at AS createdAt, e.archived, e.hidden, e.deleted, e.deleted_reason AS deletedReason, "
+                + "(SELECT wo.id FROM biz_work_order wo WHERE wo.source_event_id = e.id ORDER BY wo.id DESC LIMIT 1) AS workOrderId, "
+                + "(SELECT wo.work_order_no FROM biz_work_order wo WHERE wo.source_event_id = e.id ORDER BY wo.id DESC LIMIT 1) AS workOrderNo, "
+                + "(SELECT wo.status FROM biz_work_order wo WHERE wo.source_event_id = e.id ORDER BY wo.id DESC LIMIT 1) AS workOrderStatus, "
+                + "(SELECT wo.assignee_name FROM biz_work_order wo WHERE wo.source_event_id = e.id ORDER BY wo.id DESC LIMIT 1) AS assigneeName, "
+                + "(SELECT r.remark FROM biz_event_record r WHERE r.event_id = e.id AND r.action_type = 'AUDIT_REJECT' ORDER BY r.id DESC LIMIT 1) AS rejectReason "
+                + "FROM biz_event e" + whereSql
+                + " ORDER BY e.created_at DESC LIMIT ? OFFSET ?";
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(selectSql, pageParams.toArray());
+
+        return PagedResult.of(rows, total != null ? total : 0, safePage, safeSize);
+    }
+
+    /**
      * @Author lxy
      * @Description //解析开始日期字符串，支持 yyyy-MM-dd 或 ISO 日期时间格式
      * @Date 2026/08/12 10:00
@@ -453,61 +547,26 @@ public class EventServiceImpl implements EventService {
 
     /**
      * @Author lxy
-     * @Description //级联删除事件及其所有关联数据（工单、审核流程、媒体文件、生命周期记录等），并清理MongoDB文档
+     * @Description //软删除事件：标记 deleted=1 并记录删除原因，保留工单/审核/生命周期记录供异常工单查询与详情展示；
+     * MongoDB 文档物理删除，避免大屏/GIS 等面板继续展示已删除事件
      * @Date 2026/04/18 10:00
-     * @Param [eventId 事件主键ID]
+     * @Param [eventId 事件主键ID, reason 删除原因]
      * @return void
      */
     @Override
     @Transactional
-    public void deleteEvent(Long eventId) {
+    public void deleteEvent(Long eventId, String reason) {
         EventEntity entity = eventMapper.selectDetailById(eventId);
         if (entity == null) {
             throw new BusinessException("EVENT_NOT_FOUND", "事件未找到");
         }
 
-        // Phase 1: Clean work order sub-tree
-        List<Map<String, Object>> workOrders = jdbcTemplate.queryForList(
-                "SELECT id, process_instance_id FROM biz_work_order WHERE source_event_id = ?", eventId);
-        for (Map<String, Object> wo : workOrders) {
-            Long piId = wo.get("process_instance_id") != null
-                    ? ((Number) wo.get("process_instance_id")).longValue() : null;
-            if (piId != null) {
-                jdbcTemplate.update(
-                        "DELETE FROM biz_media_file WHERE business_type = 'ACTION_RECORD' AND business_id IN (SELECT id FROM biz_process_action_record WHERE process_instance_id = ?)",
-                        piId);
-                jdbcTemplate.update("DELETE FROM biz_process_action_record WHERE process_instance_id = ?", piId);
-                jdbcTemplate.update("DELETE FROM biz_process_instance_node WHERE process_instance_id = ?", piId);
-            }
-            jdbcTemplate.update("DELETE FROM biz_work_order WHERE id = ?", ((Number) wo.get("id")).longValue());
-            if (piId != null) {
-                jdbcTemplate.update("DELETE FROM biz_process_instance WHERE id = ?", piId);
-            }
-        }
+        // 软删除：仅标记，保留工单/审核/生命周期记录，供异常工单查询与详情展示
+        jdbcTemplate.update(
+                "UPDATE biz_event SET deleted = 1, deleted_reason = ?, deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                reason == null ? "" : reason, eventId);
 
-        // Phase 2: Clean audit sub-tree
-        List<Map<String, Object>> auditPIs = jdbcTemplate.queryForList(
-                "SELECT id FROM biz_process_instance WHERE business_type = 'EVENT_AUDIT' AND business_id = ?", eventId);
-        for (Map<String, Object> pi : auditPIs) {
-            Long piId = ((Number) pi.get("id")).longValue();
-            jdbcTemplate.update("DELETE FROM biz_process_action_record WHERE process_instance_id = ?", piId);
-            jdbcTemplate.update("DELETE FROM biz_process_instance_node WHERE process_instance_id = ?", piId);
-        }
-        jdbcTemplate.update("DELETE FROM biz_audit_record WHERE event_id = ?", eventId);
-        for (Map<String, Object> pi : auditPIs) {
-            jdbcTemplate.update("DELETE FROM biz_process_instance WHERE id = ?", ((Number) pi.get("id")).longValue());
-        }
-
-        // Phase 3: Clean event direct children
-        jdbcTemplate.update("DELETE FROM biz_media_file WHERE business_type = 'EVENT' AND business_id = ?", eventId);
-        jdbcTemplate.update("DELETE FROM biz_event_record WHERE event_id = ?", eventId);
-        jdbcTemplate.update("DELETE FROM biz_event_ignore_record WHERE event_id = ?", eventId);
-        jdbcTemplate.update("UPDATE biz_patrol_task SET linked_event_id = NULL WHERE linked_event_id = ?", eventId);
-
-        // Phase 4: Delete event itself
-        jdbcTemplate.update("DELETE FROM biz_event WHERE id = ?", eventId);
-
-        // Phase 5: MongoDB cleanup
+        // MongoDB 文档物理删除（软删除事件不再出现在大屏/GIS 等 Mongo 查询面板）
         if (StringUtils.hasText(entity.getExternalEventId())) {
             alarmEventMongoService.deleteByExternalEventId(entity.getExternalEventId());
         }
@@ -569,7 +628,9 @@ public class EventServiceImpl implements EventService {
                 firstNonBlank(document.getUrgencyLevel(), entity.getUrgencyLevel()),
                 entity.getReportSource(),
                 entity.getArchived() != null && entity.getArchived() == 1,
-                Boolean.TRUE.equals(document.getHidden()));
+                Boolean.TRUE.equals(document.getHidden()),
+                entity.getDeleted() != null && entity.getDeleted() == 1,
+                entity.getDeletedReason());
     }
 
     /**
@@ -615,7 +676,9 @@ public class EventServiceImpl implements EventService {
                 firstNonBlank(document.getUrgencyLevel(), entity == null ? null : entity.getUrgencyLevel()),
                 entity == null ? null : entity.getReportSource(),
                 entity != null && entity.getArchived() != null && entity.getArchived() == 1,
-                Boolean.TRUE.equals(document.getHidden()));
+                Boolean.TRUE.equals(document.getHidden()),
+                entity != null && entity.getDeleted() != null && entity.getDeleted() == 1,
+                entity == null ? null : entity.getDeletedReason());
     }
 
     /**
@@ -772,7 +835,9 @@ public class EventServiceImpl implements EventService {
                 entity.getUrgencyLevel(),
                 entity.getReportSource(),
                 entity.getArchived() != null && entity.getArchived() == 1,
-                entity.getHidden() != null && entity.getHidden() == 1);
+                entity.getHidden() != null && entity.getHidden() == 1,
+                entity.getDeleted() != null && entity.getDeleted() == 1,
+                entity.getDeletedReason());
     }
 
     /**
@@ -986,7 +1051,7 @@ public class EventServiceImpl implements EventService {
     public void autoEscalateUrgency() {
         // 获取所有活跃事件（未关闭且未归档的）；created_at 允许为空，避免单条脏数据 NPE 中断整轮扫描
         List<EventEntity> activeEvents = jdbcTemplate.query(
-            "SELECT id, urgency_level, created_at, external_event_id FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status NOT IN ('CLOSED', 'COMPLETED')",
+            "SELECT id, urgency_level, created_at, external_event_id FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(deleted, 0) = 0 AND status NOT IN ('CLOSED', 'COMPLETED')",
             (rs, rowNum) -> {
                 EventEntity e = new EventEntity();
                 e.setId(rs.getLong("id"));
@@ -1200,16 +1265,16 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public EventStatistics getStatistics() {
-        // 与事件列表页口径一致：仅计未归档的活跃事件，避免各页面同类指标数量不一致
-        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0", Long.class);
-        Long waiting = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'WAITING_DISPATCH'", Long.class);
-        Long waitingLeader = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'WAITING_LEADER_REVIEW'", Long.class);
-        Long dispatched = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'DISPATCHED_TO_WORK_ORDER'", Long.class);
-        Long closed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'CLOSED'", Long.class);
-        Long ignored = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND status = 'IGNORED'", Long.class);
-        Long green = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND urgency_level = 'GREEN' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
-        Long yellow = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND urgency_level = 'YELLOW' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
-        Long red = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND urgency_level = 'RED' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
+        // 与事件列表页口径一致：仅计未归档且未删除的活跃事件，避免各页面同类指标数量不一致
+        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(deleted, 0) = 0", Long.class);
+        Long waiting = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(deleted, 0) = 0 AND status = 'WAITING_DISPATCH'", Long.class);
+        Long waitingLeader = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(deleted, 0) = 0 AND status = 'WAITING_LEADER_REVIEW'", Long.class);
+        Long dispatched = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(deleted, 0) = 0 AND status = 'DISPATCHED_TO_WORK_ORDER'", Long.class);
+        Long closed = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(deleted, 0) = 0 AND status = 'CLOSED'", Long.class);
+        Long ignored = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(deleted, 0) = 0 AND status = 'IGNORED'", Long.class);
+        Long green = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(deleted, 0) = 0 AND urgency_level = 'GREEN' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
+        Long yellow = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(deleted, 0) = 0 AND urgency_level = 'YELLOW' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
+        Long red = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(deleted, 0) = 0 AND urgency_level = 'RED' AND status NOT IN ('CLOSED','IGNORED')", Long.class);
         return new EventStatistics(
                 total != null ? total : 0,
                 waiting != null ? waiting : 0,

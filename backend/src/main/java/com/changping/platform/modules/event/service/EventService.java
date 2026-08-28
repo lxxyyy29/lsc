@@ -91,6 +91,18 @@ public interface EventService {
     PagedResult<EventDetailVo> queryEvents(String externalEventId, int page, int size, String status, String urgencyLevel, String startDate, String endDate, Long areaId, boolean excludeHidden, boolean includeArchived, String sourceSystem, boolean onlyArchived);
 
     /**
+     * 四类工单工作台分页查询：
+     * <ul>
+     *   <li>closed-loop 事件闭环处置：未被网格员手机端处理过的事件（含待审核/待派单/已派单未处理）</li>
+     *   <li>audit 事件审核：网格员手机端已处理、待 PC 端审核（工单 WAITING_VERIFY / WAITING_CLOSE_CONFIRM）</li>
+     *   <li>completed 已完成工单：审核通过、已办结关闭（工单 COMPLETED / CLOSED 或事件 CLOSED）</li>
+     *   <li>abnormal 异常工单：审核驳回（AUDIT_REJECTED）或软删除（deleted=1）</li>
+     * </ul>
+     */
+    PagedResult<Map<String, Object>> querySectionEvents(String section, int page, int size,
+            String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String searchKey, String startDate, String endDate);
+
+    /**
      * @Description //设置事件展示隐藏：隐藏后仅事件闭环/工单中心可见，大屏/GIS 面板不再展示
      * @Param [eventId 事件主键ID, hidden 是否隐藏]
      * @return boolean 操作是否成功
@@ -99,12 +111,12 @@ public interface EventService {
 
     /**
      * @Author lxy
-     * @Description //删除事件及其所有关联的子数据（工单、审核、媒体文件等）
+     * @Description //软删除事件：标记 deleted=1 并记录删除原因，保留工单/审核/生命周期记录供异常工单查询与详情展示
      * @Date 2026/04/18 10:00
-     * @Param [eventId 事件主键ID]
+     * @Param [eventId 事件主键ID, reason 删除原因]
      * @return void
      */
-    void deleteEvent(Long eventId);
+    void deleteEvent(Long eventId, String reason);
 
     /**
      * 更新事件紧急程度

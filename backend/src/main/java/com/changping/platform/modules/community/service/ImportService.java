@@ -83,16 +83,15 @@ public class ImportService {
             total++;
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("row", i);
-            data.put("name", getCellString(row, 0));
-            data.put("idCard", getCellString(row, 1));
-            data.put("phone", getCellString(row, 2));
-            data.put("householdType", getCellString(row, 3));
-            data.put("specialPopulation", getCellString(row, 4));
-            data.put("specialPopulationType", getCellString(row, 5));
-            data.put("relation", getCellString(row, 6));
-            data.put("address", getCellString(row, 7));
-            data.put("gridName", getCellString(row, 8));
-            data.put("tags", getCellString(row, 9));
+            data.put("gridName", getCellString(row, 1));
+            data.put("householdFlag", getCellString(row, 2));
+            data.put("name", getCellString(row, 3));
+            data.put("age", getCellString(row, 4));
+            data.put("gender", getCellString(row, 5));
+            data.put("address", getCellString(row, 6));
+            data.put("phone", getCellString(row, 7));
+            data.put("relation", getCellString(row, 8));
+            data.put("remark", getCellString(row, 9));
 
             String err = validatePopulationRow(data);
             if (err != null) {
@@ -114,38 +113,48 @@ public class ImportService {
             Row row = sheet.getRow(i);
             if (row == null) continue;
             try {
-                String name = getCellString(row, 0);
-                String idCard = getCellString(row, 1);
-                // 身份证为必备条件（需求8.4）；姓名保持必填，手机改为选填
-                if (name.isBlank() || idCard.isBlank()) {
+                // 新模板：序号|队别|户主|姓名|年龄|性别|住址|手机|与户主关系|备注
+                String name = getCellString(row, 3);
+                if (name.isBlank()) {
                     fail++;
-                    errorList.add("第" + i + "行: 姓名、身份证号为必填项");
+                    errorList.add("第" + i + "行: 姓名为必填项");
                     continue;
                 }
 
-                // 重复检测
-                if (idCardExists(idCard)) {
+                String address = getCellString(row, 6);
+                // 重复检测：姓名+地址（屋主通讯录无身份证号）
+                if (!address.isBlank() && personExists(name, address)) {
                     fail++;
-                    errorList.add("第" + i + "行: 身份证号已存在");
+                    errorList.add("第" + i + "行: 相同姓名+地址已存在");
                     continue;
                 }
 
                 PopulationEntity entity = new PopulationEntity();
                 entity.setName(name);
-                entity.setIdCard(idCard);
-                entity.setPhone(getCellString(row, 2));
-                entity.setHouseholdType(getCellString(row, 3));
-                // 特殊人群：第4列填 是/否/1/0
-                String sp = getCellString(row, 4);
-                entity.setSpecialPopulation("是".equals(sp) || "1".equals(sp) ? 1 : 0);
-                entity.setSpecialPopulationType(getCellString(row, 5));
-                entity.setRelation(getCellString(row, 6));
-                entity.setAddress(getCellString(row, 7));
-                entity.setTags(getCellString(row, 9));
+                entity.setPhone(getCellString(row, 7));
+                entity.setAddress(address);
+                entity.setGender(getCellString(row, 5));
+
+                // 年龄转换（去除非数字字符后解析）
+                String ageStr = getCellString(row, 4);
+                if (!ageStr.isBlank()) {
+                    try {
+                        entity.setAge(Integer.parseInt(ageStr.replaceAll("[^0-9]", "")));
+                    } catch (NumberFormatException ignored) {
+                        // 年龄格式异常时忽略，不阻断导入
+                    }
+                }
+
+                // 户主标记：户主列填"户主"则 relation=户主；否则用"与户主关系"列
+                String householdFlag = getCellString(row, 2);
+                String relation = "户主".equals(householdFlag) ? "户主" : getCellString(row, 8);
+                entity.setRelation(relation);
+
+                entity.setRemark(getCellString(row, 9));
                 entity.setStatus("ACTIVE");
 
-                // 根据网格名查找 grid_id
-                String gridName = getCellString(row, 8);
+                // 根据队别查找 grid_id
+                String gridName = getCellString(row, 1);
                 Long gridId = findGridIdByName(gridName);
                 entity.setGridId(gridId);
 
@@ -162,7 +171,6 @@ public class ImportService {
 
     private String validatePopulationRow(Map<String, Object> data) {
         if (data.get("name") == null || data.get("name").toString().isBlank()) return "姓名不能为空";
-        if (data.get("idCard") == null || data.get("idCard").toString().isBlank()) return "身份证号不能为空（必备）";
         return null;
     }
 
@@ -321,6 +329,16 @@ public class ImportService {
         Long count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM cmn_population WHERE id_card = ? AND status = 'ACTIVE'",
                 Long.class, idCard);
+        return count != null && count > 0;
+    }
+
+    /**
+     * 屋主通讯录查重：姓名+地址（无身份证号场景）
+     */
+    private boolean personExists(String name, String address) {
+        Long count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM cmn_population WHERE name = ? AND address = ? AND status = 'ACTIVE'",
+                Long.class, name, address);
         return count != null && count > 0;
     }
 

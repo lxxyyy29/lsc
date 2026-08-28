@@ -135,6 +135,11 @@ export async function getEvents(params?: { page?: number; size?: number; status?
   return http.get('/events', { params: { page: 1, size: 20, ...params } })
 }
 
+// 四类工单工作台：closed-loop 事件闭环处置 / audit 事件审核 / completed 已完成工单 / abnormal 异常工单
+export async function getEventSectionEvents(section: string, params?: { page?: number; size?: number; status?: string; workOrderStatus?: string; urgencyLevel?: string; sourceSystem?: string; startDate?: string; endDate?: string }) {
+  return http.get(`/events/sections/${section}`, { params: { page: 1, size: 20, ...params } })
+}
+
 export async function getEventDetail(id: number | string) {
   // 如果 id 是数字，使用路径参数；如果是字符串（externalEventId），使用查询参数
   if (typeof id === 'number' || /^\d+$/.test(String(id))) {
@@ -186,23 +191,6 @@ export async function leaderDispatch(eventId: number, data: { assigneeUserId: nu
 
 export async function getLeaderPendingEvents() {
   return http.get('/work-orders/leader/pending-events')
-}
-
-// 派单规则管理（事件类型 → 受理角色）
-export async function getDispatchRules() {
-  return http.get('/dispatch-rules')
-}
-
-export async function createDispatchRule(data: any) {
-  return http.post('/dispatch-rules', data)
-}
-
-export async function updateDispatchRule(id: number, data: any) {
-  return http.put(`/dispatch-rules/${id}`, data)
-}
-
-export async function deleteDispatchRule(id: number) {
-  return http.delete(`/dispatch-rules/${id}`)
 }
 
 // 趋势预判/反复投诉自动预警

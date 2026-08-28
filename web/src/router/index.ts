@@ -19,9 +19,9 @@ const routes: RouteRecordRaw[] = [
       { path: 'events', component: () => import('../views/EventsView.vue') },
       { path: 'events/create', component: () => import('../views/EventCreateView.vue') },
       { path: 'events/:id', component: () => import('../views/EventDetailView.vue') },
-      { path: 'work-orders', component: () => import('../views/WorkOrderView.vue') },
+      { path: 'work-orders', component: () => import('../views/CompletedOrderView.vue') },
       { path: 'audits', component: () => import('../views/AuditView.vue') },
-      { path: 'dispatch-rules', component: () => import('../views/DispatchRuleView.vue') },
+      { path: 'abnormal-orders', component: () => import('../views/AbnormalOrderView.vue') },
  
       { path: 'gis', component: () => import('../views/GISView.vue') },
       { path: 'grid-manage', component: () => import('../views/GridManageView.vue') },

@@ -62,7 +62,7 @@
         <template v-if="isResidentTab">
           <div class="card" style="padding:16px 24px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-              <div style="font-size:13px;color:#6b7280;">共 <strong>{{ list.length }}</strong> 人 / <strong>{{ householdTree.length }}</strong> 户</div>
+              <div style="font-size:13px;color:#6b7280;">共 <strong>{{ personCount }}</strong> 人 / <strong>{{ householdTree.length }}</strong> 户</div>
               <div style="display:flex;gap:12px;font-size:12px;color:#6b7280;">
                 <span><i class="fas fa-home" style="color:#ad6800;"></i> 户（地址）</span>
                 <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4d4f;"></span> 户主</span>
@@ -404,48 +404,14 @@ function onSpecialChange(v: any) {
   customEditing['specialPopulationType'] = false
 }
 
-// 是否户主（用于列表高亮）
-function isHead(p: any) {
-  return isResidentTab.value && p.relation === '户主'
-}
+// 常住树：直接消费后端 /community/population 返回的"户→成员"结构（一级=户带 children，二级=家庭成员）
+const listTree = ref<any[]>([])
+const householdTree = computed(() => listTree.value)
 
-// 按居住地址分组为"户"树：一级=户（地址+户主），二级=家庭成员
-const householdTree = computed(() => {
-  const groups: { address: string; members: any[]; head: any }[] = []
-  const map = new Map<string, { address: string; members: any[]; head: any }>()
-  for (const p of list.value) {
-    const key = p.address || ''
-    let g = map.get(key)
-    if (!g) {
-      g = { address: key, members: [], head: null }
-      map.set(key, g)
-      groups.push(g)
-    }
-    g.members.push(p)
-    if (p.relation === '户主') g.head = p
-  }
-  // 户主排本组首位（无户主组保持原序）
-  for (const g of groups) {
-    if (g.head) {
-      g.members = [g.head, ...g.members.filter(m => m !== g.head)]
-    }
-  }
-  return groups.map((g, gi) => {
-    const head = g.head
-    return {
-      id: 'house-' + gi,
-      label: g.address || '未填写地址',
-      isHouse: true,
-      address: g.address,
-      head: head || null,
-      children: g.members.map(m => ({
-        id: 'person-' + m.id,
-        label: `${m.name || '-'}（${m.gender || '未知'}${m.age != null ? ' ' + m.age + '岁' : ''}${m.relation ? ' · ' + m.relation : ''}）`,
-        person: m,
-        isHead: m.relation === '户主'
-      }))
-    }
-  })
+// 人口总数：常住=树内成员数合计，流动=扁平列表长度
+const personCount = computed(() => {
+  if (isResidentTab.value) return listTree.value.reduce((s: number, h: any) => s + (h.children?.length || 0), 0)
+  return list.value.length
 })
 
 // 出生日期自动推算年龄
@@ -468,7 +434,10 @@ async function fetchData() {
     if (filters.keyword.trim()) params.keyword = filters.keyword.trim()
     if (isResidentTab.value && filters.householdType) params.householdType = filters.householdType
     if (filters.gridId) params.gridId = filters.gridId
-    list.value = await http.get('/community/population', { params }) || []
+    const res: any = await http.get('/community/population', { params }) || []
+    // 常住返回"户→成员"树（带 children），流动返回扁平列表
+    if (isResidentTab.value) listTree.value = res
+    else list.value = res
   } catch(e: any) {
     error.value = e?.message || '加载失败，请稍后重试'
   } finally {
