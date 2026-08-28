@@ -23,21 +23,21 @@ export const menuGroups: MenuGroup[] = [
     ]
   },
   {
-    name: '事件工单', icon: 'fas fa-tasks',
-    items: [
-      { path: '/events', name: '事件闭环处置', badgeKey: 'eventsPending', permKey: 'web:menu:events' },
-      { path: '/audits', name: '事件审核', badgeKey: 'auditsPending', permKey: 'web:menu:audits' },
-      { path: '/work-orders', name: '已完成工单', badgeKey: 'workOrdersPending', permKey: 'web:menu:work-orders' },
-      { path: '/abnormal-orders', name: '异常工单', permKey: 'web:menu:abnormal-orders' },
-    ]
-  },
-  {
     name: '网格治理', icon: 'fas fa-map-marked-alt',
     items: [
       { path: '/gis', name: 'GIS网格可视化', permKey: 'web:menu:gis' },
       { path: '/grid-manage', name: '网格管理', permKey: 'web:menu:grid-manage' },
       // { path: '/biz-areas', name: '辖区管理', permKey: 'web:menu:biz-areas' },
       { path: '/org-members', name: '组织人员', badgeKey: 'pwdResetsPending', permKey: 'web:menu:org-members' },
+    ]
+  },
+  {
+    name: '事件工单', icon: 'fas fa-tasks',
+    items: [
+      { path: '/events', name: '事件闭环处置', badgeKey: 'eventsPending', permKey: 'web:menu:events' },
+      { path: '/audits', name: '事件审核', badgeKey: 'auditsPending', permKey: 'web:menu:audits' },
+      { path: '/work-orders', name: '已完成工单', badgeKey: 'workOrdersPending', permKey: 'web:menu:work-orders' },
+      { path: '/abnormal-orders', name: '异常工单', permKey: 'web:menu:abnormal-orders' },
     ]
   },
   {

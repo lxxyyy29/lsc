@@ -11,9 +11,6 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:10081',
-        
-        // target: 'https://drone.kfktec.cn:8443',
-        // target: 'http://192.168.1.6:8080',
         changeOrigin: true,
         ws: true,
       }

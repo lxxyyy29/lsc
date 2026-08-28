@@ -208,9 +208,6 @@ const isResidentTab = computed(() => activeTab.value === 'RESIDENT')
 const residentHouseholdTypes = [
   { value: 'LOCAL', label: '本地户籍' },
   { value: 'NON_LOCAL', label: '外地户籍' },
-  { value: 'LOW_INCOME', label: '低保户' },
-  { value: 'SPECIAL_CARE', label: '优抚对象' },
-  { value: 'OTHER', label: '其他' },
 ]
 
 // 特殊人群类型预置 + 自定义
