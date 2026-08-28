@@ -111,6 +111,20 @@
         <p v-if="errors.reportSource" class="field-error">{{ errors.reportSource }}</p>
       </div>
 
+      <!-- 发起人信息：电话必填，姓名选填 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">发起人姓名 <span style="font-weight:400;font-size:12px;color:#9ca3af;">（选填）</span></label>
+          <el-input v-model="form.reporterName" placeholder="请输入发起人姓名" />
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">发起人电话 <span style="color:#ff4d4f;">*</span></label>
+          <el-input v-model="form.reporterPhone" @input="errors.reporterPhone = ''" maxlength="11" placeholder="请输入发起人联系电话"
+                    :class="{ 'is-invalid': errors.reporterPhone }" />
+          <p v-if="errors.reporterPhone" class="field-error">{{ errors.reporterPhone }}</p>
+        </div>
+      </div>
+
       <!-- 页面模式操作栏（弹窗模式的取消/创建按钮由父级 el-dialog 的 #footer 提供） -->
       <div v-if="!embedded" style="display:flex;gap:12px;justify-content:flex-end;position:sticky;bottom:0;background:#fff;padding-top:12px;margin-top:16px;border-top:1px solid #f3f4f6;">
         <el-button @click="handleCancel">取消</el-button>
@@ -184,14 +198,16 @@ let AMapLib: any = null
 let mapInitCenter: [number, number] = [113.939521, 22.971231]
 
 // 必填项校验错误提示：提交时逐项标红并在字段下方展示 tips，输入后自动清除
-const errors = reactive({ title: '', eventType: '', occurredAt: '', location: '', reportSource: '' })
+const errors = reactive({ title: '', eventType: '', occurredAt: '', location: '', reportSource: '', reporterPhone: '' })
 function validateRequired(): boolean {
   errors.title = form.value.title.trim() ? '' : '请输入事件标题'
   errors.eventType = form.value.eventType ? '' : '请选择事件类型'
   errors.occurredAt = form.value.occurredAt ? '' : '请选择发生时间'
   errors.location = form.value.location.trim() ? '' : '请填写事发地点'
   errors.reportSource = form.value.reportSource ? '' : '请选择上报来源'
-  const firstMsg = errors.title || errors.eventType || errors.occurredAt || errors.location || errors.reportSource
+  const phone = form.value.reporterPhone.trim()
+  errors.reporterPhone = phone ? (/^1[3-9]\d{9}$/.test(phone) ? '' : '请输入正确的11位手机号') : '请输入发起人电话'
+  const firstMsg = errors.title || errors.eventType || errors.occurredAt || errors.location || errors.reportSource || errors.reporterPhone
   if (firstMsg) { showMessage(firstMsg, 'warning'); return false }
   return true
 }
@@ -204,6 +220,8 @@ const form = ref({
   location: '',
   description: '',
   reportSource: '',
+  reporterName: '',
+  reporterPhone: '',
   gridId: null as number | null,
   longitude: null as number | null,
   latitude: null as number | null,
@@ -383,6 +401,8 @@ function resetForm() {
     location: '',
     description: '',
     reportSource: '',
+    reporterName: '',
+    reporterPhone: '',
     gridId: null as number | null,
     longitude: null as number | null,
     latitude: null as number | null,

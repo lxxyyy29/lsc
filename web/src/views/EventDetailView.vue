@@ -33,6 +33,8 @@
             <div><span style="color:#9ca3af;">事发地点：</span>{{ event.location || '-' }}</div>
             <div><span style="color:#9ca3af;">所属网格：</span>{{ event.gridName || '-' }}</div>
             <div><span style="color:#9ca3af;">上报人：</span>{{ getReportSourceName(event.reportSource) }}</div>
+            <div v-if="event.reportUserName || event.reportPhone"><span style="color:#9ca3af;">发起人姓名：</span>{{ event.reportUserName || '-' }}</div>
+            <div v-if="event.reportPhone"><span style="color:#9ca3af;">发起人电话：</span>{{ event.reportPhone }}</div>
             <div><span style="color:#9ca3af;">来源系统：</span>{{ getSourceSystemName(event.sourceSystem) }}</div>
             <div v-if="event.deleted === 1" style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6;">
               <span style="color:#9ca3af;">删除原因：</span>{{ event.deletedReason || '-' }}

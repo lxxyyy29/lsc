@@ -130,6 +130,9 @@
                     <el-button style="height:42px;flex-shrink:0;" @click="confirmCustom('relation')">确定</el-button>
                   </div>
                 </template>
+                <!-- 身份证号：输入后自动推算出生日期(年龄)与性别 -->
+                <el-input v-else-if="isKey(f, 'idCard')" v-model="form.idCard" placeholder="请输入身份证号（自动推算年龄和性别）"
+                          @input="autoFillByIdCard" />
                 <!-- 通用下拉（含网格） -->
                 <el-select v-else-if="f.fieldType === 'select'" v-model="form[camel(f.fieldKey)]" placeholder="请选择" style="width:100%;">
                   <el-option v-for="opt in selectOptions(f)" :key="opt.value" :label="opt.label" :value="opt.value" />
@@ -201,10 +204,13 @@ const populationTabs = [
 const activeTab = ref<'RESIDENT' | 'FLOATING'>('RESIDENT')
 const isResidentTab = computed(() => activeTab.value === 'RESIDENT')
 
-// 户籍类型（常驻专用；流动库取消）
+// 户籍类型选项（常驻专用；流动库取消），与后端 PopulationController.HOUSEHOLD_LABELS 保持一致（FLOATING 属流动人口，不列入常驻选项）
 const residentHouseholdTypes = [
   { value: 'LOCAL', label: '本地户籍' },
   { value: 'NON_LOCAL', label: '外地户籍' },
+  { value: 'LOW_INCOME', label: '低保户' },
+  { value: 'SPECIAL_CARE', label: '优抚对象' },
+  { value: 'OTHER', label: '其他' },
 ]
 
 // 特殊人群类型预置 + 自定义
@@ -249,7 +255,7 @@ const formFields = computed(() => {
 })
 
 // 导入列：固定完整列序（与后端 ImportService 固定索引 0..9 对齐），避免动态缩减导致列错位
-const IMPORT_COLUMNS = ['name', 'idCard', 'phone', 'householdType', 'specialPopulation', 'specialPopulationType', 'relation', 'address', 'gridName', 'tags']
+const IMPORT_COLUMNS = ['gridName', 'householdFlag', 'name', 'age', 'gender', 'address', 'phone', 'relation', 'remark']
 const importColumns = computed(() => IMPORT_COLUMNS)
 
 const filters = reactive({
@@ -376,6 +382,34 @@ function autoFillAge() {
   const m = now.getMonth() - b.getMonth()
   if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--
   form.value.age = age >= 0 ? age : null
+}
+
+// 身份证号自动推算性别与出生日期(年龄)：支持 18 位与 15 位
+function autoFillByIdCard() {
+  const id = String(form.value.idCard || '').trim()
+  let birth = ''
+  let genderDigit = ''
+  if (/^\d{17}[\dXx]$/.test(id)) {
+    birth = id.slice(6, 14) // YYYYMMDD
+    genderDigit = id.charAt(16) // 第17位，奇男偶女
+  } else if (/^\d{15}$/.test(id)) {
+    birth = '19' + id.slice(6, 12) // 15位：YYMMDD，出生年前补 19
+    genderDigit = id.charAt(14)
+  }
+  if (genderDigit && /^\d$/.test(genderDigit)) {
+    form.value.gender = Number(genderDigit) % 2 === 1 ? '男' : '女'
+  }
+  if (birth) {
+    const y = Number(birth.slice(0, 4))
+    const m = Number(birth.slice(4, 6))
+    const d = Number(birth.slice(6, 8))
+    const now = new Date()
+    if (y >= 1900 && y <= now.getFullYear() && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+      const pad = (n: number) => String(n).padStart(2, '0')
+      form.value.birthday = `${y}-${pad(m)}-${pad(d)}`
+      autoFillAge()
+    }
+  }
 }
 
 async function fetchData() {

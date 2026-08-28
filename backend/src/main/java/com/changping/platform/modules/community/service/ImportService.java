@@ -77,7 +77,13 @@ public class ImportService {
         List<String> errors = new ArrayList<>();
         int total = 0;
 
-        for (int i = 1; i <= sheet.getLastRowNum() && total < previewRows; i++) {
+        int headerRow = findPopulationHeaderRow(sheet);
+        if (headerRow < 0) {
+            throw new BusinessException("IMPORT_HEADER_NOT_FOUND",
+                    "未识别到表头列，请确认 Excel 包含：序号/队别/户主/姓名/年龄/性别/住址/手机/与户主关系/备注");
+        }
+
+        for (int i = headerRow + 1; i <= sheet.getLastRowNum() && total < previewRows; i++) {
             Row row = sheet.getRow(i);
             if (row == null) continue;
             total++;
@@ -109,7 +115,13 @@ public class ImportService {
         int fail = 0;
         List<String> errorList = new ArrayList<>();
 
-        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+        int headerRow = findPopulationHeaderRow(sheet);
+        if (headerRow < 0) {
+            throw new BusinessException("IMPORT_HEADER_NOT_FOUND",
+                    "未识别到表头列，请确认 Excel 包含：序号/队别/户主/姓名/年龄/性别/住址/手机/与户主关系/备注");
+        }
+
+        for (int i = headerRow + 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             if (row == null) continue;
             try {
@@ -152,6 +164,8 @@ public class ImportService {
 
                 entity.setRemark(getCellString(row, 9));
                 entity.setStatus("ACTIVE");
+                // special_population 列为 NOT NULL DEFAULT 0，导入时显式置 0 避免插入失败
+                entity.setSpecialPopulation(0);
 
                 // 根据队别查找 grid_id
                 String gridName = getCellString(row, 1);
@@ -318,11 +332,43 @@ public class ImportService {
 
     // ==================== 工具方法 ====================
 
+    /**
+     * 定位人口通讯录表头行：Excel 顶部可能有标题行/合并大标题，逐行扫描前若干行，
+     * 找到包含 队别/姓名/手机 的表头行返回其行号；未找到返回 -1。
+     */
+    private int findPopulationHeaderRow(Sheet sheet) {
+        int scanEnd = Math.min(sheet.getLastRowNum(), 10);
+        for (int r = 0; r <= scanEnd; r++) {
+            Row row = sheet.getRow(r);
+            if (row == null) continue;
+            String teamCol = getCellString(row, 1);
+            String nameCol = getCellString(row, 3);
+            String phoneCol = getCellString(row, 7);
+            if ("队别".equals(teamCol) && "姓名".equals(nameCol) && "手机".equals(phoneCol)) {
+                return r;
+            }
+        }
+        return -1;
+    }
+
     private String getCellString(Row row, int col) {
         Cell cell = row.getCell(col);
         if (cell == null) return "";
         DataFormatter formatter = new DataFormatter();
-        return formatter.formatCellValue(cell).trim();
+        String value = formatter.formatCellValue(cell);
+        // 通讯录列宽对齐常在单元格内引入各类空白字符（ASCII/全角/不间断/细空格等），
+        // 按 Unicode 空白类与常用空格码点逐一剔除，避免影响队别网格匹配与姓名查重
+        StringBuilder sb = new StringBuilder(value.length());
+        for (int k = 0; k < value.length(); k++) {
+            char ch = value.charAt(k);
+            if (ch <= ' ' || ch == 0x00A0 || ch == 0x1680 || (ch >= 0x2000 && ch <= 0x200B)
+                    || ch == 0x2028 || ch == 0x2029 || ch == 0x202F || ch == 0x205F
+                    || ch == 0x3000 || ch == 0xFEFF || Character.isWhitespace(ch)) {
+                continue;
+            }
+            sb.append(ch);
+        }
+        return sb.toString();
     }
 
     private boolean idCardExists(String idCard) {

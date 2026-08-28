@@ -167,6 +167,14 @@ public class EventServiceImpl implements EventService {
                     user.id(), user.userName(), entity.getId()));
         }
 
+        // 创建表单填写的发起人信息：电话（Web 必填）/姓名（选填）落库
+        String reporterName = trimToNull(request.reporterName());
+        String reporterPhone = trimToNull(request.reporterPhone());
+        if (reporterName != null || reporterPhone != null) {
+            jdbcTemplate.update("UPDATE biz_event SET report_user_name = ?, report_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    reporterName, reporterPhone, entity.getId());
+        }
+
         // 证据图片为可选字段，未传时按空列表处理，避免 NPE
         for (String reference : request.evidenceReferences() != null ? request.evidenceReferences() : java.util.List.<String>of()) {
             eventMapper.insertEvidenceReference(entity.getId(), extractFileName(reference), reference);
@@ -185,7 +193,7 @@ public class EventServiceImpl implements EventService {
                 externalId, "PUBLIC", "12345",
                 eventType != null ? eventType : "COMPLAINT", title, description,
                 java.time.LocalDateTime.now(), location,
-                null, null, java.util.List.of(), null, null);
+                null, null, java.util.List.of(), null, null, null, null);
         EventDetailVo vo = createEvent(request);
         // 更新来源标记为 12345，并记录来电人信息
         jdbcTemplate.update("UPDATE biz_event SET report_source = '12345', report_user_name = ?, report_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -210,7 +218,7 @@ public class EventServiceImpl implements EventService {
                 externalId, "PROPERTY", "PROPERTY_REPORT",
                 eventType != null ? eventType : "COMPLAINT", title, description,
                 java.time.LocalDateTime.now(), locationFull.isBlank() ? "拔蛟窝社区" : locationFull,
-                null, null, java.util.List.of(), null, null);
+                null, null, java.util.List.of(), null, null, null, null);
         EventDetailVo vo = createEvent(request);
         // 更新来源标记为 PROPERTY，记录上报人
         jdbcTemplate.update("UPDATE biz_event SET report_source = 'PROPERTY', report_user_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -233,7 +241,7 @@ public class EventServiceImpl implements EventService {
                 eventType != null && !eventType.isBlank() ? eventType : "OTHER", title, description,
                 java.time.LocalDateTime.now(),
                 location != null && !location.isBlank() ? location : "拔蛟窝社区",
-                longitude, latitude, java.util.List.of(), null, null);
+                longitude, latitude, java.util.List.of(), null, null, null, null);
         EventDetailVo vo = createEvent(request);
         // 来源标记为 RESIDENT，记录上报人信息，便于“我的上报”与事件详情追溯
         jdbcTemplate.update("UPDATE biz_event SET report_source = 'RESIDENT', report_user_id = ?, report_user_name = ?, report_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -436,6 +444,13 @@ public class EventServiceImpl implements EventService {
      */
     // ---- 网格多边形缓存（30s TTL，按坐标自动关联网格用） ----
 
+    /** 空白字符串归一为 null（去空格） */
+    private static String trimToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     private record CachedGridPolygon(long id, int gridLevel, double[] polyLng, double[] polyLat) {}
     private volatile List<CachedGridPolygon> cachedGridPolygons = null;
     private volatile long gridCacheTimestamp = 0;
@@ -627,6 +642,8 @@ public class EventServiceImpl implements EventService {
                 null,
                 firstNonBlank(document.getUrgencyLevel(), entity.getUrgencyLevel()),
                 entity.getReportSource(),
+                entity.getReportUserName(),
+                entity.getReportPhone(),
                 entity.getArchived() != null && entity.getArchived() == 1,
                 Boolean.TRUE.equals(document.getHidden()),
                 entity.getDeleted() != null && entity.getDeleted() == 1,
@@ -675,6 +692,8 @@ public class EventServiceImpl implements EventService {
                 null,
                 firstNonBlank(document.getUrgencyLevel(), entity == null ? null : entity.getUrgencyLevel()),
                 entity == null ? null : entity.getReportSource(),
+                entity == null ? null : entity.getReportUserName(),
+                entity == null ? null : entity.getReportPhone(),
                 entity != null && entity.getArchived() != null && entity.getArchived() == 1,
                 Boolean.TRUE.equals(document.getHidden()),
                 entity != null && entity.getDeleted() != null && entity.getDeleted() == 1,
@@ -834,6 +853,8 @@ public class EventServiceImpl implements EventService {
                 null,
                 entity.getUrgencyLevel(),
                 entity.getReportSource(),
+                entity.getReportUserName(),
+                entity.getReportPhone(),
                 entity.getArchived() != null && entity.getArchived() == 1,
                 entity.getHidden() != null && entity.getHidden() == 1,
                 entity.getDeleted() != null && entity.getDeleted() == 1,

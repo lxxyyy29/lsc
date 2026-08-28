@@ -33,5 +33,9 @@ public record CreateEventRequest(
         /** 紧急程度：GREEN/YELLOW/RED，不传默认 GREEN（Web 创建表单必选） */
         String urgencyLevel,
         /** 所属网格ID（可选）：未传时若有坐标则按坐标自动匹配最小网格 */
-        Long gridId) {
+        Long gridId,
+        /** 发起人姓名（选填） */
+        String reporterName,
+        /** 发起人电话（Web 创建事件表单必填，其他端上报兼容选填） */
+        String reporterPhone) {
 }

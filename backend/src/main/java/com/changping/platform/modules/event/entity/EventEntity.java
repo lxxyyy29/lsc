@@ -62,6 +62,10 @@ public class EventEntity {
     private String urgencyLevel;
     /** 事件来源: GRID_MEMBER=网格员 RESIDENT=居民 12345=12345转办 PROPERTY=物业 AI_CAMERA=AI监控 */
     private String reportSource;
+    /** 发起人/上报人姓名 */
+    private String reportUserName;
+    /** 发起人/上报人电话 */
+    private String reportPhone;
     /** 是否已归档：0=活跃 1=已归档留存 */
     private Integer archived;
     /** 展示隐藏：0=显示 1=隐藏（仅事件闭环/工单中心可见） */

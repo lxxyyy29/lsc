@@ -1,6 +1,7 @@
 <template>
-  <div>
-    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
+  <!-- 高度撑满可视区：卡片固定高度，表格内部滚动，分页固定在底部 -->
+  <div style="height:calc(100vh - 104px);display:flex;flex-direction:column;overflow:hidden;">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
       <div>
         <h1 class="page-title">事件闭环处置</h1>
         <p class="page-desc">未被网格员手机端处理过的事件：上报→审核→派单→网格员处置前的全流程跟进</p>
@@ -12,9 +13,9 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column;margin-bottom:0;">
       <!-- 筛选栏 -->
-      <div class="filter-bar">
+      <div class="filter-bar" style="flex-shrink:0;">
         <select v-model="filters.status" class="filter-select" @change="page = 1; loadData()">
           <option value="">全部状态</option>
           <option value="PENDING_AUDIT">待审核</option>
@@ -60,7 +61,7 @@
 
       <!-- 数据表格 -->
       <template v-else>
-        <div class="table-scroll" style="max-height:calc(100vh - 400px);min-height:240px;overflow-y:auto;">
+        <div class="table-scroll" style="flex:1;min-height:0;overflow-y:auto;">
         <table class="table">
           <thead>
             <tr>
@@ -115,8 +116,8 @@
           <p>暂无事件数据</p>
         </div>
 
-        <!-- 分页：有数据即显示 -->
-        <div v-if="total > 0" style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">
+        <!-- 分页：有数据即显示；固定在卡片底部不随表格滚动 -->
+        <div v-if="total > 0" style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">
           <span style="font-size:13px;color:#6b7280;">共 {{ total }} 条</span>
           <div style="display:flex;gap:6px;">
             <button @click="page = 1; loadData()" :disabled="page === 1" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:13px;cursor:pointer;">首页</button>

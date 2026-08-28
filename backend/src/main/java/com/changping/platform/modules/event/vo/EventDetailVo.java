@@ -39,6 +39,8 @@ public record EventDetailVo(
         String gridName,
         String urgencyLevel,
         String reportSource,
+        String reportUserName,
+        String reportPhone,
         Boolean archived,
         Boolean hidden,
         Boolean deleted,
