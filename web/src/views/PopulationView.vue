@@ -58,50 +58,9 @@
         <button @click="fetchData" style="margin-top:12px;padding:6px 16px;border:1px solid #d9d9d9;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;">重试</button>
       </div>
       <template v-else>
-        <!-- 常驻：按户主对应树状结构（一级=户，二级=家庭成员） -->
-        <template v-if="isResidentTab">
-          <div class="card" style="padding:16px 24px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-              <div style="font-size:13px;color:#6b7280;">共 <strong>{{ personCount }}</strong> 人 / <strong>{{ householdTree.length }}</strong> 户</div>
-              <div style="display:flex;gap:12px;font-size:12px;color:#6b7280;">
-                <span><i class="fas fa-home" style="color:#ad6800;"></i> 户（地址）</span>
-                <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4d4f;"></span> 户主</span>
-              </div>
-            </div>
-            <el-tree
-              :data="householdTree"
-              :props="{ label: 'label', children: 'children' }"
-              node-key="id"
-              default-expand-all
-              :expand-on-click-node="false"
-              class="household-tree"
-            >
-              <template #default="{ node, data }">
-                <!-- 一级节点：户 -->
-                <div v-if="data.isHouse" style="display:flex;align-items:center;gap:8px;width:100%;">
-                  <i class="fas fa-home" style="color:#ad6800;"></i>
-                  <span style="font-weight:600;color:#ad6800;">{{ data.label }}</span>
-                  <span v-if="data.head" class="tag tag-red" style="margin-left:4px;">户主：{{ data.head.name }}</span>
-                  <span v-else class="tag tag-gray">未指定户主</span>
-                  <span style="color:#9ca3af;font-size:12px;">共 {{ data.children?.length || 0 }} 人</span>
-                </div>
-                <!-- 二级节点：家庭成员 -->
-                <div v-else style="display:flex;align-items:center;gap:8px;width:100%;">
-                  <span :style="{display:'inline-block',width:'8px',height:'8px',borderRadius:'50%',background: data.isHead ? '#ff4d4f' : '#d1d5db'}"></span>
-                  <span :style="{fontWeight: data.isHead ? 600 : 400}">{{ data.label }}</span>
-                  <span v-if="data.person.specialPopulation == 1" class="tag tag-orange" style="margin-left:4px;">{{ data.person.specialPopulationType || '特殊人群' }}</span>
-                  <span style="margin-left:auto;display:flex;gap:6px;">
-                    <el-button size="small" link type="primary" @click.stop="openEdit(data.person)">编辑</el-button>
-                    <el-button size="small" link type="danger" @click.stop="handleDelete(data.person)">删除</el-button>
-                  </span>
-                </div>
-              </template>
-            </el-tree>
-            <p v-if="!householdTree.length" style="text-align:center;padding:40px;color:#9ca3af;">暂无数据</p>
-          </div>
-        </template>
-
-        <!-- 流动：普通列表 -->
+        <!-- 常驻：按户分组卡片 + 整户展开收起（后端已是树形结构，直接消费） -->
+        <PopulationCardList v-if="isResidentTab" :households="list" @edit="openEdit" @delete="handleDelete" />
+        <!-- 流动：普通列表（保持原表格效果，无户主概念） -->
         <table v-else class="table">
           <thead><tr>
             <th>姓名</th><th>性别</th><th>年龄</th><th>电话</th>
@@ -230,6 +189,7 @@ import http from '../api'
 import { getHouseholdTypeName } from '../utils/eventTypes'
 import { getFormFieldConfig, saveFormFieldConfig } from '../api'
 import ImportDialog from '../components/ImportDialog.vue'
+import PopulationCardList from '../components/PopulationCardList.vue'
 import { showMessage } from '../utils/message'
 import { confirmDialog } from '../utils/dialog'
 
@@ -245,9 +205,6 @@ const isResidentTab = computed(() => activeTab.value === 'RESIDENT')
 const residentHouseholdTypes = [
   { value: 'LOCAL', label: '本地户籍' },
   { value: 'NON_LOCAL', label: '外地户籍' },
-  { value: 'LOW_INCOME', label: '低保户' },
-  { value: 'SPECIAL_CARE', label: '优抚对象' },
-  { value: 'OTHER', label: '其他' },
 ]
 
 // 特殊人群类型预置 + 自定义
@@ -404,15 +361,10 @@ function onSpecialChange(v: any) {
   customEditing['specialPopulationType'] = false
 }
 
-// 常住树：直接消费后端 /community/population 返回的"户→成员"结构（一级=户带 children，二级=家庭成员）
-const listTree = ref<any[]>([])
-const householdTree = computed(() => listTree.value)
-
-// 人口总数：常住=树内成员数合计，流动=扁平列表长度
-const personCount = computed(() => {
-  if (isResidentTab.value) return listTree.value.reduce((s: number, h: any) => s + (h.children?.length || 0), 0)
-  return list.value.length
-})
+// 是否户主（用于列表高亮）
+function isHead(p: any) {
+  return isResidentTab.value && p.relation === '户主'
+}
 
 // 出生日期自动推算年龄
 function autoFillAge() {
@@ -436,8 +388,7 @@ async function fetchData() {
     if (filters.gridId) params.gridId = filters.gridId
     const res: any = await http.get('/community/population', { params }) || []
     // 常住返回"户→成员"树（带 children），流动返回扁平列表
-    if (isResidentTab.value) listTree.value = res
-    else list.value = res
+    list.value = res
   } catch(e: any) {
     error.value = e?.message || '加载失败，请稍后重试'
   } finally {

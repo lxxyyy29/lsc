@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHashHistory, type RouteRecordRaw, NavigationFailureType } from 'vue-router'
 import { getSession } from '../api'
 import { permKeyForPath, isSuperAdminSession, firstVisiblePath } from '../menu'
 
@@ -100,15 +100,10 @@ router.beforeEach((to) => {
   }
 })
 
-// 处理导航错误（防止白屏）
-router.afterEach((to, from, error) => {
-  if (error) {
-    console.error('[路由跳转失败]', {
-      from: from.fullPath,
-      to: to.fullPath,
-      error: error.message || error
-    })
-  }
+// 处理导航错误（防止白屏；重复/被新导航抢占均属冗余噪声，忽略）
+router.afterEach((to, from, failure: any) => {
+  if (failure && (failure.type === NavigationFailureType.duplicated || failure.type === NavigationFailureType.cancelled)) return
+  if (failure) console.error('[路由跳转失败]', { from: from.fullPath, to: to.fullPath, error: failure.message || failure })
 })
 
 export default router

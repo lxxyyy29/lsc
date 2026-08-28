@@ -79,10 +79,6 @@ export function getSourceSystemName(system: string): string {
 export const HOUSEHOLD_TYPES: Record<string, string> = {
   LOCAL: '本地户籍',
   NON_LOCAL: '外地户籍',
-  FLOATING: '流动人口',
-  LOW_INCOME: '低保户',
-  SPECIAL_CARE: '优抚对象',
-  OTHER: '其他',
 };
 
 /**

@@ -50,7 +50,7 @@ axiosInstance.interceptors.response.use(
   error => {
     if (error.response?.status === 401) {
       localStorage.removeItem('grid-session')
-      window.location.href = '#/login'
+      if (window.location.hash !== '#/login') window.location.href = '#/login'
     }
     return Promise.reject(new Error(translateError(error.response?.data?.message || '网络错误，请检查网络连接')))
   }
