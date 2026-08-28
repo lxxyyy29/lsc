@@ -6,6 +6,9 @@
         <p class="page-desc">网格员、社区工作人员、志愿者等信息维护</p>
       </div>
       <div style="display:flex;gap:8px;">
+        <button @click="openAddLeader" class="btn btn-primary">
+          <i class="fas fa-user-plus"></i> 新增组长
+        </button>
         <button @click="openAssign" class="btn btn-default">
           <i class="fas fa-sitemap"></i>人员划分
         </button>
@@ -89,6 +92,13 @@
           <label class="form-label">所属社区</label>
           <input :value="'拔蛟窝社区'" class="form-input" disabled style="background:#f9fafb;" />
         </div>
+        <div v-if="['GRID_WORKER', 'LEADER'].includes(form.memberType)" class="form-group">
+          <label class="form-label">职位 <span class="required">*</span></label>
+          <select v-model="form.position" class="form-select">
+            <option v-for="p in positionOptions" :key="p" :value="p">{{ p }}</option>
+          </select>
+          <p style="font-size:12px;color:#6b7280;margin-top:4px;">保存后账号角色将按职位自动绑定（组长/网格长→网格组长角色）</p>
+        </div>
         <div v-if="form.memberType === 'GRID_WORKER'" class="form-group">
           <label class="form-label">所属小网格 <span class="required">*</span></label>
           <select v-model="form.gridId" class="form-select">
@@ -109,6 +119,53 @@
         <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
           <button @click="closeModal" class="btn btn-default">取消</button>
           <button @click="handleSubmit" class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新增组长弹窗：创建组长并绑定小网格，绑定后该网格下网格员自动全部划入其名下 -->
+    <div v-if="showAddLeader" class="modal-overlay">
+      <div class="modal-box" style="width:520px;">
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">新增组长</h3>
+        <div class="form-group">
+          <label class="form-label">姓名 <span class="required">*</span></label>
+          <input v-model="leaderForm.name" class="form-input" placeholder="请输入组长姓名" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">电话</label>
+          <input v-model="leaderForm.phone" class="form-input" placeholder="请输入联系电话" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">职务 <span class="required">*</span></label>
+          <select v-model="leaderForm.position" class="form-select">
+            <option value="网格长">网格长</option>
+            <option value="组长">组长</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">绑定小网格 <span class="required">*</span></label>
+          <select v-model="leaderForm.gridId" class="form-select" @change="onLeaderGridChange">
+            <option :value="null">请选择小网格</option>
+            <option v-for="g in grids" :key="g.id" :value="Number(g.id)" :disabled="gridHasLeader(Number(g.id))">
+              {{ g.gridName }}{{ gridHasLeader(Number(g.id)) ? '（已有组长）' : '' }}
+            </option>
+          </select>
+          <p v-if="!grids.length" style="font-size:12px;color:#d97706;margin-top:4px;">⚠️ 暂无小网格，请先添加网格数据</p>
+        </div>
+        <!-- 绑定网格即自动划分：预提示该网格待划入的网格员数量 -->
+        <div v-if="leaderForm.gridId != null" style="padding:10px 14px;border-radius:8px;background:#f0f7ff;border:1px solid #bae0fd;font-size:13px;color:#075985;margin-bottom:16px;">
+          <i class="fas fa-info-circle"></i>
+          <b>绑定网格=自动划分下属：</b>创建后「{{ selectedGridName }}」下 {{ leaderGridWorkerCount }} 名网格员将自动划入该组长名下。
+          <span v-if="gridHasLeader(Number(leaderForm.gridId))" style="color:#b45309;">（该网格已有组长，不可重复创建）</span>
+        </div>
+        <div style="padding:10px 14px;border-radius:8px;background:#eefbf3;border:1px solid #bfe8cf;font-size:13px;color:#0f6e56;margin-bottom:16px;">
+          <i class="fas fa-user-shield"></i>
+          <b>自动创建系统账号：</b>创建同时生成「网格组长」角色账号（角色已纳入系统设置-角色管理，可在其中配置权限）。
+          <br>账号：<b>{{ leaderForm.name.trim() || '姓名（去空格）' }}</b>，初始密码：123456
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+          <button @click="showAddLeader = false" class="btn btn-default">取消</button>
+          <button @click="handleCreateLeader" class="btn btn-primary">创建并划分</button>
         </div>
       </div>
     </div>
@@ -197,6 +254,66 @@ function resetFilters() {
   filters.value = { keyword: '', gridId: null, leaderId: null, status: '' }
 }
 
+// ==================== 新增组长（绑定网格=自动划分下属） ====================
+const showAddLeader = ref(false)
+const leaderForm = ref({
+  name: '',
+  phone: '',
+  position: '网格长',
+  gridId: null as number | null,
+  status: 'ACTIVE',
+})
+
+// 该网格是否已有组长（用于下拉禁用与提示）
+function gridHasLeader(gridId: number | null) {
+  if (gridId == null) return false
+  return list.value.some((m: any) => Number(m.gridId) === gridId
+    && (m.memberType === 'LEADER' || (m.position || '').includes('组长') || (m.position || '').includes('网格长')))
+}
+// 该网格下可自动划入的网格员数量（在岗网格员，剔除组长身份）
+const leaderGridWorkerCount = computed(() => {
+  if (leaderForm.value.gridId == null) return 0
+  return list.value.filter((m: any) => Number(m.gridId) === Number(leaderForm.value.gridId)
+    && m.memberType === 'GRID_WORKER'
+    && !(m.position || '').includes('组长') && !(m.position || '').includes('网格长')).length
+})
+const selectedGridName = computed(() => {
+  const g = grids.value.find((x: any) => Number(x.id) === Number(leaderForm.value.gridId))
+  return g ? g.gridName : ''
+})
+
+function openAddLeader() {
+  leaderForm.value = { name: '', phone: '', position: '网格长', gridId: null, status: 'ACTIVE' }
+  showAddLeader.value = true
+}
+function onLeaderGridChange() {
+  // 选择网格即自动划分子下属，此处仅触发提示更新（computed 已自动计算）
+}
+
+async function handleCreateLeader() {
+  if (!leaderForm.value.name.trim()) { showMessage('请输入组长姓名'); return }
+  if (leaderForm.value.gridId == null) { showMessage('请选择要绑定的小网格'); return }
+  if (gridHasLeader(Number(leaderForm.value.gridId))) { showMessage('该网格已有组长，请更换网格'); return }
+  try {
+    const res: any = await http.post('/community/org-members/create-leader', {
+      name: leaderForm.value.name.trim(),
+      phone: leaderForm.value.phone.trim() || null,
+      position: leaderForm.value.position,
+      gridId: Number(leaderForm.value.gridId),
+      status: 'ACTIVE',
+    })
+    const assignedMsg = res?.assignedCount > 0 ? `已自动将 ${res.assignedCount} 名网格员划入其名下` : '该网格暂无可用网格员'
+    const accountMsg = res?.username
+      ? `，已创建系统账号 ${res.username}（密码 ${res.password || '123456'}）`
+      : ''
+    showMessage(`组长「${res.leaderName}」创建成功：${assignedMsg}${accountMsg}`)
+    showAddLeader.value = false
+    await fetchData()
+  } catch(e: any) {
+    showMessage(e?.message || '创建失败')
+  }
+}
+
 // 人员划分：组长 ↔ 属下网格员勾选
 const showAssign = ref(false)
 const leaderCandidates = ref<any[]>([])
@@ -239,6 +356,12 @@ function syncCheckedByLeader() {
     ? assignableMembers.value.filter(m => m.leaderId === assignLeaderId.value).map(m => m.id)
     : []
 }
+// 职位下拉（职位与系统角色绑定：组长/网格长→网格组长角色）
+const positionOptions = computed(() => {
+  if (form.value.memberType === 'LEADER') return ['组长', '网格长']
+  return ['网格员', '组长', '网格长']
+})
+
 async function openAssign() {
   assignLeaderId.value = null
   assignChecked.value = []

@@ -125,6 +125,38 @@ public class AssessmentController {
     }
 
     /**
+     * 网格组长研判：以组长所辖网格内网格员的工单绩效汇总反应组长表现。
+     * 组长判定：cmn_org_member.position 含"组长/网格长"或 member_type='LEADER'；
+     * 下属 = 同一 grid_id 下 member_type='GRID_WORKER' 且非组长的在岗用户。
+     */
+    @GetMapping("/leader-performance")
+    public ApiResponse<List<Map<String, Object>>> leaderPerformance() {
+        requireAssessmentPermission();
+        List<Map<String, Object>> result = jdbcTemplate.queryForList(
+                "SELECT " +
+                "  m.id AS leaderOrgMemberId, " +
+                "  m.name AS leaderName, " +
+                "  COALESCE(m.position, '') AS position, " +
+                "  COALESCE(g.grid_name, '未分配网格') AS gridName, " +
+                "  COUNT(DISTINCT CASE WHEN su.id IS NOT NULL THEN sub.id END) AS workerCount, " +
+                "  COUNT(DISTINCT wo.id) AS totalOrders, " +
+                "  COALESCE(SUM(CASE WHEN wo.id IS NOT NULL AND wo.status = 'COMPLETED' THEN 1 ELSE 0 END), 0) AS completedOrders, " +
+                "  COALESCE(SUM(CASE WHEN wo.id IS NOT NULL AND wo.status = 'PROCESSING' THEN 1 ELSE 0 END), 0) AS processingOrders, " +
+                "  ROUND(SUM(CASE WHEN wo.id IS NOT NULL AND wo.status = 'COMPLETED' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(DISTINCT wo.id), 0), 1) AS completionRate " +
+                "FROM cmn_org_member m " +
+                "LEFT JOIN cmn_grid g ON g.id = m.grid_id " +
+                "LEFT JOIN cmn_org_member sub ON sub.grid_id = m.grid_id AND sub.status = 'ACTIVE' " +
+                "  AND sub.member_type = 'GRID_WORKER' AND sub.id != m.id " +
+                "  AND NOT (sub.position LIKE '%组长%' OR sub.position LIKE '%网格长%') " +
+                "LEFT JOIN sys_user su ON su.id = sub.sys_user_id AND su.status = 'ACTIVE' " +
+                "LEFT JOIN biz_work_order wo ON wo.assignee_user_id = sub.sys_user_id " +
+                "WHERE m.status = 'ACTIVE' AND (m.position LIKE '%组长%' OR m.position LIKE '%网格长%' OR m.member_type = 'LEADER') " +
+                "GROUP BY m.id, m.name, m.position, g.grid_name " +
+                "ORDER BY completionRate DESC, leaderName ASC");
+        return ApiResponse.ok(result);
+    }
+
+    /**
      * 事件处置时效统计
      */
     @GetMapping("/response-time")

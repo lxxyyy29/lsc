@@ -8,8 +8,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class PopulationServiceImpl implements PopulationService {
@@ -36,6 +38,25 @@ public class PopulationServiceImpl implements PopulationService {
     @Override
     public List<PopulationTreeVo> tree(String keyword, String householdType, Long gridId) {
         List<PopulationEntity> rows = populationMapper.search(keyword, householdType, gridId, "RESIDENT");
+        // 关键字搜索：命中成员后整户带出——按命中住址扩展查询同址全部常驻成员，
+        // 保证搜索结果展示整户（所有人）而非仅命中的单个成员；无住址的命中成员无法关联同户，原样保留。
+        if (keyword != null && !keyword.isBlank() && !rows.isEmpty()) {
+            List<PopulationEntity> noAddressHits = new ArrayList<>();
+            Set<String> hitAddresses = new LinkedHashSet<>();
+            for (PopulationEntity p : rows) {
+                String addr = p.getAddress() == null || p.getAddress().isBlank() ? "" : p.getAddress().trim();
+                if (addr.isEmpty()) {
+                    noAddressHits.add(p);
+                } else {
+                    hitAddresses.add(addr);
+                }
+            }
+            List<PopulationEntity> expanded = new ArrayList<>(noAddressHits);
+            if (!hitAddresses.isEmpty()) {
+                expanded.addAll(populationMapper.findResidentsByAddresses(new ArrayList<>(hitAddresses), gridId));
+            }
+            rows = expanded;
+        }
         List<PopulationTreeVo> houses = new ArrayList<>();
         Map<String, PopulationTreeVo> byAddress = new LinkedHashMap<>();
         int houseIdx = 0;

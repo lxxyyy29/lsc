@@ -39,6 +39,24 @@ public class OrgMemberServiceImpl implements OrgMemberService {
     @Override
     public int assignLeader(List<Long> memberIds, Long leaderId) { return mapper.assignLeader(memberIds, leaderId); }
 
+    @Override
+    public Long createLeader(OrgMemberEntity e) {
+        if (e.getStatus() == null) e.setStatus("ACTIVE");
+        e.setMemberType("LEADER");
+        if (e.getPosition() == null || e.getPosition().isBlank()) e.setPosition("网格长");
+        return mapper.insert(e);
+    }
+
+    @Override
+    public int assignGridWorkersToLeader(Long leaderId, Long gridId) {
+        return mapper.assignGridWorkersToLeader(leaderId, gridId);
+    }
+
+    @Override
+    public int countGridWorkers(Long gridId) {
+        return mapper.countGridWorkers(gridId);
+    }
+
     private void fillDefaultPosition(OrgMemberEntity e) {
         if (e.getPosition() != null && !e.getPosition().isBlank()) {
             return;

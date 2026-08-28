@@ -110,4 +110,26 @@ public class OrgMemberMapper {
                 "UPDATE cmn_org_member SET leader_id = ?, updated_at = NOW() WHERE id IN (" + placeholders + ")",
                 params);
     }
+
+    /**
+     * 创建组长并绑定网格后自动划分：将该网格下全部在岗网格员划入组长名下。
+     * 排除组长本人及非网格员（社区工作人员等不参与划分）。
+     */
+    public int assignGridWorkersToLeader(Long leaderId, Long gridId) {
+        if (leaderId == null || gridId == null) return 0;
+        return jdbcTemplate.update(
+                "UPDATE cmn_org_member SET leader_id = ?, updated_at = NOW() " +
+                        "WHERE grid_id = ? AND member_type = 'GRID_WORKER' AND status = 'ACTIVE' AND id != ?",
+                leaderId, gridId, leaderId);
+    }
+
+    /** 统计某网格下在岗网格员数量（不含组长身份人员） */
+    public int countGridWorkers(Long gridId) {
+        if (gridId == null) return 0;
+        Integer n = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM cmn_org_member WHERE grid_id = ? AND member_type = 'GRID_WORKER' " +
+                        "AND status = 'ACTIVE' AND NOT (position LIKE '%组长%' OR position LIKE '%网格长%' OR member_type = 'LEADER')",
+                Integer.class, gridId);
+        return n != null ? n : 0;
+    }
 }

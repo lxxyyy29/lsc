@@ -114,6 +114,7 @@ function toggle(id: string | number) {
               <th>户籍类型</th>
               <th>特殊人群</th>
               <th>网格</th>
+              <th>备注</th>
               <th class="col-act">操作</th>
             </tr>
           </thead>
@@ -138,6 +139,7 @@ function toggle(id: string | number) {
                 <span v-else class="muted">-</span>
               </td>
               <td class="muted">{{ m.gridName || '-' }}</td>
+              <td class="muted">{{ m.remark || '-' }}</td>
               <td class="col-act">
                 <el-button size="small" link type="primary" @click.stop="emit('edit', m)">编辑</el-button>
                 <el-button size="small" link type="danger" @click.stop="emit('delete', m)">删除</el-button>

@@ -91,6 +91,34 @@ public class PopulationMapper {
         }, params.toArray());
     }
 
+    /**
+     * 整户带出：按地址集合查询全部常驻成员（排除流动），仅保留网格过滤；
+     * 不应用关键字/户籍类型过滤，确保同一住址的家庭成员完整返回。
+     * 地址用 TRIM 归一，与 tree() 分组键（address.trim()）保持一致。
+     */
+    public List<PopulationEntity> findResidentsByAddresses(List<String> addresses, Long gridId) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT p.*, g.grid_name FROM cmn_population p LEFT JOIN cmn_grid g ON g.id = p.grid_id "
+                        + "WHERE p.status = 'ACTIVE' AND COALESCE(p.household_type, '') <> 'FLOATING' AND TRIM(p.address) IN (");
+        List<Object> params = new java.util.ArrayList<>();
+        for (int i = 0; i < addresses.size(); i++) {
+            if (i > 0) sql.append(",");
+            sql.append("?");
+            params.add(addresses.get(i));
+        }
+        sql.append(")");
+        if (gridId != null) {
+            sql.append(" AND p.grid_id = ?");
+            params.add(gridId);
+        }
+        sql.append(" ORDER BY p.address, p.id DESC");
+        return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
+            PopulationEntity e = ROW_MAPPER.mapRow(rs, rowNum);
+            e.setGridName(rs.getString("grid_name"));
+            return e;
+        }, params.toArray());
+    }
+
     public PopulationEntity findById(Long id) {
         return jdbcTemplate.queryForObject(
                 "SELECT * FROM cmn_population WHERE id = ?",

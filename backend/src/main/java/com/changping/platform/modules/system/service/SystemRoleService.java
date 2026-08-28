@@ -22,8 +22,8 @@ import org.springframework.util.StringUtils;
 @Service
 public class SystemRoleService {
 
-    /** 系统固定内置角色：超级管理员/管理员/网格员/居民，不可新增、不可删除 */
-    public static final Set<String> BUILTIN_ROLE_CODES = Set.of("SUPER_ADMIN", "EVENT_OPERATOR", "GRID_WORKER", "PUBLIC");
+    /** 系统固定内置角色：超级管理员/管理员/网格员/网格组长/居民，不可新增、不可删除 */
+    public static final Set<String> BUILTIN_ROLE_CODES = Set.of("SUPER_ADMIN", "EVENT_OPERATOR", "GRID_WORKER", "GRID_LEADER", "PUBLIC");
 
     private final JdbcTemplate jdbcTemplate;
     private final SystemPermissionService systemPermissionService;
