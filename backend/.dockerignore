@@ -1,0 +1,16 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea/
+*.iml
+
+# 构建与源码（镜像只需 target 下的构建产物 jar）
+.mvn/
+mvnw
+mvnw.cmd
+src/
+pom.xml
+uploads/
+logs/

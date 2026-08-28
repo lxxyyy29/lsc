@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>东莞杰瑞智慧网格治理平台 - 项目展示</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(135deg, #0a1628 0%, #132347 30%, #0d2137 60%, #0a1628 100%);
+  color: #e8edf5;
+  min-height: 100vh;
+  line-height: 1.6;
+}
+.hero {
+  background: radial-gradient(ellipse at 50% 0%, rgba(56,128,255,0.15) 0%, transparent 70%),
+              linear-gradient(180deg, #0d2247 0%, #0a1628 100%);
+  padding: 80px 20px 60px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233880ff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.5;
+}
+.hero-content { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; }
+.badge {
+  display: inline-block;
+  background: rgba(56,128,255,0.2);
+  border: 1px solid rgba(56,128,255,0.4);
+  color: #6db3ff;
+  padding: 6px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.hero h1 {
+  font-size: 48px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffffff 0%, #a0cfff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+}
+.hero .subtitle {
+  font-size: 18px;
+  color: #8899bb;
+  margin-bottom: 32px;
+}
+.hero-ideals {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.hero-ideal {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 16px 24px;
+  max-width: 260px;
+  text-align: left;
+  backdrop-filter: blur(10px);
+}
+.hero-ideal .num {
+  font-size: 28px;
+  font-weight: 800;
+  color: #3880ff;
+  line-height: 1;
+}
+.hero-ideal .txt {
+  font-size: 13px;
+  color: #8899bb;
+  margin-top: 6px;
+}
+
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+.section-title {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.section-title .en {
+  font-size: 12px;
+  letter-spacing: 4px;
+  color: #3880ff;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.section-title h2 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #fff;
+}
+.section-title .line {
+  width: 60px; height: 3px;
+  background: linear-gradient(90deg, #3880ff, #6db3ff);
+  margin: 16px auto 0;
+  border-radius: 2px;
+}
+
+/* Data Base */
+.data-base { padding: 80px 0 40px; }
+.db-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+}
+.db-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 28px;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.db-card:hover {
+  border-color: rgba(56,128,255,0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 40px rgba(56,128,255,0.1);
+}
+.db-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: linear-gradient(180deg, #3880ff, #6db3ff);
+  border-radius: 16px 0 0 16px;
+}
+.db-card .icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+  font-size: 22px;
+}
+.db-card .icon.blue { background: rgba(56,128,255,0.15); color: #3880ff; }
+.db-card .icon.green { background: rgba(34,197,94,0.15); color: #22c55e; }
+.db-card .icon.purple { background: rgba(168,85,247,0.15); color: #a855f7; }
+.db-card .icon.orange { background: rgba(249,115,22,0.15); color: #f97316; }
+.db-card .icon.cyan { background: rgba(6,182,212,0.15); color: #06b6d4; }
+.db-card h3 { font-size: 18px; margin-bottom: 8px; color: #fff; }
+.db-card p { font-size: 13px; color: #7a8fa6; line-height: 1.7; }
+.db-card .tags { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.db-card .tag {
+  font-size: 11px; padding: 3px 10px;
+  border-radius: 10px;
+  background: rgba(56,128,255,0.1);
+  color: #6db3ff;
+  border: 1px solid rgba(56,128,255,0.2);
+}
+
+/* Terminal */
+.terminals { padding: 60px 0; }
+.term-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+@media (max-width: 768px) {
+  .term-grid { grid-template-columns: 1fr; }
+  .pv-screen-body { grid-template-columns: 1fr; }
+  .pv-map { min-height: 200px; }
+  .pv-phones { gap: 16px; }
+  .pv-phone { width: 180px; }
+}
+.term-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 32px;
+  text-align: center;
+  transition: all 0.3s;
+}
+.term-card:hover {
+  border-color: rgba(56,128,255,0.3);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.3);
+}
+.term-card .term-icon {
+  width: 72px; height: 72px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px;
+}
+.term-card:nth-child(1) .term-icon { background: linear-gradient(135deg, #1e3a5f, #0d2247); color: #3880ff; }
+.term-card:nth-child(2) .term-icon { background: linear-gradient(135deg, #1a3a2a, #0d2214); color: #22c55e; }
+.term-card:nth-child(3) .term-icon { background: linear-gradient(135deg, #2a1a3a, #1a0d24); color: #a855f7; }
+.term-card h3 { font-size: 20px; margin-bottom: 12px; }
+.term-card .desc { font-size: 13px; color: #7a8fa6; line-height: 1.8; }
+.term-card .features { margin-top: 16px; text-align: left; }
+.term-card .features li {
+  font-size: 12px; color: #8899bb;
+  padding: 4px 0; padding-left: 20px;
+  position: relative;
+  list-style: none;
+}
+.term-card .features li::before {
+  content: '';
+  position: absolute; left: 0; top: 10px;
+  width: 6px; height: 6px;
+  border-radius: 50%; background: #3880ff;
+}
+
+/* Workflow */
+.workflow { padding: 60px 0; }
+.flow-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-bottom: 48px;
+}
+.flow-node {
+  background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 20px 24px;
+  min-width: 140px;
+  text-align: center;
+  position: relative;
+}
+.flow-node h3 { font-size: 15px; color: #fff; }
+.flow-node p { font-size: 11px; color: #6db3ff; margin-top: 4px; }
+.flow-arrow {
+  color: #3880ff;
+  font-size: 20px;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+.work-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.work-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s;
+}
+.work-card:hover { border-color: rgba(56,128,255,0.3); }
+.work-card .w-icon { font-size: 32px; margin-bottom: 10px; }
+.work-card h4 { font-size: 15px; color: #fff; margin-bottom: 6px; }
+.work-card p { font-size: 11px; color: #7a8fa6; line-height: 1.6; }
+
+/* Devices */
+.devices { padding: 60px 0; }
+.device-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+@media (max-width: 768px) { .device-grid { grid-template-columns: 1fr; } }
+.device-card {
+  background: linear-gradient(135deg, rgba(56,128,255,0.06), rgba(56,128,255,0.01));
+  border: 1px solid rgba(56,128,255,0.15);
+  border-radius: 16px;
+  padding: 28px;
+  text-align: center;
+}
+.device-card .d-icon { font-size: 44px; margin-bottom: 14px; }
+.device-card h3 { font-size: 17px; color: #fff; margin-bottom: 8px; }
+.device-card p { font-size: 12px; color: #7a8fa6; line-height: 1.7; }
+.device-card .highlights {
+  margin-top: 14px; display: flex; flex-wrap: wrap;
+  justify-content: center; gap: 6px;
+}
+.device-card .hl {
+  font-size: 10px; padding: 4px 10px;
+  border-radius: 10px;
+  background: rgba(56,128,255,0.12);
+  color: #6db3ff;
+}
+
+/* Preview */
+.preview { padding: 60px 0; }
+.pv-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+}
+.pv-block { }
+.pv-block-head {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 18px;
+}
+.pv-block-head .pv-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #3880ff; box-shadow: 0 0 12px #3880ff;
+}
+.pv-block-head h3 { font-size: 20px; color: #fff; }
+.pv-block-head .pv-sub { font-size: 12px; color: #6db3ff; letter-spacing: 2px; text-transform: uppercase; }
+
+/* Big screen mock */
+.pv-screen {
+  background: linear-gradient(135deg, #0a1a30 0%, #0d2247 100%);
+  border: 1px solid rgba(56,128,255,0.25);
+  border-radius: 16px;
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.4);
+}
+.pv-screen::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, #3880ff, transparent);
+}
+.pv-screen-top {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 12px; margin-bottom: 14px;
+  border-bottom: 1px solid rgba(56,128,255,0.15);
+}
+.pv-screen-top .pv-title { font-size: 15px; color: #a0cfff; font-weight: 700; letter-spacing: 1px; }
+.pv-screen-top .pv-clock { font-size: 12px; color: #6db3ff; }
+.pv-screen-body { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
+.pv-map {
+  background: radial-gradient(ellipse at 50% 40%, rgba(56,128,255,0.12), transparent 70%), #081427;
+  border: 1px solid rgba(56,128,255,0.15);
+  border-radius: 12px;
+  position: relative; overflow: hidden;
+  min-height: 320px;
+}
+.pv-map svg { width: 100%; height: 100%; display: block; }
+.pv-side { display: flex; flex-direction: column; gap: 12px; }
+.pv-panel {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px; padding: 12px 14px;
+}
+.pv-panel .pv-p-title { font-size: 12px; color: #6db3ff; margin-bottom: 8px; letter-spacing: 1px; }
+.pv-stat-row { display: flex; gap: 10px; }
+.pv-stat {
+  flex: 1; text-align: center;
+  background: rgba(56,128,255,0.08);
+  border-radius: 8px; padding: 8px 4px;
+}
+.pv-stat .pv-s-num { font-size: 18px; font-weight: 800; color: #fff; }
+.pv-stat .pv-s-lab { font-size: 10px; color: #7a8fa6; margin-top: 2px; }
+.pv-event { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.06); }
+.pv-event:last-child { border-bottom: none; }
+.pv-event .pv-e-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.pv-event .pv-e-txt { font-size: 11px; color: #aabbcc; flex: 1; }
+.pv-event .pv-e-time { font-size: 10px; color: #5a6a7a; }
+.pv-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; margin-top: 4px; }
+.pv-bar > i { display: block; height: 100%; border-radius: 3px; }
+
+/* Phone mock */
+.pv-phones { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; }
+.pv-phone {
+  width: 230px; flex-shrink: 0;
+  background: linear-gradient(180deg, #0d2247, #0a1628);
+  border: 1px solid rgba(56,128,255,0.25);
+  border-radius: 28px;
+  padding: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  position: relative;
+}
+.pv-phone .pv-notch {
+  width: 70px; height: 6px; border-radius: 4px;
+  background: rgba(255,255,255,0.15);
+  margin: 4px auto 10px;
+}
+.pv-phone-screen {
+  background: linear-gradient(180deg, #0a1a30, #0c1f3a);
+  border-radius: 18px; padding: 14px 12px; min-height: 420px;
+}
+.pv-phone .pv-ph-title { font-size: 14px; color: #fff; font-weight: 700; text-align: center; margin-bottom: 4px; }
+.pv-phone .pv-ph-sub { font-size: 10px; color: #6db3ff; text-align: center; margin-bottom: 12px; }
+.pv-ph-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 10px;
+}
+.pv-ph-card .pv-ph-c-title { font-size: 12px; color: #a0cfff; margin-bottom: 6px; }
+.pv-ph-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pv-ph-item { text-align: center; }
+.pv-ph-item .pv-ph-ic { font-size: 18px; }
+.pv-ph-item .pv-ph-lab { font-size: 9px; color: #8899bb; margin-top: 3px; }
+.pv-ph-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.pv-ph-row:last-child { border-bottom: none; }
+.pv-ph-row .pv-ph-r-ic { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.pv-ph-row .pv-ph-r-txt { flex: 1; }
+.pv-ph-row .pv-ph-r-txt .t1 { font-size: 11px; color: #cdd8e8; }
+.pv-ph-row .pv-ph-r-txt .t2 { font-size: 9px; color: #6a7a8a; }
+.pv-ph-row .pv-ph-r-badge { font-size: 9px; padding: 2px 7px; border-radius: 8px; background: rgba(249,115,22,0.2); color: #f97316; }
+.pv-ph-btn {
+  display: block; text-align: center; margin-top: 10px;
+  background: linear-gradient(135deg, #3880ff, #6db3ff);
+  color: #fff; font-size: 12px; padding: 9px; border-radius: 10px; font-weight: 600;
+}
+
+/* Architecture */
+.arch { padding: 60px 0 40px; }
+.arch-layers { display: flex; flex-direction: column; gap: 16px; max-width: 800px; margin: 0 auto; }
+.arch-layer {
+  display: flex; align-items: center;
+  border-radius: 12px; padding: 20px 24px;
+  gap: 20px;
+}
+.arch-layer.l1 { background: rgba(56,128,255,0.1); border: 1px solid rgba(56,128,255,0.2); }
+.arch-layer.l2 { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.15); }
+.arch-layer.l3 { background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.15); }
+.arch-layer.l4 { background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.15); }
+.arch-layer .lay-label {
+  width: 80px; flex-shrink: 0;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; text-align: center;
+}
+.arch-layer.l1 .lay-label { color: #3880ff; }
+.arch-layer.l2 .lay-label { color: #22c55e; }
+.arch-layer.l3 .lay-label { color: #a855f7; }
+.arch-layer.l4 .lay-label { color: #f97316; }
+.arch-layer .lay-content {
+  display: flex; flex-wrap: wrap; gap: 8px; flex: 1;
+}
+.arch-layer .lay-item {
+  font-size: 11px; padding: 4px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  color: #aabbcc;
+}
+
+/* Stats */
+.stats { padding: 60px 0; }
+.stat-row {
+  display: flex; justify-content: center; gap: 40px;
+  flex-wrap: wrap;
+}
+.stat-item { text-align: center; }
+.stat-item .s-num {
+  font-size: 42px; font-weight: 800;
+  background: linear-gradient(135deg, #3880ff, #6db3ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-item .s-label { font-size: 13px; color: #7a8fa6; margin-top: 4px; }
+
+/* Footer */
+.footer {
+  text-align: center; padding: 60px 0 40px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin-top: 40px;
+}
+.footer blockquote {
+  max-width: 700px; margin: 0 auto;
+  font-size: 16px; color: #8899bb;
+  font-style: italic; line-height: 1.8;
+  border-left: 3px solid #3880ff;
+  padding-left: 20px;
+}
+.footer .copyright { font-size: 12px; color: #4a5a6a; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="badge">SMART COMMUNITY GOVERNANCE</div>
+    <h1>东莞杰瑞智慧网格治理平台</h1>
+    <p class="subtitle">以数据为底座 · 以网格为单元 · 以闭环为机制 —— 打造基层治理现代化样板</p>
+    <div class="hero-ideals">
+      <div class="hero-ideal">
+        <div class="num">01</div>
+        <div class="txt">小网格底数清晰<br>"人、房、事、险"全要素动态掌握</div>
+      </div>
+      <div class="hero-ideal">
+        <div class="num">02</div>
+        <div class="txt">从事后处置到事前预警<br>智能巡查，风险早发现早处置</div>
+      </div>
+      <div class="hero-ideal">
+        <div class="num">03</div>
+        <div class="txt">线上闭环打破碎片化<br>小事网格就地化解，大事多级联动</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container">
+
+<!-- Stats Bar -->
+<section class="stats">
+  <div class="stat-row">
+    <div class="stat-item"><div class="s-num">15</div><div class="s-label">核心需求项</div></div>
+    <div class="stat-item"><div class="s-num">4</div><div class="s-label">需求大类</div></div>
+    <div class="stat-item"><div class="s-num">6</div><div class="s-label">大网格单元</div></div>
+    <div class="stat-item"><div class="s-num">12</div><div class="s-label">小网格单元</div></div>
+    <div class="stat-item"><div class="s-num">3</div><div class="s-label">核心理念</div></div>
+  </div>
+</section>
+
+<!-- Section: Data Base -->
+<section class="data-base">
+  <div class="section-title">
+    <div class="en">Data Foundation</div>
+    <h2>数据底座 · 一库统管</h2>
+    <div class="line"></div>
+  </div>
+  <div class="db-grid">
+    <div class="db-card">
+      <div class="icon blue">&#x1F5FA;</div>
+      <h3>GIS 网格可视化</h3>
+      <p>精准划分社区—6个大网格—12个小网格三级单元，一图统览全域态势，人口密度、事件热力、资源分布实时上图。</p>
+      <div class="tags"><span class="tag">三级网格</span><span class="tag">热力地图</span><span class="tag">实时上图</span></div>
+    </div>
+    <div class="db-card">
+      <div class="icon green">&#x1F4CA;</div>
+      <h3>人地事物情数据库</h3>
+      <p>实有人口库（常住、流动、出租屋台账）、重点人群管理、房屋信息、事件记录、社情民意，全要素统一管理。</p>
+      <div class="tags"><span class="tag">实有人口</span><span class="tag">出租屋台账</span><span class="tag">重点人群</span></div>
+    </div>
+    <div class="db-card">
+      <div class="icon purple">&#x1F517;</div>
+      <h3>信息互通平台</h3>
+      <p>对接应急管理、卫健、民政、物业及12345热线等外部系统，打破数据孤岛，实现跨部门信息共享与业务协同。</p>
+      <div class="tags"><span class="tag">应急对接</span><span class="tag">卫健互通</span><span class="tag">12345联动</span></div>
+    </div>
+    <div class="db-card">
+      <div class="icon orange">&#x1F3AF;</div>
+      <h3>考核研判体系</h3>
+      <p>网格员巡查覆盖率、事件办结率、群众满意度等多维度效能考核，数据自动量化，支持分级排名与趋势分析。</p>
+      <div class="tags"><span class="tag">效能考核</span><span class="tag">数据量化</span><span class="tag">趋势研判</span></div>
+    </div>
+    <div class="db-card">
+      <div class="icon cyan">&#x1F4CB;</div>
+      <h3>台账管理系统</h3>
+      <p>综治平安、网格化、安全生产、爱国卫生、矛盾调解全套台账线上化，小程序拍照上传，自动归档分类。</p>
+      <div class="tags"><span class="tag">综治台账</span><span class="tag">安全台账</span><span class="tag">拍照上传</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Section: Terminals -->
+<section class="terminals">
+  <div class="section-title">
+    <div class="en">Multi-Terminal</div>
+    <h2>多端协同 · 一网通办</h2>
+    <div class="line"></div>
+  </div>
+  <div class="term-grid">
+    <div class="term-card">
+      <div class="term-icon">&#x1F4FA;</div>
+      <h3>社区指挥部终端</h3>
+      <p class="desc">指挥调度中心大屏</p>
+      <ul class="features">
+        <li>全域态势看板</li>
+        <li>工单智能督办</li>
+        <li>视频轮巡监控</li>
+        <li>数据报表分析</li>
+        <li>应急会商调度</li>
+      </ul>
+    </div>
+    <div class="term-card">
+      <div class="term-icon">&#x1F4F1;</div>
+      <h3>工作人员移动端</h3>
+      <p class="desc">网格员巡查APP</p>
+      <ul class="features">
+        <li>巡查定位打卡</li>
+        <li>现场拍照录像上报</li>
+        <li>上门走访登记</li>
+        <li>任务接收与反馈</li>
+        <li>隐患随手拍</li>
+      </ul>
+    </div>
+    <div class="term-card">
+      <div class="term-icon">&#x1F91D;</div>
+      <h3>社区居民互动端</h3>
+      <p class="desc">微信小程序</p>
+      <ul class="features">
+        <li>一键上报问题</li>
+        <li>诉求进度查询</li>
+        <li>社区活动报名</li>
+        <li>便民报修服务</li>
+        <li>政策宣传推送</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Section: Workflow -->
+<section class="workflow">
+  <div class="section-title">
+    <div class="en">Business Flow</div>
+    <h2>业务闭环 · 五大板块</h2>
+    <div class="line"></div>
+  </div>
+
+  <!-- Event closed-loop -->
+  <div class="flow-line" style="margin-bottom: 40px;">
+    <div class="flow-node"><h3>发现上报</h3><p>网格员/居民</p></div>
+    <div class="flow-arrow">&#x279C;</div>
+    <div class="flow-node"><h3>智能派单</h3><p>系统自动分派</p></div>
+    <div class="flow-arrow">&#x279C;</div>
+    <div class="flow-node"><h3>现场处置</h3><p>网格组员</p></div>
+    <div class="flow-arrow">&#x279C;</div>
+    <div class="flow-node"><h3>复核核查</h3><p>网格组长</p></div>
+    <div class="flow-arrow">&#x279C;</div>
+    <div class="flow-node"><h3>督办预警</h3><p>超时升级</p></div>
+    <div class="flow-arrow">&#x279C;</div>
+    <div class="flow-node"><h3>结案归档</h3><p>闭环完结</p></div>
+  </div>
+
+  <div class="work-grid">
+    <div class="work-card">
+      <div class="w-icon">&#x1F50D;</div>
+      <h4>网格巡查</h4>
+      <p>常态化巡查清单：人居环境、消防、出租屋、矛盾排查，自定义巡查流程与人员，定位打卡</p>
+    </div>
+    <div class="work-card">
+      <div class="w-icon">&#x1F697;</div>
+      <h4>停车管理</h4>
+      <p>整合社区公共车位与小区车位资源，车位实时查询，智能引导与秩序管理</p>
+    </div>
+    <div class="work-card">
+      <div class="w-icon">&#x1F504;</div>
+      <h4>事件闭环处置</h4>
+      <p>发现→派单→处置→核查→督办→结案全链路闭环，超时自动预警升级</p>
+    </div>
+    <div class="work-card">
+      <div class="w-icon">&#x1F6E1;</div>
+      <h4>安全风险防控</h4>
+      <p>聚焦消防、治安、燃气、防汛、九小场所，隐患动态监管预警，风险早发现早处置</p>
+    </div>
+    <div class="work-card">
+      <div class="w-icon">&#x1F3F3;</div>
+      <h4>智慧党建</h4>
+      <p>党员联户台账、志愿服务、三会一课线上管理，党建任务下沉网格，数据自动量化考核</p>
+    </div>
+  </div>
+</section>
+
+<!-- Section: Devices -->
+<section class="devices">
+  <div class="section-title">
+    <div class="en">Smart Devices</div>
+    <h2>智能感知 · 天地一体</h2>
+    <div class="line"></div>
+  </div>
+  <div class="device-grid">
+    <div class="device-card">
+      <div class="d-icon">&#x1F6E9;</div>
+      <h3>无人机自动巡检</h3>
+      <p>从社区党群服务中心起飞，途经内部道路、学校、市场、建材城、龙景小区等重要点位，每日全域自动巡检。</p>
+      <div class="highlights">
+        <span class="hl">环境卫生监测</span><span class="hl">消防预警</span><span class="hl">防洪防汛</span>
+        <span class="hl">占道识别</span><span class="hl">井盖排查</span><span class="hl">违建监管</span>
+        <span class="hl">轨迹追踪</span><span class="hl">公共安全</span><span class="hl">自动巡逻</span>
+      </div>
+    </div>
+    <div class="device-card">
+      <div class="d-icon">&#x1F4F9;</div>
+      <h3>视频监控网络</h3>
+      <p>覆盖社区关键卡口、重点场所、主要道路，支持智能图像识别，实时监测异常事件，与指挥终端联动轮巡。</p>
+      <div class="highlights">
+        <span class="hl">智能识别</span><span class="hl">实时轮巡</span><span class="hl">异常预警</span>
+      </div>
+    </div>
+    <div class="device-card">
+      <div class="d-icon">&#x1F41B;</div>
+      <h3>智能捕蚊器监测</h3>
+      <p>量化捕蚊数据，蚊媒孳生地红黄绿三色管控，消杀记录在线管理，重点场所卫生实时监测，爱国卫生数据化。</p>
+      <div class="highlights">
+        <span class="hl">数据监控</span><span class="hl">三色管控</span><span class="hl">消杀记录</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section: Preview -->
+<section class="preview">
+  <div class="section-title">
+    <div class="en">Interface Preview</div>
+    <h2>效果预览</h2>
+    <div class="line"></div>
+  </div>
+  <div class="pv-grid">
+
+    <!-- 1. Big Screen -->
+    <div class="pv-block">
+      <div class="pv-block-head">
+        <div class="pv-dot"></div>
+        <h3>社区指挥调度中心大屏</h3>
+        <span class="pv-sub">Commander Screen</span>
+      </div>
+      <div class="pv-screen">
+        <div class="pv-screen-top">
+          <span class="pv-title">东莞杰瑞智慧网格治理指挥中心</span>
+          <span class="pv-clock">2026-07-24 14:36:52</span>
+        </div>
+        <div class="pv-screen-body">
+          <!-- Map Area with SVG -->
+          <div class="pv-map">
+            <svg viewBox="0 0 500 320" xmlns="http://www.w3.org/2000/svg">
+              <!-- Grid background -->
+              <defs>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(56,128,255,0.08)" stroke-width="0.5"/>
+                </pattern>
+                <radialGradient id="mapBg" cx="50%" cy="40%" r="60%">
+                  <stop offset="0%" stop-color="rgba(56,128,255,0.1)"/>
+                  <stop offset="100%" stop-color="transparent"/>
+                </radialGradient>
+                <filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              </defs>
+              <rect width="500" height="320" fill="url(#mapBg)"/>
+              <rect width="500" height="320" fill="url(#grid)"/>
+
+              <!-- Roads -->
+              <line x1="0" y1="120" x2="500" y2="120" stroke="rgba(56,128,255,0.2)" stroke-width="2"/>
+              <line x1="0" y1="210" x2="500" y2="210" stroke="rgba(56,128,255,0.2)" stroke-width="2"/>
+              <line x1="200" y1="0" x2="200" y2="320" stroke="rgba(56,128,255,0.15)" stroke-width="1.5"/>
+              <line x1="370" y1="0" x2="370" y2="320" stroke="rgba(56,128,255,0.15)" stroke-width="1.5"/>
+
+              <!-- Grid Zones -->
+              <rect x="20" y="15" width="170" height="98" rx="8" fill="rgba(56,128,255,0.08)" stroke="rgba(56,128,255,0.3)" stroke-width="1.5"/>
+              <text x="105" y="68" fill="#6db3ff" font-size="11" text-anchor="middle" font-weight="600">第1网格</text>
+
+              <rect x="210" y="15" width="150" height="98" rx="8" fill="rgba(34,197,94,0.06)" stroke="rgba(34,197,94,0.25)" stroke-width="1.5"/>
+              <text x="285" y="68" fill="#4ade80" font-size="11" text-anchor="middle" font-weight="600">第2网格</text>
+
+              <rect x="20" y="130" width="170" height="74" rx="8" fill="rgba(168,85,247,0.06)" stroke="rgba(168,85,247,0.25)" stroke-width="1.5"/>
+              <text x="105" y="171" fill="#a78bfa" font-size="11" text-anchor="middle" font-weight="600">第3网格</text>
+
+              <rect x="210" y="130" width="150" height="74" rx="8" fill="rgba(249,115,22,0.06)" stroke="rgba(249,115,22,0.25)" stroke-width="1.5"/>
+              <text x="285" y="171" fill="#fb923c" font-size="11" text-anchor="middle" font-weight="600">第4网格</text>
+
+              <rect x="20" y="220" width="170" height="85" rx="8" fill="rgba(6,182,212,0.06)" stroke="rgba(6,182,212,0.25)" stroke-width="1.5"/>
+              <text x="105" y="266" fill="#22d3ee" font-size="11" text-anchor="middle" font-weight="600">第5网格</text>
+
+              <rect x="210" y="220" width="150" height="85" rx="8" fill="rgba(236,72,153,0.06)" stroke="rgba(236,72,153,0.25)" stroke-width="1.5"/>
+              <text x="285" y="266" fill="#f472b6" font-size="11" text-anchor="middle" font-weight="600">第6网格</text>
+
+              <!-- Hot spots -->
+              <circle cx="90" cy="50" r="14" fill="none" stroke="#f97316" stroke-width="2" opacity="0.7" filter="url(#glow)">
+                <animate attributeName="r" values="14;20;14" dur="2s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.7;0.2;0.7" dur="2s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="260" cy="165" r="10" fill="none" stroke="#ef4444" stroke-width="2" opacity="0.7" filter="url(#glow)">
+                <animate attributeName="r" values="10;16;10" dur="1.5s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.7;0.2;0.7" dur="1.5s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="330" cy="260" r="11" fill="none" stroke="#f59e0b" stroke-width="2" opacity="0.6" filter="url(#glow)">
+                <animate attributeName="r" values="11;17;11" dur="2.5s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.6;0.2;0.6" dur="2.5s" repeatCount="indefinite"/>
+              </circle>
+
+              <!-- Grid markers -->
+              <circle cx="90" cy="50" r="3" fill="#f97316"/>
+              <circle cx="260" cy="165" r="3" fill="#ef4444"/>
+              <circle cx="330" cy="260" r="3" fill="#f59e0b"/>
+              <circle cx="180" cy="250" r="2.5" fill="#22c55e"/>
+              <circle cx="310" cy="45" r="2.5" fill="#22c55e"/>
+              <circle cx="50" cy="170" r="2.5" fill="#22c55e"/>
+
+              <!-- Drone icon -->
+              <g transform="translate(400,30)" opacity="0.7">
+                <rect x="-8" y="-3" width="16" height="4" rx="2" fill="#3880ff"/>
+                <circle cx="-10" cy="0" r="4" fill="none" stroke="#3880ff" stroke-width="1.5"/>
+                <circle cx="10" cy="0" r="4" fill="none" stroke="#3880ff" stroke-width="1.5"/>
+                <rect x="-3" y="-6" width="6" height="3" rx="1.5" fill="#6db3ff"/>
+                <animateTransform attributeName="transform" type="translate" values="400,30;400,22;400,30" dur="4s" repeatCount="indefinite"/>
+              </g>
+
+              <!-- Legend -->
+              <rect x="390" y="280" width="100" height="34" rx="6" fill="rgba(0,0,0,0.5)"/>
+              <circle cx="400" cy="292" r="3" fill="#f97316"/><text x="408" y="296" fill="#8899bb" font-size="8">事件热点</text>
+              <circle cx="400" cy="306" r="3" fill="#22c55e"/><text x="408" y="310" fill="#8899bb" font-size="8">正常巡查</text>
+            </svg>
+          </div>
+
+          <!-- Right side panels -->
+          <div class="pv-side">
+            <div class="pv-panel">
+              <div class="pv-p-title">&#x25A0; 全域态势</div>
+              <div class="pv-stat-row">
+                <div class="pv-stat"><div class="pv-s-num" style="color:#3880ff;">6</div><div class="pv-s-lab">大网格</div></div>
+                <div class="pv-stat"><div class="pv-s-num" style="color:#22c55e;">12</div><div class="pv-s-lab">小网格</div></div>
+                <div class="pv-stat"><div class="pv-s-num" style="color:#a855f7;">8</div><div class="pv-s-lab">在线网格员</div></div>
+              </div>
+            </div>
+            <div class="pv-panel" style="flex:1;">
+              <div class="pv-p-title">&#x25A0; 实时事件</div>
+              <div class="pv-event"><div class="pv-e-dot" style="background:#ef4444;"></div><div class="pv-e-txt">消防通道堵塞 - 第2网格</div><div class="pv-e-time">14:28</div></div>
+              <div class="pv-event"><div class="pv-e-dot" style="background:#f97316;"></div><div class="pv-e-txt">占道经营 - 第4网格</div><div class="pv-e-time">14:15</div></div>
+              <div class="pv-event"><div class="pv-e-dot" style="background:#f59e0b;"></div><div class="pv-e-txt">路灯故障 - 第1网格</div><div class="pv-e-time">13:52</div></div>
+              <div class="pv-event"><div class="pv-e-dot" style="background:#22c55e;"></div><div class="pv-e-txt">日常巡查正常 - 第5网格</div><div class="pv-e-time">13:30</div></div>
+            </div>
+            <div class="pv-panel">
+              <div class="pv-p-title">&#x25A0; 事件办结率</div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:28px;font-weight:800;color:#22c55e;">94.2%</span>
+                <div style="flex:1;">
+                  <div class="pv-bar"><i style="width:94.2%;background:linear-gradient(90deg,#22c55e,#4ade80);"></i></div>
+                  <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:9px;color:#5a6a7a;"><span>本月已办结 48</span><span>待处理 3</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Mobile & Mini Program -->
+    <div class="pv-block">
+      <div class="pv-block-head">
+        <div class="pv-dot"></div>
+        <h3>移动端 &amp; 小程序界面</h3>
+        <span class="pv-sub">APP &amp; Mini Program</span>
+      </div>
+      <div class="pv-phones">
+
+        <!-- Worker APP -->
+        <div class="pv-phone">
+          <div class="pv-notch"></div>
+          <div class="pv-phone-screen">
+            <div class="pv-ph-title">网格巡查</div>
+            <div class="pv-ph-sub">拔蛟窝智慧治理 · 工作端</div>
+
+            <div class="pv-ph-card">
+              <div class="pv-ph-c-title">&#x1F4CD; 今日巡查任务</div>
+              <div class="pv-ph-row">
+                <div class="pv-ph-r-ic" style="background:rgba(239,68,68,0.15);">&#x1F525;</div>
+                <div class="pv-ph-r-txt"><div class="t1">九小场所消防检查</div><div class="t2">第2网格 · 3处待检</div></div>
+                <div class="pv-ph-r-badge">待办</div>
+              </div>
+              <div class="pv-ph-row">
+                <div class="pv-ph-r-ic" style="background:rgba(56,128,255,0.15);">&#x1F3E0;</div>
+                <div class="pv-ph-r-txt"><div class="t1">出租屋人口核查</div><div class="t2">第2网格 · 12户</div></div>
+                <div class="pv-ph-r-badge" style="background:rgba(34,197,94,0.2);color:#22c55e;">进行中</div>
+              </div>
+            </div>
+
+            <div class="pv-ph-card">
+              <div class="pv-ph-c-title">&#x1F4F7; 快速操作</div>
+              <div class="pv-ph-grid">
+                <div class="pv-ph-item"><div class="pv-ph-ic">&#x1F4F7;</div><div class="pv-ph-lab">事件上报</div></div>
+                <div class="pv-ph-item"><div class="pv-ph-ic">&#x1F4CB;</div><div class="pv-ph-lab">走访登记</div></div>
+                <div class="pv-ph-item"><div class="pv-ph-ic">&#x1F4C4;</div><div class="pv-ph-lab">台账录入</div></div>
+                <div class="pv-ph-item"><div class="pv-ph-ic">&#x1F50D;</div><div class="pv-ph-lab">隐患排查</div></div>
+                <div class="pv-ph-item"><div class="pv-ph-ic">&#x1F4CA;</div><div class="pv-ph-lab">数据看板</div></div>
+                <div class="pv-ph-item"><div class="pv-ph-ic">&#x1F4AC;</div><div class="pv-ph-lab">消息通知</div></div>
+              </div>
+            </div>
+            <div class="pv-ph-btn">&#x1F4CD; 开始巡查打卡</div>
+          </div>
+        </div>
+
+        <!-- Resident Mini Program -->
+        <div class="pv-phone">
+          <div class="pv-notch"></div>
+          <div class="pv-phone-screen">
+            <div class="pv-ph-title">拔蛟窝社区</div>
+            <div class="pv-ph-sub">居民服务小程序</div>
+
+            <div class="pv-ph-card" style="background:linear-gradient(135deg,rgba(56,128,255,0.15),rgba(56,128,255,0.05));border-color:rgba(56,128,255,0.25);">
+              <div style="text-align:center;padding:4px 0;">
+                <div style="font-size:28px;margin-bottom:4px;">&#x1F4E3;</div>
+                <div style="font-size:11px;color:#a0cfff;">发现身边问题，一键上报</div>
+              </div>
+            </div>
+
+            <div class="pv-ph-card">
+              <div class="pv-ph-c-title">&#x1F6E0; 服务入口</div>
+              <div class="pv-ph-grid">
+                <div class="pv-ph-item"><div class="pv-ph-ic">&#x1F4DD;</div><div class="pv-ph-lab">事件上报</div></div>
+                <div class="pv-ph-item"><div class="pv-ph-ic">&#x1F527;</div><div class="pv-ph-lab">便民报修</div></div>
+                <div class="pv-ph-item"><div class="pv-ph-ic">&#x1F4C5;</div><div class="pv-ph-lab">活动报名</div></div>
+                <div class="pv-ph-item"><div class="pv-ph-ic">&#x1F4C4;</div><div class="pv-ph-lab">诉求进度</div></div>
+                <div class="pv-ph-item"><div class="pv-ph-ic">&#x1F4CB;</div><div class="pv-ph-lab">通知公告</div></div>
+                <div class="pv-ph-item"><div class="pv-ph-ic">&#x1F44D;</div><div class="pv-ph-lab">满意度评价</div></div>
+              </div>
+            </div>
+
+            <div class="pv-ph-card">
+              <div class="pv-ph-c-title">&#x1F514; 最新通知</div>
+              <div class="pv-ph-row">
+                <div class="pv-ph-r-txt" style="flex:1;"><div class="t1">7月25日社区义诊活动</div><div class="t2">党群服务中心 · 09:00</div></div>
+              </div>
+              <div class="pv-ph-row">
+                <div class="pv-ph-r-txt" style="flex:1;"><div class="t1">垃圾分类新规实施通知</div><div class="t2">2026年8月1日起</div></div>
+              </div>
+              <div class="pv-ph-row">
+                <div class="pv-ph-r-txt" style="flex:1;"><div class="t1">您上报的"路灯损坏"已修复</div><div class="t2">处置完成 · 点击评价</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Section: Architecture -->
+<section class="arch">
+  <div class="section-title">
+    <div class="en">Technical Architecture</div>
+    <h2>技术架构</h2>
+    <div class="line"></div>
+  </div>
+  <div class="arch-layers">
+    <div class="arch-layer l1">
+      <div class="lay-label">感知层</div>
+      <div class="lay-content">
+        <span class="lay-item">无人机</span><span class="lay-item">视频监控</span><span class="lay-item">捕蚊器</span><span class="lay-item">移动端</span><span class="lay-item">小程序</span>
+      </div>
+    </div>
+    <div class="arch-layer l2">
+      <div class="lay-label">数据层</div>
+      <div class="lay-content">
+        <span class="lay-item">GIS引擎</span><span class="lay-item">人口库</span><span class="lay-item">房屋库</span><span class="lay-item">事件库</span><span class="lay-item">台账库</span><span class="lay-item">考核库</span>
+      </div>
+    </div>
+    <div class="arch-layer l3">
+      <div class="lay-label">平台层</div>
+      <div class="lay-content">
+        <span class="lay-item">智能派单引擎</span><span class="lay-item">预警规则引擎</span><span class="lay-item">数据交换总线</span><span class="lay-item">报表分析</span>
+      </div>
+    </div>
+    <div class="arch-layer l4">
+      <div class="lay-label">应用层</div>
+      <div class="lay-content">
+        <span class="lay-item">指挥大屏</span><span class="lay-item">网格巡查</span><span class="lay-item">事件闭环</span><span class="lay-item">安全防控</span><span class="lay-item">停车管理</span><span class="lay-item">智慧党建</span><span class="lay-item">居民互动</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<section class="footer">
+  <blockquote>
+    "小网格底数清晰，人、房、事、险全要素动态掌握；<br>
+    问题从事后处置转为事前巡查、智能预警；<br>
+    线上闭环减少层层填表，数据共享，打破治理碎片化，<br>
+    实现小事网格就地化解、大事多级联动处置。"
+  </blockquote>
+  <p class="copyright">东莞杰瑞智慧网格治理平台 · 项目概念展示 &copy; 2026</p>
+</section>
+
+</div>
+
+</body>
+</html>

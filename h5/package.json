@@ -1,0 +1,45 @@
+{
+  "name": "dgcp-oa-h5",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "cross-env UNI_INPUT_DIR=. uni -p h5 --port 5174",
+    "build": "cross-env UNI_INPUT_DIR=. uni build -p h5 && node ./scripts/copy-static.mjs",
+    "dev:mp-weixin": "cross-env UNI_INPUT_DIR=. uni -p mp-weixin",
+    "build:mp-weixin": "cross-env UNI_INPUT_DIR=. uni build -p mp-weixin",
+    "build:mp:weixin": "node ./scripts/build-mp.mjs",
+    "test": "node ./scripts/run-vitest.mjs"
+  },
+  "dependencies": {
+    "@amap/amap-jsapi-loader": "^1.0.1",
+    "@dcloudio/uni-app": "3.0.0-alpha-5000520260323001",
+    "@dcloudio/uni-components": "3.0.0-alpha-5000520260323001",
+    "@dcloudio/uni-h5": "3.0.0-alpha-5000520260323001",
+    "@dcloudio/uni-mp-vue": "^3.0.0-alpha-5000520260323001",
+    "@dcloudio/uni-mp-weixin": "^3.0.0-alpha-5000520260323001",
+    "@stomp/stompjs": "^7.3.0",
+    "axios": "^1.13.6",
+    "pinia": "^3.0.4",
+    "sockjs-client": "^1.6.1",
+    "vant": "^4.9.21",
+    "vue": "3.4.21",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "3.4.28",
+    "@dcloudio/uni-cli-shared": "3.0.0-alpha-5000520260323001",
+    "@dcloudio/vite-plugin-uni": "3.0.0-alpha-5000520260323001",
+    "@testing-library/vue": "^7.0.0",
+    "@types/sockjs-client": "^1.5.4",
+    "@vitejs/plugin-vue": "5.2.4",
+    "@vue/test-utils": "^2.4.3",
+    "cross-env": "^10.1.0",
+    "jsdom": "^26.1.0",
+    "sass": "^1.102.0",
+    "typescript": "^5.9.3",
+    "vite": "5.2.8",
+    "vitest": "^3.2.4",
+    "vue-tsc": "^2.2.12"
+  }
+}

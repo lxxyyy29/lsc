@@ -1,0 +1,14 @@
+-- V109: 无人机本地设备档案（手工维护，用于多设备管理展示与任务绑定）
+-- 真实飞行/视频流仍走大疆三方平台（设备需在平台侧配置），本地档案用于台账管理
+CREATE TABLE IF NOT EXISTS drone_device_local (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_name VARCHAR(100) NOT NULL COMMENT '设备名称',
+    model VARCHAR(64) DEFAULT NULL COMMENT '型号',
+    sn VARCHAR(64) DEFAULT NULL COMMENT '序列号/SN',
+    dock_sn VARCHAR(64) DEFAULT NULL COMMENT '机巢SN',
+    connect_addr VARCHAR(255) DEFAULT NULL COMMENT '连接地址（平台/流地址）',
+    status VARCHAR(16) DEFAULT 'ACTIVE' COMMENT '状态: ACTIVE/DISABLED',
+    remark VARCHAR(500) DEFAULT NULL COMMENT '备注',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='无人机本地设备档案';

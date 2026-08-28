@@ -1,0 +1,91 @@
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: changping-platform
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/zhsq?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: ${DB_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+  data:
+    mongodb:
+      host: ${MONGODB_HOST:127.0.0.1}
+      port: ${MONGODB_PORT:27017}
+      database: ${MONGODB_DATABASE:alarm_dgcp}
+      username: ${MONGODB_USERNAME:}
+      password: ${MONGODB_PASSWORD:}
+      authentication-database: ${MONGODB_AUTH_DATABASE:admin}
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:7}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+security:
+  auth:
+    jwt-secret: ${JWT_SECRET:changping-platform-dev-jwt-secret-2026}
+    access-token-expire-minutes: ${SECURITY_AUTH_ACCESS_TOKEN_EXPIRE_MINUTES:120}
+
+drone:
+  api:
+    server-addr: ${DRONE_API_SERVER:http://flight.scities.net.cn:9080}
+    ws-addr: ${DRONE_WS_SERVER:wss://flight.scities.net.cn:9080}
+    username: ${DRONE_API_USERNAME:admin}
+    password: ${DRONE_API_PASSWORD:}
+    fixed-workspace-id: ${DRONE_API_FIXED_WORKSPACE_ID:}
+    sm4-secret-key: ${DRONE_API_SM4_SECRET_KEY:gsis20232023gsis}
+    sm4-iv: ${DRONE_API_SM4_IV:9na3v13cy9bt39vu}
+    token-cache-ttl: ${DRONE_API_TOKEN_CACHE_TTL:50m}
+  alarm-integration:
+    source-system: ${DRONE_ALARM_SOURCE_SYSTEM:THIRD_PARTY_DRONE}
+    source-type: ${DRONE_ALARM_SOURCE_TYPE:DRONE_ALARM}
+    default-event-type: ${DRONE_ALARM_DEFAULT_EVENT_TYPE:DRONE_ALARM}
+    collection: ${DRONE_ALARM_MONGO_COLLECTION:alarm_events}
+    callback:
+      require-verification: ${DRONE_ALARM_CALLBACK_REQUIRE_VERIFICATION:false}
+      token-header: ${DRONE_ALARM_CALLBACK_TOKEN_HEADER:X-Callback-Token}
+      token: ${DRONE_ALARM_CALLBACK_TOKEN:}
+      signature-header: ${DRONE_ALARM_CALLBACK_SIGNATURE_HEADER:X-Callback-Signature}
+      signature-secret: ${DRONE_ALARM_CALLBACK_SIGNATURE_SECRET:}
+
+oss:
+  enable: ${OSS_ENABLE:true}
+  provider: ${OSS_PROVIDER:minio}
+  access: ${OSS_ACCESS:http://127.0.0.1:8768/dgcp_oa}
+  endpoint: ${OSS_ENDPOINT:http://127.0.0.1:9009/}
+  accessKey: ${OSS_ACCESS_KEY:admin}
+  secretKey: ${OSS_SECRET_KEY:}
+  bucket: ${OSS_BUCKET:dgcp-oa}
+  expire: ${OSS_EXPIRE:3600}
+  region: ${OSS_REGION:us-east-1}

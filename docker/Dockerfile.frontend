@@ -1,0 +1,30 @@
+# ============================================
+# 前端 Dockerfile - Nginx 静态服务
+# 统一使用本地 npm 构建产物（npm run build），容器内不再安装依赖，
+# 避免对 node 基础镜像与 npm 网络源的依赖
+# ============================================
+
+# ============================================
+# Web 管理端
+# ============================================
+FROM nginx:latest AS web
+COPY web/dist /usr/share/nginx/html
+COPY docker/nginx-web.conf /etc/nginx/conf.d/default.conf
+
+# ============================================
+# H5 移动端
+# ============================================
+FROM nginx:latest AS h5
+COPY h5/dist/build/h5 /usr/share/nginx/html
+COPY docker/nginx-h5.conf /etc/nginx/conf.d/default.conf
+
+# ============================================
+# 小程序
+# ============================================
+FROM nginx:latest AS mp
+COPY mp/dist /usr/share/nginx/html
+COPY docker/nginx-mp.conf /etc/nginx/conf.d/default.conf
+
+# 默认导出 web
+FROM web
+EXPOSE 80

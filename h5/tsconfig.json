@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "jsx": "preserve",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "types": ["@dcloudio/types", "vitest/globals"]
+  },
+  "include": [
+    "main.ts",
+    "App.vue",
+    "pages/**/*.vue",
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "vite.config.ts",
+    "pages.json",
+    "manifest.json"
+  ],
+  "references": []
+}

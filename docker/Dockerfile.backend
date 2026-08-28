@@ -1,0 +1,24 @@
+# ============================================
+# 后端 Dockerfile - Spring Boot 应用
+# 使用本地 Maven 构建产物（mvn clean package -DskipTests），
+# 避免容器内安装 Maven 依赖 alpine 包源网络
+# ============================================
+FROM eclipse-temurin:17-jdk-alpine
+
+WORKDIR /app
+
+# 从本地构建产物复制 JAR
+COPY target/*.jar app.jar
+
+# 创建上传目录
+RUN mkdir -p /app/uploads
+
+# 健康检查：探测服务 HTTP 连通性（busybox nc 内置，无需额外安装；有 HTTP 响应行即视为存活）
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD sh -c 'printf "GET /api/ HTTP/1.0\r\n\r\n" | nc -w 3 127.0.0.1 8080 | head -1 | grep -q HTTP || exit 1'
+
+# 暴露端口
+EXPOSE 8080
+
+# 启动命令（JVM 时区指定上海，替代系统 tzdata 依赖）
+ENTRYPOINT ["java", "-Xms512m", "-Xmx1g", "-XX:+UseG1GC", "-Duser.timezone=Asia/Shanghai", "-jar", "app.jar"]

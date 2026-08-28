@@ -1,0 +1,241 @@
+{
+  "pages": [
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/register/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/password-reset/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/workbench/index",
+      "style": {
+        "navigationStyle": "default"
+      }
+    },
+    {
+      "path": "pages/workorder/list",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "任务列表"
+      }
+    },
+    {
+      "path": "pages/workorder/detail",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "工单详情"
+      }
+    },
+    {
+      "path": "pages/verify/index",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "闭环核查"
+      }
+    },
+    {
+      "path": "pages/history/index",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "历史记录"
+      }
+    },
+    {
+      "path": "pages/mine/index",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "个人中心"
+      }
+    },
+    {
+      "path": "pages/merchant/list",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "商户管理",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "light"
+      }
+    },
+    {
+      "path": "pages/merchant/detail",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "商户详情"
+      }
+    },
+    {
+      "path": "pages/vendor/list",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "摊贩管理",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "light"
+      }
+    },
+    {
+      "path": "pages/vendor/detail",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "摊贩详情"
+      }
+    },
+    {
+      "path": "pages/patrol/checkin",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "巡查打卡"
+      }
+    },
+    {
+      "path": "pages/patrol/history",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "巡查记录"
+      }
+    },
+    {
+      "path": "pages/event/report",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "事件上报"
+      }
+    },
+    {
+      "path": "pages/event/history",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "我的上报"
+      }
+    },
+    {
+      "path": "pages/map/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "移动 GIS"
+      }
+    },
+    {
+      "path": "pages/message/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "信息互通"
+      }
+    },
+    {
+      "path": "pages/notice/index",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "消息通知"
+      }
+    },
+    {
+      "path": "pages/resident/login/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/resident/register/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/resident/report/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/resident/history/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/resident/services/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/resident/repairs/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/resident/repairs/form",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "提交报修"
+      }
+    },
+    {
+      "path": "pages/resident/policies/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/resident/mine/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    }
+  ],
+  "tabBar": {
+    "color": "#8db0d0",
+    "selectedColor": "#57b9ff",
+    "backgroundColor": "#06121f",
+    "borderStyle": "black",
+    "height": "100px",
+    "iconWidth": "50px",
+    "fontSize": "16px",
+    "spacing": "8px",
+    "list": [
+      {
+        "pagePath": "pages/workbench/index",
+        "text": "工作台",
+        "iconPath": "static/tab-home.png",
+        "selectedIconPath": "static/tab-home-active.png"
+      },
+      {
+        "pagePath": "pages/map/index",
+        "text": "地图",
+        "iconPath": "static/tab-task.png",
+        "selectedIconPath": "static/tab-task-active.png"
+      },
+      {
+        "pagePath": "pages/patrol/checkin",
+        "text": "巡查",
+        "iconPath": "static/tab-task.png",
+        "selectedIconPath": "static/tab-task-active.png"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的",
+        "iconPath": "static/tab-user.png",
+        "selectedIconPath": "static/tab-user-active.png"
+      }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "东莞杰瑞智慧网格治理平台",
+    "navigationBarBackgroundColor": "#06121f",
+    "backgroundColor": "#030913"
+  }
+}

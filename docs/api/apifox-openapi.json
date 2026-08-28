@@ -1,0 +1,6040 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "东莞杰瑞智慧网格治理平台 API",
+    "description": "东莞杰瑞智慧网格治理平台后端接口文档 v1.4.0 — 按模块分组，共 336 个接口",
+    "version": "1.4.0",
+    "contact": {
+      "name": "Changping Dev"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api",
+      "description": "本地开发环境"
+    }
+  ],
+  "tags": [
+    {
+      "name": "认证",
+      "description": "登录、登出、用户信息"
+    },
+    {
+      "name": "事件中心",
+      "description": "事件上报、查询、派单、关闭、审核"
+    },
+    {
+      "name": "工单中心",
+      "description": "工单查询、处理、关闭"
+    },
+    {
+      "name": "审核流程",
+      "description": "审核发起、审批、流程模板"
+    },
+    {
+      "name": "网格治理",
+      "description": "网格、人口、楼栋、场所、组织人员"
+    },
+    {
+      "name": "居民上报",
+      "description": "居民上报管理"
+    },
+    {
+      "name": "巡查管理",
+      "description": "巡查任务、巡查记录"
+    },
+    {
+      "name": "安全检查",
+      "description": "安全检查记录、整改"
+    },
+    {
+      "name": "停车管理",
+      "description": "车位、违停记录"
+    },
+    {
+      "name": "智慧党建",
+      "description": "党员、联户、志愿活动、会议、考核"
+    },
+    {
+      "name": "信息互通",
+      "description": "外部系统管理、同步"
+    },
+    {
+      "name": "无人机",
+      "description": "设备、任务、航线、媒体、视频流"
+    },
+    {
+      "name": "视频监控",
+      "description": "监控点位、视频流"
+    },
+    {
+      "name": "媒体上传",
+      "description": "媒体文件管理"
+    },
+    {
+      "name": "系统管理",
+      "description": "用户、角色、权限、菜单"
+    },
+    {
+      "name": "审计日志",
+      "description": "数据变更审计、回滚"
+    },
+    {
+      "name": "文件上传",
+      "description": "文件上传、下载、删除"
+    },
+    {
+      "name": "导出",
+      "description": "各模块Excel导出"
+    },
+    {
+      "name": "报表",
+      "description": "看板、区域报表"
+    },
+    {
+      "name": "Web业务管理",
+      "description": "Web端辖区/商户/摊贩/违禁区域"
+    },
+    {
+      "name": "H5业务管理",
+      "description": "H5商户/摊贩/辖区"
+    },
+    {
+      "name": "考核研判",
+      "description": "效能考核、时效统计、评价统计"
+    },
+    {
+      "name": "测试工具",
+      "description": "开发测试接口（仅dev环境）"
+    },
+    {
+      "name": "居民端",
+      "description": "居民端（小程序）接口"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "登录（Web/小程序）",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "获取当前用户信息",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "登出",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/auth/login": {
+      "post": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "H5端登录",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/auth/me": {
+      "get": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "获取H5用户信息",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/auth/logout": {
+      "post": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "H5登出",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "创建事件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "分页查询事件列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/{id}": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "事件详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/by-external/{externalEventId}": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "通过外部ID查详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/{id}/dispatch": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "派单",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/{id}/ignore": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "标记误报",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/false-alarms": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "误报记录列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/batch-delete": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "批量删除事件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/{id}/urgency": {
+      "put": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "更新紧急程度",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/auto-escalate": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "手动触发自动升级",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/{id}/close": {
+      "put": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "关闭事件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/{id}/reopen": {
+      "put": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "重新打开事件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/{id}/attachments": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "获取事件附件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/{id}/timeline": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "获取事件时间轴",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/statistics": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "事件统计数据",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/{id}/audit": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "审核事件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        },
+        "description": "审核事件（通过/驳回）。请求体 {\"action\": \"pass\"|\"reject\", \"remark\": \"备注\"}。通过后事件流转：待审核/已驳回 → 已通过 → 待派单（进入闭环处置）；驳回后事件为已驳回状态，可重新提交审核。权限：事件创建。"
+      }
+    },
+    "/events/public-report": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "群众随手拍上报（免认证）",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/{id}/rate": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "群众评价",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/work-orders": {
+      "get": {
+        "tags": [
+          "工单中心"
+        ],
+        "summary": "分页查询工单列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/work-orders/export": {
+      "get": {
+        "tags": [
+          "工单中心"
+        ],
+        "summary": "导出全量工单",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/work-orders/{id}": {
+      "get": {
+        "tags": [
+          "工单中心"
+        ],
+        "summary": "工单详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/work-orders/{id}/handle": {
+      "post": {
+        "tags": [
+          "工单中心"
+        ],
+        "summary": "处理工单节点",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/work-orders/{eventId}/dispatch": {
+      "post": {
+        "tags": [
+          "工单中心"
+        ],
+        "summary": "派发工单",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/work-orders/{id}/attachments": {
+      "get": {
+        "tags": [
+          "工单中心"
+        ],
+        "summary": "工单附件列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/work-orders/{id}/confirm-close": {
+      "post": {
+        "tags": [
+          "工单中心"
+        ],
+        "summary": "确认关闭工单",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/work-orders/{id}/reject-close": {
+      "post": {
+        "tags": [
+          "工单中心"
+        ],
+        "summary": "驳回关闭",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/work-orders/batch-delete": {
+      "post": {
+        "tags": [
+          "工单中心"
+        ],
+        "summary": "批量删除工单",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/audits/{eventId}/start": {
+      "post": {
+        "tags": [
+          "审核流程"
+        ],
+        "summary": "发起审核流程",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/audits/{eventId}": {
+      "get": {
+        "tags": [
+          "审核流程"
+        ],
+        "summary": "查询审核详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/processes/instances/{id}/approve": {
+      "post": {
+        "tags": [
+          "审核流程"
+        ],
+        "summary": "审批通过",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/processes/instances/{id}/reject": {
+      "post": {
+        "tags": [
+          "审核流程"
+        ],
+        "summary": "审批驳回",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/processes/templates": {
+      "get": {
+        "tags": [
+          "审核流程"
+        ],
+        "summary": "流程模板列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "审核流程"
+        ],
+        "summary": "创建流程模板",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/processes/templates/paged": {
+      "get": {
+        "tags": [
+          "审核流程"
+        ],
+        "summary": "分页流程模板列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/processes/templates/{id}": {
+      "get": {
+        "tags": [
+          "审核流程"
+        ],
+        "summary": "流程模板详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "审核流程"
+        ],
+        "summary": "更新流程模板",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "审核流程"
+        ],
+        "summary": "删除流程模板",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/grids/tree": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "网格树形结构",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/grids/{id}": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "网格详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "更新网格",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "删除网格",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/grids": {
+      "post": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "创建网格",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/grids/{id}/children": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "子网格列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/population": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "人口列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "新增人口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/population/{id}": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "人口详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "更新人口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "删除人口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/buildings": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "楼栋列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "新增楼栋",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/buildings/{id}": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "楼栋详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "更新楼栋",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "删除楼栋",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/places": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "场所列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "新增场所",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/places/{id}": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "场所详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "更新场所",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "删除场所",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/org-members": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "网格员列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "新增网格员",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/org-members/{id}": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "网格员详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "更新网格员",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "删除网格员",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/resident-reports": {
+      "get": {
+        "tags": [
+          "居民上报"
+        ],
+        "summary": "居民上报列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "居民上报"
+        ],
+        "summary": "新增上报",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/resident-reports/{id}": {
+      "get": {
+        "tags": [
+          "居民上报"
+        ],
+        "summary": "上报详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/resident-reports/{id}/handle": {
+      "put": {
+        "tags": [
+          "居民上报"
+        ],
+        "summary": "处理上报",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/resident-reports/code/{queryCode}": {
+      "get": {
+        "tags": [
+          "居民上报"
+        ],
+        "summary": "按查询码查详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/patrol-tasks": {
+      "get": {
+        "tags": [
+          "巡查管理"
+        ],
+        "summary": "巡查任务列表（Web）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/patrol-tasks/h5": {
+      "get": {
+        "tags": [
+          "巡查管理"
+        ],
+        "summary": "当前用户巡查任务（H5）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/patrol-tasks/statistics": {
+      "get": {
+        "tags": [
+          "巡查管理"
+        ],
+        "summary": "巡查统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/patrol-tasks/generate": {
+      "post": {
+        "tags": [
+          "巡查管理"
+        ],
+        "summary": "手动生成本周巡查任务",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/patrol-tasks/mark-overdue": {
+      "post": {
+        "tags": [
+          "巡查管理"
+        ],
+        "summary": "标记超期任务",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/patrol-tasks/{id}/complete": {
+      "post": {
+        "tags": [
+          "巡查管理"
+        ],
+        "summary": "完成任务（H5）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/patrol-records": {
+      "get": {
+        "tags": [
+          "巡查管理"
+        ],
+        "summary": "巡查记录列表（Web）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "巡查管理"
+        ],
+        "summary": "提交巡查记录（H5）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/patrol-records/h5": {
+      "get": {
+        "tags": [
+          "巡查管理"
+        ],
+        "summary": "当前用户巡查记录（H5）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/safety/inspections": {
+      "get": {
+        "tags": [
+          "安全检查"
+        ],
+        "summary": "安全检查列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "安全检查"
+        ],
+        "summary": "新增检查记录",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/safety/inspections/statistics": {
+      "get": {
+        "tags": [
+          "安全检查"
+        ],
+        "summary": "检查统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/safety/inspections/{id}/status": {
+      "put": {
+        "tags": [
+          "安全检查"
+        ],
+        "summary": "更新整改状态",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/safety/inspections/mark-overdue": {
+      "post": {
+        "tags": [
+          "安全检查"
+        ],
+        "summary": "标记超期未整改",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/parking/statistics": {
+      "get": {
+        "tags": [
+          "停车管理"
+        ],
+        "summary": "车位统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/parking/spaces": {
+      "get": {
+        "tags": [
+          "停车管理"
+        ],
+        "summary": "车位列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "停车管理"
+        ],
+        "summary": "添加车位",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/parking/spaces/{id}/status": {
+      "put": {
+        "tags": [
+          "停车管理"
+        ],
+        "summary": "更新车位状态",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/parking/violations": {
+      "get": {
+        "tags": [
+          "停车管理"
+        ],
+        "summary": "违停记录",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "停车管理"
+        ],
+        "summary": "添加违停记录",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/parking/violation-stats": {
+      "get": {
+        "tags": [
+          "停车管理"
+        ],
+        "summary": "违停统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/parking/violations/{id}/dispatch": {
+      "post": {
+        "tags": [
+          "停车管理"
+        ],
+        "summary": "派单处理违停",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/parking/violations/{id}/status": {
+      "put": {
+        "tags": [
+          "停车管理"
+        ],
+        "summary": "更新违停状态",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/overview": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "党建总览统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/households": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "党员联户列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "添加联户关系",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/households/{id}/visit": {
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "记录走访",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/activities": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "志愿服务活动列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "添加志愿活动",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/activities/{id}/signup": {
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "报名志愿活动",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/meetings": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "三会一课列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "添加会议记录",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/assessments": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "党员量化考核",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/assessments/generate": {
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "生成月度考核",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/integration/systems": {
+      "get": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "外部系统列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "新增外部系统",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/integration/systems/{id}": {
+      "get": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "外部系统详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "更新外部系统",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "删除外部系统",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/integration/systems/{id}/sync": {
+      "post": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "手动触发同步",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/integration/systems/sync-logs": {
+      "get": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "同步日志",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/integration/systems/statistics": {
+      "get": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "同步统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/integration/systems/health-check": {
+      "get": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "健康检查",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/integrations/alarms/callback": {
+      "post": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "第三方告警回调",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/dashboard/overview": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "无人机看板总览",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/dashboard/devices": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "设备列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/dashboard/jobs": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "任务列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/dashboard/waylines": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "航线列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/dashboard/ai-alerts": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "AI告警事件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/devices": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "无人机设备列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/jobs": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "无人机任务列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "创建无人机任务",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/jobs/{jobId}/pause-resume": {
+      "put": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "暂停/恢复任务",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/jobs/return-home": {
+      "post": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "无人机返航",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/media/files": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "媒体文件列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/media/files/{jobId}": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "任务媒体文件列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/media/download/{jobId}": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "下载媒体文件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/waylines": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "航线列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/waylines/{id}/points": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "航点详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/devices/{deviceSn}/camera/mode": {
+      "post": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "设置摄像头模式",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/devices/{deviceSn}/camera/record-start": {
+      "post": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "开始录像",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/devices/{deviceSn}/camera/record-stop": {
+      "post": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "停止录像",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/speaker/files": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "喊话器文件列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "上传喊话文件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/speaker/files/{id}": {
+      "delete": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "删除喊话文件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/speaker/{deviceSn}/play": {
+      "post": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "播放喊话",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/speaker/{deviceSn}/stop": {
+      "post": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "停止喊话",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/speaker/{deviceSn}/volume": {
+      "post": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "调节音量",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/workspaces": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "工作空间列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/stream/proxy/{deviceSn}/hls.m3u8": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "HLS视频流代理",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/stream/proxy/{deviceSn}/seg": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "TS分片代理",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/stream/flv/{deviceSn}": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "FLV实时流地址",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/ai-models": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "AI模型列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/ai-models/binding/{flyLineId}": {
+      "get": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "查询航线绑定模型",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/drone/ai-models/waylines/{flyLineId}/bind-qwen": {
+      "post": {
+        "tags": [
+          "无人机"
+        ],
+        "summary": "绑定通义模型",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/video/cameras": {
+      "get": {
+        "tags": [
+          "视频监控"
+        ],
+        "summary": "监控点位列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/video/cameras/{id}/stream": {
+      "get": {
+        "tags": [
+          "视频监控"
+        ],
+        "summary": "监控视频流地址",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/video/external-sources": {
+      "get": {
+        "tags": [
+          "视频监控"
+        ],
+        "summary": "外部视频源列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/media/upload": {
+      "post": {
+        "tags": [
+          "媒体上传"
+        ],
+        "summary": "上传媒体文件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/media": {
+      "get": {
+        "tags": [
+          "媒体上传"
+        ],
+        "summary": "媒体文件列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/users": {
+      "get": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "用户列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "创建用户",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/users/paged": {
+      "get": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "分页用户列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/users/{id}": {
+      "get": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "用户详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "更新用户",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "删除用户",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/users/{id}/status": {
+      "put": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "启用/禁用用户",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/users/{id}/roles": {
+      "put": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "分配角色",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/users/{id}/password": {
+      "put": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "修改密码",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/roles": {
+      "get": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "角色列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "创建角色",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/roles/paged": {
+      "get": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "分页角色列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/roles/{id}": {
+      "get": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "角色详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "更新角色",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/roles/{id}/permissions": {
+      "put": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "分配权限",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/permissions/tree": {
+      "get": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "权限树",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/menus/tree": {
+      "get": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "菜单树",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/menus": {
+      "post": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "创建菜单",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/system/menus/{id}": {
+      "put": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "更新菜单",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "系统管理"
+        ],
+        "summary": "删除菜单",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/audit-logs": {
+      "get": {
+        "tags": [
+          "审计日志"
+        ],
+        "summary": "分页查询审计日志",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/audit-logs/history": {
+      "get": {
+        "tags": [
+          "审计日志"
+        ],
+        "summary": "指定表的变更历史",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/audit-logs/tables": {
+      "get": {
+        "tags": [
+          "审计日志"
+        ],
+        "summary": "有审计记录的表列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/audit-logs/rollback/{id}": {
+      "post": {
+        "tags": [
+          "审计日志"
+        ],
+        "summary": "回滚到指定版本",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/upload": {
+      "post": {
+        "tags": [
+          "文件上传"
+        ],
+        "summary": "上传文件到MinIO",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "文件上传"
+        ],
+        "summary": "删除文件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/upload/access-prefix": {
+      "get": {
+        "tags": [
+          "文件上传"
+        ],
+        "summary": "获取文件访问前缀",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/upload/download": {
+      "get": {
+        "tags": [
+          "文件上传"
+        ],
+        "summary": "下载文件（代理）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/export/events": {
+      "get": {
+        "tags": [
+          "导出"
+        ],
+        "summary": "导出事件台账Excel",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/export/merchants": {
+      "get": {
+        "tags": [
+          "导出"
+        ],
+        "summary": "导出场所台账Excel",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/export/population": {
+      "get": {
+        "tags": [
+          "导出"
+        ],
+        "summary": "导出人口台账Excel",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/export/buildings": {
+      "get": {
+        "tags": [
+          "导出"
+        ],
+        "summary": "导出房屋台账Excel",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/export/patrols": {
+      "get": {
+        "tags": [
+          "导出"
+        ],
+        "summary": "导出巡查台账Excel",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/reports/district-summary": {
+      "get": {
+        "tags": [
+          "报表"
+        ],
+        "summary": "区域汇总报告",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/dashboard/overview": {
+      "get": {
+        "tags": [
+          "报表"
+        ],
+        "summary": "看板总览",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/dashboard/grid-stats": {
+      "get": {
+        "tags": [
+          "报表"
+        ],
+        "summary": "网格统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/dashboard/ledger-stats": {
+      "get": {
+        "tags": [
+          "报表"
+        ],
+        "summary": "台账统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/areas": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "辖区列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "创建辖区",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/areas/paged": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "分页辖区列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/areas/options": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "辖区下拉选项",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/areas/{id}": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "辖区详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "更新辖区",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "删除辖区",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/merchants": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "商户列表（Web）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "创建商户（Web）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/merchants/paged": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "分页商户列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/merchants/{id}": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "商户详情（Web）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "更新商户（Web）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "删除商户（Web）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/mobile-vendors": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "摊贩列表（Web）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "创建摊贩（Web）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/mobile-vendors/paged": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "分页摊贩列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/mobile-vendors/{id}": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "摊贩详情（Web）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "更新摊贩（Web）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "删除摊贩（Web）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/violation-areas": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "违禁区域列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "创建违禁区域",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/violation-areas/paged": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "分页违禁区域列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/violation-areas/{id}": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "违禁区域详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "更新违禁区域",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "删除违禁区域",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/areas/options": {
+      "get": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "辖区下拉选项",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/merchants": {
+      "get": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "商户列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "创建商户",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/merchants/{id}": {
+      "get": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "商户详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "更新商户",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "删除商户",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/mobile-vendors": {
+      "get": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "摊贩列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "创建摊贩",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/mobile-vendors/{id}": {
+      "get": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "摊贩详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "更新摊贩",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "删除摊贩",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/assessment/overview": {
+      "get": {
+        "tags": [
+          "考核研判"
+        ],
+        "summary": "总览统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/assessment/worker-performance": {
+      "get": {
+        "tags": [
+          "考核研判"
+        ],
+        "summary": "网格员效能考核",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/assessment/response-time": {
+      "get": {
+        "tags": [
+          "考核研判"
+        ],
+        "summary": "事件处置时效统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/assessment/rating-stats": {
+      "get": {
+        "tags": [
+          "考核研判"
+        ],
+        "summary": "群众评价统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/test/create-public-user": {
+      "post": {
+        "tags": [
+          "测试工具"
+        ],
+        "summary": "创建测试用普通群众账号",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "仅开发环境可用",
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/test/create-grid-workers": {
+      "post": {
+        "tags": [
+          "测试工具"
+        ],
+        "summary": "批量创建网格员测试账号",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "仅开发环境可用",
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/test/register": {
+      "post": {
+        "tags": [
+          "测试工具"
+        ],
+        "summary": "群众注册",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "仅开发环境可用",
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/test/fix-migration": {
+      "post": {
+        "tags": [
+          "测试工具"
+        ],
+        "summary": "手动修复Flyway迁移",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "仅开发环境可用",
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/test/fix-workorder-constraint": {
+      "post": {
+        "tags": [
+          "测试工具"
+        ],
+        "summary": "修复工单表CHECK约束",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "仅开发环境可用",
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/test/init-permissions": {
+      "post": {
+        "tags": [
+          "测试工具"
+        ],
+        "summary": "初始化缺失的权限",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "仅开发环境可用",
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/test/roles": {
+      "get": {
+        "tags": [
+          "测试工具"
+        ],
+        "summary": "查看所有角色",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "仅开发环境可用",
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/test/users": {
+      "get": {
+        "tags": [
+          "测试工具"
+        ],
+        "summary": "查看所有用户",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "仅开发环境可用",
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/test/flyway-status": {
+      "get": {
+        "tags": [
+          "测试工具"
+        ],
+        "summary": "查看Flyway迁移状态",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "仅开发环境可用",
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/audits": {
+      "get": {
+        "tags": [
+          "审核流程"
+        ],
+        "summary": "分页查询审核中心列表与状态统计",
+        "description": "查询审核相关事件（待审核+已通过+已驳回的并集，与统计卡口径一致）。参数：page 页码(默认1)、pageSize 每页条数(默认10)、status 状态筛选(PENDING待审核/APPROVED已通过/REJECTED已驳回，缺省为全部)、searchKey 关键字(事件编号/标题模糊匹配)。返回 data 含 items 列表、total 总数、page、pageSize、stats 统计(pending/approved/rejected)。权限：审核详情查看。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/my-reports": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "查询当前登录用户自己的上报记录",
+        "description": "WEB 端与 H5 工作人员共用，需登录令牌。参数：page 页码(默认1)、pageSize 每页条数(默认10)。返回分页的本人上报事件列表。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/assessment/monthly-report": {
+      "get": {
+        "tags": [
+          "考核研判"
+        ],
+        "summary": "月度治理月报：高频问题、高发网格、关键指标自动汇总",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/assessment/patrol-coverage": {
+      "get": {
+        "tags": [
+          "考核研判"
+        ],
+        "summary": "巡查覆盖率：已巡网格数 / 总网格数",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/assessment/rectification-rate": {
+      "get": {
+        "tags": [
+          "考核研判"
+        ],
+        "summary": "隐患整改率：已整改 / 总隐患（基于安全巡查）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/assessment/trend-alert": {
+      "get": {
+        "tags": [
+          "考核研判"
+        ],
+        "summary": "趋势预判预警：近7天同网格+同类事件≥3次 → 反复投诉/隐患预警",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/audit-logs/{id}": {
+      "get": {
+        "tags": [
+          "审计日志"
+        ],
+        "summary": "获取单条审计日志详情",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/audit-logs/{id}/diff": {
+      "get": {
+        "tags": [
+          "审计日志"
+        ],
+        "summary": "获取字段级变更详情（Diff 展示）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/audit-logs/{id}/preview-rollback": {
+      "get": {
+        "tags": [
+          "审计日志"
+        ],
+        "summary": "预览回滚结果（返回将被修改的字段，不实际执行）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "群众注册接口（小程序端匿名注册入口），新注册用户统一绑定 PUBLIC 角色（仅限小程序端使用）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/dashboard/big-screen": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "综合监管大屏 — 一次性返回所有指标",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/dashboard/grid-ranking": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "网格处置排名",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/dashboard/monthly-summary": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "月度汇总报表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/export/events-pdf": {
+      "get": {
+        "tags": [
+          "导出"
+        ],
+        "summary": "导出事件台账 PDF",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/export/test": {
+      "get": {
+        "tags": [
+          "导出"
+        ],
+        "summary": "Export 接口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/export/work-orders-pdf": {
+      "get": {
+        "tags": [
+          "导出"
+        ],
+        "summary": "导出工单台账 PDF",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/grids/h5/my-grid": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "H5 移动端 GIS：当前用户负责的网格（网格员/网格长），用于“我的网格”定位",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/grids/h5/tree": {
+      "get": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "H5 移动端 GIS：全量网格树（社区/大网格/小网格含边界坐标），登录即可访问",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/import/execute": {
+      "post": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "执行导入",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/import/preview": {
+      "post": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "预览导入数据（不写入 DB）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/org-members/sync-from-users": {
+      "post": {
+        "tags": [
+          "网格治理"
+        ],
+        "summary": "将现有网格员（sys_user）同步到组织人员表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/patrol-records/trajectories": {
+      "get": {
+        "tags": [
+          "巡查管理"
+        ],
+        "summary": "巡查轨迹：按用户分组返回有坐标的巡查记录，用于地图轨迹绘制",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/policy-resources": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "政策资源列表（可按状态筛选）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "创建政策资源",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/policy-resources/{id}": {
+      "delete": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "PolicyResource 接口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "PolicyResource 接口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "PolicyResource 接口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/community/policy-resources/{id}/matching-people": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "政策找人：返回该政策匹配到的人群",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/event-ratings": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "提交评价",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/event-ratings/event/{eventId}": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "获取事件评价列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/event-ratings/event/{eventId}/stats": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "获取事件评分统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/event-ratings/overall-stats": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "全局评分统计",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/12345-import": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "12345 政务热线转办导入",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/batch-audit": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "批量审核事件（通过/忽略）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/batch-dispatch": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "批量派单",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/h5/map-points": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "H5 移动端 GIS 事件坐标点（仅需 H5 登录，无需管理端权限）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/heatmap": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "事件热力图数据：返回有坐标的事件列表，用于地图热力图层",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/map-points": {
+      "get": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "事件坐标点列表（带权重：urgencyLevel RED=3, YELLOW=2, GREEN=1）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/property-report": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "物业上报导入",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/events/{id}/archive": {
+      "post": {
+        "tags": [
+          "事件中心"
+        ],
+        "summary": "归档事件：关闭/忽略后的案件标记为已归档留存",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/activities": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "查询志愿活动列表，包含当前用户报名状态与报名人数",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/activities/{id}/signup": {
+      "delete": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "当前 H5 用户取消志愿活动报名",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "当前 H5 用户报名志愿活动，重复报名时幂等返回成功",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/points": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "查询当前 H5 用户的志愿积分账户与最近积分流水",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/work-orders": {
+      "get": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "查询当前H5用户参与的工单列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/work-orders/{id}": {
+      "get": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "获取指定工单的H5详情，包含流程节点和操作记录",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/work-orders/{id}/handle": {
+      "post": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "处理工单节点，提交处理结果、备注及附件，支持通过或拒绝",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/h5/workbench": {
+      "get": {
+        "tags": [
+          "H5业务管理"
+        ],
+        "summary": "获取H5工作台概览，包含各状态工单计数汇总",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/ledger/data/{type}": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "Ledger 接口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/ledger/export/{type}": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "Ledger 接口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/ledger/templates": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "查询台账模板列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "创建/保存台账模板",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/ledger/templates/{id}": {
+      "delete": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "Ledger 接口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/ledger/templates/{type}": {
+      "get": {
+        "tags": [
+          "Web业务管理"
+        ],
+        "summary": "Ledger 接口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/media/files/{filename:.+}": {
+      "get": {
+        "tags": [
+          "媒体上传"
+        ],
+        "summary": "文件读取接口：按文件名返回上传文件",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/messaging/conversations": {
+      "get": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "当前用户的会话列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/messaging/history/{partnerId}": {
+      "get": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "与某用户的历史消息",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/messaging/read/{partnerId}": {
+      "post": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "标记与某用户的对话为已读",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/messaging/workers": {
+      "get": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "所有网格员列表（发起新会话用，仅 Web 管理员可访问）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "分页查询当前用户通知",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/notifications/read-all": {
+      "post": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "全部已读",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/notifications/unread-count": {
+      "get": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "未读数量",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/notifications/{id}": {
+      "delete": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "删除通知",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/notifications/{id}/read": {
+      "post": {
+        "tags": [
+          "信息互通"
+        ],
+        "summary": "标记已读",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/parking/spaces-realtime": {
+      "get": {
+        "tags": [
+          "停车管理"
+        ],
+        "summary": "车位实时查询：按网格/类型/状态聚合",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/parking/violation-alerts": {
+      "get": {
+        "tags": [
+          "停车管理"
+        ],
+        "summary": "违停预警：消防通道占用、特殊车位占用等需紧急处置的情况",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/parking/violations/{id}/link-workorder": {
+      "post": {
+        "tags": [
+          "停车管理"
+        ],
+        "summary": "违停联动工单：将违停记录转为工单，派发给网格员处置",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/assessments/generate-v2": {
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "生成月度考核（增强版：mediation_count 自动从矛盾纠纷类事件统计）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/deliberations": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "议事列表（含投票统计）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "发起党群议事",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/deliberations/{id}/close": {
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "结项议事",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/deliberations/{id}/vote": {
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "议事投票（赞成/反对/弃权）+ 意见",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/deliberations/{id}/votes": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "获取议事的投票明细",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/policy-push": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "查询政策推送记录列表",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "一键推送政策（关联政策资源库，推送到网格/人群）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/policy-resources": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "政策资源列表（供推送选择）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/tasks": {
+      "get": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "党建任务列表（可按网格/状态/党员筛选）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "创建党建任务",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/tasks/{id}/accept": {
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "领办任务",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/party/tasks/{id}/complete": {
+      "post": {
+        "tags": [
+          "智慧党建"
+        ],
+        "summary": "完成任务",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/registration/pending": {
+      "get": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "Registration 接口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/registration/submit": {
+      "post": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "Registration 接口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/registration/{id}/approve": {
+      "post": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "Registration 接口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/registration/{id}/reject": {
+      "post": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "Registration 接口",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/repairs": {
+      "get": {
+        "tags": [
+          "工单中心"
+        ],
+        "summary": "分页查询报修列表，支持按状态、类型、关键词（标题/上报人）筛选",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/repairs/{id}": {
+      "get": {
+        "tags": [
+          "工单中心"
+        ],
+        "summary": "查询报修详情（含处理人姓名）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/repairs/{id}/status": {
+      "put": {
+        "tags": [
+          "工单中心"
+        ],
+        "summary": "完成与驳回必须填写处理结果/驳回原因，状态变更时记录处理人与处理时间",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/reports/district-summary/export": {
+      "get": {
+        "tags": [
+          "报表"
+        ],
+        "summary": "导出区域汇总报告（当前与查询接口返回相同数据），仅限Web端用户操作",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/resident/activities": {
+      "get": {
+        "tags": [
+          "居民端"
+        ],
+        "summary": "查询志愿活动列表，含当前用户报名状态与报名人数（返回驼峰字段供小程序端使用）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/resident/activities/{id}/signup": {
+      "delete": {
+        "tags": [
+          "居民端"
+        ],
+        "summary": "当前居民取消志愿活动报名",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "居民端"
+        ],
+        "summary": "当前居民报名志愿活动，重复报名时幂等返回成功",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/resident/points": {
+      "get": {
+        "tags": [
+          "居民端"
+        ],
+        "summary": "查询当前居民的志愿积分账户与最近积分流水",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/resident/policy-resources": {
+      "get": {
+        "tags": [
+          "居民端"
+        ],
+        "summary": "政策资源列表（仅启用状态），供居民查询惠民政策",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/resident/repairs": {
+      "get": {
+        "tags": [
+          "居民端"
+        ],
+        "summary": "查询当前居民提交的报修列表（仅本人可见）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        },
+        "description": "查询当前登录居民提交的便民报修列表，返回驼峰字段供小程序端使用。参数：无。返回本人报修记录（按时间倒序）。"
+      },
+      "post": {
+        "tags": [
+          "居民端"
+        ],
+        "summary": "当前居民提交便民报修，报修人姓名取账号真实姓名",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    },
+    "/resident/repairs/{id}": {
+      "get": {
+        "tags": [
+          "居民端"
+        ],
+        "summary": "查询当前居民报修详情（仅本人可见）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {}
+  }
+}

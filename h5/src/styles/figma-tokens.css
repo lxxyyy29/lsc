@@ -1,0 +1,33 @@
+:root {
+  --inspection-bg-page: #0b1d33;
+  --inspection-bg-card: #132a45;
+  --inspection-bg-card-strong: #0e233a;
+  --inspection-border: rgba(125, 163, 220, 0.18);
+  --inspection-text-primary: #eef5ff;
+  --inspection-text-secondary: rgba(205, 222, 248, 0.78);
+  --inspection-primary: #5ea2ff;
+  --inspection-radius-lg: 20px;
+  --inspection-shadow-card: 0 18px 36px rgba(3, 10, 20, 0.28);
+
+  --fg-bg-page: #f4f7fb;
+  --fg-bg-card: #ffffff;
+  --fg-bg-card-strong: #ffffff;
+  --fg-border: rgba(31, 42, 68, 0.08);
+  --fg-text-primary: #1f2a44;
+  --fg-text-secondary: #5f6b85;
+  --fg-primary: #3568d4;
+  --fg-radius-lg: 20px;
+  --fg-shadow-card: 0 12px 32px rgba(31, 42, 68, 0.08);
+}
+
+.h5-shell--deep-blue {
+  --fg-bg-page: var(--inspection-bg-page);
+  --fg-bg-card: var(--inspection-bg-card);
+  --fg-bg-card-strong: var(--inspection-bg-card-strong);
+  --fg-border: var(--inspection-border);
+  --fg-text-primary: var(--inspection-text-primary);
+  --fg-text-secondary: var(--inspection-text-secondary);
+  --fg-primary: var(--inspection-primary);
+  --fg-radius-lg: var(--inspection-radius-lg);
+  --fg-shadow-card: var(--inspection-shadow-card);
+}

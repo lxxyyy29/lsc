@@ -1,0 +1,17 @@
+-- 网格员注册申请表
+CREATE TABLE IF NOT EXISTS biz_registration (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    account VARCHAR(50) NOT NULL COMMENT '账号',
+    password_hash VARCHAR(255) NOT NULL COMMENT '密码哈希',
+    real_name VARCHAR(50) NOT NULL COMMENT '真实姓名',
+    phone VARCHAR(20) DEFAULT NULL COMMENT '联系电话',
+    grid_id BIGINT DEFAULT NULL COMMENT '所属网格ID',
+    status VARCHAR(20) DEFAULT 'PENDING' COMMENT '状态: PENDING=待审批, APPROVED=已通过, REJECTED=已驳回',
+    remark VARCHAR(500) DEFAULT NULL COMMENT '审批备注',
+    reviewer_id BIGINT DEFAULT NULL COMMENT '审批人ID',
+    reviewed_at DATETIME DEFAULT NULL COMMENT '审批时间',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_account (account)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='网格员注册申请';
