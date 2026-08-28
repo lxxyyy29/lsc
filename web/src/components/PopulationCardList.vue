@@ -268,29 +268,36 @@ function toggle(id: string | number) {
 }
 .hh-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 13px;
+}
+.hh-table th,
+.hh-table td {
+  width: calc(100% / 7);
+  padding: 10px 8px;
 }
 .hh-table th {
   text-align: left;
   font-weight: 500;
   color: #5f5e5a;
-  padding: 10px 10px;
   border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
   font-size: 12px;
   white-space: nowrap;
 }
 .hh-table td {
-  padding: 10px 10px;
   border-bottom: 0.5px solid rgba(0, 0, 0, 0.04);
   color: #26221d;
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .hh-table tr:last-child td {
   border-bottom: none;
 }
-.col-name { width: 28%; }
-.col-act { width: 110px; }
+.col-name { width: calc(100% / 7); }
+.col-act { width: calc(100% / 7); }
 .m-name {
   display: flex;
   align-items: center;
