@@ -170,7 +170,7 @@
           <div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px;">网格员打卡</div>
           <div style="display:flex;flex-direction:column;gap:4px;">
             <div v-for="item in trajectoryLegend" :key="item.name" style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280;">
-              <span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;" :style="{background: item.color}"></span>
+              <span :style="{ width:'0', height:'0', borderLeft:'5px solid transparent', borderRight:'5px solid transparent', borderBottom:`9px solid ${item.color}`, flexShrink:0 }"></span>
               {{ item.name }}
             </div>
           </div>
@@ -315,15 +315,23 @@ async function loadTrajectories() {
       })
       trajectoryPolylines.push(polyline)
 
-      // 每个打卡点：以网格员专属颜色圆点显示（不同网格员不同颜色）
-      for (const c of coords) {
-        const pointMarker = new AMapLib.CircleMarker({
-          center: c,
-          radius: 6,
-          fillColor: color,
-          fillOpacity: 0.9,
-          strokeColor: '#ffffff',
-          strokeWeight: 2,
+      // 每个打卡点：以网格员专属颜色三角形显示（区别于事件的圆形点位）
+      for (let i = 0; i < coords.length; i++) {
+        const c = coords[i]
+        // 描边区分起终点：起点绿 / 终点红 / 中间白；起终点三角形稍放大
+        const isStart = i === 0
+        const isEnd = i === coords.length - 1
+        const strokeColor = isStart ? '#52c41a' : (isEnd && !isStart) ? '#ff4d4f' : '#ffffff'
+        const size = isStart || isEnd ? 14 : 12
+        const pointSvg = `
+          <svg width="${size}" height="${size}" viewBox="0 0 12 12"
+               style="overflow:visible;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.35));">
+            <polygon points="6,1 11,11 1,11" fill="${color}" stroke="${strokeColor}" stroke-width="2" stroke-linejoin="round"/>
+          </svg>`
+        const pointMarker = new AMapLib.Marker({
+          position: c,
+          content: pointSvg,
+          offset: new AMapLib.Pixel(-size / 2, -size / 2),
           zIndex: 21,
           bubble: true,
           map

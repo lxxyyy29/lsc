@@ -24,44 +24,44 @@
         </button>
       </div>
 
-      <!-- KPI 悬浮指标条 -->
+      <!-- KPI 悬浮指标条（点击触发对应分类的实时事件流） -->
       <div class="bs-kpis">
-        <div class="kpi glass-panel kpi-blue">
+        <div class="kpi glass-panel kpi-blue" :class="{ 'kpi-active': streamCategory === 'all' }" @click="toggleStream('all')">
           <div class="kpi-icon"><i class="fas fa-exclamation-circle"></i></div>
           <div>
             <p class="kpi-value">{{ data.kpis?.eventTotal || 0 }}</p>
             <p class="kpi-label">事件总数</p>
           </div>
         </div>
-        <div class="kpi glass-panel kpi-green">
+        <div class="kpi glass-panel kpi-green" :class="{ 'kpi-active': streamCategory === 'today' }" @click="toggleStream('today')">
           <div class="kpi-icon"><i class="fas fa-calendar-day"></i></div>
           <div>
             <p class="kpi-value">{{ data.kpis?.eventToday || 0 }}</p>
             <p class="kpi-label">今日新增</p>
           </div>
         </div>
-        <div class="kpi glass-panel kpi-orange">
+        <div class="kpi glass-panel kpi-orange" :class="{ 'kpi-active': streamCategory === 'pending' }" @click="toggleStream('pending')">
           <div class="kpi-icon"><i class="fas fa-clock"></i></div>
           <div>
             <p class="kpi-value">{{ data.kpis?.eventPending || 0 }}</p>
             <p class="kpi-label">待处置</p>
           </div>
         </div>
-        <div class="kpi glass-panel kpi-purple">
+        <div class="kpi glass-panel kpi-purple" :class="{ 'kpi-active': streamCategory === 'closed' }" @click="toggleStream('closed')">
           <div class="kpi-icon"><i class="fas fa-check-circle"></i></div>
           <div>
             <p class="kpi-value">{{ data.kpis?.eventClosed || 0 }}</p>
             <p class="kpi-label">已处置</p>
           </div>
         </div>
-        <div class="kpi glass-panel kpi-cyan">
+        <div class="kpi glass-panel kpi-cyan" :class="{ 'kpi-active': streamCategory === 'woAll' }" @click="toggleStream('woAll')">
           <div class="kpi-icon"><i class="fas fa-clipboard-list"></i></div>
           <div>
             <p class="kpi-value">{{ data.kpis?.workOrderTotal || 0 }}</p>
             <p class="kpi-label">工单总数</p>
           </div>
         </div>
-        <div class="kpi glass-panel kpi-red">
+        <div class="kpi glass-panel kpi-red" :class="{ 'kpi-active': streamCategory === 'woProc' }" @click="toggleStream('woProc')">
           <div class="kpi-icon"><i class="fas fa-user-clock"></i></div>
           <div>
             <p class="kpi-value">{{ data.kpis?.workOrderProcessing || 0 }}</p>
@@ -69,6 +69,34 @@
           </div>
         </div>
       </div>
+
+      <!-- 实时事件流（点击顶部 KPI 触发，悬浮于 KPI 下方；无收起按钮） -->
+      <transition name="stream-fade">
+        <div v-if="streamOpen" class="bs-stream glass-panel">
+          <div class="stream-head">
+            <span class="stream-title"><i class="fas fa-bolt"></i>{{ streamCatMeta[streamCategory]?.label }}</span>
+            <span class="stream-count">{{ streamItems.length }} 条</span>
+            <button class="stream-close" @click="closeStream" title="关闭">&times;</button>
+          </div>
+          <div class="stream-list">
+            <div v-for="it in streamItems" :key="it.kind + '-' + (it.id ?? it.workOrderNo)" class="st-item"
+                 :class="{ clickable: it.kind === 'event' && it.longitude && it.latitude }" @click="streamItemClick(it)">
+              <span class="st-dot" :style="{ background: streamColor(it), boxShadow: `0 0 0 3px ${streamColorBg(it)}` }"></span>
+              <div class="st-card">
+                <div class="st-top">
+                  <span class="st-tag" :style="{ background: streamColorBg(it), color: streamColor(it) }">
+                    {{ it.kind === 'wo' ? '工单' : urgencyText(it.urgencyLevel) }}
+                  </span>
+                  <span class="st-status"><i class="fas" :class="streamStatusIcon(it)"></i> {{ streamStatusText(it) }}</span>
+                  <span class="st-time">{{ formatTime(it.createdAt) }}</span>
+                </div>
+                <p class="st-title">{{ streamTitle(it) }}</p>
+              </div>
+            </div>
+            <p v-if="!streamItems.length" class="panel-empty">无匹配数据</p>
+          </div>
+        </div>
+      </transition>
 
       <!-- 左列悬浮面板：紧急程度 + 事件类型 TOP8 + 最新工单 -->
       <div class="bs-col bs-left">
@@ -174,9 +202,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getBigScreenData, getGridTree, getEvents } from '../api'
+import { getBigScreenData, getGridTree, getEvents, getWorkOrders } from '../api'
 import http from '../api'
 import { getEventTypeName } from '../utils/eventTypes'
 import AMapLoader from '@amap/amap-jsapi-loader'
@@ -191,10 +219,133 @@ const screenRef = ref<HTMLElement | null>(null)
 const selectedEvent = ref<any>(null)
 const hoverInfo = reactive({ visible: false, x: 0, y: 0, name: '' })
 
+// ==================== 实时事件流（点击顶部 KPI 触发） ====================
+const streamOpen = ref(false)
+const streamCategory = ref<'all' | 'today' | 'pending' | 'closed' | 'woAll' | 'woProc'>('all')
+const liveEvents = ref<any[]>([])
+const liveWorkOrders = ref<any[]>([])
+
+const streamCatMeta: Record<string, { label: string }> = {
+  all: { label: '全部事件' },
+  today: { label: '今日新增事件' },
+  pending: { label: '待处置事件' },
+  closed: { label: '已处置事件' },
+  woAll: { label: '全部工单' },
+  woProc: { label: '处理中工单' }
+}
+
+function urgencyText(lv: string) {
+  return lv === 'RED' ? '紧急' : lv === 'YELLOW' ? '重点' : '一般'
+}
+function urgencyColor(lv: string) {
+  return lv === 'RED' ? '#ef4444' : lv === 'YELLOW' ? '#f59e0b' : '#22c55e'
+}
+function urgencyBg(lv: string) {
+  return lv === 'RED' ? 'rgba(239,68,68,0.12)' : lv === 'YELLOW' ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)'
+}
+function statusIcon(status: string) {
+  const map: Record<string, string> = {
+    PENDING_AUDIT: 'fa-hourglass-half', IN_AUDIT: 'fa-spinner', AUDIT_APPROVED: 'fa-check-circle',
+    AUDIT_REJECTED: 'fa-times-circle', WAITING_DISPATCH: 'fa-paper-plane', WAITING_LEADER_REVIEW: 'fa-user-shield',
+    DISPATCHED_TO_WORK_ORDER: 'fa-tools', CLOSED: 'fa-check-double', IGNORED: 'fa-eye-slash'
+  }
+  return map[status] || 'fa-info-circle'
+}
+
+// 点击 KPI：同分类再次点击关闭，否则切换并打开
+function toggleStream(cat: typeof streamCategory.value) {
+  if (streamOpen.value && streamCategory.value === cat) {
+    streamOpen.value = false
+  } else {
+    streamCategory.value = cat
+    streamOpen.value = true
+    loadStreamData()
+  }
+}
+function closeStream() { streamOpen.value = false }
+
+// 拉取事件 + 工单并打 kind 标记，供事件流筛选（随大屏 60s 轮询刷新）
+async function loadStreamData() {
+  try {
+    const ev: any = await getEvents({ excludeHidden: true, size: 200 })
+    liveEvents.value = (ev?.items || []).filter((e: any) => !e.archived).map((e: any) => ({ ...e, kind: 'event' }))
+  } catch (e) {}
+  try {
+    const wo: any = await getWorkOrders({ pageSize: 100 })
+    const list = wo?.items || wo?.list || (Array.isArray(wo) ? wo : [])
+    // 工单列表接口不返回名称，从「最新工单动态」按编号匹配标题，避免展示工单 id
+    const nameMap = new Map<string, string>()
+    ;(data.value?.recentWorkOrders || []).forEach((r: any) => {
+      if (r.workOrderNo) nameMap.set(String(r.workOrderNo), r.title)
+      if (r.id != null) nameMap.set(String(r.id), r.title)
+    })
+    liveWorkOrders.value = list.map((w: any) => {
+      const key = String(w.workOrderNo ?? w.id)
+      return { ...w, kind: 'wo', title: w.title || (key && nameMap.get(key)) || '' }
+    })
+  } catch (e) {}
+}
+
+const streamItems = computed(() => {
+  const cat = streamCategory.value
+  const isWo = cat === 'woAll' || cat === 'woProc'
+  const base = isWo ? liveWorkOrders.value : liveEvents.value
+  if (cat === 'all' || cat === 'woAll') return base
+  if (cat === 'today') {
+    const t = new Date(); t.setHours(0, 0, 0, 0)
+    return base.filter((e: any) => new Date(e.createdAt).getTime() >= t.getTime())
+  }
+  if (cat === 'pending') {
+    // 待处置 = 仍需处理；已关闭/已忽略/已驳回 均属终态不处理，排除
+    const done = new Set(['CLOSED', 'IGNORED', 'AUDIT_REJECTED'])
+    return base.filter((e: any) => !done.has(e.currentStatus))
+  }
+  if (cat === 'closed') return base.filter((e: any) => e.currentStatus === 'CLOSED')
+  if (cat === 'woProc') return base.filter((w: any) => w.status === 'PROCESSING' || w.status === 'WAITING_ACCEPT')
+  return base
+})
+
+function streamColor(it: any) {
+  if (it.kind === 'wo') {
+    return it.status === 'PROCESSING' || it.status === 'WAITING_ACCEPT' ? '#0284c7'
+      : it.status === 'COMPLETED' || it.status === 'CLOSED' ? '#059669' : '#7c3aed'
+  }
+  return urgencyColor(it.urgencyLevel)
+}
+function streamColorBg(it: any) {
+  if (it.kind === 'wo') {
+    const c = streamColor(it)
+    return c === '#0284c7' ? 'rgba(2,132,199,0.12)' : c === '#059669' ? 'rgba(5,150,105,0.12)' : 'rgba(124,58,237,0.12)'
+  }
+  return urgencyBg(it.urgencyLevel)
+}
+const woIconMap: Record<string, string> = {
+  WAITING_ACCEPT: 'fa-hourglass-half', PROCESSING: 'fa-spinner',
+  WAITING_CLOSE_CONFIRM: 'fa-user-check', COMPLETED: 'fa-check-circle', CLOSED: 'fa-check-double'
+}
+function streamStatusIcon(it: any) {
+  return it.kind === 'wo' ? (woIconMap[it.status] || 'fa-info-circle') : statusIcon(it.currentStatus)
+}
+function streamStatusText(it: any) {
+  return it.kind === 'wo' ? workOrderStatusLabel(it.status) : eventStatusLabel(it.currentStatus)
+}
+function streamTitle(it: any) {
+  return it.title || it.workOrderNo || '未命名'
+}
+function streamItemClick(it: any) {
+  if (it.kind === 'event' && it.longitude && it.latitude) {
+    selectedEvent.value = it
+    mapInstance?.setCenter([it.longitude, it.latitude])
+  }
+}
+
 let timer: number | undefined
 let mapInstance: any = null
 // 地图固定中心点（系统配置，默认拔蛟窝社区坐标）
 let mapCenter: [number, number] = [113.939521, 22.971231]
+// 记录已绘制的网格多边形与事件标记，重绘前先清除以免轮询重复堆叠
+let gridOverlays: any[] = []
+let eventMarkers: any[] = []
 
 async function loadData() {
   try {
@@ -351,6 +502,12 @@ async function overlayData() {
     const map = mapInstance
     const AMap = (window as any).AMap
 
+    // 重绘前先清除上一次叠加，避免 60s 轮询反复堆叠导致颜色叠实
+    gridOverlays.forEach(o => o.setMap(null))
+    gridOverlays = []
+    eventMarkers.forEach(m => m.setMap(null))
+    eventMarkers = []
+
     // 绘制网格轮廓（社区底图 + 大网格 + 小网格），纯展示不抢事件交互
     const drawPolygons = (nodes: any[]) => {
       for (const node of nodes) {
@@ -363,11 +520,12 @@ async function overlayData() {
                 : node.gridLevel === 2
                   ? { fill: '#f59e0b', fillOpacity: 0.35, stroke: '#ffffff', weight: 2 }
                   : { fill: '#10b981', fillOpacity: 0.30, stroke: '#ffffff', weight: 1 }
-              new AMap.Polygon({
+              const polygon = new AMap.Polygon({
                 path: coords, fillColor: style.fill, fillOpacity: style.fillOpacity,
                 strokeColor: style.stroke, strokeWeight: style.weight,
                 zIndex: node.gridLevel === 1 ? 1 : 5, bubble: node.gridLevel === 1, map
               })
+              gridOverlays.push(polygon)
             }
           } catch (e) {}
         }
@@ -415,6 +573,7 @@ async function overlayData() {
         selectedEvent.value = evt
         map.setCenter([evt.longitude, evt.latitude])
       })
+      eventMarkers.push(marker)
     }
 
     if (activeEvents.length) {
@@ -436,12 +595,14 @@ onMounted(async () => {
 
   await loadData()
   await overlayData()
+  loadStreamData()
 
   document.addEventListener('fullscreenchange', onFullscreenChange)
   timer = window.setInterval(async () => {
     updateTime()
     await loadData()
     await overlayData()
+    loadStreamData()
   }, 60000)
 })
 
@@ -670,4 +831,42 @@ onUnmounted(() => {
   font-size: 12px; font-weight: 600; pointer-events: none; white-space: nowrap;
   box-shadow: 0 4px 16px rgba(15,23,42,0.25);
 }
+
+/* ============ 顶部 KPI 可点击触发事件流 ============ */
+.kpi { cursor: pointer; transition: box-shadow 0.2s, transform 0.2s; }
+.kpi:hover { transform: translateY(-1px); }
+.kpi.kpi-active { box-shadow: 0 0 0 2px rgba(2,132,199,0.55), 0 8px 24px rgba(15,23,42,0.12); }
+
+/* ============ 实时事件流面板（悬浮于 KPI 下方） ============ */
+.bs-stream {
+  position: absolute; top: 152px; left: 50%; transform: translateX(-50%);
+  z-index: 25; width: 360px; max-width: calc(100% - 32px);
+  padding: 12px 14px; max-height: 62vh; display: flex; flex-direction: column;
+}
+.stream-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.stream-title { font-size: 13px; font-weight: 600; color: #0284c7; display: flex; align-items: center; gap: 6px; }
+.stream-count { font-size: 11px; color: #94a3b8; }
+.stream-close {
+  margin-left: auto; border: none; background: none; color: #94a3b8;
+  font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1;
+}
+.stream-close:hover { color: #0f172a; }
+.stream-list { overflow-y: auto; max-height: calc(62vh - 48px); padding-right: 2px; }
+.stream-list::-webkit-scrollbar { width: 4px; }
+.stream-list::-webkit-scrollbar-thumb { background: rgba(2,132,199,0.25); border-radius: 2px; }
+
+.st-item { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f1f5f9; }
+.st-item:last-child { border-bottom: none; }
+.st-item.clickable { cursor: pointer; }
+.st-item.clickable:hover .st-title { color: #0284c7; }
+.st-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.st-card { flex: 1; min-width: 0; }
+.st-top { display: flex; align-items: center; gap: 8px; }
+.st-tag { border-radius: 4px; padding: 1px 7px; font-size: 10.5px; font-weight: 600; flex-shrink: 0; }
+.st-time { font-size: 11px; color: #94a3b8; margin-left: auto; }
+.st-title { margin: 4px 0 2px; font-size: 13px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-status { margin: 0; font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 5px; }
+
+.stream-fade-enter-active, .stream-fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
+.stream-fade-enter-from, .stream-fade-leave-to { opacity: 0; transform: translateX(-50%) translateY(-6px); }
 </style>

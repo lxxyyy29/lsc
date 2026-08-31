@@ -39,11 +39,19 @@
         </p>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:8px;">
-        <p style="font-size:12px;color:#9ca3af;margin:0;">不同颜色圆点代表不同网格员；绿点为起点、红点为终点；悬停圆点可查看打卡内容与时间，点击下表记录可在地图上定位</p>
+        <p style="font-size:12px;color:#9ca3af;margin:0;">▲ 三角形标记为巡查轨迹（颜色区分网格员，绿边起点、红边终点）；● 圆形标记为事件点位；悬停可查看详情</p>
         <div v-if="trackLegend.length" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="font-size:11px;color:#6b7280;">网格员：</span>
           <span v-for="item in trackLegend" :key="item.name" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#374151;">
-            <span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;" :style="{background: item.color}"></span>
+            <span
+              :style="{
+                width:'0', height:'0',
+                borderLeft:'5px solid transparent',
+                borderRight:'5px solid transparent',
+                borderBottom:'9px solid ' + item.color,
+                flexShrink:0
+              }"
+            ></span>
             {{ item.name }}
           </span>
         </div>
@@ -156,7 +164,7 @@ function clearTrackOverlays() {
   trackOverlays = []
 }
 
-/** 绘制当前筛选结果的轨迹：连线 + 逐打卡点圆点（按网格员着色，悬停看内容） */
+/** 绘制当前筛选结果的轨迹：按网格员分组连线（线色=专属色），逐点画三角形（填充=专属色，描边=起终点语义） */
 function drawTrack() {
   if (!AMapLib || !trackMap) return
   clearTrackOverlays()
@@ -164,39 +172,63 @@ function drawTrack() {
   const list = trackRecords.value
   if (!list.length) return
 
-  const path = list.map(r => [Number(r.longitude), Number(r.latitude)])
-  // 多点才连线（同一天多次打卡在同一点时只有圆点）
-  if (path.length >= 2) {
-    trackOverlays.push(new AMapLib.Polyline({
-      path, strokeColor: '#1890ff', strokeWeight: 3, strokeOpacity: 0.8,
-      strokeStyle: 'solid', zIndex: 10, map: trackMap
-    }))
+  // 按网格员分组：每人一条独立轨迹线，避免不同人点位被错误连成一线
+  const groups = new Map<string | number, any[]>()
+  for (const r of list) {
+    const key = r.userId ?? 'unknown'
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(r)
   }
-  list.forEach((r, idx) => {
-    const isStart = idx === 0
-    const isEnd = idx === list.length - 1
-    // 填充色 = 网格员专属颜色（不同网格员不同颜色）
-    const fillColor = workerColor(r.userId)
-    // 描边保留起终点语义：起点绿 / 终点红 / 中间白
-    const strokeColor = isStart ? '#52c41a' : isEnd && !isStart ? '#ff4d4f' : '#ffffff'
-    const circle = new AMapLib.CircleMarker({
-      center: [Number(r.longitude), Number(r.latitude)],
-      radius: isStart || isEnd ? 6 : 5,
-      fillColor, fillOpacity: 1,
-      strokeColor, strokeWeight: 2.5, zIndex: 20, cursor: 'pointer', map: trackMap
+
+  for (const [, recs] of groups) {
+    const color = workerColor(recs[0].userId)
+    // 同一人多打卡点才连线，线色=该网格员专属色
+    if (recs.length >= 2) {
+      const path = recs.map(r => [Number(r.longitude), Number(r.latitude)])
+      trackOverlays.push(new AMapLib.Polyline({
+        path, strokeColor: color, strokeWeight: 3, strokeOpacity: 0.85,
+        strokeStyle: 'solid', zIndex: 10, map: trackMap
+      }))
+    }
+    // 逐打卡点画三角形标记
+    recs.forEach((r, idx) => {
+      // 填充色 = 网格员专属色；描边 = 起终点语义（起点绿 / 终点红 / 中间白）
+      const fillColor = color
+      const strokeColor = idx === 0 ? '#52c41a' : (idx === recs.length - 1 && idx !== 0) ? '#ff4d4f' : '#ffffff'
+      const size = idx === 0 || idx === recs.length - 1 ? 14 : 12
+      // SVG 三角形：fill/stroke 原生支持，修复原 drop-shadow 描边失效问题
+      const svg = `
+        <svg width="${size}" height="${size}" viewBox="0 0 12 12"
+             style="overflow:visible;cursor:pointer;transition:transform .2s;transform-origin:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));">
+          <polygon points="6,1 11,11 1,11" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-linejoin="round"/>
+        </svg>`
+      const marker = new AMapLib.Marker({
+        position: [Number(r.longitude), Number(r.latitude)],
+        content: svg,
+        offset: new AMapLib.Pixel(-size / 2, -size / 2),
+        zIndex: 20,
+        cursor: 'pointer',
+        map: trackMap
+      })
+      marker.on('mouseover', (e: any) => {
+        const el = marker.getContent()
+        if (el instanceof SVGElement) el.style.transform = 'scale(1.3)'
+        const px = trackMap.lngLatToContainer(e.lnglat)
+        hoverInfo.visible = true
+        hoverInfo.x = px.getX()
+        hoverInfo.y = px.getY()
+        hoverInfo.title = `${r.userName || '-'} · ${r.gridName || '-'}`
+        hoverInfo.content = r.content || '（无内容）'
+        hoverInfo.time = r.createdAt || ''
+      })
+      marker.on('mouseout', () => {
+        const el = marker.getContent()
+        if (el instanceof SVGElement) el.style.transform = 'scale(1)'
+        hoverInfo.visible = false
+      })
+      trackOverlays.push(marker)
     })
-    circle.on('mouseover', (e: any) => {
-      const px = trackMap.lngLatToContainer(e.lnglat)
-      hoverInfo.visible = true
-      hoverInfo.x = px.getX()
-      hoverInfo.y = px.getY()
-      hoverInfo.title = `${r.userName || '-'} · ${r.gridName || '-'}`
-      hoverInfo.content = r.content || '（无内容）'
-      hoverInfo.time = r.createdAt || ''
-    })
-    circle.on('mouseout', () => { hoverInfo.visible = false })
-    trackOverlays.push(circle)
-  })
+  }
   // 视野自适应到轨迹范围
   trackMap.setFitView(trackOverlays, false, [60, 60, 60, 60])
 }
