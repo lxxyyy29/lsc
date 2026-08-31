@@ -81,7 +81,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { getPatrolRecords } from '../api'
+import { getPatrolRecords, getGridTree } from '../api'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
 const records = ref<any[]>([])
@@ -100,6 +100,8 @@ const hoverInfo = reactive({ visible: false, x: 0, y: 0, title: '', content: '',
 let AMapLib: any = null
 let trackMap: any = null
 let trackOverlays: any[] = []
+// 网格边界多边形（独立管理，不参与轨迹自适应视野）
+let gridOverlays: any[] = []
 
 // 有坐标的打卡记录（轨迹数据源）
 const geoRecords = computed(() => records.value.filter(r => r.longitude && r.latitude))
@@ -233,6 +235,66 @@ function drawTrack() {
   trackMap.setFitView(trackOverlays, false, [60, 60, 60, 60])
 }
 
+/** 绘制网格边界：大网格(level2)橙描边、小网格(level3)绿描边，低填充不遮挡轨迹；悬停显示网格名 */
+async function drawGridBoundaries() {
+  if (!AMapLib || !trackMap) return
+  for (const o of gridOverlays) o.setMap(null)
+  gridOverlays = []
+  try {
+    const tree = await getGridTree() || []
+    const draw = (nodes: any[]) => {
+      for (const grid of nodes) {
+        if ((grid.gridLevel === 2 || grid.gridLevel === 3) && grid.roiJson) {
+          try {
+            const coords = JSON.parse(grid.roiJson)
+            if (!Array.isArray(coords) || coords.length < 3) continue
+            const isSmall = grid.gridLevel === 3
+            const poly = new AMapLib.Polygon({
+              path: coords,
+              fillColor: isSmall ? '#10b981' : '#f59e0b',
+              fillOpacity: isSmall ? 0.10 : 0.12,
+              strokeColor: 'rgba(255,255,255,0.85)',
+              strokeWeight: isSmall ? 1.5 : 2,
+              strokeStyle: 'dashed',
+              zIndex: 5,
+              bubble: true,
+              map: trackMap,
+            })
+            poly.on('mouseover', (e: any) => {
+              poly.setOptions({ fillOpacity: isSmall ? 0.35 : 0.4, strokeWeight: isSmall ? 3 : 4, zIndex: 8 })
+              const px = trackMap.lngLatToContainer(e.lnglat)
+              hoverInfo.visible = true
+              hoverInfo.x = px.getX()
+              hoverInfo.y = px.getY()
+              hoverInfo.title = grid.gridName || ''
+              hoverInfo.content = `网格层级：${grid.gridLevel === 3 ? '小网格' : '大网格'}`
+              hoverInfo.time = ''
+            })
+            poly.on('mousemove', (e: any) => {
+              const px = trackMap.lngLatToContainer(e.lnglat)
+              hoverInfo.x = px.getX()
+              hoverInfo.y = px.getY()
+            })
+            poly.on('mouseout', () => {
+              poly.setOptions({ fillOpacity: isSmall ? 0.10 : 0.12, strokeWeight: isSmall ? 1.5 : 2, zIndex: 5 })
+              hoverInfo.visible = false
+            })
+            gridOverlays.push(poly)
+          } catch (e) { /* 单个网格边界解析失败跳过 */ }
+        }
+        if (grid.children) draw(grid.children)
+      }
+    }
+    draw(tree)
+    // 无轨迹数据时让视野覆盖所有网格边界，保证边界可见
+    if (gridOverlays.length && !trackRecords.value.length) {
+      trackMap.setFitView(gridOverlays, false, [60, 60, 60, 60])
+    }
+  } catch (e) {
+    console.warn('网格边界加载失败:', e)
+  }
+}
+
 /** 点击表格行：地图定位到该条打卡 */
 function locateRecord(r: any) {
   if (!trackMap || !r.longitude || !r.latitude) return
@@ -246,9 +308,11 @@ async function initTrackMap() {
     AMapLib = await AMapLoader.load({
       key: '5e00e01d2d2b6ca9e1eed533a15572e4',
       version: '2.0',
-      plugins: ['AMap.Polyline', 'AMap.CircleMarker']
+      plugins: ['AMap.Polygon', 'AMap.Polyline', 'AMap.CircleMarker']
     })
     trackMap = new AMapLib.Map('patrolTrackMap', { zoom: 14, center: [113.939521, 22.971231], mapStyle: 'amap://styles/normal' })
+    // 画网格边界（与轨迹分层，边界在下/轨迹在上）
+    await drawGridBoundaries()
     drawTrack()
   } catch (e) {
     console.warn('轨迹地图初始化失败:', e)
