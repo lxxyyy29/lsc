@@ -127,7 +127,6 @@
           <label class="form-label">值 <span class="required">*</span></label>
           <input v-model="itemForm.itemValue" class="form-input" placeholder="存入业务字段的值，如 GRID_MEMBER" />
         </div>
-        <p v-else style="font-size:12px;color:#9ca3af;margin:0 0 14px;">值由系统自动生成，保存后可在列表中查看</p>
         <div class="form-group">
           <label class="form-label">显示名 <span class="required">*</span></label>
           <input v-model="itemForm.itemLabel" class="form-input" placeholder="下拉框展示的文字，如 网格员上报" />

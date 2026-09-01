@@ -421,6 +421,7 @@ public class EventServiceImpl implements EventService {
         pageParams.add((long) (safePage - 1) * safeSize);
 
         String selectSql = "SELECT e.id, e.event_code AS eventCode, e.title, e.status, e.urgency_level AS urgencyLevel, e.source_system AS sourceSystem, "
+                + "e.report_source AS reportSource, e.report_user_name AS reportUserName, "
                 + "e.occurred_at AS occurredAt, e.created_at AS createdAt, e.archived, e.hidden, e.deleted, e.deleted_reason AS deletedReason, "
                 + "(SELECT wo.id FROM biz_work_order wo WHERE wo.source_event_id = e.id ORDER BY wo.id DESC LIMIT 1) AS workOrderId, "
                 + "(SELECT wo.work_order_no FROM biz_work_order wo WHERE wo.source_event_id = e.id ORDER BY wo.id DESC LIMIT 1) AS workOrderNo, "
@@ -1379,6 +1380,9 @@ public class EventServiceImpl implements EventService {
             case "WORK_ORDER_WAITING_CLOSE" -> "工单待关闭确认";
             case "CONFIRM_CLOSE" -> "确认关闭";
             case "REJECT_CLOSE" -> "驳回关闭";
+            case "WORK_ORDER_COMPLETE" -> "工单完成";
+            case "WORK_ORDER_CONTINUE" -> "工单继续处理";
+            case "WORK_ORDER_NODE_COMPLETE" -> "工单节点完成";
             default -> actionType;
         };
     }

@@ -70,6 +70,7 @@
               <th>状态</th>
               <th>紧急程度</th>
               <th>来源</th>
+              <th>上报人</th>
               <th>上报时间</th>
               <th style="width:320px;">操作</th>
             </tr>
@@ -95,6 +96,7 @@
                 </span>
               </td>
               <td style="font-size:12px;color:#6b7280;">{{ sourceLabel(e.sourceSystem || e.sourceType) }}</td>
+              <td style="font-size:12px;color:#6b7280;">{{ e.reportUserName || '-' }}</td>
               <td style="font-size:12px;color:#6b7280;">{{ formatTime(e.occurredAt || e.createdAt) }}</td>
               <td>
                 <div style="display:flex;flex-wrap:wrap;gap:4px;">

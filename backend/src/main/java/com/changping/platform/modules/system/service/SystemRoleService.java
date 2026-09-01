@@ -127,8 +127,10 @@ public class SystemRoleService {
      */
     @Transactional
     public RoleDetail createRole(CreateRoleRequest request) {
-        // 自定义角色：校验编码/名称非空 + 编码唯一性（内置角色标识已在库中，重复创建会被唯一性校验拦截）
-        String roleCode = request.roleCode() == null ? "" : request.roleCode().trim();
+        // 自定义角色：编码未传时自动生成（ROLE_ + 时间戳），校验编码/名称非空 + 编码唯一性
+        String roleCode = request.roleCode() == null || request.roleCode().isBlank()
+                ? "ROLE_" + System.currentTimeMillis()
+                : request.roleCode().trim();
         String roleName = request.roleName() == null ? "" : request.roleName().trim();
         validateUpsertRequest(roleCode, roleName, null);
         KeyHolder keyHolder = new GeneratedKeyHolder();

@@ -78,9 +78,9 @@
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">角色名称 <span style="color:#ff4d4f;">*</span></label>
           <input v-model="roleForm.roleName" placeholder="如：纪检监督员" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
         </div>
-        <div style="margin-bottom:14px;">
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">角色标识 <span style="color:#ff4d4f;">*</span></label>
-          <input v-model="roleForm.roleCode" :disabled="!!roleForm.id" placeholder="英文大写，如 SUPERVISOR" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+        <div v-if="roleForm.id" style="margin-bottom:14px;">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">角色标识</label>
+          <input v-model="roleForm.roleCode" disabled style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;background:#f9fafb;" />
           <p style="font-size:11px;color:#9ca3af;margin:4px 0 0;">角色标识用于系统识别，创建后不可修改</p>
         </div>
         <div style="margin-bottom:14px;">
@@ -186,16 +186,17 @@ function openCreate() {
   roleForm.value = { id: null, roleName: '', roleCode: '', status: 'ACTIVE', remark: '' }
   showRoleForm.value = true
 }
+
 function openEdit(r: any) {
   roleForm.value = { id: r.id, roleName: r.roleName || '', roleCode: r.roleCode || '', status: r.status || 'ACTIVE', remark: r.remark || '' }
   showRoleForm.value = true
 }
 async function submitRole() {
   if (!roleForm.value.roleName.trim()) { notify('请填写角色名称'); return }
-  if (!roleForm.value.roleCode.trim()) { notify('请填写角色标识（英文，如 VOLUNTEER）'); return }
   roleSaving.value = true
   try {
-    const payload: any = { roleName: roleForm.value.roleName.trim(), roleCode: roleForm.value.roleCode.trim().toUpperCase(), status: roleForm.value.status, remark: roleForm.value.remark }
+    const payload: any = { roleName: roleForm.value.roleName.trim(), status: roleForm.value.status, remark: roleForm.value.remark }
+    if (roleForm.value.id) { payload.roleCode = roleForm.value.roleCode.trim().toUpperCase() }
     if (roleForm.value.id) {
       await http.put(`/system/roles/${roleForm.value.id}`, payload)
     } else {
