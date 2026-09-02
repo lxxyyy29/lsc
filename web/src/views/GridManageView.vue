@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <div class="grid-manage-root">
     <!-- 地图中心点配置条（独立于 grid 布局之外，避免挤乱三列结构） -->
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:12px;font-size:13px;flex-wrap:wrap;">
+    <div class="center-bar">
       <span style="font-weight:600;color:#075985;"><i class="fas fa-map-pin"></i> 地图中心点</span>
       <span style="color:#6b7280;">地图类页面（看板/GIS/大屏）默认以此坐标为中心</span>
       <input v-model="searchKeyword" type="text" placeholder="输入标志性建筑或位置名称（如：拔蛟窝社区）" style="flex:1;min-width:200px;max-width:320px;padding:5px 10px;border:1px solid #bfdbfe;border-radius:6px;font-size:13px;box-sizing:border-box;" @keyup.enter="searchPlace" />
@@ -42,8 +42,9 @@
     <main class="map-panel">
       <div id="gridManageMap" class="map-container"></div>
       <div class="map-toolbar">
-        <button class="tool-btn" :disabled="!selectedGrid || drawing || editing" @click="startEditArea">✏ 拖拽顶点</button>
-        <button class="tool-btn" :disabled="!selectedGrid || drawing || editing" @click="startRedraw">🔲 重绘边界</button>
+        <button v-if="!formVisible && (selectedGrid || isNewDraft)" class="tool-btn" @click="reopenForm">✎ 编辑信息</button>
+        <button class="tool-btn" :disabled="!currentPolygon || drawing || editing" @click="startEditArea">✏ 拖拽顶点</button>
+        <button class="tool-btn" :disabled="!currentPolygon || drawing || editing" @click="startRedraw">🔲 重绘边界</button>
         <template v-if="drawing">
           <button class="tool-btn" :disabled="!drawPoints.length" @click="undoDrawPoint">↩ 撤销上一点（{{ drawPoints.length }}）</button>
           <button class="tool-btn primary" @click="finishDraw">✔ 完成绘制</button>
@@ -281,18 +282,39 @@ const saving = ref(false)
 const hasUnsavedChanges = ref(false)
 // 右侧表单默认隐藏：仅点击「新增网格」或选中网格进入编辑时才弹出，避免空表单遮挡地图
 const formVisible = ref(false)
+// 新增草稿态：新增网格未保存时为真，控制「收起后可重开」按钮显隐
+const isNewDraft = ref(false)
 watch(formVisible, () => {
   // 布局变化后地图容器宽度变了，需要 resize 才能铺满
   nextTick(() => setTimeout(() => map.value?.resize(), 60))
 })
-async function closeForm() {
-  if (drawing.value) cancelDraw()
-  if (editing.value) finishEditArea()
-  // 有任何未保存的修改时（新增或编辑模式），都需要确认
-  if (hasUnsavedChanges.value && !await confirmLeaveUnsaved()) return
+// 仅收起表单：保留选中/边界/绘制态与顶点编辑会话，可随时点「编辑信息」重开
+// 不再自动结束编辑：关闭表单只是为腾出地图视野，绘制出的边界与可拖拽顶点必须保留，
+// 否则“关闭即丢失编辑入口”，新增网格将再也无法重进编辑
+function closeForm() {
   formVisible.value = false
-  setCurrentPolygon(null)
-  hasUnsavedChanges.value = false
+  // 工具栏按钮此刻才插入 DOM，浏览器可能把旧选区/焦点落到新按钮上，下一帧主动清掉
+  nextTick(() => {
+    const sel = window.getSelection?.()
+    if (sel && !sel.isCollapsed) sel.removeAllRanges()
+    const active = document.activeElement as HTMLElement | null
+    active?.blur?.()
+  })
+}
+
+// 重新展开已收起的表单（编辑态恢复多边形与高亮，新增态保留绘制）
+function reopenForm() {
+  formVisible.value = true
+  // 已有工作多边形（新增绘制完的临时面 / 重绘中的新边界）时不能用已保存的多边形覆盖，
+  // 否则重绘后重开表单会把新边界换成旧边界，等同于新绘制丢失
+  if (currentPolygon.value) {
+    if (selectedGrid.value) highlight(selectedGrid.value.id)
+    return
+  }
+  if (selectedGrid.value) {
+    const poly = polygons.value.get(selectedGrid.value.id)
+    if (poly) { setCurrentPolygon(poly); highlight(selectedGrid.value.id) }
+  }
 }
 const tipText = ref('点击左侧网格查看/调整区域；选中后可拖拽顶点或重绘边界')
 
@@ -429,6 +451,8 @@ function styleGridPoly(n: GridNode) {
   if (existing) {
     existing.setPath(coords)
     existing.setOptions(style)
+    // 重绘期间曾隐藏该多边形，保存后需重新显示（setPath 不会自动加回地图）
+    existing.setMap(m)
   } else {
     const poly = new AMapLib.value.Polygon({ path: coords, zIndex: 5, bubble: true, map: m, ...style })
     // 绘制/编辑中不响应选中，避免新增网格时误点已有网格导致绘制被打断、已画的点丢失
@@ -512,10 +536,12 @@ function fillForm(g: GridNode) {
 }
 
 async function selectGrid(g: GridNode, skipHighlight = false, skipUnsavedCheck = false) {
-  if (editing.value) finishEditArea()
-  if (drawing.value) cancelDraw()
   // 有未保存的修改时（新增或编辑模式），都需要确认，避免丢失数据
   if (!skipUnsavedCheck && hasUnsavedChanges.value && !await confirmLeaveUnsaved()) return
+  // 确认通过后才结束编辑/绘制：用户取消切换时应留在原编辑态，否则白丢一次编辑会话
+  isNewDraft.value = false
+  if (editing.value) finishEditArea()
+  if (drawing.value) cancelDraw()
   selectedId.value = g.id
   selectedGrid.value = g
   fillForm(g)
@@ -555,6 +581,7 @@ function setCurrentPolygon(poly: any | null) {
 }
 
 function updateFormFromPolygon(poly: any) {
+  if (!poly) return
   try {
     const path: any[] = poly.getPath() || []
     const coords = path.map((p: any) => [Number(p.lng.toFixed(6)), Number(p.lat.toFixed(6))])
@@ -565,13 +592,15 @@ function updateFormFromPolygon(poly: any) {
 }
 
 async function startCreate() {
-  if (editing.value) finishEditArea()
   if (hasUnsavedChanges.value && !await confirmLeaveUnsaved()) return
+  // 确认通过后才结束编辑：取消新建时应保留原编辑态
+  if (editing.value) finishEditArea()
   hasUnsavedChanges.value = false
   enableFormWatch = false
   formVisible.value = true
   selectedId.value = null
   selectedGrid.value = null
+  isNewDraft.value = true
   highlight(0)
   setCurrentPolygon(null)
   form.value = {
@@ -714,6 +743,9 @@ function cancelDraw() {
     currentPolygon.value.setPath(prev)
     // 重绘前隐藏过旧边界，取消时需恢复显示
     currentPolygon.value.setMap(map.value)
+  } else if (currentPolygon.value && !prev) {
+    // 新增草稿无已保存边界：重绘取消时把临时多边形重新显示，避免边界“消失”
+    currentPolygon.value.setMap(map.value)
   }
   tipText.value = '已取消绘制'
 }
@@ -737,7 +769,7 @@ function teardownDrawOverlays() {
 let editBackupPath: [number, number][] | null = null
 
 function startEditArea() {
-  if (!currentPolygon.value || !selectedGrid.value) return
+  if (!currentPolygon.value) return
   const path = currentPolygon.value.getPath?.() || []
   if (!path.length) {
     tipText.value = '该网格还没有边界，请使用「重绘边界」绘制'
@@ -780,12 +812,10 @@ function cancelEditArea() {
 }
 
 function startRedraw() {
-  if (!selectedGrid.value) return
-  // 重绘前先隐藏旧边界，避免绘制时新旧两层重叠干扰；
-  // 取消绘制/保存后 reloadAll 会恢复
-  if (selectedGrid.value.id != null) {
-    polygons.value.get(selectedGrid.value.id)?.setMap(null)
-  }
+  if (!currentPolygon.value) return
+  // 重绘前隐藏当前边界（已保存网格的在 polygons 中、新增草稿为临时多边形），避免新旧两层重叠；
+  // 保留 currentPolygon 引用，取消绘制时 cancelDraw 可据此还原
+  currentPolygon.value.setMap(null)
   startDraw()
 }
 
@@ -837,6 +867,7 @@ async function saveGrid() {
     // 保存成功后完全回到初始状态（无选中、无表单、按钮禁用）
     selectedId.value = null
     selectedGrid.value = null
+    isNewDraft.value = false
     highlight(0)
     formVisible.value = false
     setCurrentPolygon(null)
@@ -852,14 +883,16 @@ async function saveGrid() {
 
 async function removeGrid() {
   if (!selectedGrid.value) return
-  if (editing.value) finishEditArea()
   const g = selectedGrid.value
   if (!await confirmDialog({ message: `确定删除网格「${g.gridName}」？\n（该网格下有子网格时将无法删除）`, danger: true, okText: '删除' })) return
+  // 确认通过后才结束编辑：取消删除时应保留原编辑态
+  if (editing.value) finishEditArea()
   try {
     await deleteGrid(g.id)
     notify('网格已删除', 'success')
     selectedId.value = null
     selectedGrid.value = null
+    isNewDraft.value = false
     // 隐藏右侧表单并清理状态，完全回到初始状态（包括提示文字）
     formVisible.value = false
     setCurrentPolygon(null)
@@ -900,12 +933,36 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 按钮禁选中：防文字被框选成蓝色高亮 */
+button { user-select: none; -webkit-user-select: none; }
+/* 整页定高：中心点配置条占多少就扣多少，网格区吃掉剩余，外层不产生滚动条 */
+.grid-manage-root {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 100px);
+  min-height: 460px;
+  overflow: hidden;
+}
+/* 配置条不参与伸缩，高度按内容自适应（窄屏换行也不会挤压网格区） */
+.center-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f0f7ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
 .grid-manage-page {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: 280px 1fr 340px;
   gap: 14px;
-  height: calc(100vh - 140px);
-  min-height: 520px;
 }
 /* 表单隐藏时地图占据右侧全部空间 */
 .grid-manage-page.no-form { grid-template-columns: 280px 1fr; }
