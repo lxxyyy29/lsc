@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class PopulationMapper {
@@ -44,9 +45,15 @@ public class PopulationMapper {
     }
 
     public List<PopulationEntity> findByGridId(Long gridId) {
-        return jdbcTemplate.query(
-                "SELECT * FROM cmn_population WHERE grid_id = ? AND status = 'ACTIVE' ORDER BY id DESC",
-                ROW_MAPPER, gridId);
+        java.util.Set<Long> gridIds = new java.util.LinkedHashSet<>();
+        collectChildGridIds(gridId, gridIds);
+        StringBuilder sql = new StringBuilder("SELECT * FROM cmn_population WHERE status = 'ACTIVE' AND grid_id IN (");
+        for (int i = 0; i < gridIds.size(); i++) {
+            if (i > 0) sql.append(",");
+            sql.append("?");
+        }
+        sql.append(") ORDER BY id DESC");
+        return jdbcTemplate.query(sql.toString(), ROW_MAPPER, gridIds.toArray());
     }
 
     public List<PopulationEntity> findAllActive() {
@@ -79,9 +86,19 @@ public class PopulationMapper {
         } else if ("RESIDENT".equalsIgnoreCase(populationType)) {
             sql.append(" AND COALESCE(p.household_type, '') <> 'FLOATING'");
         }
+        // 网格筛选：选中父网格时递归包含所有子网格
         if (gridId != null) {
-            sql.append(" AND p.grid_id = ?");
-            params.add(gridId);
+            java.util.Set<Long> gridIds = new java.util.LinkedHashSet<>();
+            collectChildGridIds(gridId, gridIds);
+            if (!gridIds.isEmpty()) {
+                sql.append(" AND p.grid_id IN (");
+                for (int i = 0; i < gridIds.size(); i++) {
+                    if (i > 0) sql.append(",");
+                    sql.append("?");
+                }
+                sql.append(")");
+                params.addAll(gridIds);
+            }
         }
         sql.append(" ORDER BY p.address, p.id DESC");
         return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
@@ -89,6 +106,21 @@ public class PopulationMapper {
             e.setGridName(rs.getString("grid_name"));
             return e;
         }, params.toArray());
+    }
+
+    /** 递归收集指定网格及其所有子网格的 ID */
+    private void collectChildGridIds(Long parentId, java.util.Set<Long> result) {
+        result.add(parentId);
+        try {
+            List<Map<String, Object>> children = jdbcTemplate.queryForList(
+                    "SELECT id FROM cmn_grid WHERE parent_id = ? AND status = 'ACTIVE'", parentId);
+            for (Map<String, Object> child : children) {
+                Long childId = ((Number) child.get("id")).longValue();
+                collectChildGridIds(childId, result);
+            }
+        } catch (Exception e) {
+            // 查询失败时仅使用父网格 ID
+        }
     }
 
     /**
@@ -107,9 +139,19 @@ public class PopulationMapper {
             params.add(addresses.get(i));
         }
         sql.append(")");
+        // 网格筛选：选中父网格时递归包含所有子网格
         if (gridId != null) {
-            sql.append(" AND p.grid_id = ?");
-            params.add(gridId);
+            java.util.Set<Long> gridIds = new java.util.LinkedHashSet<>();
+            collectChildGridIds(gridId, gridIds);
+            if (!gridIds.isEmpty()) {
+                sql.append(" AND p.grid_id IN (");
+                for (int i = 0; i < gridIds.size(); i++) {
+                    if (i > 0) sql.append(",");
+                    sql.append("?");
+                }
+                sql.append(")");
+                params.addAll(gridIds);
+            }
         }
         sql.append(" ORDER BY p.address, p.id DESC");
         return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {

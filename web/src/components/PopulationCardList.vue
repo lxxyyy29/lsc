@@ -12,6 +12,13 @@ interface Person {
   relation?: string
   specialPopulation?: number
   specialPopulationType?: string
+  remark?: string
+  age?: number
+  idCard?: string
+  birthday?: string
+  buildingNo?: string
+  roomNo?: string
+  status?: string
 }
 
 // 后端返回树：{ id, label, isHouse, address, head|null, children:[{ id, person, isHead }] }
