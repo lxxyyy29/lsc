@@ -36,7 +36,7 @@ docker ps --filter name=changping      # 查看状态
 | H5 移动端 | http://8.156.93.151:10082/h5/ | https://drone.kfktec.cn:8443/h5/ |
 | 居民端 | http://8.156.93.151:10083 | https://drone.kfktec.cn:8443/mp/ |
 
-域名 `drone.kfktec.cn` 是借用服务器上无人机老项目的（仅开发阶段借挂，交付时客户自购域名切换：换 docker/ssl/ 证书 + nginx server_name + .env DOMAIN + 重建容器）。证书 2026-08-23 到期。443 端口被老项目 dgcp-web-nginx 占用，勿动。
+域名 `drone.kfktec.cn` 是借用服务器上无人机老项目的（仅开发阶段借挂，交付时客户自购域名切换：换 docker/ssl/ 证书 + nginx server_name + .env DOMAIN + 重建容器）。证书为 DigiCert 90 天期，**已续期至 2026-11-22**（2026-09-08 本机 TLS 握手验证生效，Issuer: Encryption Everywhere DV TLS CA - G2），到期前需再次续期。⚠️ 证书一旦过期，小程序端（h5/src/api/ 下硬编码 `https://drone.kfktec.cn:8443`）全部请求会失败，H5 浏览器端走同源相对路径不受影响。443 端口被老项目 dgcp-web-nginx 占用，勿动。
 
 ### 测试账号
 
