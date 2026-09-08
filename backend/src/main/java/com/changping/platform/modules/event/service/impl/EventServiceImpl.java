@@ -452,6 +452,40 @@ public class EventServiceImpl implements EventService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    /** 网格名称缓存（gridId → 名称），TTL 5 分钟：列表页逐条回显「所属网格」，避免 N+1 查询 */
+    private static final long GRID_NAME_CACHE_TTL_MS = 5 * 60 * 1000L;
+    private final java.util.Map<Long, String> gridNameCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<Long, Long> gridNameCacheAt = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * 查询网格名称，用于事件详情/列表回显「所属网格」。
+     * 网格改名后最长 5 分钟内生效；查询异常时回退旧值或 null，不影响事件主流程。
+     */
+    private String resolveGridName(Long gridId) {
+        if (gridId == null) {
+            return null;
+        }
+        Long cachedAt = gridNameCacheAt.get(gridId);
+        String cached = gridNameCache.get(gridId);
+        if (cached != null && cachedAt != null && System.currentTimeMillis() - cachedAt < GRID_NAME_CACHE_TTL_MS) {
+            return cached;
+        }
+        try {
+            List<String> names = jdbcTemplate.query(
+                    "SELECT grid_name FROM cmn_grid WHERE id = ?",
+                    (rs, rowNum) -> rs.getString("grid_name"), gridId);
+            String name = names.isEmpty() ? null : names.get(0);
+            if (name != null) {
+                gridNameCache.put(gridId, name);
+                gridNameCacheAt.put(gridId, System.currentTimeMillis());
+            }
+            return name;
+        } catch (Exception e) {
+            log.warn("[grid-name] 查询网格名称失败, gridId={}: {}", gridId, e.getMessage());
+            return cached;
+        }
+    }
+
     private record CachedGridPolygon(long id, int gridLevel, double[] polyLng, double[] polyLat) {}
     private volatile List<CachedGridPolygon> cachedGridPolygons = null;
     private volatile long gridCacheTimestamp = 0;
@@ -640,7 +674,7 @@ public class EventServiceImpl implements EventService {
                 entity.getAreaId(),
                 entity.getAreaName(),
                 entity.getGridId(),
-                null,
+                resolveGridName(entity.getGridId()),
                 firstNonBlank(document.getUrgencyLevel(), entity.getUrgencyLevel()),
                 entity.getReportSource(),
                 entity.getReportUserName(),
@@ -690,7 +724,7 @@ public class EventServiceImpl implements EventService {
                 entity == null ? null : entity.getAreaId(),
                 entity == null ? null : entity.getAreaName(),
                 entity == null ? null : entity.getGridId(),
-                null,
+                resolveGridName(entity == null ? null : entity.getGridId()),
                 firstNonBlank(document.getUrgencyLevel(), entity == null ? null : entity.getUrgencyLevel()),
                 entity == null ? null : entity.getReportSource(),
                 entity == null ? null : entity.getReportUserName(),
@@ -851,7 +885,7 @@ public class EventServiceImpl implements EventService {
                 entity.getAreaId(),
                 entity.getAreaName(),
                 entity.getGridId(),
-                null,
+                resolveGridName(entity.getGridId()),
                 entity.getUrgencyLevel(),
                 entity.getReportSource(),
                 entity.getReportUserName(),

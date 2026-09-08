@@ -233,9 +233,23 @@ const form = ref({
   latitude: null as number | null,
 })
 
+/** 将网格树（社区/大网格/小网格嵌套）展平为单层选项，标签带层级路径，供「所属网格」单选下拉使用 */
+function flattenGridTree(nodes: any[], prefix = ''): any[] {
+  const out: any[] = []
+  for (const n of nodes || []) {
+    const label = prefix ? `${prefix} / ${n.gridName}` : String(n.gridName || '')
+    out.push({ id: n.id, gridName: label })
+    if (Array.isArray(n.children) && n.children.length) {
+      out.push(...flattenGridTree(n.children, label))
+    }
+  }
+  return out
+}
+
 onMounted(async () => {
   try {
-    grids.value = await getGridTree() || []
+    const tree: any[] = (await getGridTree()) || []
+    grids.value = flattenGridTree(tree)
   } catch (e) {}
   try {
     const items: any = await getDictItems('event_report_source', true)
