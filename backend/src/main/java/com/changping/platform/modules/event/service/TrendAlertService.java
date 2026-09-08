@@ -199,6 +199,8 @@ public class TrendAlertService {
 
     /** 分页查询预警列表 */
     public Map<String, Object> list(String status, String dimension, int page, int size) {
+        page = Math.max(1, page);
+        size = Math.max(1, Math.min(size, 100));
         List<Object> params = new ArrayList<>();
         StringBuilder where = new StringBuilder(" WHERE 1=1");
         if (status != null && !status.isBlank()) {

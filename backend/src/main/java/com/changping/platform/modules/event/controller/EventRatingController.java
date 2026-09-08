@@ -23,8 +23,19 @@ public class EventRatingController {
      */
     @PostMapping
     public ApiResponse<Long> submit(@RequestBody Map<String, Object> request) {
-        Long eventId = Long.parseLong(request.get("eventId").toString());
-        Integer score = Integer.parseInt(request.get("score").toString());
+        Object eventIdRaw = request == null ? null : request.get("eventId");
+        Object scoreRaw = request == null ? null : request.get("score");
+        if (eventIdRaw == null || scoreRaw == null) {
+            return ApiResponse.fail("INVALID_PARAMS", "缺少 eventId 或 score");
+        }
+        Long eventId;
+        Integer score;
+        try {
+            eventId = Long.parseLong(String.valueOf(eventIdRaw));
+            score = Integer.parseInt(String.valueOf(scoreRaw));
+        } catch (NumberFormatException e) {
+            return ApiResponse.fail("INVALID_PARAMS", "eventId/score 格式不正确");
+        }
         String content = (String) request.get("content");
         String tags = (String) request.get("tags");
 

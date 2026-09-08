@@ -157,17 +157,19 @@ function exportData() {
 async function loadData() {
   loading.value = true
   try {
-    const [overviewRes, gridStatsRes, dashboardRes] = await Promise.all([
+    const [overviewRes, gridStatsRes, dashboardRes, responseTimeRes] = await Promise.all([
       http.get('/assessment/overview').catch(() => null),
       http.get('/community/dashboard/grid-stats').catch(() => null),
-      http.get('/community/dashboard/overview').catch(() => null)
+      http.get('/community/dashboard/overview').catch(() => null),
+      http.get('/assessment/response-time').catch(() => null)
     ])
 
     const overview = overviewRes || {}
     const gridStats = gridStatsRes || {}
     const dashboard = dashboardRes || {}
+    const responseTime = responseTimeRes || {}
 
-    // 事件统计
+    // 事件统计：工单完成数以 orders.completed 为准（overview.events 不含 completed 键）
     const events = overview.events || {}
     const orders = overview.orders || {}
     const urgencyDist = overview.urgencyDistribution || []
@@ -175,12 +177,12 @@ async function loadData() {
 
     reportData.value = {
       eventCount: events.total || 0,
-      completedOrderCount: events.completed || 0,
+      completedOrderCount: orders.completed || 0,
       patrolCount: dashboard.todayInspections || 0,
       aiAlertCount: dashboard.aiAlerts || 0,
       completionRate: orders.total ? Math.round((orders.completed || 0) * 100 / orders.total) : 0,
       eventTrend: '↑ 0%',
-      overdueCount: overview.overdueDispatch || 0,
+      overdueCount: responseTime.overdueDispatch || 0,
       pendingAlertCount: events.waitingDispatch || 0,
       eventTypeStats: (overview.eventTypeDistribution || []).map((t: any) => ({ name: getEventTypeName(t.type), count: t.count })),
       orderStatusStats: [

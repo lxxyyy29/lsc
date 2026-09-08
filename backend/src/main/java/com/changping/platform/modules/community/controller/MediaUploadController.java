@@ -177,6 +177,8 @@ public class MediaUploadController {
     public ApiResponse<List<Map<String, Object>>> list(
             @RequestParam(required = false) String businessType,
             @RequestParam(required = false) Long businessId) {
+        // 媒体列表会返回全平台上传记录，限制为管理端（WEB）使用，避免居民/H5 令牌枚举
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
         return ApiResponse.ok(mediaUploadMapper.findByBusiness(businessType, businessId));
     }
 

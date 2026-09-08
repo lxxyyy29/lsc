@@ -18,14 +18,7 @@
         <div>
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事件类型 <span style="color:#ff4d4f;">*</span></label>
           <el-select v-model="form.eventType" @change="errors.eventType = ''" placeholder="请选择" :class="{ 'is-invalid': errors.eventType }" style="width:100%;">
-            <el-option label="市容环境" value="市容环境" />
-            <el-option label="消防安全" value="消防安全" />
-            <el-option label="矛盾纠纷" value="矛盾纠纷" />
-            <el-option label="安全生产" value="安全生产" />
-            <el-option label="民生诉求" value="民生诉求" />
-            <el-option label="防汛防台风" value="防汛防台风" />
-            <el-option label="违建" value="违建" />
-            <el-option label="其他" value="其他" />
+            <el-option v-for="opt in eventTypeOptions" :key="opt.itemValue" :value="opt.itemValue" :label="opt.itemLabel" />
           </el-select>
           <p v-if="errors.eventType" class="field-error">{{ errors.eventType }}</p>
         </div>
@@ -160,6 +153,19 @@ const FALLBACK_REPORT_SOURCES = [
 ]
 const reportSourceOptions = ref<{ itemValue: string; itemLabel: string }[]>(FALLBACK_REPORT_SOURCES)
 
+// 事件类型字典驱动（event_type），接口不可用时兜底内置列表
+const FALLBACK_EVENT_TYPES = [
+  { itemValue: '市容环境', itemLabel: '市容环境' },
+  { itemValue: '消防安全', itemLabel: '消防安全' },
+  { itemValue: '矛盾纠纷', itemLabel: '矛盾纠纷' },
+  { itemValue: '安全生产', itemLabel: '安全生产' },
+  { itemValue: '民生诉求', itemLabel: '民生诉求' },
+  { itemValue: '防汛防台风', itemLabel: '防汛防台风' },
+  { itemValue: '违建', itemLabel: '违建' },
+  { itemValue: '其他', itemLabel: '其他' },
+]
+const eventTypeOptions = ref<{ itemValue: string; itemLabel: string }[]>(FALLBACK_EVENT_TYPES)
+
 // 现场照片（选填）：选中即上传，成功后存 URL 随事件提交
 const images = ref<string[]>([])
 const uploading = ref(false)
@@ -234,6 +240,10 @@ onMounted(async () => {
   try {
     const items: any = await getDictItems('event_report_source', true)
     if (Array.isArray(items) && items.length) reportSourceOptions.value = items
+  } catch (e) {}
+  try {
+    const items: any = await getDictItems('event_type', true)
+    if (Array.isArray(items) && items.length) eventTypeOptions.value = items
   } catch (e) {}
   await initMap()
 })

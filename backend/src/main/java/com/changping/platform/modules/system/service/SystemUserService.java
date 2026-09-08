@@ -86,6 +86,8 @@ public class SystemUserService {
      */
     @Transactional(readOnly = true)
     public PagedResult<UserListItem> listUsersPaged(int page, int pageSize, String keyword, String status) {
+        page = Math.max(1, page);
+        pageSize = Math.max(1, Math.min(pageSize, 100));
         int offset = (page - 1) * pageSize;
         StringBuilder where = new StringBuilder();
         java.util.List<Object> params = new java.util.ArrayList<>();

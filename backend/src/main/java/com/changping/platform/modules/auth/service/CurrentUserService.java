@@ -60,6 +60,27 @@ public class CurrentUserService {
     }
 
     /**
+     * 从线程上下文获取已认证用户，允许传入的任一客户端类型；未登录或类型均不匹配时抛出业务异常
+     *
+     * <p>用于 Web 与 H5 都需要访问的只读接口（如系统字典项查询：管理端配置、网格员端读取）。
+     *
+     * @Param [allowedClientTypes 允许的客户端类型列表]
+     * @return AuthenticatedUser 当前已认证用户对象
+     */
+    public AuthenticatedUser requireAnyClientType(AuthService.ClientType... allowedClientTypes) {
+        AuthenticatedUser authenticatedUser = AuthenticatedUserContextHolder.getOptional()
+                .orElseThrow(() -> new BusinessException("AUTH_TOKEN_REQUIRED", "请提供认证令牌"));
+        String actualClientType = authenticatedUser.clientType();
+        boolean matched = allowedClientTypes != null
+                && java.util.Arrays.stream(allowedClientTypes)
+                        .anyMatch(type -> type != null && type.name().equals(actualClientType));
+        if (!matched) {
+            throw new BusinessException("AUTH_CLIENT_TYPE_FORBIDDEN", "认证令牌不适用于该客户端类型");
+        }
+        return authenticatedUser;
+    }
+
+    /**
      * 获取当前登录用户ID（Web端），未登录时抛出业务异常
      */
     public Long requireUserId() {

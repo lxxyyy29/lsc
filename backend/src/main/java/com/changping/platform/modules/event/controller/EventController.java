@@ -410,7 +410,12 @@ public class EventController {
         }
 
         // 有工单，返回所有工单操作记录的附件
-        Long processInstanceId = ((Number) workOrders.get(0).get("process_instance_id")).longValue();
+        // 防御：历史异常工单可能缺少 process_instance_id，直接转换会 NPE 500
+        Object processInstanceRaw = workOrders.get(0).get("process_instance_id");
+        if (processInstanceRaw == null) {
+            return ApiResponse.ok(java.util.List.of());
+        }
+        Long processInstanceId = ((Number) processInstanceRaw).longValue();
         List<Map<String, Object>> attachments = jdbcTemplate.query(
             "SELECT mf.id, mf.file_name, mf.file_url, mf.file_type, mf.mime_type, mf.uploader_name, mf.created_at " +
             "FROM biz_media_file mf " +
@@ -595,7 +600,7 @@ public class EventController {
             "SELECT id, title, event_type, urgency_level, status, " +
             "CAST(longitude AS DECIMAL(10,6)) as lng, CAST(latitude AS DECIMAL(10,6)) as lat, " +
             "created_at FROM biz_event " +
-            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0 AND COALESCE(hidden, 0) = 0");
+            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0 AND COALESCE(hidden, 0) = 0 AND COALESCE(deleted, 0) = 0");
         List<Object> params = new ArrayList<>();
         if (startDate != null && !startDate.isEmpty()) { sql.append(" AND created_at >= ?"); params.add(startDate); }
         if (endDate != null && !endDate.isEmpty()) { sql.append(" AND created_at <= ?"); params.add(endDate); }
@@ -614,7 +619,7 @@ public class EventController {
             "SELECT id, title, event_type, status, " +
             "CAST(longitude AS DECIMAL(10,6)) as lng, CAST(latitude AS DECIMAL(10,6)) as lat, " +
             "created_at FROM biz_event " +
-            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0 AND COALESCE(hidden, 0) = 0 " +
+            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0 AND COALESCE(hidden, 0) = 0 AND COALESCE(deleted, 0) = 0 " +
             "ORDER BY created_at DESC LIMIT 200";
         return ApiResponse.ok(jdbcTemplate.queryForList(sql));
     }
@@ -630,18 +635,19 @@ public class EventController {
         if (eventIds == null || eventIds.isEmpty()) {
             return ApiResponse.fail("INVALID_PARAMS", "请选择要操作的事件");
         }
+        if (!"ignore".equals(action)) {
+            return ApiResponse.fail("INVALID_PARAMS", "不支持的操作类型: " + action);
+        }
         AuthenticatedUser operator = currentUserService.requireClientType(AuthService.ClientType.WEB);
         permissionGuard.require(PermissionCodes.API_EVENT_IGNORE);
 
         int success = 0;
         for (Number id : eventIds) {
             try {
-                if ("ignore".equals(action)) {
-                    eventIgnoreService.ignoreEvent(id.longValue(), operator.id(), operator.userName(), "批量忽略");
-                }
+                eventIgnoreService.ignoreEvent(id.longValue(), operator.id(), operator.userName(), "批量忽略");
                 success++;
             } catch (Exception e) {
-                // 跳过失败
+                // 跳过失败，不影响其余事件；count 只在真正忽略成功后自增
             }
         }
         return ApiResponse.ok(Map.of("success", success, "total", eventIds.size()));

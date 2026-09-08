@@ -206,6 +206,59 @@ export async function createEventForH5(payload: EventCreatePayload): Promise<Eve
   // #endif
 }
 
+export interface DictItem {
+  id: number
+  dictCode: string
+  itemValue: string
+  itemLabel: string
+  sortOrder: number
+  status: string
+  remark: string | null
+}
+
+/**
+ * 读取字典项（H5 与小程序共用）
+ * 例：getDictItems('event_type', true) 返回事件类型下拉列表
+ */
+export async function getDictItems(dictCode: string, activeOnly: boolean = true): Promise<DictItem[]> {
+  const baseUrl = resolveSharedApiBaseUrl()
+  const url = `${baseUrl}/system/dicts/${dictCode}/items?activeOnly=${activeOnly}`
+  const headers = buildHeaders()
+
+  // #ifdef MP-WEIXIN
+  return new Promise((resolve, reject) => {
+    uni.request({
+      url,
+      method: 'GET',
+      header: headers,
+      success: (response) => {
+        const payload = response.data as ApiResponse<DictItem[]>
+        if (payload?.success && Array.isArray(payload.data)) {
+          resolve(payload.data)
+        } else {
+          reject(new Error(payload?.message || '查询字典失败'))
+        }
+      },
+      fail: (err) => reject(new Error(err?.errMsg || '网络异常，请稍后重试'))
+    })
+  })
+  // #endif
+
+  // #ifndef MP-WEIXIN
+  try {
+    const response = await fetch(url, { headers })
+    const payload = (await response.json()) as ApiResponse<DictItem[]>
+    if (!response.ok || !payload?.success || !Array.isArray(payload.data)) {
+      throw new Error(payload?.message || '查询字典失败')
+    }
+    return payload.data
+  } catch (error) {
+    if (error instanceof Error) throw error
+    throw new Error('网络异常，请稍后重试')
+  }
+  // #endif
+}
+
 /** 查询当前登录用户上报的事件记录（H5 与小程序共用） */
 export async function getMyReportedEvents(): Promise<MyReportedEvent[]> {
   const url = `${resolveSharedApiBaseUrl()}/events/my-reports?page=1&pageSize=50`

@@ -90,4 +90,15 @@ public class GridMapper {
                 "SELECT COUNT(*) FROM cmn_grid WHERE grid_code = ?", Long.class, gridCode);
         return count != null && count > 0;
     }
+
+    /** 收集以 rootId 为根的全部节点 ID（含自身），用于 parent_id 成环校验 */
+    public List<Long> collectSubtreeIds(Long rootId) {
+        return jdbcTemplate.query(
+                "WITH RECURSIVE subtree AS ("
+                        + "  SELECT id FROM cmn_grid WHERE id = ?"
+                        + "  UNION ALL"
+                        + "  SELECT g.id FROM cmn_grid g JOIN subtree s ON g.parent_id = s.id"
+                        + ") SELECT id FROM subtree",
+                (rs, rowNum) -> rs.getLong("id"), rootId);
+    }
 }

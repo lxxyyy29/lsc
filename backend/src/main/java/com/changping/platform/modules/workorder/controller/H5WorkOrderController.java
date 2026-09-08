@@ -173,7 +173,7 @@ public class H5WorkOrderController {
                     "NO_LEADER", "该事件未配置组长，无法执行组长派单");
         }
         Map<String, Object> leader = (Map<String, Object>) info.get("leader");
-        Long leaderUserId = (Long) leader.get("userId");
+        Long leaderUserId = leader == null ? null : (Long) leader.get("userId");
         if (leaderUserId == null || !leaderUserId.equals(userId)) {
             throw new com.changping.platform.common.exception.BusinessException(
                     "NOT_LEADER_OF_THIS_GRID", "您不是该事件所属网格的组长，无权派单");

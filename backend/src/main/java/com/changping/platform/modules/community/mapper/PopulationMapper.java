@@ -110,7 +110,10 @@ public class PopulationMapper {
 
     /** 递归收集指定网格及其所有子网格的 ID */
     private void collectChildGridIds(Long parentId, java.util.Set<Long> result) {
-        result.add(parentId);
+        // result 同时作为 visited 集合：父级指针异常成环（A→B→A）时避免无限递归/栈溢出
+        if (parentId == null || !result.add(parentId)) {
+            return;
+        }
         try {
             List<Map<String, Object>> children = jdbcTemplate.queryForList(
                     "SELECT id FROM cmn_grid WHERE parent_id = ? AND status = 'ACTIVE'", parentId);

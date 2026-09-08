@@ -59,7 +59,14 @@ public class WorkOrderAutoHandleTask {
                 "AND created_at < DATE_SUB(NOW(), INTERVAL 48 HOUR)");
 
             for (Map<String, Object> order : overdueOrders) {
-                Long assigneeId = ((Number) order.get("assignee_user_id")).longValue();
+                // assignee_user_id 允许为 NULL（异常数据/历史工单），无受派人则跳过本单，
+                // 避免 ((Number) null).longValue() NPE 中断整轮超期通知
+                Object rawAssigneeId = order.get("assignee_user_id");
+                if (rawAssigneeId == null) {
+                    log.warn("[WorkOrderAutoHandle] 工单 {} 无受派人，跳过超期通知", order.get("work_order_no"));
+                    continue;
+                }
+                Long assigneeId = ((Number) rawAssigneeId).longValue();
                 String workOrderNo = (String) order.get("work_order_no");
                 int hours = ((Number) order.get("hours")).intValue();
 

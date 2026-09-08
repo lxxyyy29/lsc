@@ -124,6 +124,8 @@ public class ProcessTemplateService {
      * @return PagedResult<ProcessTemplateEntity> 分页流程模板列表
      */
     public PagedResult<ProcessTemplateEntity> listTemplatesPaged(int page, int pageSize, String keyword) {
+        page = Math.max(1, page);
+        pageSize = Math.max(1, Math.min(pageSize, 100));
         int offset = (page - 1) * pageSize;
         String where = "";
         Object[] countParams = new Object[0];

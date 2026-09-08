@@ -43,7 +43,10 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     private static final String PROCESS_STATUS_RUNNING = "RUNNING";
     private static final String PROCESS_STATUS_APPROVED = "APPROVED";
 
-    /** 重点事件类型→路由到两委干部；其余简易事件→网格员 */
+    /** 未配置派单规则时的默认受理角色：网格员 */
+    private static final String DEFAULT_ROLE_CODE = "H5_WORKER";
+
+    /** 重点事件类型兜底集合：仅在 biz_dispatch_rule 表无匹配规则时生效 */
     private static final java.util.Set<String> SERIOUS_EVENT_TYPES = java.util.Set.of(
             "COMPLAINT", "FIRE", "ILLEGAL_BUILDING", "PUBLIC_SAFETY", "SAFETY", "SAFE",
             "民生诉求", "消防安全", "违建", "公共安全", "安全生产", "矛盾纠纷", "防汛防台风");
@@ -130,13 +133,25 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     /**
-     * 按事件类型智能路由：重点事件→两委干部(EVENT_OPERATOR)，简易事件→网格员(H5_WORKER)
+     * 按事件类型智能路由：优先命中可配置的派单规则表 biz_dispatch_rule，
+     * 表内无匹配规则时回退内置的重点事件类型常量，仍未命中则默认网格员。
+     *
+     * <p>与 SmartDispatchService#resolveRoleCode 保持同一数据源，避免管理员在「派单规则」页
+     * 调整事件类型后，两处路由结果不一致（事件类型字典可在字典管理页自由增删改）。
      */
     private String resolveRecommendedRole(String eventType) {
-        if (eventType != null && SERIOUS_EVENT_TYPES.contains(eventType.trim())) {
-            return "EVENT_OPERATOR";
+        if (eventType == null || eventType.isBlank()) {
+            return DEFAULT_ROLE_CODE;
         }
-        return "H5_WORKER";
+        List<String> roles = jdbcTemplate.query(
+                "SELECT target_role_code FROM biz_dispatch_rule "
+                        + "WHERE event_type = ? AND enabled = 1 ORDER BY priority ASC, id ASC LIMIT 1",
+                (rs, rowNum) -> rs.getString("target_role_code"),
+                eventType.trim());
+        if (!roles.isEmpty() && roles.get(0) != null) {
+            return roles.get(0);
+        }
+        return SERIOUS_EVENT_TYPES.contains(eventType.trim()) ? "EVENT_OPERATOR" : DEFAULT_ROLE_CODE;
     }
 
     /**
@@ -197,7 +212,11 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         jdbcTemplate.update(
                 "UPDATE biz_process_instance SET status = 'APPROVED', finished_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                 workOrder.getProcessInstanceId());
-        updateWorkOrder(workOrderId, "WAITING_CLOSE_CONFIRM", null, null, null, null, request.remark());
+        // 保留原受派人：Web 端「驳回关闭」会把工单退回 PROCESSING，由原网格员继续处置，
+        // 若此处清空 assignee，驳回后 handle() 的受派人校验将永远失败（工单死锁）
+        updateWorkOrder(workOrderId, "WAITING_CLOSE_CONFIRM",
+                workOrder.getAssigneeUserId(), workOrder.getAssigneeName(),
+                null, null, request.remark());
         log.info("工单{}处理完成，进入待关闭确认状态", workOrderId);
         insertEventRecord(workOrder.getSourceEventId(), "DISPATCHED_TO_WORK_ORDER", "DISPATCHED_TO_WORK_ORDER", "WORK_ORDER_WAITING_CLOSE", actor, request.remark());
         insertProcessActionRecord(workOrder.getProcessInstanceId(), null, "WORK_ORDER_RESOLVED", PROCESS_STATUS_APPROVED, request.remark(), actor, null, null);
@@ -529,6 +548,19 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
         if (piId != null) {
             jdbcTemplate.update("DELETE FROM biz_process_instance WHERE id = ?", piId);
+        }
+
+        // 回滚事件状态：删除工单后事件回到待派单，否则事件永久卡在「已派单」，
+        // 既无法重新派发（dispatch 要求 WAITING_DISPATCH），也无法标误报忽略
+        Long sourceEventId = workOrder.getSourceEventId();
+        if (sourceEventId != null) {
+            int rolledBack = jdbcTemplate.update(
+                    "UPDATE biz_event SET status = 'WAITING_DISPATCH', updated_at = CURRENT_TIMESTAMP "
+                            + "WHERE id = ? AND status = 'DISPATCHED_TO_WORK_ORDER'",
+                    sourceEventId);
+            if (rolledBack > 0) {
+                alarmWorkflowStatusSyncService.syncWorkflowStatus(sourceEventId, "WAITING_DISPATCH");
+            }
         }
     }
 

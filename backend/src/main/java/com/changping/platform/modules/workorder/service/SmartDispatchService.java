@@ -530,6 +530,9 @@ public class SmartDispatchService {
         if (id == null) {
             throw new BusinessException("VALIDATION_ERROR", "规则ID不能为空");
         }
+        if (eventType == null || eventType.isBlank() || targetRoleCode == null || targetRoleCode.isBlank()) {
+            throw new BusinessException("VALIDATION_ERROR", "事件类型与目标角色不能为空");
+        }
         int updated = jdbcTemplate.update(
                 "UPDATE biz_dispatch_rule SET event_type = ?, target_role_code = ?, priority = ?, enabled = ?, remark = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                 eventType.trim(), targetRoleCode.trim(),

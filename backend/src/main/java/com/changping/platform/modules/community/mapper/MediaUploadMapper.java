@@ -29,7 +29,12 @@ public class MediaUploadMapper {
                 record.get("status"),
                 record.get("uploaderUserId"),
                 record.get("uploaderName"));
-        return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        Long id = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        if (id != null) {
+            // 回填主键，保证上传接口响应中的 id 不为 null
+            record.put("id", id);
+        }
+        return id;
     }
 
     public List<Map<String, Object>> findByBusiness(String businessType, Long businessId) {

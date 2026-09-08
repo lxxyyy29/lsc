@@ -359,7 +359,7 @@ public class EventServiceImpl implements EventService {
             // 未被网格员手机端处理过的事件：待审核/审核中/已通过/待派单/组长审核，或已派单但工单尚未处理完成
             case "closed-loop" -> where.add(
                     "(e.status IN ('PENDING_AUDIT','IN_AUDIT','AUDIT_APPROVED','WAITING_DISPATCH','WAITING_LEADER_REVIEW')"
-                    + " OR (e.status = 'DISPATCHED_TO_WORK_ORDER' AND EXISTS (SELECT 1 FROM biz_work_order wo WHERE wo.source_event_id = e.id AND wo.status IN ('WAITING_ACCEPT','PROCESSING','NEEDS_MORE_EVIDENCE'))))");
+                    + " OR (e.status = 'DISPATCHED_TO_WORK_ORDER' AND EXISTS (SELECT 1 FROM biz_work_order wo WHERE wo.source_event_id = e.id AND wo.status IN ('WAITING_ACCEPT','PROCESSING'))))");
             // 网格员手机端已处理、待 PC 端审核（工单待核实/待关闭确认）
             case "audit" -> where.add(
                     "EXISTS (SELECT 1 FROM biz_work_order wo WHERE wo.source_event_id = e.id AND wo.status IN ('WAITING_VERIFY','WAITING_CLOSE_CONFIRM'))");
@@ -1311,10 +1311,13 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public boolean rateEvent(Long id, int rating, String comment) {
-        // 更新事件的评价信息
-        jdbcTemplate.update(
+        // 更新事件的评价信息；仅已关闭事件可评价，未命中视为失败，避免前端误以为评价成功
+        int updated = jdbcTemplate.update(
             "UPDATE biz_event SET rating = ?, rating_comment = ?, rated_at = NOW() WHERE id = ? AND status = 'CLOSED'",
             rating, comment, id);
+        if (updated == 0) {
+            throw new BusinessException("EVENT_NOT_RATEABLE", "仅已关闭的事件可以评价，或事件不存在");
+        }
         return true;
     }
 
@@ -1342,7 +1345,7 @@ public class EventServiceImpl implements EventService {
             "SELECT id, title, event_type, urgency_level, status, " +
             "CAST(longitude AS DECIMAL(10,6)) as lng, CAST(latitude AS DECIMAL(10,6)) as lat, " +
             "created_at FROM biz_event " +
-            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0 AND COALESCE(hidden, 0) = 0");
+            "WHERE longitude IS NOT NULL AND latitude IS NOT NULL AND archived = 0 AND COALESCE(hidden, 0) = 0 AND COALESCE(deleted, 0) = 0");
         List<Object> params = new ArrayList<>();
         if (startDate != null && !startDate.isEmpty()) { sql.append(" AND created_at >= ?"); params.add(startDate); }
         if (endDate != null && !endDate.isEmpty()) { sql.append(" AND created_at <= ?"); params.add(endDate); }

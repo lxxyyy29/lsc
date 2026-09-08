@@ -85,7 +85,24 @@ public class GridServiceImpl implements GridService {
         if (entity.getGridLevel() == null) {
             entity.setGridLevel(exists.getGridLevel());
         }
-        if (entity.getParentId() == null) {
+        if (entity.getParentId() != null && !entity.getParentId().equals(exists.getParentId())) {
+            // 父级调整校验：不能指向自身，也不能指向自己的下级，否则 parent_id 成环，
+            // 后续按层级递归收集子网格/树查询会无限递归（栈溢出）
+            if (entity.getParentId().equals(entity.getId())) {
+                throw new BusinessException("GRID_PARENT_INVALID", "网格不能以自身作为父级");
+            }
+            try {
+                GridEntity parent = gridMapper.findById(entity.getParentId());
+                if (parent == null) {
+                    throw new BusinessException("GRID_PARENT_NOT_FOUND", "父网格不存在");
+                }
+            } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+                throw new BusinessException("GRID_PARENT_NOT_FOUND", "父网格不存在");
+            }
+            if (gridMapper.collectSubtreeIds(entity.getId()).contains(entity.getParentId())) {
+                throw new BusinessException("GRID_PARENT_INVALID", "父网格不能是当前网格的下级网格");
+            }
+        } else if (entity.getParentId() == null) {
             entity.setParentId(exists.getParentId());
         }
         if (entity.getPopulation() == null) {

@@ -81,26 +81,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import AMapPointPicker from '../../src/components/AMapPointPicker.vue'
-import { createEventForH5, EventCreatePayload } from '../../src/api/event'
+import { createEventForH5, EventCreatePayload, getDictItems, DictItem } from '../../src/api/event'
 import { locateWithFallback } from '../../src/utils/geolocation'
 import { getH5Session } from '../../src/api/auth'
 import { navigateToPath } from '../../src/uni/navigation'
 import { enqueueOfflineTask, isNetworkError } from '../../src/utils/offlineQueue'
 
-// 事件类型与 Web 端「创建事件」保持一致
-const types = [
-  { label: '市容环境', value: '市容环境' },
-  { label: '消防安全', value: '消防安全' },
-  { label: '矛盾纠纷', value: '矛盾纠纷' },
-  { label: '安全生产', value: '安全生产' },
-  { label: '民生诉求', value: '民生诉求' },
-  { label: '防汛防台风', value: '防汛防台风' },
-  { label: '违建', value: '违建' },
-  { label: '其他', value: '其他' }
+// 事件类型字典驱动（event_type），接口不可用时兜底内置列表（与 Web 端「创建事件」保持一致）
+const FALLBACK_EVENT_TYPES = [
+  { itemValue: '市容环境', itemLabel: '市容环境' },
+  { itemValue: '消防安全', itemLabel: '消防安全' },
+  { itemValue: '矛盾纠纷', itemLabel: '矛盾纠纷' },
+  { itemValue: '安全生产', itemLabel: '安全生产' },
+  { itemValue: '民生诉求', itemLabel: '民生诉求' },
+  { itemValue: '防汛防台风', itemLabel: '防汛防台风' },
+  { itemValue: '违建', itemLabel: '违建' },
+  { itemValue: '其他', itemLabel: '其他' },
 ]
-const typeNames = types.map(t => t.label)
+const eventTypeOptions = ref<{ itemValue: string; itemLabel: string }[]>(FALLBACK_EVENT_TYPES)
+const typeNames = computed(() => eventTypeOptions.value.map(t => t.itemLabel))
+
+async function loadEventTypes() {
+  try {
+    const items: DictItem[] = await getDictItems('event_type', true)
+    if (Array.isArray(items) && items.length) {
+      eventTypeOptions.value = items
+        .filter(item => item.status === 'ACTIVE')
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map(item => ({ itemValue: item.itemValue, itemLabel: item.itemLabel }))
+    }
+  } catch (e) {}
+}
 const selectedType = ref('')
 const selectedTypeName = ref('')
 const title = ref('')
@@ -116,8 +129,10 @@ const submitting = ref(false)
 
 function onTypeChange(e: any) {
   const idx = e.detail.value
-  selectedType.value = types[idx].value
-  selectedTypeName.value = types[idx].label
+  const opt = eventTypeOptions.value[idx]
+  if (!opt) return
+  selectedType.value = opt.itemValue
+  selectedTypeName.value = opt.itemLabel
 }
 
 function takePhoto() {
@@ -261,6 +276,8 @@ async function locateCurrent() {
     uni.hideLoading()
   }
 }
+
+onMounted(() => { loadEventTypes() })
 
 // 地图选点后自动逆地理填充地点描述（未手动填写时）
 watch([longitude, latitude], async ([lng, lat]) => {

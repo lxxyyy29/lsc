@@ -187,22 +187,29 @@ public class AuthController {
      */
     @PostMapping("/wechat-login")
     public ApiResponse<LoginResponse> wechatLogin(@RequestBody Map<String, String> body) {
-        String code = body.get("code");
+        String code = body != null ? body.get("code") : null;
+        if (code == null || code.isBlank()) {
+            return ApiResponse.fail("WECHAT_CODE_REQUIRED", "缺少微信授权 code");
+        }
+        // 微信 code 一次性有效且只能使用一次：这里只换取一次手机号并在本请求内复用，
+        // 避免「未绑定账号自动开通」流程二次调用 getPhoneNumber 导致 code 失效
+        String phone;
         try {
-            String phone = wechatService.getPhoneNumber(code);
-            if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
-                return ApiResponse.fail("WECHAT_PHONE_INVALID", "微信返回的手机号无效");
-            }
+            phone = wechatService.getPhoneNumber(code);
+        } catch (BusinessException e) {
+            return ApiResponse.fail(e.getCode(), e.getMessage());
+        }
+        if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
+            return ApiResponse.fail("WECHAT_PHONE_INVALID", "微信返回的手机号无效");
+        }
+        try {
             return ApiResponse.ok(authService.loginByPhone(phone));
         } catch (BusinessException e) {
-            // 居民免注册：微信授权手机号未绑定账号时，自动开通居民账号（PUBLIC 角色）再登录
-            if ("AUTH_INVALID_CREDENTIALS".equals(e.getCode()) && body.get("code") != null) {
+            // 居民免注册：授权手机号未绑定账号时，自动开通居民账号（PUBLIC 角色）再登录
+            if ("AUTH_INVALID_CREDENTIALS".equals(e.getCode())) {
                 try {
-                    String phone = wechatService.getPhoneNumber(body.get("code"));
-                    if (phone != null && phone.matches("^1[3-9]\\d{9}$")) {
-                        autoCreatePublicUser(phone);
-                        return ApiResponse.ok(authService.loginByPhone(phone));
-                    }
+                    autoCreatePublicUser(phone);
+                    return ApiResponse.ok(authService.loginByPhone(phone));
                 } catch (Exception autoEx) {
                     return ApiResponse.fail("WECHAT_AUTO_REGISTER_FAILED", "微信登录自动开通失败：" + autoEx.getMessage());
                 }

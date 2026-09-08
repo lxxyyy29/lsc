@@ -115,9 +115,12 @@ public class PolicyResourceService extends ServiceImpl<PolicyResourceMapper, Pol
         Map<String, Long> phoneToUserId = new HashMap<>();
         if (!phones.isEmpty()) {
             String placeholders = String.join(",", phones.stream().map(x -> "?").toList());
+            // 角色来源与登录鉴权一致（sys_user_role 中间表）：sys_user.role_id 对注册/微信开通的居民恒为 NULL，
+            // 用主键关联会查不到任何居民导致推送恒为 0；同号多角色时去重
             List<Map<String, Object>> users = jdbcTemplate.queryForList(
-                    "SELECT u.id, u.phone FROM sys_user u " +
-                    "JOIN sys_role r ON r.id = u.role_id " +
+                    "SELECT DISTINCT u.id, u.phone FROM sys_user u " +
+                    "JOIN sys_user_role ur ON ur.user_id = u.id " +
+                    "JOIN sys_role r ON r.id = ur.role_id " +
                     "WHERE u.deleted = 0 AND u.status = 'ACTIVE' AND r.role_code = 'PUBLIC' AND u.phone IN (" + placeholders + ")",
                     phones.toArray());
             for (Map<String, Object> u : users) {

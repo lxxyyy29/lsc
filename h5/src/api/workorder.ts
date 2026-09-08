@@ -315,13 +315,13 @@ export interface LeaderDispatchInfo {
 }
 
 export async function getLeaderPendingEvents(): Promise<LeaderPendingEvent[]> {
-  return http.get<LeaderPendingEvent[]>('/h5/leader/pending-events')
+  return http.get<LeaderPendingEvent[]>('/leader/pending-events')
 }
 
 export async function getLeaderDispatchInfo(eventId: number): Promise<LeaderDispatchInfo> {
-  return http.get<LeaderDispatchInfo>(`/h5/leader/events/${eventId}/dispatch-info`)
+  return http.get<LeaderDispatchInfo>(`/leader/events/${eventId}/dispatch-info`)
 }
 
 export async function leaderDispatch(eventId: number, assigneeUserId: number, remark?: string): Promise<any> {
-  return http.post(`/h5/leader/events/${eventId}/dispatch`, { assigneeUserId, remark: remark || '' })
+  return http.post(`/leader/events/${eventId}/dispatch`, { assigneeUserId, remark: remark || '' })
 }

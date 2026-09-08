@@ -140,6 +140,8 @@ public class AuditLogService {
     public Map<String, Object> queryPaged(String tableName, String recordId, String operationType,
                                           Long operatorId, String startTime, String endTime,
                                           int page, int size, String operatorName) {
+        page = Math.max(1, page);
+        size = Math.max(1, Math.min(size, 100));
         List<AuditLogEntity> items = mapper.findByPageWithFilters(tableName, recordId, operationType, operatorId, startTime, endTime, page, size, operatorName);
         long total = mapper.countWithFilters(tableName, recordId, operationType, operatorId, startTime, endTime, operatorName);
         Map<String, Object> result = new HashMap<>();
@@ -231,10 +233,17 @@ public class AuditLogService {
         result.put("recordId", log.getRecordId());
         result.put("operationType", log.getOperationType());
 
-        // 查询当前值
+        // 查询当前值：record_id 为 VARCHAR，非数字时给出可读错误而非 NumberFormatException
+        Long recordId;
+        try {
+            recordId = Long.parseLong(log.getRecordId());
+        } catch (NumberFormatException e) {
+            throw new BusinessException("AUDIT_LOG_RECORD_ID_INVALID",
+                    "审计记录的关联主键「" + log.getRecordId() + "」非数字，无法预览回滚");
+        }
         Map<String, Object> currentValues = jdbcTemplate.queryForMap(
                 "SELECT * FROM `" + log.getTableName() + "` WHERE id = ?",
-                Long.parseLong(log.getRecordId()));
+                recordId);
 
         List<Map<String, Object>> previewRows = new ArrayList<>();
         for (Map.Entry<String, Object> entry : oldValues.entrySet()) {

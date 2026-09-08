@@ -74,6 +74,8 @@ public class SystemRoleService {
      */
     @Transactional(readOnly = true)
     public PagedResult<RoleListItem> listRolesPaged(int page, int pageSize) {
+        page = Math.max(1, page);
+        pageSize = Math.max(1, Math.min(pageSize, 100));
         int offset = (page - 1) * pageSize;
         Integer total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sys_role", Integer.class);
         int totalCount = total != null ? total : 0;

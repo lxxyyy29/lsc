@@ -292,8 +292,8 @@ public class EventMapper {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         int updated = jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO biz_event (event_code, external_event_id, title, description, source_type, source_system, event_type, status, incident_address, longitude, latitude, occurred_at, created_at, updated_at) "
-                            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                    "INSERT INTO biz_event (event_code, external_event_id, title, description, source_type, source_system, event_type, status, incident_address, longitude, latitude, occurred_at, urgency_level, created_at, updated_at) "
+                            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                     new String[] {"id"});
             statement.setString(1, entity.getEventCode());
             statement.setString(2, entity.getExternalEventId());
@@ -311,6 +311,9 @@ public class EventMapper {
             } else {
                 statement.setTimestamp(12, Timestamp.valueOf(entity.getOccurredAt()));
             }
+            // 紧急程度：非法/缺失时兜底 GREEN，防止选中值被静默丢弃（见 EventServiceImpl.createEvent 校验）
+            String urgencyLevel = entity.getUrgencyLevel();
+            statement.setString(13, urgencyLevel != null && !urgencyLevel.isBlank() ? urgencyLevel : "GREEN");
             return statement;
         }, keyHolder);
         Number generatedKey = keyHolder.getKey();

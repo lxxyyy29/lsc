@@ -48,12 +48,18 @@ public class SystemDictController {
         return ApiResponse.ok(systemDictService.listTypes());
     }
 
-    /** 查询指定字典的字典项；业务表单读取传 activeOnly=true 仅取启用项 */
+    /**
+     * 查询指定字典的字典项；业务表单读取传 activeOnly=true 仅取启用项
+     *
+     * <p>该接口为业务表单（如事件类型、上报来源下拉）提供数据源，Web 管理端与 H5/小程序端都会读取，
+     * 因此同时放行 WEB 与 H5 两种客户端类型；写操作仍严格限定为 WEB。
+     */
     @GetMapping("/{code}/items")
     public ApiResponse<List<SystemDictService.DictItem>> listItems(
             @PathVariable("code") String code,
             @RequestParam(defaultValue = "false") boolean activeOnly) {
-        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        currentUserService.requireAnyClientType(
+                AuthService.ClientType.WEB, AuthService.ClientType.H5);
         permissionGuard.require(PermissionCodes.API_SYSTEM_DICT_LIST);
         return ApiResponse.ok(systemDictService.listItems(code, activeOnly));
     }
