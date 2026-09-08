@@ -14,6 +14,16 @@ This workspace contains four sibling applications that implement one event-gover
 
 Start with `docs/系统说明文档.md` for the current API reference (403 endpoints fully listed as of 2026-08-17, incl. section 4.35 for V81~V96 modules; Flyway V96). `docs/architecture/phase1-endpoints.md` is the historical Phase1 contract, not the current state.
 
+## 变更记录维护（每次改动后必做）
+
+完成代码改动并提交/推送后，**必须同步更新 `docs/变更记录.md`**：
+
+- 记录提交号、改动类型、具体内容、影响面与验证情况
+- 环境/运维类变更（依赖修复、数据迁移、证书续期、配置调整）即使没有提交也要记录
+- 发现但暂未修复的问题写入「遗留与建议」小节，避免下次重复排查
+
+该文件是后续接手者（人或 AI）了解项目演进的第一入口，不得跳过。
+
 ## 生产环境速查（服务器上开发，必读）
 
 本项目运行在本云服务器上，**开发即部署**：改完代码用 docker compose 重建容器验证，然后 git commit + push 同步 GitHub（远程 `git@github.com:lxxyyy29/lsc.git`，master，SSH 免密）。宿主机装有 JDK 17 和 Maven（早期说"无 Java/Node 环境"已过时）；注意后端 Dockerfile 只 COPY 本地 `backend/target/*.jar`，**必须先 `cd backend && mvn clean package -DskipTests` 再 build 镜像**，否则打进去的是旧 jar（构建全走缓存是未重新打包的信号）。宿主机没有 Node 环境，前端编译交给 Docker 构建。
