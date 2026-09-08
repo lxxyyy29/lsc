@@ -204,6 +204,17 @@ function createUniHttpClient(): HttpLikeClient {
 
   const request = <R>(method: UniRequestMethod, url: string, data?: unknown, config?: unknown): Promise<R> => {
     const silent = (config as { silent?: boolean } | undefined)?.silent === true
+    // 小程序端 uni.request 不感知 config.params（axios 分支会自动拼 query），
+    // 这里手动把 params 拼到 URL，避免 GET 分页/过滤参数在微信端被丢弃
+    const params = (config as { params?: Record<string, unknown> } | undefined)?.params
+    let finalUrl = `${resolveRequestBaseUrl(config)}${url}`
+    if (params && typeof params === 'object') {
+      const qs = Object.entries(params)
+        .filter(([, v]) => v !== undefined && v !== null && v !== '')
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+        .join('&')
+      if (qs) finalUrl += (finalUrl.includes('?') ? '&' : '?') + qs
+    }
     return new Promise((resolve, reject) => {
       const session = getH5Session()
       const headers: Record<string, string> = {}
@@ -212,7 +223,7 @@ function createUniHttpClient(): HttpLikeClient {
       }
 
       uni.request({
-        url: `${resolveRequestBaseUrl(config)}${url}`,
+        url: finalUrl,
         method,
         data: data as any,
         header: headers,

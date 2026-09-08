@@ -389,7 +389,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         return jdbcTemplate.query(
                 "SELECT wo.id, wo.work_order_no, wo.status, wo.assignee_user_id, wo.assignee_name, "
                         + "wo.dispatcher_name, wo.created_at, wo.updated_at, "
-                        + "e.title AS event_title, e.area_name, e.urgency_level, "
+                        + "e.id AS source_event_id, e.title AS event_title, e.area_name, e.urgency_level, "
+                        + "e.incident_address AS event_location, e.event_type, e.description AS event_description, "
                         + "wo.status = 'PROCESSING' AND wo.assignee_user_id = ? AS is_current_handler "
                         + "FROM biz_work_order wo "
                         + "LEFT JOIN biz_event e ON e.id = wo.source_event_id "
@@ -411,7 +412,11 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                         null,
                         rs.getBoolean("is_current_handler"),
                         rs.getString("area_name"),
-                        rs.getString("urgency_level")),
+                        rs.getString("urgency_level"),
+                        getNullableLong(rs, "source_event_id"),
+                        rs.getString("event_location"),
+                        rs.getString("event_type"),
+                        rs.getString("event_description")),
                 actorUserId,
                 actorUserId,
                 actorUserId);
@@ -432,7 +437,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         List<H5WorkOrderDetail> details = jdbcTemplate.query(
                 "SELECT wo.id, wo.work_order_no, wo.status, wo.assignee_user_id, wo.assignee_name, "
                         + "wo.dispatcher_name, wo.created_at, wo.updated_at, wo.source_event_id, "
-                        + "wo.process_instance_id, "
+                        + "wo.process_instance_id, wo.completed_at, wo.closed_at, "
                         + "e.title, e.incident_address, e.description, e.event_type "
                         + "FROM biz_work_order wo "
                         + "LEFT JOIN biz_event e ON e.id = wo.source_event_id "
@@ -454,7 +459,9 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                         rs.getString("event_type"),
                         false,
                         List.of(),
-                        List.of()),
+                        List.of(),
+                        getNullableTime(rs.getTimestamp("completed_at")),
+                        getNullableTime(rs.getTimestamp("closed_at"))),
                 workOrderId);
 
         if (details.isEmpty()) {
@@ -491,7 +498,9 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 base.eventType(),
                 isCurrentHandler,
                 List.of(),
-                actionRecords);
+                actionRecords,
+                base.completedAt(),
+                base.closedAt());
     }
 
     @Override

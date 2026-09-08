@@ -117,7 +117,7 @@ public class EventController {
                 Long.class,
                 user.id());
         List<Map<String, Object>> items = jdbcTemplate.query(
-                "SELECT id, event_code, title, description, status, created_at " +
+                "SELECT id, event_code, title, description, status, created_at, rating, rating_comment AS ratingText " +
                         "FROM biz_event WHERE report_user_id = ? AND COALESCE(archived, 0) = 0 ORDER BY id DESC LIMIT ? OFFSET ?",
                 (rs, rowNum) -> {
                     Map<String, Object> item = new java.util.LinkedHashMap<>();
@@ -127,6 +127,10 @@ public class EventController {
                     item.put("description", rs.getString("description"));
                     item.put("status", rs.getString("status"));
                     item.put("createdAt", rs.getTimestamp("created_at"));
+                    // 评分：居民上报历史页据此区分「已评价」与「请评价」，已办结事件避免重复评价
+                    Object ratingObj = rs.getObject("rating");
+                    item.put("rating", ratingObj == null ? null : rs.getInt("rating"));
+                    item.put("ratingText", rs.getString("ratingText"));
                     return item;
                 },
                 user.id(),

@@ -155,7 +155,11 @@ public interface WorkOrderService {
             String currentNodeName,
             boolean isCurrentHandler,
             String areaName,
-            String urgencyLevel) {
+            String urgencyLevel,
+            Long sourceEventId,
+            String eventLocation,
+            String eventType,
+            String eventDescription) {
 
         @JsonProperty
         public String statusLabel() {
@@ -237,7 +241,9 @@ public interface WorkOrderService {
             String eventType,
             boolean isCurrentHandler,
             java.util.List<H5ProcessNodeVo> processNodes,
-            java.util.List<H5ActionRecordVo> actionRecords) {
+            java.util.List<H5ActionRecordVo> actionRecords,
+            java.time.LocalDateTime completedAt,
+            java.time.LocalDateTime closedAt) {
 
         @JsonProperty
         public String statusLabel() {

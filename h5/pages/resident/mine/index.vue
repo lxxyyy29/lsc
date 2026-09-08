@@ -93,7 +93,8 @@ async function loadStats() {
     const res: any = await getMyReports()
     const items = res?.items || res?.data?.items || []
     totalReports.value = items.length
-    processingCount.value = items.filter((i: any) => i.status === 'PROCESSING').length
+    // 事件没有 PROCESSING 状态：除已办结（CLOSED/IGNORED）外均视为处理中
+    processingCount.value = items.filter((i: any) => i.status && i.status !== 'CLOSED' && i.status !== 'IGNORED').length
     completedCount.value = items.filter((i: any) => i.status === 'CLOSED').length
   } catch (e) {
     console.error(e)
