@@ -168,7 +168,7 @@ import {
   createDictItem, updateDictItem, deleteDictItem, type DictType, type DictItem
 } from '../api'
 import { showMessage } from '../utils/message'
-import { alertDialog } from '../utils/dialog'
+import { confirmDialog, alertDialog } from '../utils/dialog'
 
 const types = ref<DictType[]>([])
 const items = ref<DictItem[]>([])
@@ -211,12 +211,29 @@ async function saveType() {
   }
 }
 
+// ---------- 引用来源判断 ----------
+// TODO: 后端字典列表加引用来源字段后，把判断改为 t.locked || (t.refCount && t.refCount > 0)
+function isReferenced(_target: DictType | DictItem): boolean {
+  return true
+}
+
 async function removeType(t: DictType) {
-  // TODO: 后端字典列表加引用来源字段后，按字段判断是否禁用；当前默认全部提示
-  await alertDialog({
-    title: '无法删除',
-    message: `字典「${t.dictName}」（${t.dictCode}）已被业务模块关联引用，删除或编辑后将影响关联业务正常运行。\n如需调整，请联系系统管理员处理。`,
-  })
+  if (isReferenced(t)) {
+    await alertDialog({
+      title: '无法删除',
+      message: `字典「${t.dictName}」（${t.dictCode}）已被业务模块关联引用，删除或编辑后将影响关联业务正常运行。\n如需调整，请联系系统管理员处理。`,
+    })
+    return
+  }
+  if (!await confirmDialog({ message: `确认删除字典「${t.dictName}」及其 ${t.itemCount} 个字典项吗？`, danger: true, okText: '删除' })) return
+  try {
+    await deleteDictType(t.id)
+    showMessage('删除成功', 'success')
+    if (selectedCode.value === t.dictCode) { selectedCode.value = ''; items.value = [] }
+    await loadTypes()
+  } catch (e: any) {
+    showMessage(e?.message || '删除失败', 'error')
+  }
 }
 
 // ---------- 字典项 ----------
@@ -254,11 +271,21 @@ async function saveItem() {
 }
 
 async function removeItem(i: DictItem) {
-  // TODO: 后端字典列表加引用来源字段后，按字段判断是否禁用；当前默认全部提示
-  await alertDialog({
-    title: '无法删除',
-    message: `字典项「${i.itemLabel}」（${i.itemValue}）已被业务模块关联引用，删除或编辑后将影响关联业务正常运行。\n如需调整，请联系系统管理员处理。`,
-  })
+  if (isReferenced(i)) {
+    await alertDialog({
+      title: '无法删除',
+      message: `字典项「${i.itemLabel}」（${i.itemValue}）已被业务模块关联引用，删除或编辑后将影响关联业务正常运行。\n如需调整，请联系系统管理员处理。`,
+    })
+    return
+  }
+  if (!await confirmDialog({ message: `确认删除字典项「${i.itemLabel}」吗？`, danger: true, okText: '删除' })) return
+  try {
+    await deleteDictItem(i.id)
+    showMessage('删除成功', 'success')
+    await Promise.all([loadTypes(), loadItems()])
+  } catch (e: any) {
+    showMessage(e?.message || '删除失败', 'error')
+  }
 }
 
 // ---------- 加载 ----------
