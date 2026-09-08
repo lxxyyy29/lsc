@@ -10,7 +10,6 @@ import com.changping.platform.modules.community.service.OrgMemberService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -70,49 +69,6 @@ public class OrgMemberController {
         List<Long> memberIds = rawIds.stream().map(o -> Long.valueOf(String.valueOf(o))).toList();
         return ApiResponse.ok(service.assignLeader(memberIds, leaderId));
     }
-    /**
-     * 一体化创建组长：创建组织人员(LEADER)并绑定网格，随后自动将该网格下全部在岗网格员
-     * 划入其名下（绑定网格即自动划分下属）。
-     */
-    @PostMapping("/create-leader")
-    public ApiResponse<Map<String, Object>> createLeader(@RequestBody OrgMemberEntity entity) {
-        requireOrgMemberPermission();
-        if (entity.getName() == null || entity.getName().isBlank()) {
-            return ApiResponse.fail("INVALID_PARAM", "组长姓名不能为空");
-        }
-        if (entity.getGridId() == null) {
-            return ApiResponse.fail("INVALID_PARAM", "请选择组长所属小网格");
-        }
-        // 幂等校验①：该网格下已存在组长（避免一网格多组长导致划分冲突）
-        Long existingLeaders = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM cmn_org_member WHERE grid_id = ? AND status = 'ACTIVE' " +
-                        "AND (position LIKE '%组长%' OR position LIKE '%网格长%' OR member_type = 'LEADER')",
-                Long.class, entity.getGridId());
-        if (existingLeaders != null && existingLeaders > 0) {
-            return ApiResponse.fail("INVALID_PARAM", "该网格已存在组长，请使用「人员划分」调整或更换网格");
-        }
-        // 幂等校验②：同名组长已存在（姓名去空格后的账号/成员均不允许重复创建）
-        String username = entity.getName().replaceAll("\\s+", "");
-        Long sameLeader = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM cmn_org_member WHERE status = 'ACTIVE' AND name = ? " +
-                        "AND (position LIKE '%组长%' OR position LIKE '%网格长%' OR member_type = 'LEADER')",
-                Long.class, entity.getName().trim());
-        if (sameLeader != null && sameLeader > 0) {
-            return ApiResponse.fail("INVALID_PARAM", "已存在同名组长，请勿重复创建");
-        }
-        Long memberId = service.createLeader(entity);
-        // 自动创建系统账号并分配「网格组长」角色，供登录与权限使用
-        syncLeaderToSysUser(memberId, entity, username);
-        int assigned = service.assignGridWorkersToLeader(memberId, entity.getGridId());
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("memberId", memberId);
-        result.put("assignedCount", assigned);
-        result.put("leaderName", entity.getName());
-        result.put("username", username);
-        result.put("password", "123456");
-        return ApiResponse.ok(result);
-    }
-
     @PostMapping
     public ApiResponse<Boolean> create(@RequestBody OrgMemberEntity entity) {
         requireOrgMemberPermission();
@@ -187,42 +143,6 @@ public class OrgMemberController {
         result.put("skipped", skipped);
         result.put("message", String.format("同步完成：新增 %d 条，跳过 %d 条（已存在）", synced, skipped));
         return ApiResponse.ok(result);
-    }
-
-    /**
-     * 同步组长到系统用户表：创建/复用 sys_user 并分配「网格组长」内置角色，回填 org_member.sys_user_id。
-     * 用户名 = 姓名去空格；密码默认 123456；手机号与已有账号冲突时置空避免唯一约束冲突。
-     */
-    private void syncLeaderToSysUser(Long memberId, OrgMemberEntity entity, String username) {
-        try {
-            Long roleId = ensureRole("GRID_LEADER", "网格组长", "内置角色：负责所辖网格的派单与审核");
-            List<Long> ids = jdbcTemplate.queryForList(
-                    "SELECT id FROM sys_user WHERE username = ? AND deleted = 0", Long.class, username);
-            Long userId;
-            if (ids.isEmpty()) {
-                String phone = entity.getPhone();
-                if (phone != null && !phone.isBlank()) {
-                    Integer phoneExists = jdbcTemplate.queryForObject(
-                            "SELECT COUNT(*) FROM sys_user WHERE phone = ? AND deleted = 0", Integer.class, phone);
-                    if (phoneExists != null && phoneExists > 0) {
-                        phone = null;
-                    }
-                }
-                BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-                jdbcTemplate.update(
-                        "INSERT INTO sys_user (username, password_hash, real_name, phone, status, password_version, deleted, created_at, updated_at) " +
-                                "VALUES (?, ?, ?, ?, 'ACTIVE', 1, 0, NOW(), NOW())",
-                        username, encoder.encode("123456"), entity.getName(), phone);
-                userId = jdbcTemplate.queryForObject("SELECT id FROM sys_user WHERE username = ?", Long.class, username);
-            } else {
-                userId = ids.get(0);
-            }
-            jdbcTemplate.update("INSERT IGNORE INTO sys_user_role (user_id, role_id) VALUES (?, ?)", userId, roleId);
-            jdbcTemplate.update("UPDATE cmn_org_member SET sys_user_id = ? WHERE id = ?", userId, memberId);
-        } catch (Exception e) {
-            // 账号同步失败不影响组长本身创建成功，仅记录日志
-            org.slf4j.LoggerFactory.getLogger(OrgMemberController.class).warn("同步组长到系统用户失败: memberId={}, err={}", memberId, e.getMessage());
-        }
     }
 
     /**
