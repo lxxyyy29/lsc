@@ -1,6 +1,7 @@
 <template>
   <!-- 页面模式：独立页面；embedded 模式：作为 el-dialog 内容体（标题/底部由父级提供） -->
-  <div :style="embedded ? 'padding:0;' : ''">
+  <!-- overflow-x:hidden 兜底 el-row gutter 负 margin (-16px) 与现场照片 72px × N 横向溢出 -->
+  <div :style="(embedded ? 'padding:0;' : '') + 'overflow-x:hidden;'">
     <!-- 页面模式：标题与说明（弹窗模式由父级 el-dialog 标题提供） -->
     <div v-if="!embedded">
       <h2 style="font-size:20px;font-weight:600;margin-bottom:4px;">创建事件</h2>
@@ -8,115 +9,114 @@
     </div>
 
     <div class="card" :style="embedded ? 'padding:0;box-shadow:none;max-width:none;' : 'max-width:700px;'">
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事件标题 <span style="color:#ff4d4f;">*</span></label>
-        <el-input v-model="form.title" @input="errors.title = ''" placeholder="简要描述事件" :class="{ 'is-invalid': errors.title }" />
-        <p v-if="errors.title" class="field-error">{{ errors.title }}</p>
-      </div>
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @submit.prevent>
+        <el-form-item label="事件标题" prop="title" required>
+          <el-input v-model="form.title" placeholder="简要描述事件" />
+        </el-form-item>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-        <div>
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事件类型 <span style="color:#ff4d4f;">*</span></label>
-          <el-select v-model="form.eventType" @change="errors.eventType = ''" placeholder="请选择" :class="{ 'is-invalid': errors.eventType }" style="width:100%;">
-            <el-option v-for="opt in eventTypeOptions" :key="opt.itemValue" :value="opt.itemValue" :label="opt.itemLabel" />
-          </el-select>
-          <p v-if="errors.eventType" class="field-error">{{ errors.eventType }}</p>
-        </div>
-        <div>
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">紧急程度</label>
-          <el-select v-model="form.urgencyLevel" style="width:100%;">
-            <el-option label="一般（绿）" value="GREEN" />
-            <el-option label="重点（黄）" value="YELLOW" />
-            <el-option label="紧急（红）" value="RED" />
-          </el-select>
-        </div>
-      </div>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="事件类型" prop="eventType" required>
+              <el-select v-model="form.eventType" placeholder="请选择" style="width:100%;">
+                <el-option v-for="opt in eventTypeOptions" :key="opt.itemValue" :value="opt.itemValue" :label="opt.itemLabel" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="紧急程度">
+              <el-select v-model="form.urgencyLevel" style="width:100%;">
+                <el-option label="一般（绿）" value="GREEN" />
+                <el-option label="重点（黄）" value="YELLOW" />
+                <el-option label="紧急（红）" value="RED" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-        <div>
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">发生时间 <span style="color:#ff4d4f;">*</span></label>
-          <el-date-picker
-            v-model="form.occurredAt"
-            type="datetime"
-            format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DDTHH:mm"
-            placeholder="选择发生时间"
-            :class="{ 'is-invalid': errors.occurredAt }"
-            style="width:100%;"
-            @change="errors.occurredAt = ''"
-          />
-          <p v-if="errors.occurredAt" class="field-error">{{ errors.occurredAt }}</p>
-        </div>
-        <div>
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">所属网格</label>
-          <el-select v-model="form.gridId" style="width:100%;" placeholder="自动关联" clearable>
-            <el-option v-for="g in grids" :key="g.id" :value="Number(g.id)" :label="g.gridName" />
-          </el-select>
-        </div>
-      </div>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="发生时间" prop="occurredAt" required>
+              <el-date-picker
+                v-model="form.occurredAt"
+                type="datetime"
+                format="YYYY-MM-DD HH:mm"
+                value-format="YYYY-MM-DDTHH:mm"
+                placeholder="选择发生时间"
+                style="width:100%;"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="所属网格">
+              <el-select v-model="form.gridId" placeholder="自动关联" clearable style="width:100%;">
+                <el-option v-for="g in grids" :key="g.id" :value="Number(g.id)" :label="g.gridName" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-      <!-- 事发地点 - 地图定位 -->
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">事发地点 <span style="color:#ff4d4f;">*</span></label>
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <el-input v-model="form.location" @input="errors.location = ''" placeholder="点击地图选择位置或手动输入地址" :class="{ 'is-invalid': errors.location }" style="flex:1;" />
-          <el-button @click="locateMe" type="default" plain style="white-space:nowrap;height:42px;">
-            <i class="fas fa-crosshairs"></i> 定位
-          </el-button>
-        </div>
-        <p v-if="errors.location" class="field-error">{{ errors.location }}</p>
-        <div style="position:relative;">
-          <div id="eventMap" style="height:250px;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;"></div>
-          <button type="button" @click="backToCenter" title="回到社区中心点" style="position:absolute;top:8px;right:8px;padding:4px 10px;border:1px solid #1890ff;border-radius:6px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2);z-index:10;"><i class="fas fa-home"></i> 回到中心</button>
-        </div>
-        <p style="font-size:11px;color:#9ca3af;margin-top:4px;">点击地图标记位置，或拖动标记调整</p>
-        <div v-if="form.longitude && form.latitude" style="font-size:11px;color:#52c41a;margin-top:4px;">
-          已定位：{{ form.longitude.toFixed(6) }}, {{ form.latitude.toFixed(6) }}
-        </div>
-      </div>
-
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">详细描述</label>
-        <el-input v-model="form.description" type="textarea" :autosize="{ minRows: 4, maxRows: 8 }" placeholder="事件详细情况..." style="width:100%;" />
-      </div>
-
-      <!-- 现场照片：选填，最多 6 张，上传后随事件提交 -->
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">现场照片 <span style="font-weight:400;font-size:12px;color:#9ca3af;">（选填，最多 6 张）</span></label>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-          <div v-for="(img, idx) in images" :key="idx" style="position:relative;width:72px;height:72px;">
-            <img :src="img" style="width:100%;height:100%;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;" />
-            <button @click="removeImage(idx)" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:#ff4d4f;color:#fff;font-size:12px;line-height:1;cursor:pointer;" title="移除">×</button>
+        <!-- 事发地点 - 地图定位（内含地图复合控件，el-form-item 仅承载校验） -->
+        <el-form-item label="事发地点" prop="location" required>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <el-input v-model="form.location" placeholder="点击地图选择位置或手动输入地址" style="flex:1;" />
+            <el-button @click="locateMe" type="default" plain style="white-space:nowrap;height:42px;">
+              <i class="fas fa-crosshairs"></i> 定位
+            </el-button>
           </div>
-          <label v-if="images.length < 6" style="width:72px;height:72px;border:1px dashed #d1d5db;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#9ca3af;font-size:12px;gap:2px;">
-            <span style="font-size:20px;line-height:1;">+</span>
-            <span>{{ uploading ? '上传中...' : '上传' }}</span>
-            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp" multiple :disabled="uploading" style="display:none;" @change="onPickImages" />
+        </el-form-item>
+        <div style="margin-top:0;margin-bottom:16px;">
+          <div style="position:relative;">
+            <div id="eventMap" style="height:250px;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;"></div>
+            <button type="button" @click="backToCenter" title="回到社区中心点" style="position:absolute;top:8px;right:8px;padding:4px 10px;border:1px solid #1890ff;border-radius:6px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2);z-index:10;"><i class="fas fa-home"></i> 回到中心</button>
+          </div>
+          <p style="font-size:11px;color:#9ca3af;margin-top:4px;">点击地图标记位置，或拖动标记调整</p>
+          <div v-if="form.longitude && form.latitude" style="font-size:11px;color:#52c41a;margin-top:4px;">
+            已定位：{{ form.longitude.toFixed(6) }}, {{ form.latitude.toFixed(6) }}
+          </div>
+        </div>
+
+        <el-form-item label="详细描述">
+          <el-input v-model="form.description" type="textarea" :autosize="{ minRows: 4, maxRows: 8 }" placeholder="事件详细情况..." style="width:100%;" />
+        </el-form-item>
+
+        <!-- 现场照片：选填，最多 6 张，上传后随事件提交（复合控件，不走 el-form-item） -->
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:13px;font-weight:600;color:#374151;line-height:1.4;margin-bottom:6px;">
+            现场照片 <span style="font-weight:400;font-size:12px;color:#9ca3af;">（选填，最多 6 张）</span>
           </label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <div v-for="(img, idx) in images" :key="idx" style="position:relative;width:72px;height:72px;">
+              <img :src="img" style="width:100%;height:100%;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;" />
+              <button @click="removeImage(idx)" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:#ff4d4f;color:#fff;font-size:12px;line-height:1;cursor:pointer;" title="移除">×</button>
+            </div>
+            <label v-if="images.length < 6" style="width:72px;height:72px;border:1px dashed #d1d5db;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#9ca3af;font-size:12px;gap:2px;">
+              <span style="font-size:20px;line-height:1;">+</span>
+              <span>{{ uploading ? '上传中...' : '上传' }}</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp" multiple :disabled="uploading" style="display:none;" @change="onPickImages" />
+            </label>
+          </div>
         </div>
-      </div>
 
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">上报来源 <span style="color:#ff4d4f;">*</span></label>
-        <el-select v-model="form.reportSource" placeholder="请选择" :class="{ 'is-invalid': errors.reportSource }" clearable style="width:100%;">
-          <el-option v-for="opt in reportSourceOptions" :key="opt.itemValue" :value="opt.itemValue" :label="opt.itemLabel" />
-        </el-select>
-        <p v-if="errors.reportSource" class="field-error">{{ errors.reportSource }}</p>
-      </div>
+        <el-form-item label="上报来源" prop="reportSource" required>
+          <el-select v-model="form.reportSource" placeholder="请选择" clearable style="width:100%;">
+            <el-option v-for="opt in reportSourceOptions" :key="opt.itemValue" :value="opt.itemValue" :label="opt.itemLabel" />
+          </el-select>
+        </el-form-item>
 
-      <!-- 发起人信息：电话必填，姓名选填 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-        <div>
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">发起人姓名 <span style="font-weight:400;font-size:12px;color:#9ca3af;">（选填）</span></label>
-          <el-input v-model="form.reporterName" placeholder="请输入发起人姓名" />
-        </div>
-        <div>
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">发起人电话 <span style="color:#ff4d4f;">*</span></label>
-          <el-input v-model="form.reporterPhone" @input="errors.reporterPhone = ''" maxlength="11" placeholder="请输入发起人联系电话"
-                    :class="{ 'is-invalid': errors.reporterPhone }" />
-          <p v-if="errors.reporterPhone" class="field-error">{{ errors.reporterPhone }}</p>
-        </div>
-      </div>
+        <!-- 发起人信息：电话必填，姓名选填 -->
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="发起人姓名">
+              <el-input v-model="form.reporterName" placeholder="请输入发起人姓名" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="发起人电话" prop="reporterPhone" required>
+              <el-input v-model="form.reporterPhone" maxlength="11" placeholder="请输入发起人联系电话" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
 
       <!-- 页面模式操作栏（弹窗模式的取消/创建按钮由父级 el-dialog 的 #footer 提供） -->
       <div v-if="!embedded" style="display:flex;gap:12px;justify-content:flex-end;position:sticky;bottom:0;background:#fff;padding-top:12px;margin-top:16px;border-top:1px solid #f3f4f6;">
@@ -129,6 +129,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { createEvent, getGridTree, getDictItems, uploadEventImage } from '../api'
 import http from '../api'
@@ -203,19 +204,17 @@ let AMapLib: any = null
 // 地图初始中心点：优先读系统配置，失败时用默认坐标（拔蛟窝社区）
 let mapInitCenter: [number, number] = [113.939521, 22.971231]
 
-// 必填项校验错误提示：提交时逐项标红并在字段下方展示 tips，输入后自动清除
-const errors = reactive({ title: '', eventType: '', occurredAt: '', location: '', reportSource: '', reporterPhone: '' })
-function validateRequired(): boolean {
-  errors.title = form.value.title.trim() ? '' : '请输入事件标题'
-  errors.eventType = form.value.eventType ? '' : '请选择事件类型'
-  errors.occurredAt = form.value.occurredAt ? '' : '请选择发生时间'
-  errors.location = form.value.location.trim() ? '' : '请填写事发地点'
-  errors.reportSource = form.value.reportSource ? '' : '请选择上报来源'
-  const phone = form.value.reporterPhone.trim()
-  errors.reporterPhone = phone ? (/^1[3-9]\d{9}$/.test(phone) ? '' : '请输入正确的11位手机号') : '请输入发起人电话'
-  const firstMsg = errors.title || errors.eventType || errors.occurredAt || errors.location || errors.reportSource || errors.reporterPhone
-  if (firstMsg) { showMessage(firstMsg, 'warning'); return false }
-  return true
+const formRef = ref<FormInstance>()
+const rules: FormRules = {
+  title: [{ required: true, message: '请输入事件标题', trigger: 'blur' }],
+  eventType: [{ required: true, message: '请选择事件类型', trigger: 'change' }],
+  occurredAt: [{ required: true, message: '请选择发生时间', trigger: 'change' }],
+  location: [{ required: true, message: '请填写事发地点', trigger: 'blur' }],
+  reportSource: [{ required: true, message: '请选择上报来源', trigger: 'change' }],
+  reporterPhone: [
+    { required: true, message: '请输入发起人电话', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号', trigger: 'blur' },
+  ],
 }
 
 const form = ref({
@@ -309,14 +308,12 @@ async function initMap() {
     draggable: true,
     map: mapInstance
   })
-
-  // 拖动标记结束事件
   markerInstance.on('dragend', (e: any) => {
-    const lng = e.lnglat.getLng()
-    const lat = e.lnglat.getLat()
-    form.value.longitude = lng
-    form.value.latitude = lat
-    reverseGeocode(lng, lat)
+    const l = e.lnglat.getLng()
+    const t = e.lnglat.getLat()
+    form.value.longitude = l
+    form.value.latitude = t
+    reverseGeocode(l, t)
   })
 }
 
@@ -432,10 +429,10 @@ function resetForm() {
     latitude: null as number | null,
   }
   images.value = []
-  Object.keys(errors).forEach(key => (errors as any)[key] = '')
+  formRef.value?.clearValidate()
   if (markerInstance && mapInstance) {
-    markerInstance.setPosition([113.939521, 22.971231])
-    mapInstance.setCenter([113.939521, 22.971231])
+    markerInstance.setPosition(mapInitCenter)
+    mapInstance.setCenter(mapInitCenter)
     mapInstance.setZoom(15)
   }
 }
@@ -450,7 +447,9 @@ function handleCancel() {
 }
 
 async function submit() {
-  if (!validateRequired()) return
+  if (!formRef.value) return
+  const valid = await formRef.value.validate().catch(() => false)
+  if (!valid) return
   loading.value = true
   try {
     const result = await createEvent({
@@ -476,3 +475,7 @@ async function submit() {
 // 暴露 submit 给父级 el-dialog 的 #footer 按钮调用（loading 由父级管理）
 defineExpose({ submit })
 </script>
+
+<style scoped>
+.form-hint { color: #9ca3af; font-weight: 400; font-size: 12px; margin-bottom: 4px; }
+</style>

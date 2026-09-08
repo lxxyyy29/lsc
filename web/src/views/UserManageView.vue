@@ -82,48 +82,48 @@
     </div>
 
     <!-- 新增/编辑账号弹窗（点遮层不关闭，防止误点丢失已填内容） -->
-    <div v-if="showForm" class="modal-overlay">
-      <div class="modal-box" style="width:480px;">
-        <h3 style="margin:0 0 16px;font-size:16px;">{{ form.id ? '编辑账号' : '新增账号' }}</h3>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <label class="form-label">登录账号 <span style="color:#ef4444;">*</span></label>
-          <input v-model="form.username" class="form-input" placeholder="登录用账号" :disabled="!!form.id" autocomplete="off" @focus="($event.target as HTMLInputElement).select()" />
-          <template v-if="!form.id">
-            <label class="form-label">初始密码 <span style="color:#ef4444;">*</span></label>
-            <input v-model="form.password" type="password" class="form-input" placeholder="6-64 位" autocomplete="new-password" @focus="($event.target as HTMLInputElement).select()" />
-          </template>
-          <label class="form-label">姓名 <span style="color:#ef4444;">*</span></label>
-          <input v-model="form.realName" class="form-input" placeholder="真实姓名" />
-          <label class="form-label">手机号 <span style="color:#ef4444;">*</span></label>
-          <input v-model="form.phone" class="form-input" placeholder="用于移动端登录与找回密码" />
-          <label class="form-label">状态</label>
-          <select v-model="form.status" class="form-input">
-            <option value="ACTIVE">正常</option>
-            <option value="DISABLED">停用</option>
-          </select>
-          <template v-if="!form.id">
-            <label class="form-label">角色 <span style="color:#ef4444;">*</span> <span style="color:#9ca3af;font-weight:400;font-size:12px;">（每个账号只能选择一个角色）</span></label>
-            <select v-model="form.roleId" class="form-input">
-              <option :value="null">请选择角色</option>
-              <option v-for="r in roles" :key="r.id" :value="Number(r.id)">{{ r.roleName }}</option>
-            </select>
-            <template v-if="isGridWorkerSelected">
-              <label class="form-label">分配小网格 <span style="color:#9ca3af;font-weight:400;font-size:12px;">（选填；分配后自动联动我的网格/巡查任务/派单）</span></label>
-              <select v-model="form.gridId" class="form-input">
-                <option :value="null">暂不分配（后续可在组织人员管理绑定）</option>
-                <option v-for="g in smallGrids" :key="g.id" :value="Number(g.id)">{{ g.gridName }}</option>
-              </select>
-              <p v-if="!smallGrids.length" style="color:#d97706;font-size:12px;margin:0;">⚠️ 暂无小网格，请先在网格管理页添加</p>
-            </template>
-          </template>
-          <p v-if="formError" style="color:#ef4444;font-size:12px;margin:0;">{{ formError }}</p>
+    <el-dialog v-model="showForm" :title="form.id ? '编辑账号' : '新增账号'" width="480px" :close-on-click-modal="false" class="ui-dialog" @closed="resetForm">
+      <el-form ref="formRef" :model="form" :rules="formRules" label-position="top" @submit.prevent>
+        <el-form-item label="登录账号" prop="username" required>
+          <el-input v-model="form.username" placeholder="登录用账号" :disabled="!!form.id" autocomplete="off" @focus="selectAll" />
+        </el-form-item>
+        <el-form-item v-if="!form.id" label="初始密码" prop="password" required>
+          <el-input v-model="form.password" type="password" placeholder="6-64 位" show-password autocomplete="new-password" @focus="selectAll" />
+        </el-form-item>
+        <el-form-item label="姓名" prop="realName" required>
+          <el-input v-model="form.realName" placeholder="真实姓名" />
+        </el-form-item>
+        <el-form-item label="手机号" prop="phone" required>
+          <el-input v-model="form.phone" placeholder="用于移动端登录与找回密码" maxlength="11" />
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-radio-group v-model="form.status">
+            <el-radio value="ACTIVE" size="large">正常</el-radio>
+            <el-radio value="DISABLED" size="large">停用</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="!form.id" label="角色" prop="roleId" required>
+          <div class="form-hint">（每个账号只能选择一个角色）</div>
+          <el-select v-model="form.roleId" placeholder="选择角色" style="width:100%;">
+            <el-option v-for="r in roles" :key="r.id" :value="Number(r.id)" :label="r.roleName" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="isGridWorkerSelected" label="分配小网格" prop="gridId">
+          <div class="form-hint">（选填；分配后自动联动我的网格/巡查任务/派单）</div>
+          <el-select v-model="form.gridId" placeholder="暂不分配（后续可在组织人员管理绑定）" clearable style="width:100%;">
+            <el-option v-for="g in smallGrids" :key="g.id" :value="Number(g.id)" :label="g.gridName" />
+          </el-select>
+          <p v-if="!smallGrids.length" style="color:#d97706;font-size:12px;margin:0;">⚠️ 暂无小网格，请先在网格管理页添加</p>
+        </el-form-item>
+        <p v-if="formError" class="form-error">{{ formError }}</p>
+      </el-form>
+      <template #footer>
+        <div style="display:flex;justify-content:flex-end;gap:8px;">
+          <el-button @click="showForm = false">取消</el-button>
+          <el-button type="primary" :loading="saving" @click="submitForm">保存</el-button>
         </div>
-        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
-          <button type="button" @click="showForm = false" class="btn btn-default">取消</button>
-          <button type="button" @click="submitForm" class="btn btn-primary" :disabled="saving">{{ saving ? '保存中...' : '保存' }}</button>
-        </div>
-      </div>
-    </div>
+      </template>
+    </el-dialog>
 
     <!-- 分配角色弹窗（单选：每个账号只对应一个角色） -->
     <div v-if="showRoles" class="modal-overlay">
@@ -164,6 +164,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import type { FormInstance, FormRules } from 'element-plus'
 import { confirmDialog } from '../utils/dialog'
 import {
   getSystemUsers, getSystemUserDetail, createSystemUser, updateSystemUser,
@@ -224,6 +225,23 @@ async function fetchData() {
 /* ---------- 新增/编辑 ---------- */
 const showForm = ref(false)
 const formError = ref('')
+const formRef = ref<FormInstance>()
+const formRules: FormRules = {
+  username: [{ required: true, message: '请输入登录账号', trigger: 'blur' }],
+  password: [{ required: true, min: 6, message: '初始密码至少 6 位', trigger: 'blur' }],
+  realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+  phone: [{ required: true, pattern: /^1\d{10}$/, message: '请输入正确的 11 位手机号', trigger: 'blur' }],
+  roleId: [{ required: true, message: '请选择一个角色', trigger: 'change' }],
+}
+function selectAll(e: FocusEvent) {
+  const t = e.target as HTMLInputElement | null
+  if (t) t.select()
+}
+function resetForm() {
+  form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null, gridId: null }
+  formError.value = ''
+  formRef.value?.clearValidate()
+}
 const form = ref<{ id: number | null; username: string; password: string; realName: string; phone: string; status: string; roleId: number | null; gridId: number | null }>({
   id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null, gridId: null
 })
@@ -254,13 +272,8 @@ const isGridWorkerSelected = computed(() => {
 })
 
 function openCreate() {
-  // 误关后重新打开时保留已填内容；仅当上次是编辑态或内容为空时才重置
-  const f = form.value
-  const dirty = !!(f.username || f.password || f.realName || f.phone || f.roleId != null)
-  if (f.id !== null || !dirty) {
-    form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null, gridId: null }
-  }
-  formError.value = ''
+  // 关闭/取消/保存后表单已自动清空；这里只需保证空状态
+  resetForm()
   loadSmallGrids()
   showForm.value = true
 }
@@ -272,14 +285,10 @@ function openEdit(u: any) {
 }
 
 async function submitForm() {
+  if (!formRef.value) return
   formError.value = ''
-  if (!form.value.username.trim()) { formError.value = '请输入登录账号'; return }
-  if (!form.value.realName.trim()) { formError.value = '请输入姓名'; return }
-  if (!/^1\d{10}$/.test(form.value.phone.trim())) { formError.value = '请输入正确的 11 位手机号（后端必填，移动端登录要用）'; return }
-  if (!form.value.id) {
-    if (!form.value.password || form.value.password.length < 6) { formError.value = '初始密码至少 6 位'; return }
-    if (form.value.roleId == null) { formError.value = '请选择一个角色'; return }
-  }
+  const valid = await formRef.value.validate().catch(() => false)
+  if (!valid) return
   saving.value = true
   try {
     if (form.value.id) {
@@ -303,8 +312,7 @@ async function submitForm() {
       notify(form.value.gridId != null && isGridWorkerSelected.value ? '账号已创建，并已绑定网格' : '账号已创建', 'success')
     }
     showForm.value = false
-    // 保存成功后清空表单，避免草稿残留到下次新增
-    form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null, gridId: null }
+    // 关闭后由 @closed → resetForm 清空表单
     fetchData()
   } catch (e: any) {
     formError.value = e?.message || '保存失败，请稍后重试'
@@ -437,13 +445,15 @@ async function handleDelete(u: any) {
 
 onMounted(fetchData)
 
-watch([showForm, showRoles, showPwd], () => {
-  const anyOpen = showForm.value || showRoles.value || showPwd.value
+watch([showRoles, showPwd], () => {
+  const anyOpen = showRoles.value || showPwd.value
   document.body.style.overflow = anyOpen ? 'hidden' : ''
 })
 </script>
 
 <style scoped>
+.form-hint { color: #9ca3af; font-weight: 400; font-size: 12px; margin-bottom: 4px; }
+.form-error { color: #ef4444; font-size: 12px; margin: 8px 0 0; }
 .form-label { font-size: 13px; color: #374151; font-weight: 500; }
 .form-input { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px; font-size: 13px; outline: none; }
 .form-input:focus { border-color: #0284c7; }

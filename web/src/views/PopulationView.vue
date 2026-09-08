@@ -162,11 +162,11 @@
         <p style="font-size:12px;color:#6b7280;margin-bottom:12px;">勾选启用的字段将显示在新增/编辑表单中，可调整排序与必填。（导入模板列固定，不受此配置影响）</p>
         <div style="max-height:55vh;overflow-y:auto;">
           <div v-for="(f, idx) in configFields" :key="f.id" style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid #f3f4f6;">
-            <input type="checkbox" v-model="f.enabled" style="accent-color:#1890ff;" />
+            <input type="checkbox" v-model="f.enabled" :true-value="1" :false-value="0" style="accent-color:#1890ff;" />
             <input v-model="f.fieldLabel" class="form-input" style="width:120px;padding:4px 8px;font-size:12px;" />
             <span style="flex:1;font-size:12px;color:#9ca3af;">{{ f.fieldKey }}</span>
             <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:#6b7280;cursor:pointer;">
-              <input type="checkbox" v-model="f.required" style="accent-color:#ff4d4f;" />必填
+              <input type="checkbox" v-model="f.required" :true-value="1" :false-value="0" style="accent-color:#ff4d4f;" />必填
             </label>
             <div style="display:flex;gap:4px;">
               <button @click="moveConfig(idx, -1)" :disabled="idx === 0" class="btn btn-default" style="padding:2px 8px;font-size:11px;">↑</button>

@@ -102,3 +102,22 @@ export function promptDialog(options: PromptOptions): Promise<string | null> {
     )
   })
 }
+
+/**
+ * 单按钮提示对话框（仅"我知道了"），用于告知类提示，不返回业务判断结果
+ */
+export function alertDialog(options: { title?: string; message: string; okText?: string }): Promise<void> {
+  return new Promise((resolve) => {
+    const finish = mountOverlay(
+      () =>
+        h('div', { class: 'modal-box', style: 'width:420px;' }, [
+          options.title ? h('h3', { style: 'font-size:15px;font-weight:600;margin-bottom:10px;' }, options.title) : null,
+          h('p', { style: 'font-size:13px;color:#4b5563;white-space:pre-line;line-height:1.7;' }, options.message),
+          h('div', { style: 'display:flex;justify-content:flex-end;gap:8px;margin-top:20px;' }, [
+            h('button', { class: 'btn btn-primary', onClick: () => finish(undefined) }, options.okText || '我知道了'),
+          ]),
+        ]),
+      () => resolve(),
+    )
+  })
+}

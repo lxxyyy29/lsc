@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
+  <div class="dict-root">
+    <div class="page-header dict-page-header-row">
       <div>
         <h1 class="page-title">字典管理</h1>
         <p class="page-desc">维护系统下拉选项等字典数据，业务表单统一按字典编码读取</p>
@@ -10,21 +10,25 @@
       </button>
     </div>
 
-    <div style="display:grid;grid-template-columns:380px 1fr;gap:16px;align-items:start;">
+    <div class="dict-grid">
       <!-- 左侧：字典类型列表 -->
-      <div class="card">
-        <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">字典类型</h3>
+      <div class="card dict-pane">
+        <h3 class="dict-card-title">字典类型</h3>
         <table class="table">
           <thead>
-            <tr><th>编码 / 名称</th><th style="width:70px;">状态</th><th style="width:110px;">操作</th></tr>
+            <tr><th>名称 / 编码</th><th style="width:70px;">状态</th><th style="width:150px;">操作</th></tr>
           </thead>
           <tbody>
             <tr v-for="t in types" :key="t.id"
-                :style="{ cursor: 'pointer', background: selectedCode === t.dictCode ? '#e0f2fe' : '' }"
+                :style="{ background: selectedCode === t.dictCode ? '#e0f2fe' : '' }"
+                class="dict-row-clickable"
                 @click="selectType(t)">
               <td>
-                <div style="font-weight:600;">{{ t.dictName }}</div>
-                <div style="font-size:12px;color:#6b7280;">{{ t.dictCode }}（{{ t.itemCount }} 项）</div>
+                <div class="dict-name">
+                  {{ t.dictName }}
+                  <span class="dict-name-count">（{{ t.itemCount }} 项）</span>
+                </div>
+                <div class="dict-code">{{ t.dictCode }}</div>
               </td>
               <td>
                 <span :class="['tag', t.status === 'ACTIVE' ? 'tag-green' : 'tag-red']">
@@ -33,7 +37,7 @@
               </td>
               <td @click.stop>
                 <button class="btn btn-default btn-sm" @click="openTypeForm(t)">编辑</button>
-                <button class="btn btn-default btn-sm" style="color:#dc2626;margin-left:4px;" @click="removeType(t)">删除</button>
+                <button class="btn btn-default btn-sm dict-btn-danger" @click="removeType(t)">删除</button>
               </td>
             </tr>
           </tbody>
@@ -42,11 +46,11 @@
       </div>
 
       <!-- 右侧：选中字典的字典项 -->
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <h3 style="font-size:14px;font-weight:600;">
+      <div class="card dict-pane">
+        <div class="dict-card-header">
+          <h3 class="dict-card-title" style="margin-bottom:0;">
             字典项
-            <span v-if="selectedType" style="color:#6b7280;font-weight:400;">- {{ selectedType.dictName }}（{{ selectedType.dictCode }}）</span>
+            <span v-if="selectedType" class="dict-card-title-sub">- {{ selectedType.dictName }}（{{ selectedType.dictCode }}）</span>
           </h3>
           <button v-if="selectedType" @click="openItemForm(null)" class="btn btn-primary btn-sm">
             <i class="fas fa-plus"></i>新增字典项
@@ -57,27 +61,27 @@
             <thead>
               <tr>
                 <th style="width:60px;">排序</th>
-                <th>值</th>
                 <th>显示名</th>
+                <th>值</th>
                 <th style="width:70px;">状态</th>
                 <th>备注</th>
-                <th style="width:110px;">操作</th>
+                <th style="width:180px;">操作</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="i in items" :key="i.id">
                 <td>{{ i.sortOrder }}</td>
-                <td style="font-family:monospace;">{{ i.itemValue }}</td>
                 <td>{{ i.itemLabel }}</td>
+                <td class="dict-item-value">{{ i.itemValue }}</td>
                 <td>
                   <span :class="['tag', i.status === 'ACTIVE' ? 'tag-green' : 'tag-red']">
                     {{ i.status === 'ACTIVE' ? '启用' : '停用' }}
                   </span>
                 </td>
-                <td style="font-size:12px;color:#6b7280;">{{ i.remark || '-' }}</td>
+                <td class="dict-item-remark">{{ i.remark || '-' }}</td>
                 <td>
                   <button class="btn btn-default btn-sm" @click="openItemForm(i)">编辑</button>
-                  <button class="btn btn-default btn-sm" style="color:#dc2626;margin-left:4px;" @click="removeItem(i)">删除</button>
+                  <button class="btn btn-default btn-sm dict-btn-danger" @click="removeItem(i)">删除</button>
                 </td>
               </tr>
             </tbody>
@@ -91,11 +95,11 @@
     <!-- 字典类型 新增/编辑 弹窗 -->
     <div v-if="showTypeModal" class="modal-overlay">
       <div class="modal-box">
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ editingType ? '编辑字典' : '新增字典' }}</h3>
+        <h3 class="dict-modal-title">{{ editingType ? '编辑字典' : '新增字典' }}</h3>
         <div v-if="editingType" class="form-group">
           <label class="form-label">字典编码</label>
-          <input v-model="typeForm.dictCode" class="form-input" disabled placeholder="如 event_report_source" />
-          <p style="font-size:12px;color:#9ca3af;margin-top:4px;">编码已被业务引用，不可修改；新增时系统自动生成</p>
+          <div class="form-input dict-readonly">{{ typeForm.dictCode }}</div>
+          <p class="dict-readonly-hint">编码已被业务引用，不可修改；新增时系统自动生成</p>
         </div>
         <div class="form-group">
           <label class="form-label">字典名称 <span class="required">*</span></label>
@@ -112,7 +116,7 @@
           <label class="form-label">备注</label>
           <input v-model="typeForm.remark" class="form-input" placeholder="选填" />
         </div>
-        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
+        <div class="dict-modal-actions">
           <button @click="showTypeModal = false" class="btn btn-default">取消</button>
           <button @click="saveType" class="btn btn-primary">保存</button>
         </div>
@@ -122,16 +126,16 @@
     <!-- 字典项 新增/编辑 弹窗 -->
     <div v-if="showItemModal" class="modal-overlay">
       <div class="modal-box">
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">{{ editingItem ? '编辑字典项' : '新增字典项' }}</h3>
+        <h3 class="dict-modal-title">{{ editingItem ? '编辑字典项' : '新增字典项' }}</h3>
         <div v-if="editingItem" class="form-group">
-          <label class="form-label">值 <span class="required">*</span></label>
-          <input v-model="itemForm.itemValue" class="form-input" placeholder="存入业务字段的值，如 GRID_MEMBER" />
+          <label class="form-label">值</label>
+          <div class="form-input dict-readonly">{{ itemForm.itemValue }}</div>
         </div>
         <div class="form-group">
           <label class="form-label">显示名 <span class="required">*</span></label>
           <input v-model="itemForm.itemLabel" class="form-input" placeholder="下拉框展示的文字，如 网格员上报" />
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="dict-form-row">
           <div class="form-group">
             <label class="form-label">排序</label>
             <input v-model.number="itemForm.sortOrder" type="number" class="form-input" />
@@ -148,7 +152,7 @@
           <label class="form-label">备注</label>
           <input v-model="itemForm.remark" class="form-input" placeholder="选填" />
         </div>
-        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
+        <div class="dict-modal-actions">
           <button @click="showItemModal = false" class="btn btn-default">取消</button>
           <button @click="saveItem" class="btn btn-primary">保存</button>
         </div>
@@ -164,7 +168,7 @@ import {
   createDictItem, updateDictItem, deleteDictItem, type DictType, type DictItem
 } from '../api'
 import { showMessage } from '../utils/message'
-import { confirmDialog } from '../utils/dialog'
+import { confirmDialog, alertDialog } from '../utils/dialog'
 
 const types = ref<DictType[]>([])
 const items = ref<DictItem[]>([])
@@ -207,7 +211,20 @@ async function saveType() {
   }
 }
 
+// ---------- 引用来源判断 ----------
+// TODO: 后端字典列表加引用来源字段后，把判断改为 t.locked || (t.refCount && t.refCount > 0)
+function isReferenced(_target: DictType | DictItem): boolean {
+  return true
+}
+
 async function removeType(t: DictType) {
+  if (isReferenced(t)) {
+    await alertDialog({
+      title: '无法删除',
+      message: `字典「${t.dictName}」（${t.dictCode}）已被业务模块关联引用，删除或编辑后将影响关联业务正常运行。\n如需调整，请联系系统管理员处理。`,
+    })
+    return
+  }
   if (!await confirmDialog({ message: `确认删除字典「${t.dictName}」及其 ${t.itemCount} 个字典项吗？`, danger: true, okText: '删除' })) return
   try {
     await deleteDictType(t.id)
@@ -254,6 +271,13 @@ async function saveItem() {
 }
 
 async function removeItem(i: DictItem) {
+  if (isReferenced(i)) {
+    await alertDialog({
+      title: '无法删除',
+      message: `字典项「${i.itemLabel}」（${i.itemValue}）已被业务模块关联引用，删除或编辑后将影响关联业务正常运行。\n如需调整，请联系系统管理员处理。`,
+    })
+    return
+  }
   if (!await confirmDialog({ message: `确认删除字典项「${i.itemLabel}」吗？`, danger: true, okText: '删除' })) return
   try {
     await deleteDictItem(i.id)
@@ -291,3 +315,118 @@ function selectType(t: DictType) {
 
 onMounted(loadTypes)
 </script>
+
+<style scoped>
+.dict-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.dict-page-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dict-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.dict-pane {
+  overflow: auto;
+  min-height: 0;
+  margin: 0;
+}
+
+.dict-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.dict-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.dict-card-title-sub {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.dict-row-clickable {
+  cursor: pointer;
+}
+
+.dict-name {
+  font-weight: 600;
+}
+
+.dict-name-count {
+  font-weight: 400;
+  color: #9ca3af;
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+.dict-code {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dict-item-value {
+  font-family: monospace;
+}
+
+.dict-item-remark {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dict-btn-danger {
+  color: #dc2626;
+  margin-left: 4px;
+}
+
+.dict-modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.dict-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.dict-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.dict-readonly {
+  font-family: monospace;
+  background: #f3f4f6;
+  color: #374151;
+  cursor: not-allowed;
+}
+
+.dict-readonly-hint {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+</style>
