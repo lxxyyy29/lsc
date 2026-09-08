@@ -268,7 +268,7 @@ function closeStream() { streamOpen.value = false }
 async function loadStreamData() {
   try {
     const ev: any = await getEvents({ excludeHidden: true, size: 200 })
-    liveEvents.value = (ev?.items || []).filter((e: any) => !e.archived).map((e: any) => ({ ...e, kind: 'event' }))
+    liveEvents.value = (ev?.items || []).map((e: any) => ({ ...e, kind: 'event' }))
   } catch (e) {}
   try {
     const wo: any = await getWorkOrders({ pageSize: 100 })
@@ -490,7 +490,7 @@ async function overlayData() {
 
   try {
     const result = await getEvents({ excludeHidden: true })
-    activeEvents = (result.items || []).filter((e: any) => !e.archived)
+    activeEvents = result.items || []
   } catch (e) {
   }
 
