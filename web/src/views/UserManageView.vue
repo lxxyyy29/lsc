@@ -103,17 +103,10 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item v-if="!form.id" label="角色" prop="roleId" required>
-          <div class="form-hint">（每个账号只能选择一个角色）</div>
+          <div class="form-hint">（每个账号只能选择一个角色；网格员/网格组长的所属网格请在「组织人员」页绑定）</div>
           <el-select v-model="form.roleId" placeholder="选择角色" style="width:100%;">
             <el-option v-for="r in roles" :key="r.id" :value="Number(r.id)" :label="r.roleName" />
           </el-select>
-        </el-form-item>
-        <el-form-item v-if="isGridWorkerSelected" label="分配小网格" prop="gridId">
-          <div class="form-hint">（选填；分配后自动联动我的网格/巡查任务/派单）</div>
-          <el-select v-model="form.gridId" placeholder="暂不分配（后续可在组织人员管理绑定）" clearable style="width:100%;">
-            <el-option v-for="g in smallGrids" :key="g.id" :value="Number(g.id)" :label="g.gridName" />
-          </el-select>
-          <p v-if="!smallGrids.length" style="color:#d97706;font-size:12px;margin:0;">⚠️ 暂无小网格，请先在网格管理页添加</p>
         </el-form-item>
         <p v-if="formError" class="form-error">{{ formError }}</p>
       </el-form>
@@ -169,7 +162,7 @@ import { confirmDialog } from '../utils/dialog'
 import {
   getSystemUsers, getSystemUserDetail, createSystemUser, updateSystemUser,
   updateSystemUserStatus, assignUserRoles, resetSystemUserPassword, deleteSystemUser,
-  getSystemRoles, getGridTree
+  getSystemRoles
 } from '../api'
 
 const loading = ref(false)
@@ -238,48 +231,22 @@ function selectAll(e: FocusEvent) {
   if (t) t.select()
 }
 function resetForm() {
-  form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null, gridId: null }
+  form.value = { id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null }
   formError.value = ''
   formRef.value?.clearValidate()
 }
-const form = ref<{ id: number | null; username: string; password: string; realName: string; phone: string; status: string; roleId: number | null; gridId: number | null }>({
-  id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null, gridId: null
-})
-
-/* 小网格列表（新增网格员账号时用于一步分配网格） */
-const smallGrids = ref<any[]>([])
-async function loadSmallGrids() {
-  try {
-    const tree: any = await getGridTree()
-    const list: any[] = []
-    const walk = (nodes: any[]) => {
-      for (const n of Array.isArray(nodes) ? nodes : []) {
-        if (n?.gridLevel === 3) list.push(n)
-        if (n?.children) walk(n.children)
-      }
-    }
-    walk(Array.isArray(tree) ? tree : [])
-    smallGrids.value = list
-  } catch (e) {
-    smallGrids.value = []
-  }
-}
-
-/** 当前选中的角色是否为网格员 */
-const isGridWorkerSelected = computed(() => {
-  const role = roles.value.find(r => r.id === form.value.roleId)
-  return role?.roleCode === 'GRID_WORKER'
+const form = ref<{ id: number | null; username: string; password: string; realName: string; phone: string; status: string; roleId: number | null }>({
+  id: null, username: '', password: '', realName: '', phone: '', status: 'ACTIVE', roleId: null
 })
 
 function openCreate() {
   // 关闭/取消/保存后表单已自动清空；这里只需保证空状态
   resetForm()
-  loadSmallGrids()
   showForm.value = true
 }
 
 function openEdit(u: any) {
-  form.value = { id: u.id, username: u.username, password: '', realName: u.realName || '', phone: u.phone || '', status: u.status, roleId: null, gridId: null }
+  form.value = { id: u.id, username: u.username, password: '', realName: u.realName || '', phone: u.phone || '', status: u.status, roleId: null }
   formError.value = ''
   showForm.value = true
 }
@@ -306,10 +273,9 @@ async function submitForm() {
         realName: form.value.realName.trim(),
         phone: form.value.phone.trim() || undefined,
         status: form.value.status,
-        roleIds: form.value.roleId == null ? [] : [form.value.roleId],
-        gridId: isGridWorkerSelected.value ? form.value.gridId : null
+        roleIds: form.value.roleId == null ? [] : [form.value.roleId]
       })
-      notify(form.value.gridId != null && isGridWorkerSelected.value ? '账号已创建，并已绑定网格' : '账号已创建', 'success')
+      notify('账号已创建', 'success')
     }
     showForm.value = false
     // 关闭后由 @closed → resetForm 清空表单

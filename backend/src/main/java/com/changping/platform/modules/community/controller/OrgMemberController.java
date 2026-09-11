@@ -17,6 +17,8 @@ import java.util.Map;
 @RequestMapping("/community/org-members")
 public class OrgMemberController {
 
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(OrgMemberController.class);
+
     private final OrgMemberService service;
     private final JdbcTemplate jdbcTemplate;
     private final CurrentUserService currentUserService;
@@ -88,8 +90,22 @@ public class OrgMemberController {
         // 职位与系统角色绑定：保存后按职位自动同步账号角色（组长/网格长→网格组长，网格员→网格员，社区工作人员→管理员）
         if (ok) {
             syncOrgMemberRoleToUser(entity);
+            // 组长绑定管辖网格时可选一并划分：autoAssignWorkers=true 则把该网格下在岗网格员划入该组长名下
+            if (Boolean.TRUE.equals(entity.getAutoAssignWorkers())
+                    && entity.getGridId() != null
+                    && isGridLeader(entity)) {
+                int affected = service.assignGridWorkersToLeader(entity.getId(), entity.getGridId());
+                LOGGER.info("组长绑定网格并划分网格员: leaderId={}, gridId={}, affected={}",
+                        entity.getId(), entity.getGridId(), affected);
+            }
         }
         return ApiResponse.ok(ok);
+    }
+
+    /** 是否为网格组长/网格长（与派单、BPM 地理路由的组长判定口径一致） */
+    private boolean isGridLeader(OrgMemberEntity entity) {
+        String pos = entity.getPosition() == null ? "" : entity.getPosition();
+        return "LEADER".equals(entity.getMemberType()) || pos.contains("组长") || pos.contains("网格长");
     }
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
@@ -98,7 +114,8 @@ public class OrgMemberController {
     }
 
     /**
-     * 将现有网格员（sys_user）同步到组织人员表
+     * 将现有网格员/网格组长（sys_user）同步到组织人员表；
+     * 所属网格不在同步范围内，统一由「组织人员」页绑定。
      */
     @PostMapping("/sync-from-users")
     public ApiResponse<Map<String, Object>> syncFromUsers() {
@@ -108,12 +125,13 @@ public class OrgMemberController {
         int skipped = 0;
 
         try {
-            // 获取所有 GRID_WORKER 角色的用户
+            // 获取所有 GRID_WORKER / GRID_LEADER 角色的用户（组长优先，保证类型判定一致）
             List<Map<String, Object>> gridUsers = jdbcTemplate.queryForList(
-                "SELECT u.id, u.real_name, u.phone FROM sys_user u " +
+                "SELECT u.id, u.real_name, u.phone, r.role_code FROM sys_user u " +
                 "JOIN sys_user_role ur ON ur.user_id = u.id " +
                 "JOIN sys_role r ON r.id = ur.role_id " +
-                "WHERE r.role_code = 'GRID_WORKER' AND u.deleted = 0");
+                "WHERE r.role_code IN ('GRID_WORKER', 'GRID_LEADER') AND u.deleted = 0 " +
+                "ORDER BY FIELD(r.role_code, 'GRID_LEADER', 'GRID_WORKER')");
 
             for (Map<String, Object> user : gridUsers) {
                 String name = (String) user.get("real_name");
@@ -125,11 +143,13 @@ public class OrgMemberController {
                     skipped++;
                     continue;
                 }
-                // 创建组织人员
+                // 创建组织人员（组长→LEADER/网格长，网格员→GRID_WORKER/网格员）
+                boolean isLeader = "GRID_LEADER".equals(user.get("role_code"));
                 jdbcTemplate.update(
                     "INSERT INTO cmn_org_member (grid_id, sys_user_id, member_type, name, phone, position, status, remark, created_at, updated_at) " +
-                    "VALUES (?, ?, 'GRID_WORKER', ?, ?, '网格员', 'ACTIVE', '从系统用户同步', NOW(), NOW())",
-                    null, user.get("id"), name, user.get("phone"));
+                    "VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', '从系统用户同步', NOW(), NOW())",
+                    null, user.get("id"), isLeader ? "LEADER" : "GRID_WORKER", name, user.get("phone"),
+                    isLeader ? "网格长" : "网格员");
                 synced++;
             }
         } catch (Exception e) {

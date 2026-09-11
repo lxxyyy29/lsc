@@ -17,6 +17,8 @@ public class PopulationMapper {
         PopulationEntity entity = new PopulationEntity();
         entity.setId(rs.getLong("id"));
         entity.setGridId(rs.getLong("grid_id"));
+        long householdId = rs.getLong("household_id");
+        entity.setHouseholdId(rs.wasNull() ? null : householdId);
         entity.setName(rs.getString("name"));
         entity.setIdCard(rs.getString("id_card"));
         entity.setPhone(rs.getString("phone"));
@@ -68,7 +70,10 @@ public class PopulationMapper {
      */
     public List<PopulationEntity> search(String keyword, String householdType, Long gridId, String populationType) {
         StringBuilder sql = new StringBuilder(
-                "SELECT p.*, g.grid_name FROM cmn_population p LEFT JOIN cmn_grid g ON g.id = p.grid_id WHERE p.status = 'ACTIVE'");
+                "SELECT p.*, g.grid_name, h.address AS household_address, h.household_no FROM cmn_population p "
+                        + "LEFT JOIN cmn_grid g ON g.id = p.grid_id "
+                        + "LEFT JOIN cmn_household h ON h.id = p.household_id "
+                        + "WHERE p.status = 'ACTIVE'");
         java.util.List<Object> params = new java.util.ArrayList<>();
         if (keyword != null && !keyword.isBlank()) {
             String like = "%" + keyword.trim() + "%";
@@ -104,8 +109,36 @@ public class PopulationMapper {
         return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
             PopulationEntity e = ROW_MAPPER.mapRow(rs, rowNum);
             e.setGridName(rs.getString("grid_name"));
+            e.setHouseholdAddress(rs.getString("household_address"));
+            e.setHouseholdNo(rs.getString("household_no"));
             return e;
         }, params.toArray());
+    }
+
+    /** 按户ID集合带出整户成员（搜索结果按户展开用） */
+    public List<PopulationEntity> findByHouseholdIds(List<Long> householdIds) {
+        if (householdIds == null || householdIds.isEmpty()) {
+            return new java.util.ArrayList<>();
+        }
+        StringBuilder sql = new StringBuilder(
+                "SELECT p.*, g.grid_name, h.address AS household_address, h.household_no FROM cmn_population p "
+                        + "LEFT JOIN cmn_grid g ON g.id = p.grid_id "
+                        + "LEFT JOIN cmn_household h ON h.id = p.household_id "
+                        + "WHERE p.status = 'ACTIVE' AND COALESCE(p.household_type, '') <> 'FLOATING' AND p.household_id IN (");
+        for (int i = 0; i < householdIds.size(); i++) {
+            if (i > 0) {
+                sql.append(",");
+            }
+            sql.append("?");
+        }
+        sql.append(") ORDER BY p.id DESC");
+        return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
+            PopulationEntity e = ROW_MAPPER.mapRow(rs, rowNum);
+            e.setGridName(rs.getString("grid_name"));
+            e.setHouseholdAddress(rs.getString("household_address"));
+            e.setHouseholdNo(rs.getString("household_no"));
+            return e;
+        }, householdIds.toArray());
     }
 
     /** 递归收集指定网格及其所有子网格的 ID */
@@ -133,7 +166,9 @@ public class PopulationMapper {
      */
     public List<PopulationEntity> findResidentsByAddresses(List<String> addresses, Long gridId) {
         StringBuilder sql = new StringBuilder(
-                "SELECT p.*, g.grid_name FROM cmn_population p LEFT JOIN cmn_grid g ON g.id = p.grid_id "
+                "SELECT p.*, g.grid_name, h.address AS household_address, h.household_no FROM cmn_population p "
+                        + "LEFT JOIN cmn_grid g ON g.id = p.grid_id "
+                        + "LEFT JOIN cmn_household h ON h.id = p.household_id "
                         + "WHERE p.status = 'ACTIVE' AND COALESCE(p.household_type, '') <> 'FLOATING' AND TRIM(p.address) IN (");
         List<Object> params = new java.util.ArrayList<>();
         for (int i = 0; i < addresses.size(); i++) {
@@ -160,6 +195,8 @@ public class PopulationMapper {
         return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
             PopulationEntity e = ROW_MAPPER.mapRow(rs, rowNum);
             e.setGridName(rs.getString("grid_name"));
+            e.setHouseholdAddress(rs.getString("household_address"));
+            e.setHouseholdNo(rs.getString("household_no"));
             return e;
         }, params.toArray());
     }
@@ -171,9 +208,9 @@ public class PopulationMapper {
     }
 
     public Long insert(PopulationEntity entity) {
-        String sql = "INSERT INTO cmn_population (grid_id, name, id_card, phone, gender, age, birthday, household_type, special_population, special_population_type, relation, address, building_no, room_no, tags, photo_url, status, remark, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+        String sql = "INSERT INTO cmn_population (grid_id, household_id, name, id_card, phone, gender, age, birthday, household_type, special_population, special_population_type, relation, address, building_no, room_no, tags, photo_url, status, remark, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
         jdbcTemplate.update(sql,
-                entity.getGridId(), entity.getName(), entity.getIdCard(),
+                entity.getGridId(), entity.getHouseholdId(), entity.getName(), entity.getIdCard(),
                 entity.getPhone(), entity.getGender(), entity.getAge(),
                 entity.getBirthday(), entity.getHouseholdType(),
                 entity.getSpecialPopulation(), entity.getSpecialPopulationType(), entity.getRelation(),
@@ -184,9 +221,9 @@ public class PopulationMapper {
     }
 
     public int update(PopulationEntity entity) {
-        String sql = "UPDATE cmn_population SET grid_id = ?, name = ?, id_card = ?, phone = ?, gender = ?, age = ?, birthday = ?, household_type = ?, special_population = ?, special_population_type = ?, relation = ?, address = ?, building_no = ?, room_no = ?, tags = ?, photo_url = ?, status = ?, remark = ?, updated_at = NOW() WHERE id = ?";
+        String sql = "UPDATE cmn_population SET grid_id = ?, household_id = ?, name = ?, id_card = ?, phone = ?, gender = ?, age = ?, birthday = ?, household_type = ?, special_population = ?, special_population_type = ?, relation = ?, address = ?, building_no = ?, room_no = ?, tags = ?, photo_url = ?, status = ?, remark = ?, updated_at = NOW() WHERE id = ?";
         return jdbcTemplate.update(sql,
-                entity.getGridId(), entity.getName(), entity.getIdCard(),
+                entity.getGridId(), entity.getHouseholdId(), entity.getName(), entity.getIdCard(),
                 entity.getPhone(), entity.getGender(), entity.getAge(),
                 entity.getBirthday(), entity.getHouseholdType(),
                 entity.getSpecialPopulation(), entity.getSpecialPopulationType(), entity.getRelation(),
@@ -194,6 +231,53 @@ public class PopulationMapper {
                 entity.getTags(), entity.getPhotoUrl(),
                 entity.getStatus(), entity.getRemark(),
                 entity.getId());
+    }
+
+    /** 户内成员（按户主置顶、其余按 id 升序） */
+    public List<PopulationEntity> findByHouseholdId(Long householdId) {
+        return jdbcTemplate.query(
+                "SELECT * FROM cmn_population WHERE household_id = ? AND status = 'ACTIVE' ORDER BY id ASC",
+                ROW_MAPPER, householdId);
+    }
+
+    /** 只更新「与户主关系」（户主变更重算用） */
+    public int updateRelation(Long id, String relation) {
+        return jdbcTemplate.update(
+                "UPDATE cmn_population SET relation = ?, updated_at = NOW() WHERE id = ?", relation, id);
+    }
+
+    /** 把人员挂到户下，并同步地址/网格以与户保持一致 */
+    public int updateHousehold(Long id, Long householdId, String relation, String address, Long gridId) {
+        return jdbcTemplate.update(
+                "UPDATE cmn_population SET household_id = ?, relation = ?, address = COALESCE(?, address), grid_id = COALESCE(?, grid_id), updated_at = NOW() WHERE id = ?",
+                householdId, relation, address, gridId, id);
+    }
+
+    /** 把人员移出户（保留其 relation，便于重新归户时参考） */
+    public int clearHousehold(Long id) {
+        return jdbcTemplate.update(
+                "UPDATE cmn_population SET household_id = NULL, updated_at = NOW() WHERE id = ?", id);
+    }
+
+    /** 户地址/网格变更后同步到户内成员 */
+    public int syncHouseholdFields(Long householdId, String address, Long gridId) {
+        return jdbcTemplate.update(
+                "UPDATE cmn_population SET address = COALESCE(?, address), grid_id = COALESCE(?, grid_id), updated_at = NOW() WHERE household_id = ?",
+                address, gridId, householdId);
+    }
+
+    /** 删除户时把成员全部移出 */
+    public int clearHouseholdAll(Long householdId) {
+        return jdbcTemplate.update(
+                "UPDATE cmn_population SET household_id = NULL, updated_at = NOW() WHERE household_id = ?", householdId);
+    }
+
+    /** 户内被标记为「户主」的成员数 */
+    public int countHeads(Long householdId) {
+        Long c = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM cmn_population WHERE household_id = ? AND status = 'ACTIVE' AND relation = '户主'",
+                Long.class, householdId);
+        return c == null ? 0 : c.intValue();
     }
 
     public int deleteById(Long id) {

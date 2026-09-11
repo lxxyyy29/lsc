@@ -112,14 +112,23 @@ public class OrgMemberMapper {
     }
 
     /**
+     * 「在岗网格员」判定条件（划分与统计共用，避免两处口径漂移）：
+     * 必须是 GRID_WORKER 且在岗，且排除组长/网格长/LEADER 身份人员
+     * —— 组长之间不应互相收编，社区工作人员也不参与划分。
+     */
+    private static final String ACTIVE_GRID_WORKER_CONDITION =
+            "member_type = 'GRID_WORKER' AND status = 'ACTIVE' " +
+                    "AND NOT (position LIKE '%组长%' OR position LIKE '%网格长%' OR member_type = 'LEADER')";
+
+    /**
      * 创建组长并绑定网格后自动划分：将该网格下全部在岗网格员划入组长名下。
-     * 排除组长本人及非网格员（社区工作人员等不参与划分）。
+     * 排除组长本人、同网格的其他组长/网格长（与 countGridWorkers 口径一致）及非网格员。
      */
     public int assignGridWorkersToLeader(Long leaderId, Long gridId) {
         if (leaderId == null || gridId == null) return 0;
         return jdbcTemplate.update(
                 "UPDATE cmn_org_member SET leader_id = ?, updated_at = NOW() " +
-                        "WHERE grid_id = ? AND member_type = 'GRID_WORKER' AND status = 'ACTIVE' AND id != ?",
+                        "WHERE grid_id = ? AND id != ? AND " + ACTIVE_GRID_WORKER_CONDITION,
                 leaderId, gridId, leaderId);
     }
 
@@ -127,8 +136,7 @@ public class OrgMemberMapper {
     public int countGridWorkers(Long gridId) {
         if (gridId == null) return 0;
         Integer n = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM cmn_org_member WHERE grid_id = ? AND member_type = 'GRID_WORKER' " +
-                        "AND status = 'ACTIVE' AND NOT (position LIKE '%组长%' OR position LIKE '%网格长%' OR member_type = 'LEADER')",
+                "SELECT COUNT(*) FROM cmn_org_member WHERE grid_id = ? AND " + ACTIVE_GRID_WORKER_CONDITION,
                 Integer.class, gridId);
         return n != null ? n : 0;
     }

@@ -5,6 +5,7 @@ import com.changping.platform.modules.community.entity.BuildingEntity;
 import com.changping.platform.modules.community.entity.PlaceEntity;
 import com.changping.platform.modules.community.entity.PopulationEntity;
 import com.changping.platform.modules.community.mapper.BuildingMapper;
+import com.changping.platform.modules.community.mapper.HouseholdMapper;
 import com.changping.platform.modules.community.mapper.PlaceMapper;
 import com.changping.platform.modules.community.mapper.PopulationMapper;
 import org.apache.poi.ss.usermodel.*;
@@ -22,13 +23,18 @@ public class ImportService {
     private final PopulationMapper populationMapper;
     private final BuildingMapper buildingMapper;
     private final PlaceMapper placeMapper;
+    private final HouseholdMapper householdMapper;
+    private final HouseholdService householdService;
     private final JdbcTemplate jdbcTemplate;
 
     public ImportService(PopulationMapper populationMapper, BuildingMapper buildingMapper,
-                         PlaceMapper placeMapper, JdbcTemplate jdbcTemplate) {
+                         PlaceMapper placeMapper, HouseholdMapper householdMapper,
+                         HouseholdService householdService, JdbcTemplate jdbcTemplate) {
         this.populationMapper = populationMapper;
         this.buildingMapper = buildingMapper;
         this.placeMapper = placeMapper;
+        this.householdMapper = householdMapper;
+        this.householdService = householdService;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -114,6 +120,8 @@ public class ImportService {
         int success = 0;
         int fail = 0;
         List<String> errorList = new ArrayList<>();
+        // 同一次导入内按 网格+地址 缓存户ID，避免逐行查库
+        Map<String, Long> householdCache = new HashMap<>();
 
         int headerRow = findPopulationHeaderRow(sheet);
         if (headerRow < 0) {
@@ -172,7 +180,23 @@ public class ImportService {
                 Long gridId = findGridIdByName(gridName);
                 entity.setGridId(gridId);
 
-                populationMapper.insert(entity);
+                // 常驻人口自动归户（按 网格+地址），流动人口不建户
+                Long householdId = null;
+                if (!address.isBlank()) {
+                    String cacheKey = (gridId == null ? "-" : gridId) + "|" + address;
+                    householdId = householdCache.get(cacheKey);
+                    if (householdId == null) {
+                        householdId = householdService.ensureHousehold(gridId, address, entity.getHouseholdType());
+                        householdCache.put(cacheKey, householdId);
+                    }
+                }
+                entity.setHouseholdId(householdId);
+
+                Long newId = populationMapper.insert(entity);
+                // 导入的户主：仅在户尚无户主时生效，避免互相覆盖
+                if (householdId != null && "户主".equals(relation)) {
+                    householdMapper.updateHeadIfAbsent(householdId, newId);
+                }
                 success++;
             } catch (Exception e) {
                 fail++;

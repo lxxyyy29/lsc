@@ -26,6 +26,9 @@ const props = defineProps<{ households: any[] }>()
 const emit = defineEmits<{
   (e: 'edit', p: Person): void
   (e: 'delete', p: Person): void
+  (e: 'add-member', household: any): void
+  (e: 'change-head', household: any): void
+  (e: 'remove-member', p: Person): void
 }>()
 
 // 户头固定蓝；成员按性别蓝/红
@@ -59,6 +62,9 @@ const view = computed(() =>
       hasOwner: !!head || members.some((m: Person) => m.relation === '户主'),
       headColor: OWNER_COLOR,
       members,
+      // 原始后端户节点：变更户主/新增成员需要真实 householdId
+      raw: h,
+      householdId: h.householdId ?? null,
     }
   })
 )
@@ -105,6 +111,12 @@ function toggle(id: string | number) {
             <span>在册 <b>{{ hh.count }}</b> 人</span>
           </div>
         </div>
+        <div class="hh-actions">
+          <el-button size="small" link type="primary" :disabled="!hh.householdId"
+                     @click.stop="emit('add-member', hh.raw)">新增成员</el-button>
+          <el-button size="small" link type="primary" :disabled="!hh.householdId || !hh.count"
+                     @click.stop="emit('change-head', hh.raw)">变更户主</el-button>
+        </div>
         <button class="hh-toggle" :aria-expanded="expanded.has(hh.id)" :aria-controls="hh.id + '-detail'"
                 :aria-label="expanded.has(hh.id) ? '收起' : '展开'" @click.stop="toggle(hh.id)">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6l5 5 5-5"></path></svg>
@@ -149,6 +161,7 @@ function toggle(id: string | number) {
               <td class="muted">{{ m.remark || '-' }}</td>
               <td class="col-act">
                 <el-button size="small" link type="primary" @click.stop="emit('edit', m)">编辑</el-button>
+                <el-button size="small" link type="warning" @click.stop="emit('remove-member', m)">移出该户</el-button>
                 <el-button size="small" link type="danger" @click.stop="emit('delete', m)">删除</el-button>
               </td>
             </tr>
@@ -214,6 +227,15 @@ function toggle(id: string | number) {
 .hh-main {
   flex: 1;
   min-width: 0;
+}
+.hh-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.hh-actions :deep(.el-button) {
+  padding: 0 4px;
 }
 .hh-name-row {
   display: flex;

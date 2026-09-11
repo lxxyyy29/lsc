@@ -26,6 +26,12 @@ public class PopulationTreeVo {
     /** 户：居住地址 */
     private String address;
 
+    /** 户：户主键（cmn_household.id，未归户时为 null） */
+    private Long householdId;
+
+    /** 户：户号 */
+    private String householdNo;
+
     /** 户：户主实体（无户主时为空） */
     private PopulationEntity head;
 

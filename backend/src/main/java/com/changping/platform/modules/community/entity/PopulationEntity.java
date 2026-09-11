@@ -18,6 +18,9 @@ public class PopulationEntity {
 
     private Long gridId;
 
+    /** 所属户ID（cmn_household.id），流动人口为空 */
+    private Long householdId;
+
     private String name;
 
     private String idCard;
@@ -59,6 +62,14 @@ public class PopulationEntity {
     /** 关联网格名称（查询时 JOIN 填充，非表字段） */
     @TableField(exist = false)
     private String gridName;
+
+    /** 所属户地址（查询时 JOIN 填充，非表字段） */
+    @TableField(exist = false)
+    private String householdAddress;
+
+    /** 所属户户号（查询时 JOIN 填充，非表字段） */
+    @TableField(exist = false)
+    private String householdNo;
 
     @TableField(fill = com.baomidou.mybatisplus.annotation.FieldFill.INSERT)
     private LocalDateTime createdAt;

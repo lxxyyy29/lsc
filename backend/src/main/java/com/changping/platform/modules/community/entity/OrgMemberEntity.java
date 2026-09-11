@@ -36,6 +36,12 @@ public class OrgMemberEntity {
     @TableField(exist = false)
     private String gridName;
 
+    /**
+     * 请求开关（非表字段）：组长保存管辖网格时，是否把该网格下在岗网格员一并划入该组长名下。
+     */
+    @TableField(exist = false)
+    private Boolean autoAssignWorkers;
+
     /** 组长姓名（查询时 JOIN 填充，非表字段） */
     @TableField(exist = false)
     private String leaderName;

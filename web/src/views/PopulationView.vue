@@ -15,7 +15,10 @@
         <button @click="exportData" class="filter-action ghost">
           <i class="fas fa-download"></i> 导出Excel
         </button>
-        <button @click="openCreate" class="filter-action">
+        <button v-if="isResidentTab" @click="openHouseholdCreate" class="filter-action ghost">
+          <i class="fas fa-home"></i> 新建户
+        </button>
+        <button @click="openCreate()" class="filter-action">
           <i class="fas fa-plus"></i> 新增人员
         </button>
       </div>
@@ -59,7 +62,9 @@
       </div>
       <template v-else>
         <!-- 常驻：按户分组卡片 + 整户展开收起（后端已是树形结构，直接消费） -->
-        <PopulationCardList v-if="isResidentTab" :households="list" @edit="openEdit" @delete="handleDelete" />
+        <PopulationCardList v-if="isResidentTab" :households="list" @edit="openEdit" @delete="handleDelete"
+                            @add-member="onAddMember" @change-head="onChangeHead"
+                            @remove-member="handleRemoveMember" />
         <!-- 流动：普通列表（保持原表格效果，无户主概念） -->
         <table v-else class="table">
           <thead><tr>
@@ -92,6 +97,16 @@
     <el-dialog v-model="showForm" :title="form.id ? '编辑人员' : '新增人员'" width="680px"
                class="pop-form-dialog ui-dialog" align-center :close-on-click-modal="false">
       <el-form ref="formRef" :model="form" :rules="formRules" label-position="top">
+        <!-- 所属户：常驻人口可挂到具体户下；选择后自动带出地址与网格 -->
+        <el-form-item v-if="isResidentTab" label="所属户（户口）">
+          <el-select v-model="form.householdId" placeholder="不归户（独立人员）" filterable clearable
+                     style="width:100%;" @change="onHouseholdChange">
+            <el-option v-for="h in households" :key="h.id" :label="householdLabel(h)" :value="h.id" />
+          </el-select>
+          <div v-if="!households.length" style="font-size:12px;color:#9ca3af;margin-top:4px;">
+            暂无可选户，可先点右上角「新建户」创建。
+          </div>
+        </el-form-item>
         <el-row :gutter="16">
           <template v-for="f in formFields" :key="f.fieldKey">
             <el-col v-if="isFormVisible(f) && !(isKey(f, 'specialPopulationType') && form.specialPopulation != 1)" :span="isFullField(f) ? 24 : 12">
@@ -181,6 +196,98 @@
       </div>
     </div>
 
+    <!-- 新建/编辑户弹窗 -->
+    <el-dialog v-model="showHouseholdForm" :title="householdForm.id ? '编辑户' : '新建户'" width="520px"
+               class="ui-dialog" align-center :close-on-click-modal="false">
+      <el-form label-position="top">
+        <el-form-item label="户地址" required>
+          <el-input v-model="householdForm.address" placeholder="请输入户地址（同一网格下不可重复）" />
+        </el-form-item>
+        <el-form-item label="所属网格">
+          <el-select v-model="householdForm.gridId" placeholder="请选择" clearable filterable style="width:100%;">
+            <el-option v-for="g in grids" :key="g.id" :label="g.gridName" :value="Number(g.id)" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="户籍类型">
+          <el-select v-model="householdForm.householdType" placeholder="请选择" clearable style="width:100%;">
+            <el-option v-for="t in residentHouseholdTypes" :key="t.value" :label="t.label" :value="t.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="户号">
+          <el-input v-model="householdForm.householdNo" placeholder="选填" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="householdForm.remark" type="textarea" :rows="2" placeholder="选填" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+          <el-button @click="showHouseholdForm = false">取消</el-button>
+          <el-button type="primary" :loading="saving" @click="submitHousehold">{{ householdForm.id ? '保存' : '创建' }}</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 变更户主弹窗：选择新户主 → 预览关系重算结果 → 确认 -->
+    <el-dialog v-model="showHeadDialog" title="变更户主" width="640px"
+               class="ui-dialog" align-center :close-on-click-modal="false">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">
+        户：<b style="color:#26221d;">{{ headTarget?.address || '-' }}</b>
+        <span v-if="headTarget?.headName"> · 现户主：{{ headTarget.headName }}</span>
+        <span v-else> · 尚未指定户主</span>
+      </p>
+      <el-form label-position="top">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="新户主">
+              <el-select v-model="headForm.newHeadId" placeholder="请选择" style="width:100%;" @change="onNewHeadChange">
+                <el-option v-for="m in headMembers" :key="m.id"
+                           :label="`${m.name}${m.relation ? '（' + m.relation + '）' : ''}`" :value="m.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="新户主与原户主的关系">
+              <el-select v-model="headForm.relationToOldHead" placeholder="用于推算其他成员关系" clearable
+                         style="width:100%;" @change="previewHead">
+                <el-option v-for="r in anchorRelations" :key="r" :label="r" :value="r" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <div v-if="headPreview.length" style="max-height:40vh;overflow-y:auto;border:1px solid #f0f0f0;border-radius:8px;">
+        <table class="table" style="margin:0;">
+          <thead><tr><th>姓名</th><th>性别</th><th>原与户主关系</th><th>变更后关系</th></tr></thead>
+          <tbody>
+            <tr v-for="c in headPreview" :key="c.id">
+              <td>
+                {{ c.name }}
+                <span v-if="c.newHead" style="margin-left:6px;padding:1px 7px;border-radius:999px;font-size:11px;background:#fde8e8;color:#a32d2d;">新户主</span>
+              </td>
+              <td>{{ c.gender || '-' }}</td>
+              <td>{{ c.oldRelation || '-' }}</td>
+              <td>
+                <span :style="{ color: c.changed ? '#c2547a' : '#9ca3af', fontWeight: c.changed ? 600 : 400 }">
+                  {{ c.newRelation || '-' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-if="headPreview.length" style="font-size:12px;color:#9ca3af;margin-top:8px;">
+        标注为「其他」的成员无法自动推算，请在变更后于成员编辑中人工修正。
+      </p>
+      <template #footer>
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+          <el-button @click="showHeadDialog = false">取消</el-button>
+          <el-button :disabled="!headForm.newHeadId" @click="previewHead">预览关系变更</el-button>
+          <el-button type="primary" :loading="saving" :disabled="!headForm.newHeadId" @click="confirmChangeHead">确认变更</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <!-- 导入对话框 -->
     <ImportDialog v-model:visible="showImport" type="population" :columns="importColumns" @success="fetchData" />
   </div>
@@ -224,6 +331,18 @@ const showImport = ref(false)
 const showForm = ref(false)
 const showConfig = ref(false)
 
+// ===== 户相关状态 =====
+const households = ref<any[]>([])
+const showHouseholdForm = ref(false)
+const householdForm = ref<any>({ id: null, address: '', gridId: null, householdType: '', householdNo: '', remark: '' })
+const showHeadDialog = ref(false)
+const headTarget = ref<any>(null)
+const headMembers = ref<any[]>([])
+const headPreview = ref<any[]>([])
+const headForm = ref<{ newHeadId: number | null; relationToOldHead: string }>({ newHeadId: null, relationToOldHead: '' })
+// 新户主相对原户主的关系候选（关系推算的锚点）
+const anchorRelations = ['儿子', '女儿', '配偶', '父亲', '母亲', '兄弟', '姐妹', '其他']
+
 // 字段键归一化（snake↔camel）
 function camel(fieldKey: any): any {
   return String(fieldKey || '').replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
@@ -263,6 +382,7 @@ const filters = reactive({
 
 const emptyForm = () => ({
   id: null as number | null,
+  householdId: null as number | null,
   name: '', gender: '', age: null as number | null, phone: '', idCard: '', birthday: '',
   householdType: '', specialPopulation: 0, specialPopulationType: '', relation: '',
   address: '', buildingNo: '', roomNo: '',
@@ -420,6 +540,8 @@ async function fetchData() {
     const res: any = await http.get('/community/population', { params }) || []
     // 常住返回"户→成员"树（带 children），流动返回扁平列表
     list.value = res
+    // 户下拉与当前筛选保持一致
+    if (isResidentTab.value) fetchHouseholds()
   } catch(e: any) {
     error.value = e?.message || '加载失败，请稍后重试'
   } finally {
@@ -491,8 +613,13 @@ async function saveConfig() {
   }
 }
 
-function openCreate() {
+function openCreate(prefill?: { householdId?: number | null; address?: string; gridId?: number | null }) {
   form.value = emptyForm()
+  if (prefill?.householdId) {
+    form.value.householdId = prefill.householdId
+    form.value.address = prefill.address || ''
+    form.value.gridId = prefill.gridId ?? null
+  }
   showForm.value = true
   nextTick(() => formRef.value?.clearValidate())
 }
@@ -500,6 +627,7 @@ function openCreate() {
 function openEdit(p: any) {
   form.value = {
     id: p.id,
+    householdId: p.householdId || null,
     name: p.name || '', gender: p.gender || '', age: p.age != null ? p.age : null,
     phone: p.phone || '', idCard: p.idCard || '', birthday: p.birthday || '',
     householdType: p.householdType || '',
@@ -526,7 +654,12 @@ async function handleSubmit() {
     if (!payload.age) payload.age = null
     if (!payload.birthday) payload.birthday = null
     if (!payload.gridId) payload.gridId = null
-    if (!isResidentTab.value) payload.householdType = 'FLOATING'
+    if (!isResidentTab.value) {
+      // 流动人口不参与归户
+      payload.householdType = 'FLOATING'
+      payload.householdId = null
+      payload.relation = ''
+    }
     if (form.value.id) {
       await http.put(`/community/population/${form.value.id}`, payload)
       showMessage('保存成功')
@@ -551,6 +684,163 @@ async function handleDelete(p: any) {
     fetchData()
   } catch(e: any) {
     showMessage(e?.message || '删除失败')
+  }
+}
+
+// ==================== 户管理 ====================
+
+function householdLabel(h: any) {
+  const addr = h.address || '未填写地址'
+  return h.headName ? `${addr}（户主：${h.headName}）` : `${addr}（暂无户主，${h.memberCount || 0}人）`
+}
+
+async function fetchHouseholds() {
+  try {
+    const params: any = {}
+    if (filters.gridId) params.gridId = filters.gridId
+    households.value = await http.get('/community/household', { params }) || []
+  } catch (e) {
+    households.value = []
+  }
+}
+
+// 选择所属户后自动带出地址与网格
+function onHouseholdChange(id: any) {
+  const h = households.value.find(x => x.id === id)
+  if (!h) return
+  if (!form.value.address) form.value.address = h.address || ''
+  if (!form.value.gridId) form.value.gridId = h.gridId || null
+}
+
+function openHouseholdCreate() {
+  householdForm.value = {
+    id: null, address: '', gridId: filters.gridId || null,
+    householdType: '', householdNo: '', remark: '',
+  }
+  showHouseholdForm.value = true
+}
+
+async function submitHousehold() {
+  const f = householdForm.value
+  if (!f.address || !String(f.address).trim()) {
+    showMessage('请填写户地址', 'warning')
+    return
+  }
+  saving.value = true
+  try {
+    if (f.id) {
+      await http.put(`/community/household/${f.id}`, f)
+      showMessage('保存成功')
+    } else {
+      await http.post('/community/household', f)
+      showMessage('创建成功')
+    }
+    showHouseholdForm.value = false
+    await fetchHouseholds()
+    await fetchData()
+  } catch (e: any) {
+    showMessage(e?.message || '操作失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+// 户卡片「新增成员」：打开人员表单并预填所属户
+function onAddMember(household: any) {
+  openCreate({
+    householdId: household?.householdId || household?.id || null,
+    address: household?.address,
+    gridId: household?.gridId,
+  })
+}
+
+// 户卡片「变更户主」
+async function onChangeHead(household: any) {
+  const householdId = household?.householdId || household?.id
+  if (!householdId) {
+    showMessage('该户尚未归户，无法变更户主', 'warning')
+    return
+  }
+  headTarget.value = { ...household, householdId, headName: household?.head?.name }
+  headForm.value = { newHeadId: null, relationToOldHead: '' }
+  headPreview.value = []
+  try {
+    const res: any = await http.get(`/community/household/${householdId}`)
+    headMembers.value = res?.members || []
+    if (res?.household) headTarget.value = { ...res.household, householdId }
+  } catch (e: any) {
+    showMessage(e?.message || '加载户成员失败')
+    return
+  }
+  showHeadDialog.value = true
+}
+
+// 选择新户主后：用其当前关系自动推断锚点关系并立即预览
+function onNewHeadChange(id: any) {
+  const m = headMembers.value.find(x => x.id === id)
+  headForm.value.relationToOldHead = m?.relation && m.relation !== '户主' ? m.relation : ''
+  previewHead()
+}
+
+async function previewHead() {
+  const householdId = headTarget.value?.householdId
+  if (!householdId || !headForm.value.newHeadId) return
+  try {
+    headPreview.value = await http.post(`/community/household/${householdId}/change-head/preview`, {
+      newHeadId: headForm.value.newHeadId,
+      relationToOldHead: headForm.value.relationToOldHead || null,
+    }) || []
+  } catch (e: any) {
+    headPreview.value = []
+    showMessage(e?.message || '预览失败')
+  }
+}
+
+async function confirmChangeHead() {
+  const householdId = headTarget.value?.householdId
+  if (!householdId || !headForm.value.newHeadId) return
+  if (!await confirmDialog({
+    message: '确认变更户主？系统将按亲属规则自动重算其他成员「与户主关系」。',
+    okText: '确认变更',
+  })) return
+  saving.value = true
+  try {
+    const res: any = await http.post(`/community/household/${householdId}/change-head`, {
+      newHeadId: headForm.value.newHeadId,
+      relationToOldHead: headForm.value.relationToOldHead || null,
+    })
+    if (res?.manualReview) {
+      showMessage('户主已变更；部分成员关系无法自动推算，已置为「其他」，请人工核对', 'warning')
+    } else {
+      showMessage('户主变更成功')
+    }
+    showHeadDialog.value = false
+    await fetchData()
+    await fetchHouseholds()
+  } catch (e: any) {
+    showMessage(e?.message || '变更失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+// 把成员移出户（仍保留在人口库）
+async function handleRemoveMember(p: any) {
+  if (!p?.householdId) {
+    showMessage('该人员未归户', 'warning')
+    return
+  }
+  if (!await confirmDialog({
+    message: `将「${p.name}」移出该户？移出后其仍保留在人口库中。`,
+    okText: '移出',
+  })) return
+  try {
+    await http.delete(`/community/household/${p.householdId}/members/${p.id}`)
+    showMessage('已移出该户')
+    await fetchData()
+    await fetchHouseholds()
+  } catch (e: any) {
+    showMessage(e?.message || '移出失败')
   }
 }
 
@@ -587,6 +877,7 @@ onMounted(() => {
   fetchData()
   fetchGrids()
   loadFieldConfig()
+  fetchHouseholds()
 })
 </script>
 

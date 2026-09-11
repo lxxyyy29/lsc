@@ -3,9 +3,12 @@
     <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
       <div>
         <h1 class="page-title">组织人员管理</h1>
-        <p class="page-desc">网格员、社区工作人员、志愿者等信息维护</p>
+        <p class="page-desc">网格组长、网格员与所属网格绑定，以及社区工作人员、志愿者等信息维护</p>
       </div>
       <div style="display:flex;gap:8px;">
+        <button @click="handleSyncFromUsers" class="btn btn-default" :disabled="syncing">
+          <i class="fas fa-sync"></i>{{ syncing ? '同步中…' : '同步账号' }}
+        </button>
         <button @click="openAssign" class="btn btn-default">
           <i class="fas fa-sitemap"></i>人员划分
         </button>
@@ -67,7 +70,7 @@
         </table>
         <div v-if="!list.length" class="empty-state">
           <i class="fas fa-users"></i>
-          <p>暂无组织人员，请通过后台账号管理添加</p>
+          <p>暂无组织人员，请先在「账号管理」创建网格员/网格组长账号，或点右上角「同步账号」拉取已有账号</p>
         </div>
       </template>
     </div>
@@ -96,15 +99,29 @@
           </select>
           <p style="font-size:12px;color:#6b7280;margin-top:4px;">保存后账号角色将按职位自动绑定（组长/网格长→网格组长角色）</p>
         </div>
-        <div v-if="form.memberType === 'GRID_WORKER'" class="form-group">
-          <label class="form-label">所属小网格 <span class="required">*</span></label>
+        <!-- 网格绑定：网格员填「所属小网格」，网格组长/网格长填「管辖小网格」 -->
+        <div v-if="['GRID_WORKER', 'LEADER'].includes(form.memberType)" class="form-group">
+          <label class="form-label">
+            {{ form.memberType === 'LEADER' ? '管辖小网格' : '所属小网格' }}
+            <span v-if="form.memberType === 'GRID_WORKER'" class="required">*</span>
+          </label>
           <select v-model="form.gridId" class="form-select">
-            <option :value="null">请选择小网格</option>
+            <option :value="null">{{ form.memberType === 'LEADER' ? '暂不绑定' : '请选择小网格' }}</option>
             <option v-for="g in grids" :key="g.id" :value="Number(g.id)">{{ g.gridName }}</option>
           </select>
           <p v-if="!grids.length" style="font-size:12px;color:#d97706;margin-top:4px;">
-            ⚠️ 暂无小网格，请先添加网格数据
+            ⚠️ 暂无小网格，请先到「网格管理」添加网格
           </p>
+          <p v-else style="font-size:12px;color:#6b7280;margin-top:4px;">
+            {{ form.memberType === 'LEADER'
+              ? '绑定后该组长即为该小网格负责人，H5「我的网格」与派单/审核范围按此生效'
+              : '绑定后联动 H5「我的网格」、巡查任务与派单' }}
+          </p>
+          <label v-if="isLeaderForm && form.gridId"
+                 style="display:flex;align-items:flex-start;gap:6px;font-size:12px;color:#374151;margin-top:8px;cursor:pointer;line-height:1.5;">
+            <input type="checkbox" v-model="form.autoAssignWorkers" style="margin-top:2px;" />
+            <span>同时把该小网格下的在岗网格员划入该组长名下（已在其他组长名下的会被改划）</span>
+          </label>
         </div>
         <div class="form-group">
           <label class="form-label">状态</label>
@@ -218,6 +235,14 @@ const form = ref({
   memberType: 'GRID_WORKER', // GRID_WORKER=网格员, STAFF=社区工作人员
   gridId: null as number | null,
   status: 'ACTIVE',
+  // 组长保存管辖网格时，是否把该网格下在岗网格员一并划入其名下
+  autoAssignWorkers: false,
+})
+
+/** 当前编辑的是否为网格组长/网格长（与后端组长判定口径一致） */
+const isLeaderForm = computed(() => {
+  const pos = form.value.position || ''
+  return form.value.memberType === 'LEADER' || pos.includes('组长') || pos.includes('网格长')
 })
 
 const memberTypes = [
@@ -251,6 +276,25 @@ const positionOptions = computed(() => {
   if (form.value.memberType === 'LEADER') return ['组长', '网格长']
   return ['网格员', '组长', '网格长']
 })
+
+// 同步账号：把已有网格员/网格组长账号补录进组织人员表（不改变已绑定的网格）
+const syncing = ref(false)
+async function handleSyncFromUsers() {
+  syncing.value = true
+  try {
+    const res: any = await http.post('/community/org-members/sync-from-users')
+    if (res?.success === false) {
+      showMessage(res.message || '同步失败')
+    } else {
+      showMessage(res?.message || '同步完成')
+      await fetchData()
+    }
+  } catch (e: any) {
+    showMessage(e?.message || '同步失败')
+  } finally {
+    syncing.value = false
+  }
+}
 
 async function openAssign() {
   assignLeaderId.value = null
@@ -320,11 +364,12 @@ async function fetchGrids() {
 function closeModal() {
   showAdd.value = false
   showEdit.value = false
-  form.value = { id: null, name: '', phone: '', position: '', memberType: 'GRID_WORKER', gridId: null, status: 'ACTIVE' }
+  form.value = { id: null, name: '', phone: '', position: '', memberType: 'GRID_WORKER', gridId: null, status: 'ACTIVE', autoAssignWorkers: false }
 }
 
 function handleEdit(item: any) {
-  form.value = { ...item }
+  // autoAssignWorkers 是请求开关，不从列表数据回显，每次编辑默认不勾选
+  form.value = { ...item, autoAssignWorkers: false }
   showEdit.value = true
 }
 
@@ -342,10 +387,20 @@ async function handleDelete(item: any) {
 async function handleSubmit() {
   if (!form.value.name) { showMessage('请输入姓名'); return }
   if (form.value.memberType === 'GRID_WORKER' && !form.value.gridId) { showMessage('请选择所属小网格'); return }
+  // 组长绑定管辖网格并勾选「一并划分」时，会覆盖该网格下网格员的归属关系，先二次确认
+  const willAssign = isLeaderForm.value && !!form.value.gridId && form.value.autoAssignWorkers
+  if (willAssign) {
+    const gridName = grids.value.find(g => Number(g.id) === Number(form.value.gridId))?.gridName || '所选小网格'
+    if (!await confirmDialog({
+      message: `保存后将把「${gridName}」下全部在岗网格员划入「${form.value.name}」名下（原本挂在其他组长名下的会被改划），确认继续吗？`,
+      okText: '确认保存'
+    })) return
+  }
   try {
     if (showEdit.value && form.value.id) {
-      await http.put(`/community/org-members/${form.value.id}`, form.value)
-      showMessage('保存成功')
+      // 非组长不携带划分开关，避免误触发自动划分
+      await http.put(`/community/org-members/${form.value.id}`, { ...form.value, autoAssignWorkers: willAssign })
+      showMessage(willAssign ? '保存成功，该网格下的网格员已划入其名下' : '保存成功')
     } else {
       showMessage('请通过后台账号管理添加组织人员')
       return
