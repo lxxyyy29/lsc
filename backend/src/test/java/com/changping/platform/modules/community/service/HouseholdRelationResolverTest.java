@@ -53,8 +53,8 @@ class HouseholdRelationResolverTest {
         String anchor = "父亲"; // 新户主是原户主的父亲
         String oldHeadGender = "男";
         assertEquals("儿子", resolve("户主", true, anchor, oldHeadGender, "男"));
-        // 原户主的母亲 → 新户主的配偶（母亲）
-        assertEquals("母亲", resolve("母亲", false, anchor, oldHeadGender, "女"));
+        // 原户主的母亲与新户主（原户主父亲）互为配偶
+        assertEquals("配偶", resolve("母亲", false, anchor, oldHeadGender, "女"));
         // 原户主的配偶 → 新户主的儿媳
         assertEquals("儿媳", resolve("配偶", false, anchor, oldHeadGender, "女"));
         // 原户主的子女 → 新户主的孙辈
@@ -68,6 +68,9 @@ class HouseholdRelationResolverTest {
         assertEquals("兄弟", resolve("户主", true, anchor, "男", "男"));
         assertEquals("父亲", resolve("父亲", false, anchor, "男", "男"));
         assertEquals("侄子", resolve("儿子", false, anchor, "男", "男"));
+        // 旧户主的另一位兄弟/姐妹 → 新户主的兄弟/姐妹
+        assertEquals("兄弟", resolve("兄弟", false, anchor, "男", "男"));
+        assertEquals("姐妹", resolve("姐妹", false, anchor, "男", "女"));
     }
 
     /** 新户主当前 relation 可直接作为锚点关系；已是户主或为空时无法推断 */

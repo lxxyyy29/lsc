@@ -134,7 +134,7 @@ public final class HouseholdRelationResolver {
             }
             return OTHER;
         }
-        // 新户主是旧户主的父/母：旧户主配偶 → 儿媳/女婿；旧户主子女 → 孙辈；旧户主父母 → 父母
+        // 新户主是旧户主的父/母：旧户主配偶 → 儿媳/女婿；旧户主子女 → 孙辈；旧户主另一位父母 → 配偶
         if (PARENT.contains(anchor)) {
             if (SPOUSE.equals(existing)) {
                 return byGender(memberGender, SON_IN_LAW, DAUGHTER_IN_LAW);
@@ -142,18 +142,22 @@ public final class HouseholdRelationResolver {
             if (CHILD.contains(existing)) {
                 return byGender(memberGender, GRANDSON, GRANDDAUGHTER);
             }
+            // 新户主与成员同为旧户主的父/母（如新户主=父亲、成员=母亲），二者互为配偶
             if (PARENT.contains(existing)) {
-                return byGender(memberGender, FATHER, MOTHER);
+                return SPOUSE;
             }
             return OTHER;
         }
-        // 新户主是旧户主的兄弟姐妹：旧户主父母 → 父母；旧户主子女 → 侄辈
+        // 新户主是旧户主的兄弟姐妹：旧户主父母 → 父母；旧户主子女 → 侄辈；旧户主其他兄弟姐妹 → 兄弟姐妹
         if (SIBLING.contains(anchor)) {
             if (PARENT.contains(existing)) {
                 return byGender(memberGender, FATHER, MOTHER);
             }
             if (CHILD.contains(existing)) {
                 return byGender(memberGender, "侄子", "侄女");
+            }
+            if (SIBLING.contains(existing)) {
+                return byGender(memberGender, BROTHER, SISTER);
             }
             return OTHER;
         }
