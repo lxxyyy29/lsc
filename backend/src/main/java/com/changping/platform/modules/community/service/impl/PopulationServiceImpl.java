@@ -141,6 +141,10 @@ public class PopulationServiceImpl implements PopulationService {
         if (entity.getStatus() == null || entity.getStatus().isBlank()) {
             entity.setStatus("ACTIVE");
         }
+        // special_population 列为 NOT NULL DEFAULT 0，显式兜底避免调用方未传时报插入失败
+        if (entity.getSpecialPopulation() == null) {
+            entity.setSpecialPopulation(0);
+        }
         Long headHouseholdId = applyHousehold(entity, true);
         Long newId = populationMapper.insert(entity);
         if (headHouseholdId != null && newId != null) {
@@ -162,6 +166,11 @@ public class PopulationServiceImpl implements PopulationService {
         } else if (entity.getHouseholdId() == null && current != null) {
             // 编辑表单未携带所属户时保留原归属，避免全字段更新把 household_id 清空
             entity.setHouseholdId(current.getHouseholdId());
+        }
+        // special_population 为 NOT NULL，未传时沿用原值（无原值则 0）
+        if (entity.getSpecialPopulation() == null) {
+            entity.setSpecialPopulation(
+                    current != null && current.getSpecialPopulation() != null ? current.getSpecialPopulation() : 0);
         }
         Long headHouseholdId = applyHousehold(entity, false);
         boolean ok = populationMapper.update(entity) > 0;
