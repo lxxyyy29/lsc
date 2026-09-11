@@ -154,6 +154,9 @@ public class SystemUserService {
     @Transactional
     public UserDetail createUser(CreateUserRequest request) {
         validateCreateRequest(request);
+        // 手机号唯一索引 uk_sys_user_phone 不区分 deleted：先释放被历史软删除账号占用的同一手机号，
+        // 否则写入时会撞唯一索引抛 DuplicateKeyException，被全局异常兜底成 500「服务器内部错误」
+        releaseSoftDeletedPhone(request.phone());
         // 若存在同名软删除记录则复用该行（避免唯一索引冲突），按新账号重建
         Long softDeletedId = jdbcTemplate.query(
                 "SELECT id FROM sys_user WHERE username = ? AND deleted = 1",
@@ -259,6 +262,8 @@ public class SystemUserService {
     public UserDetail updateUser(Long userId, UpdateUserRequest request) {
         UserRecord existing = requireUser(userId);
         validateUpdateRequest(request, userId, existing.phone());
+        // 同 createUser：释放被历史软删除账号占用的同一手机号，避免撞唯一索引报 500
+        releaseSoftDeletedPhone(request.phone());
         jdbcTemplate.update(
                 "UPDATE sys_user SET username = ?, real_name = ?, phone = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                 request.username().trim(),
@@ -489,6 +494,22 @@ public class SystemUserService {
         if (count != null && count > 0) {
             throw new BusinessException("SYSTEM_USER_PHONE_EXISTS", "手机号已被其他账号使用");
         }
+    }
+
+    /**
+     * 释放被「软删除」账号占用的手机号（置 NULL）。
+     * sys_user 的 uk_sys_user_phone 唯一索引不区分 deleted 标记，历史删除过的账号仍会占用手机号，
+     * 导致新增/修改账号时撞唯一索引抛 DuplicateKeyException，最终被全局异常兜底成 500「服务器内部错误」。
+     * 账号既然已逻辑删除，其手机号应可回收使用。
+     */
+    private void releaseSoftDeletedPhone(String phone) {
+        String normalized = normalizeNullable(phone);
+        if (normalized == null) {
+            return;
+        }
+        jdbcTemplate.update(
+                "UPDATE sys_user SET phone = NULL, updated_at = CURRENT_TIMESTAMP WHERE phone = ? AND deleted = 1",
+                normalized);
     }
 
     /**
