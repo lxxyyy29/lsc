@@ -20,6 +20,7 @@ backend/src/main/resources/application-local.yml
 node_modules/
 # pnpm 缓存目录（corepack 可能在项目根生成 .pnpm-store，可再生，勿入库）
 .pnpm-store/
+.npm-cache/
 web/node_modules/
 web/dist/
 web/dist.zip
