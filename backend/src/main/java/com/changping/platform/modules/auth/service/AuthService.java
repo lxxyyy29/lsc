@@ -112,6 +112,17 @@ public class AuthService {
      */
     @Transactional(readOnly = true)
     public LoginResponse loginByPhone(String phone) {
+        return loginByPhone(phone, null);
+    }
+
+    /**
+     * 手机号登录（可指定客户端类型）。
+     * forceClientType 为 null 时按角色自动判定；非 null 时忽略角色判定、强制使用该类型。
+     * 目前用于「微信一键登录固定作为居民入口」：手机号若恰好也是网格员账号，
+     * 自动判定会签发 H5 令牌，进入居民端后 /resident/** 会被 AUTH_CLIENT_TYPE_FORBIDDEN 拦截。
+     */
+    @Transactional(readOnly = true)
+    public LoginResponse loginByPhone(String phone, ClientType forceClientType) {
         UserRecord user = loadUserByPhone(phone);
         validateUserStatus(user);
 
@@ -119,9 +130,11 @@ public class AuthService {
         List<String> permissionCodes = loadPermissionCodes(user.id(), user.legacyRoleId());
 
         // 按角色决定客户端类型：拥有 H5 入口权限（menu:h5:workbench:view / menu:h5:workorder:list）视为网格员，走 H5；
-        // 否则视为居民，走 WEB
+        // 否则视为居民，走 WEB。forceClientType 非空时以调用方指定为准。
         boolean isGridWorker = permissionCodes.stream().anyMatch(H5_ENTRY_PERMISSIONS::contains);
-        ClientType clientType = isGridWorker ? ClientType.H5 : ClientType.WEB;
+        ClientType clientType = forceClientType != null
+                ? forceClientType
+                : (isGridWorker ? ClientType.H5 : ClientType.WEB);
 
         AuthenticatedUser authenticatedUser = new AuthenticatedUser(
                 user.id(),

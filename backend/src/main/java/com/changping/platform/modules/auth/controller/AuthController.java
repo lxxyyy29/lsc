@@ -203,13 +203,15 @@ public class AuthController {
             return ApiResponse.fail("WECHAT_PHONE_INVALID", "微信返回的手机号无效");
         }
         try {
-            return ApiResponse.ok(authService.loginByPhone(phone));
+            // 微信一键登录定位为「居民入口」：强制按 WEB（居民）签发令牌。
+            // 否则手机号恰好是网格员账号时会签发 H5 令牌，跳居民端后 /resident/** 会被客户端类型校验拦截。
+            return ApiResponse.ok(authService.loginByPhone(phone, AuthService.ClientType.WEB));
         } catch (BusinessException e) {
             // 居民免注册：授权手机号未绑定账号时，自动开通居民账号（PUBLIC 角色）再登录
             if ("AUTH_INVALID_CREDENTIALS".equals(e.getCode())) {
                 try {
                     autoCreatePublicUser(phone);
-                    return ApiResponse.ok(authService.loginByPhone(phone));
+                    return ApiResponse.ok(authService.loginByPhone(phone, AuthService.ClientType.WEB));
                 } catch (Exception autoEx) {
                     return ApiResponse.fail("WECHAT_AUTO_REGISTER_FAILED", "微信登录自动开通失败：" + autoEx.getMessage());
                 }
