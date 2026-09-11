@@ -148,14 +148,18 @@
                 <!-- 身份证号：输入后自动推算出生日期(年龄)与性别 -->
                 <el-input v-else-if="isKey(f, 'idCard')" v-model="form.idCard" placeholder="请输入身份证号（自动推算年龄和性别）"
                           @input="autoFillByIdCard" />
-                <!-- 通用下拉（含网格） -->
-                <el-select v-else-if="f.fieldType === 'select'" v-model="form[camel(f.fieldKey)]" placeholder="请选择" style="width:100%;">
+                <!-- 通用下拉（含网格、性别）：性别由身份证推算，只读 -->
+                <el-select v-else-if="f.fieldType === 'select'" v-model="form[camel(f.fieldKey)]"
+                           :placeholder="isComputedField(f) ? '根据身份证号自动计算' : '请选择'"
+                           :disabled="isComputedField(f)" style="width:100%;">
                   <el-option v-for="opt in selectOptions(f)" :key="opt.value" :label="opt.label" :value="opt.value" />
                 </el-select>
                 <!-- 文本域 -->
                 <el-input v-else-if="f.fieldType === 'textarea'" v-model="form[camel(f.fieldKey)]" type="textarea" :rows="2" placeholder="选填" />
-                <!-- 通用输入 -->
-                <el-input v-else v-model="form[camel(f.fieldKey)]" :placeholder="'请输入' + f.fieldLabel" />
+                <!-- 通用输入（年龄由身份证推算，只读） -->
+                <el-input v-else v-model="form[camel(f.fieldKey)]"
+                          :placeholder="isComputedField(f) ? '根据身份证号自动计算' : '请输入' + f.fieldLabel"
+                          :disabled="isComputedField(f)" />
               </el-form-item>
             </el-col>
           </template>
@@ -355,6 +359,11 @@ function isKey(f: any, key: string) {
 function isFullField(f: any) {
   return ['address', 'gridId', 'remark'].includes(camel(f.fieldKey))
 }
+// 由身份证号自动推算的字段：只读展示，不允许手工填写
+const COMPUTED_FIELDS = ['gender', 'age']
+function isComputedField(f: any) {
+  return COMPUTED_FIELDS.includes(camel(f.fieldKey))
+}
 
 // 字段配置器数据
 const configFields = ref<any[]>([])
@@ -366,6 +375,13 @@ const formFields = computed(() => {
   if (relIdx > -1 && spIdx > -1 && relIdx > spIdx) {
     const [rel] = enabled.splice(relIdx, 1)
     enabled.splice(spIdx, 0, rel)
+  }
+  // 身份证号排在性别/年龄之前：后两者由身份证自动推算（只读），先填身份证才看得到结果
+  const idCardIdx = enabled.findIndex(f => isKey(f, 'idCard'))
+  const computedIdx = enabled.findIndex(f => COMPUTED_FIELDS.includes(camel(f.fieldKey)))
+  if (idCardIdx > -1 && computedIdx > -1 && idCardIdx > computedIdx) {
+    const [idCardField] = enabled.splice(idCardIdx, 1)
+    enabled.splice(computedIdx, 0, idCardField)
   }
   return enabled
 })
@@ -396,7 +412,8 @@ const formRef = ref<any>()
 const formRules = computed<Record<string, any>>(() => {
   const rules: Record<string, any> = {}
   for (const f of formFields.value) {
-    if (f.required == 1) {
+    // 性别/年龄由身份证自动推算且只读，不参与必填校验（用户无法填写）
+    if (f.required == 1 && !isComputedField(f)) {
       const key = String(camel(f.fieldKey))
       rules[key] = f.fieldType === 'select'
         ? { required: true, message: '请选择' + f.fieldLabel, trigger: 'change' }
@@ -512,6 +529,14 @@ function autoFillByIdCard() {
   } else if (/^\d{15}$/.test(id)) {
     birth = '19' + id.slice(6, 12) // 15位：YYMMDD，出生年前补 19
     genderDigit = id.charAt(14)
+  } else {
+    // 身份证被清空时同步清空推算结果，避免旧值残留（输入中途不清空）
+    if (!id) {
+      form.value.gender = ''
+      form.value.age = null
+      form.value.birthday = ''
+    }
+    return
   }
   if (genderDigit && /^\d$/.test(genderDigit)) {
     form.value.gender = Number(genderDigit) % 2 === 1 ? '男' : '女'
