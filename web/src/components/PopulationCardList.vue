@@ -12,6 +12,7 @@ interface Person {
   relation?: string
   specialPopulation?: number
   specialPopulationType?: string
+  isPartyMember?: number
   remark?: string
   age?: number
   idCard?: string
@@ -60,6 +61,8 @@ const view = computed(() =>
       address: head?.address || h.address || members[0]?.address || '-',
       count: members.length,
       hasOwner: !!head || members.some((m: Person) => m.relation === '户主'),
+      // 户头显示的可能是户主，也可能是首位成员，取同一个人的党员标记
+      headIsParty: ((head || members[0]) as Person | undefined)?.isPartyMember === 1,
       headColor: OWNER_COLOR,
       members,
       // 原始后端户节点：变更户主/新增成员需要真实 householdId
@@ -103,6 +106,7 @@ function toggle(id: string | number) {
           <div class="hh-name-row">
             <span class="hh-name">{{ hh.name }}</span>
             <span v-if="hh.hasOwner" class="tag tag-owner">户主</span>
+            <span v-if="hh.headIsParty" class="tag tag-party">党员</span>
             <span v-if="hh.gridName && hh.gridName !== '-'" class="tag tag-grid">{{ hh.gridName }}</span>
           </div>
           <div class="hh-meta">
@@ -145,6 +149,7 @@ function toggle(id: string | number) {
                   <span class="who">{{ m.name || '-' }}</span>
                   <span v-if="m.relation === '户主'" class="rel-chip owner">户主</span>
                   <span v-else-if="m.relation" class="rel-chip">{{ m.relation }}</span>
+                  <span v-if="m.isPartyMember === 1" class="rel-chip party">党员</span>
                 </div>
               </td>
               <td>{{ m.gender || '-' }}</td>
@@ -264,6 +269,11 @@ function toggle(id: string | number) {
   background: #f1efe8;
   color: #854f0b;
 }
+.tag-party {
+  background: #fff7e6;
+  color: #ad6800;
+  border: 0.5px solid #ffd591;
+}
 .hh-meta {
   display: flex;
   align-items: center;
@@ -359,6 +369,11 @@ function toggle(id: string | number) {
   background: #fde8e8;
   color: #a32d2d;
   border: 0.5px solid #f09595;
+}
+.rel-chip.party {
+  background: #fff7e6;
+  color: #ad6800;
+  border: 0.5px solid #ffd591;
 }
 .masked {
   color: #6b7280;

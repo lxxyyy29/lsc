@@ -42,6 +42,9 @@ public class PopulationEntity {
     /** 特殊人群类型（预置+自定义，逗号分隔） */
     private String specialPopulationType;
 
+    /** 是否党员 0否1是（勾选后按手机号匹配系统账号，匹配到即自动在 sys_party_member 建档） */
+    private Integer isPartyMember;
+
     /** 与户主关系（户主/妻/长子/女等） */
     private String relation;
 

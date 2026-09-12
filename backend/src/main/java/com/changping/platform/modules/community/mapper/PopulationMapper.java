@@ -29,6 +29,7 @@ public class PopulationMapper {
         entity.setHouseholdType(rs.getString("household_type"));
         entity.setSpecialPopulation(rs.getObject("special_population") != null ? rs.getInt("special_population") : null);
         entity.setSpecialPopulationType(rs.getString("special_population_type"));
+        entity.setIsPartyMember(rs.getObject("is_party_member") != null ? rs.getInt("is_party_member") : null);
         entity.setRelation(rs.getString("relation"));
         entity.setAddress(rs.getString("address"));
         entity.setBuildingNo(rs.getString("building_no"));
@@ -208,12 +209,14 @@ public class PopulationMapper {
     }
 
     public Long insert(PopulationEntity entity) {
-        String sql = "INSERT INTO cmn_population (grid_id, household_id, name, id_card, phone, gender, age, birthday, household_type, special_population, special_population_type, relation, address, building_no, room_no, tags, photo_url, status, remark, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+        String sql = "INSERT INTO cmn_population (grid_id, household_id, name, id_card, phone, gender, age, birthday, household_type, special_population, special_population_type, is_party_member, relation, address, building_no, room_no, tags, photo_url, status, remark, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
         jdbcTemplate.update(sql,
                 entity.getGridId(), entity.getHouseholdId(), entity.getName(), entity.getIdCard(),
                 entity.getPhone(), entity.getGender(), entity.getAge(),
                 entity.getBirthday(), entity.getHouseholdType(),
-                entity.getSpecialPopulation(), entity.getSpecialPopulationType(), entity.getRelation(),
+                entity.getSpecialPopulation(), entity.getSpecialPopulationType(),
+                entity.getIsPartyMember() != null ? entity.getIsPartyMember() : 0,
+                entity.getRelation(),
                 entity.getAddress(), entity.getBuildingNo(), entity.getRoomNo(),
                 entity.getTags(), entity.getPhotoUrl(),
                 entity.getStatus(), entity.getRemark());
@@ -221,12 +224,14 @@ public class PopulationMapper {
     }
 
     public int update(PopulationEntity entity) {
-        String sql = "UPDATE cmn_population SET grid_id = ?, household_id = ?, name = ?, id_card = ?, phone = ?, gender = ?, age = ?, birthday = ?, household_type = ?, special_population = ?, special_population_type = ?, relation = ?, address = ?, building_no = ?, room_no = ?, tags = ?, photo_url = ?, status = ?, remark = ?, updated_at = NOW() WHERE id = ?";
+        String sql = "UPDATE cmn_population SET grid_id = ?, household_id = ?, name = ?, id_card = ?, phone = ?, gender = ?, age = ?, birthday = ?, household_type = ?, special_population = ?, special_population_type = ?, is_party_member = ?, relation = ?, address = ?, building_no = ?, room_no = ?, tags = ?, photo_url = ?, status = ?, remark = ?, updated_at = NOW() WHERE id = ?";
         return jdbcTemplate.update(sql,
                 entity.getGridId(), entity.getHouseholdId(), entity.getName(), entity.getIdCard(),
                 entity.getPhone(), entity.getGender(), entity.getAge(),
                 entity.getBirthday(), entity.getHouseholdType(),
-                entity.getSpecialPopulation(), entity.getSpecialPopulationType(), entity.getRelation(),
+                entity.getSpecialPopulation(), entity.getSpecialPopulationType(),
+                entity.getIsPartyMember() != null ? entity.getIsPartyMember() : 0,
+                entity.getRelation(),
                 entity.getAddress(), entity.getBuildingNo(), entity.getRoomNo(),
                 entity.getTags(), entity.getPhotoUrl(),
                 entity.getStatus(), entity.getRemark(),

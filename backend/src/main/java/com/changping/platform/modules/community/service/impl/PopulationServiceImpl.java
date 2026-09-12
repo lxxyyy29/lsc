@@ -8,6 +8,7 @@ import com.changping.platform.modules.community.mapper.PopulationMapper;
 import com.changping.platform.modules.community.service.HouseholdRelationResolver;
 import com.changping.platform.modules.community.service.PopulationService;
 import com.changping.platform.modules.community.vo.PopulationTreeVo;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,10 +24,13 @@ public class PopulationServiceImpl implements PopulationService {
 
     private final PopulationMapper populationMapper;
     private final HouseholdMapper householdMapper;
+    private final JdbcTemplate jdbcTemplate;
 
-    public PopulationServiceImpl(PopulationMapper populationMapper, HouseholdMapper householdMapper) {
+    public PopulationServiceImpl(PopulationMapper populationMapper, HouseholdMapper householdMapper,
+                                 JdbcTemplate jdbcTemplate) {
         this.populationMapper = populationMapper;
         this.householdMapper = householdMapper;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
@@ -150,6 +154,7 @@ public class PopulationServiceImpl implements PopulationService {
         if (headHouseholdId != null && newId != null) {
             householdMapper.updateHead(headHouseholdId, newId);
         }
+        syncPartyMember(entity);
         return true;
     }
 
@@ -172,10 +177,18 @@ public class PopulationServiceImpl implements PopulationService {
             entity.setSpecialPopulation(
                     current != null && current.getSpecialPopulation() != null ? current.getSpecialPopulation() : 0);
         }
+        // is_party_member 同理：编辑表单未携带时沿用原值，避免把党员标记误清为 0
+        if (entity.getIsPartyMember() == null) {
+            entity.setIsPartyMember(
+                    current != null && current.getIsPartyMember() != null ? current.getIsPartyMember() : 0);
+        }
         Long headHouseholdId = applyHousehold(entity, false);
         boolean ok = populationMapper.update(entity) > 0;
         if (ok && headHouseholdId != null) {
             householdMapper.updateHead(headHouseholdId, entity.getId());
+        }
+        if (ok) {
+            syncPartyMember(entity);
         }
         return ok;
     }
@@ -196,6 +209,41 @@ public class PopulationServiceImpl implements PopulationService {
             }
         }
         return ok;
+    }
+
+    /**
+     * 党员标记 → 智慧党建联动。
+     * 勾选「党员」时按手机号匹配系统账号：匹配到则在 sys_party_member 建档（幂等，已存在则激活并补网格），
+     * 匹配不到（居民多数尚无系统账号）仅保留人口库标记，不阻塞保存。
+     * 取消勾选只清除人口库标记，不动党建侧档案，避免误删党建人工维护的党支部/入党日期等数据。
+     */
+    private void syncPartyMember(PopulationEntity entity) {
+        if (entity == null || !Integer.valueOf(1).equals(entity.getIsPartyMember())) {
+            return;
+        }
+        String phone = entity.getPhone() == null ? "" : entity.getPhone().trim();
+        if (phone.isEmpty()) {
+            return;
+        }
+        List<Long> userIds = jdbcTemplate.queryForList(
+                "SELECT id FROM sys_user WHERE phone = ? AND deleted = 0 ORDER BY id LIMIT 1",
+                Long.class, phone);
+        if (userIds.isEmpty()) {
+            return;
+        }
+        Long userId = userIds.get(0);
+        Integer exists = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM sys_party_member WHERE user_id = ?", Integer.class, userId);
+        if (exists != null && exists > 0) {
+            jdbcTemplate.update(
+                    "UPDATE sys_party_member SET status = 'ACTIVE', grid_id = COALESCE(grid_id, ?), updated_at = NOW() WHERE user_id = ?",
+                    entity.getGridId(), userId);
+            return;
+        }
+        jdbcTemplate.update(
+                "INSERT INTO sys_party_member (user_id, party_branch, join_date, grid_id, status, created_at, updated_at) "
+                        + "VALUES (?, NULL, NULL, ?, 'ACTIVE', NOW(), NOW())",
+                userId, entity.getGridId());
     }
 
     /**

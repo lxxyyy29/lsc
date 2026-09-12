@@ -81,7 +81,7 @@ public class PopulationController {
             headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-            String[] headers = {"序号", "姓名", "性别", "年龄", "出生日期", "身份证号", "联系电话", "户籍类型", "特殊人群", "特殊人群类型", "与户主关系", "居住地址", "楼栋/房号", "所属网格", "备注", "登记时间"};
+            String[] headers = {"序号", "姓名", "性别", "年龄", "出生日期", "身份证号", "联系电话", "户籍类型", "特殊人群", "特殊人群类型", "党员", "与户主关系", "居住地址", "楼栋/房号", "所属网格", "备注", "登记时间"};
             Row headerRow = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) {
                 Cell c = headerRow.createCell(i);
@@ -102,13 +102,14 @@ public class PopulationController {
                         ? HOUSEHOLD_LABELS.getOrDefault(p.getHouseholdType(), p.getHouseholdType()) : "");
                 row.createCell(8).setCellValue(p.getSpecialPopulation() != null && p.getSpecialPopulation() == 1 ? "是" : "否");
                 row.createCell(9).setCellValue(nvl(p.getSpecialPopulationType()));
-                row.createCell(10).setCellValue(nvl(p.getRelation()));
-                row.createCell(11).setCellValue(nvl(p.getAddress()));
+                row.createCell(10).setCellValue(p.getIsPartyMember() != null && p.getIsPartyMember() == 1 ? "是" : "否");
+                row.createCell(11).setCellValue(nvl(p.getRelation()));
+                row.createCell(12).setCellValue(nvl(p.getAddress()));
                 String room = (nvl(p.getBuildingNo()) + (p.getRoomNo() != null ? "-" + p.getRoomNo() : "")).trim();
-                row.createCell(12).setCellValue(room.isEmpty() ? "-" : room);
-                row.createCell(13).setCellValue(nvl(p.getGridName()));
-                row.createCell(14).setCellValue(nvl(p.getRemark()));
-                row.createCell(15).setCellValue(p.getCreatedAt() != null ? p.getCreatedAt().toString().replace('T', ' ') : "");
+                row.createCell(13).setCellValue(room.isEmpty() ? "-" : room);
+                row.createCell(14).setCellValue(nvl(p.getGridName()));
+                row.createCell(15).setCellValue(nvl(p.getRemark()));
+                row.createCell(16).setCellValue(p.getCreatedAt() != null ? p.getCreatedAt().toString().replace('T', ' ') : "");
                 rn++;
             }
             for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);

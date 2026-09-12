@@ -73,7 +73,10 @@
           </tr></thead>
           <tbody>
             <tr v-for="p in list" :key="p.id">
-              <td>{{ p.name }}</td>
+              <td>
+                {{ p.name }}
+                <span v-if="p.isPartyMember === 1" class="party-chip">党员</span>
+              </td>
               <td>{{ p.gender || '-' }}</td>
               <td>{{ p.age != null ? p.age : '-' }}</td>
               <td>{{ p.phone || '-' }}</td>
@@ -114,6 +117,9 @@
                 <!-- 特殊人群勾选 -->
                 <el-checkbox v-if="isKey(f, 'specialPopulation')" v-model="form.specialPopulation"
                              :true-value="1" :false-value="0" @change="onSpecialChange">是特殊人群</el-checkbox>
+                <!-- 通用勾选（如「党员」）：按字段配置的 checkbox 类型渲染 -->
+                <el-checkbox v-else-if="f.fieldType === 'checkbox'" v-model="form[camel(f.fieldKey)]"
+                             :true-value="1" :false-value="0">{{ f.fieldLabel }}</el-checkbox>
                 <!-- 特殊人群类型（勾选后显示；自定义...为显式入口） -->
                 <template v-else-if="isKey(f, 'specialPopulationType') && form.specialPopulation == 1">
                   <el-select v-if="!customEditing['specialPopulationType']"
@@ -400,7 +406,7 @@ const emptyForm = () => ({
   id: null as number | null,
   householdId: null as number | null,
   name: '', gender: '', age: null as number | null, phone: '', idCard: '', birthday: '',
-  householdType: '', specialPopulation: 0, specialPopulationType: '', relation: '',
+  householdType: '', specialPopulation: 0, specialPopulationType: '', isPartyMember: 0, relation: '',
   address: '', buildingNo: '', roomNo: '',
   gridId: null as number | null, remark: '',
   status: 'ACTIVE',
@@ -658,6 +664,7 @@ function openEdit(p: any) {
     householdType: p.householdType || '',
     specialPopulation: p.specialPopulation || 0,
     specialPopulationType: p.specialPopulationType || '',
+    isPartyMember: p.isPartyMember || 0,
     relation: p.relation || '',
     address: p.address || '', buildingNo: p.buildingNo || '', roomNo: p.roomNo || '',
     gridId: p.gridId || null, remark: p.remark || '',
@@ -913,5 +920,17 @@ onMounted(() => {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 4px 8px 0;
+}
+/* 「党员」标识（流动人口表格） */
+.party-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.5;
+  background: #fff7e6;
+  color: #ad6800;
+  border: 0.5px solid #ffd591;
 }
 </style>
