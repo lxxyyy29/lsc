@@ -75,10 +75,14 @@ export function getSourceSystemName(system: string): string {
   return SOURCE_SYSTEM_LABELS[system] || system
 }
 
-// 户籍类型中英文映射
+// 户籍类型中英文映射（与后端 PopulationController.HOUSEHOLD_LABELS 保持一致）
 export const HOUSEHOLD_TYPES: Record<string, string> = {
   LOCAL: '本地户籍',
   NON_LOCAL: '外地户籍',
+  FLOATING: '流动人口',
+  LOW_INCOME: '低保户',
+  SPECIAL_CARE: '优抚对象',
+  OTHER: '其他',
 };
 
 /**

@@ -136,7 +136,7 @@ export async function getEvents(params?: { page?: number; size?: number; status?
 }
 
 // 四类工单工作台：closed-loop 事件闭环处置 / audit 事件审核 / completed 已完成工单 / abnormal 异常工单
-export async function getEventSectionEvents(section: string, params?: { page?: number; size?: number; status?: string; workOrderStatus?: string; urgencyLevel?: string; sourceSystem?: string; startDate?: string; endDate?: string }) {
+export async function getEventSectionEvents(section: string, params?: { page?: number; size?: number; status?: string; workOrderStatus?: string; urgencyLevel?: string; sourceSystem?: string; searchKey?: string; startDate?: string; endDate?: string }) {
   return http.get(`/events/sections/${section}`, { params: { page: 1, size: 20, ...params } })
 }
 
@@ -157,6 +157,10 @@ export async function uploadEventImage(file: File) {
   const formData = new FormData()
   formData.append('file', file)
   return http.post('/media/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+}
+
+export async function updateEventUrgency(id: number, urgencyLevel: 'GREEN' | 'YELLOW' | 'RED') {
+  return http.put(`/events/${id}/urgency`, { urgencyLevel })
 }
 
 export async function closeEvent(id: number, reason: string) {

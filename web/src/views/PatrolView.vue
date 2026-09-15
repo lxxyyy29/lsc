@@ -60,7 +60,12 @@
 
     <!-- 巡查记录 -->
     <div class="card" style="margin-top:20px;">
-      <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">巡查记录</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <h3 style="font-size:14px;font-weight:600;margin:0;">巡查记录</h3>
+        <button @click="handleMarkOverdue" :disabled="marking" class="filter-action ghost">
+          <i class="fas fa-clock"></i> {{ marking ? '标记中...' : '标记超期' }}
+        </button>
+      </div>
       <table class="table">
         <thead><tr><th>网格</th><th>巡查员</th><th>类型</th><th>内容</th><th>时间</th></tr></thead>
         <tbody>
@@ -81,11 +86,33 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { getPatrolRecords, getGridTree } from '../api'
+import { getPatrolRecords, getGridTree, markOverduePatrolTasks } from '../api'
+import { showMessage } from '../utils/message'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
 const records = ref<any[]>([])
 const error = ref('')
+const marking = ref(false)
+
+// 标记超期任务：把计划日期已过、仍为「待完成」的巡查任务置为超期。
+// 此前后端 /community/patrol-tasks/mark-overdue 已存在，但前端没有任何入口，用户无法触发。
+async function handleMarkOverdue() {
+  marking.value = true
+  try {
+    const result: any = await markOverduePatrolTasks()
+    const count = typeof result === 'number' ? result : Number(result?.data ?? result ?? 0)
+    if (count > 0) {
+      showMessage(`已标记 ${count} 个超期任务`, 'success')
+      await loadRecords()
+    } else {
+      showMessage('当前没有需要标记的超期任务', 'warning')
+    }
+  } catch (e: any) {
+    showMessage(e?.message || '标记超期失败')
+  } finally {
+    marking.value = false
+  }
+}
 
 // ============ 巡查轨迹地图 ============
 const trackUser = ref('')

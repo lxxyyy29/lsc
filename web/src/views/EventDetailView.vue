@@ -34,6 +34,7 @@
             <div><span style="color:#9ca3af;">所属网格：</span>{{ event.gridName || '-' }}</div>
             <div><span style="color:#9ca3af;">上报人：</span>{{ event.reportUserName || '-' }}<span v-if="event.reportSource" style="color:#9ca3af;margin-left:4px;">（{{ getReportSourceName(event.reportSource) }}）</span></div>
             <div v-if="event.reportPhone"><span style="color:#9ca3af;">联系电话：</span>{{ event.reportPhone }}</div>
+            <div><span style="color:#9ca3af;">当前受派人：</span>{{ event.assigneeName || '尚未派单' }}</div>
             <div><span style="color:#9ca3af;">来源系统：</span>{{ getSourceSystemName(event.sourceSystem) }}</div>
             <div v-if="event.deleted === 1" style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6;">
               <span style="color:#9ca3af;">删除原因：</span>{{ event.deletedReason || '-' }}

@@ -136,9 +136,10 @@
                 <el-select v-else-if="isKey(f, 'householdType')" v-model="form.householdType" placeholder="请选择" style="width:100%;">
                   <el-option v-for="t in residentHouseholdTypes" :key="t.value" :label="t.label" :value="t.value" />
                 </el-select>
-                <!-- 出生日期 -->
+                <!-- 出生日期：由身份证自动推算，与性别/年龄保持一致只读，避免手工值与身份证不一致 -->
                 <el-date-picker v-else-if="f.fieldType === 'date'" v-model="form.birthday" type="date"
-                                value-format="YYYY-MM-DD" placeholder="选择出生日期" style="width:100%;" @change="autoFillAge" />
+                                value-format="YYYY-MM-DD" placeholder="填写身份证后自动带出" style="width:100%;"
+                                disabled @change="autoFillAge" />
                 <!-- 与户主关系（自定义...为显式入口） -->
                 <template v-else-if="isKey(f, 'relation')">
                   <el-select v-if="!customEditing['relation']"
@@ -321,10 +322,14 @@ const populationTabs = [
 const activeTab = ref<'RESIDENT' | 'FLOATING'>('RESIDENT')
 const isResidentTab = computed(() => activeTab.value === 'RESIDENT')
 
-// 户籍类型选项（常驻专用；流动库取消），与后端 PopulationController.HOUSEHOLD_LABELS 保持一致（FLOATING 属流动人口，不列入常驻选项）
+// 户籍类型选项（常驻专用；流动库取消），与后端 PopulationController.HOUSEHOLD_LABELS 保持一致。
+// 注意：必须覆盖库中实际出现过的全部枚举，否则编辑历史数据时 el-select 匹配不到会原样显示英文代码。
 const residentHouseholdTypes = [
   { value: 'LOCAL', label: '本地户籍' },
   { value: 'NON_LOCAL', label: '外地户籍' },
+  { value: 'LOW_INCOME', label: '低保户' },
+  { value: 'SPECIAL_CARE', label: '优抚对象' },
+  { value: 'OTHER', label: '其他' },
 ]
 
 // 特殊人群类型预置 + 自定义

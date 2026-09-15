@@ -372,10 +372,14 @@ public class EventServiceImpl implements EventService {
             default -> throw new BusinessException("INVALID_PARAM", "不支持的工单分类: " + section);
         }
 
-        // 通用过滤：非异常分类均排除已删除与已归档事件
+        // 通用过滤：非异常分类排除已删除事件；已归档过滤仅用于「进行中」的分类。
+        // 「已完成工单」展示的本就是办理完结的事件，而办结/关闭时会把 archived 置 1，
+        // 若这里再按 archived=0 过滤，会把已完成事件全部挡掉（表现为「已完成的工单不显示」）。
         if (!"abnormal".equals(section)) {
             where.add("e.deleted = 0");
-            where.add("COALESCE(e.archived, 0) = 0");
+            if (!"completed".equals(section)) {
+                where.add("COALESCE(e.archived, 0) = 0");
+            }
         }
         if (status != null && !status.isBlank()) {
             where.add("e.status = ?");
@@ -682,7 +686,8 @@ public class EventServiceImpl implements EventService {
                 entity.getArchived() != null && entity.getArchived() == 1,
                 Boolean.TRUE.equals(document.getHidden()),
                 entity.getDeleted() != null && entity.getDeleted() == 1,
-                entity.getDeletedReason());
+                entity.getDeletedReason(),
+                resolveAssigneeName(entity.getId()));
     }
 
     /**
@@ -732,7 +737,10 @@ public class EventServiceImpl implements EventService {
                 entity != null && entity.getArchived() != null && entity.getArchived() == 1,
                 Boolean.TRUE.equals(document.getHidden()),
                 entity != null && entity.getDeleted() != null && entity.getDeleted() == 1,
-                entity == null ? null : entity.getDeletedReason());
+                entity == null ? null : entity.getDeletedReason(),
+                // 本方法按文档列表逐条投影，逐条查询受派人会产生 N+1，故此处不填充；
+                // 需要「当前受派人」请走事件详情接口，或 /events/sections/* 列表（已含 assigneeName）。
+                null);
     }
 
     /**
@@ -893,7 +901,22 @@ public class EventServiceImpl implements EventService {
                 entity.getArchived() != null && entity.getArchived() == 1,
                 entity.getHidden() != null && entity.getHidden() == 1,
                 entity.getDeleted() != null && entity.getDeleted() == 1,
-                entity.getDeletedReason());
+                entity.getDeletedReason(),
+                resolveAssigneeName(entity.getId()));
+    }
+
+    /**
+     * 查询事件「当前跟进的受派人」：取该事件最新一张工单的受派人姓名。
+     * 事件尚未派单时返回 null，前端据此展示为「尚未派单」。
+     */
+    private String resolveAssigneeName(Long eventId) {
+        if (eventId == null) {
+            return null;
+        }
+        List<String> names = jdbcTemplate.queryForList(
+                "SELECT wo.assignee_name FROM biz_work_order wo WHERE wo.source_event_id = ? ORDER BY wo.id DESC LIMIT 1",
+                String.class, eventId);
+        return names.isEmpty() ? null : names.get(0);
     }
 
     /**
@@ -1436,6 +1459,10 @@ public class EventServiceImpl implements EventService {
             case "DISPATCHED_TO_WORK_ORDER" -> "已派单";
             case "CLOSED" -> "已关闭";
             case "IGNORED" -> "已忽略";
+            // 超期升级督办记录的 to_status 存的是紧急程度，一并中文化，避免时间轴出现英文
+            case "GREEN" -> "一般";
+            case "YELLOW" -> "重点";
+            case "RED" -> "紧急";
             default -> status;
         };
     }

@@ -44,7 +44,9 @@ public record EventDetailVo(
         Boolean archived,
         Boolean hidden,
         Boolean deleted,
-        String deletedReason) {
+        String deletedReason,
+        /** 当前跟进的受派人：取该事件最新一张工单的受派人，未派单时为空 */
+        String assigneeName) {
 
     @JsonProperty
     public String statusLabel() {

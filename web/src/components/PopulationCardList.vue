@@ -44,7 +44,8 @@ const membersOf = (h: any): Person[] =>
 // 户籍类型展示翻译
 const HH_TYPE: Record<string, string> = {
   LOCAL: '本地户籍', NON_LOCAL: '外地户籍',
-  FLOATING: '流动', MIGRANT: '流动', LOW_INCOME: '低收入',
+  FLOATING: '流动', MIGRANT: '流动',
+  LOW_INCOME: '低保户', SPECIAL_CARE: '优抚对象', OTHER: '其他',
 }
 const hhTypeLabel = (t?: string) => (t ? HH_TYPE[t] || t : '-')
 const hhTypeClass = (t?: string) => (t === 'LOCAL' ? 'pop-tag-amber' : 'pop-tag-green')

@@ -16,6 +16,8 @@
     <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column;margin-bottom:0;">
       <!-- 筛选栏 -->
       <div class="filter-bar" style="flex-shrink:0;">
+        <input v-model="filters.searchKey" class="filter-input" style="width:220px;"
+               placeholder="搜索事件编号 / 标题" @keyup.enter="page = 1; loadData()" />
         <select v-model="filters.status" class="filter-select" @change="page = 1; loadData()">
           <option value="">全部状态</option>
           <option value="PENDING_AUDIT">待审核</option>
@@ -43,7 +45,7 @@
           end-placeholder="结束日期"
           value-format="YYYY-MM-DD"
         />
-        <button @click="loadData" class="filter-action"><i class="fas fa-search"></i> 查询</button>
+        <button @click="page = 1; loadData()" class="filter-action"><i class="fas fa-search"></i> 查询</button>
       </div>
 
       <!-- 加载中 -->
@@ -91,9 +93,20 @@
                 </span>
               </td>
               <td>
-                <span :class="['tag', e.urgencyLevel === 'RED' ? 'tag-red' : e.urgencyLevel === 'YELLOW' ? 'tag-orange' : 'tag-green']">
-                  {{ e.urgencyLevel === 'RED' ? '紧急' : e.urgencyLevel === 'YELLOW' ? '重点' : '一般' }}
-                </span>
+                <el-dropdown trigger="click" @command="(lv) => changeUrgency(e, lv)">
+                  <span :class="['tag', e.urgencyLevel === 'RED' ? 'tag-red' : e.urgencyLevel === 'YELLOW' ? 'tag-orange' : 'tag-green']"
+                        style="cursor:pointer;" title="点击修改紧急程度">
+                    {{ e.urgencyLevel === 'RED' ? '紧急' : e.urgencyLevel === 'YELLOW' ? '重点' : '一般' }}
+                    <i class="fas fa-caret-down" style="margin-left:4px;font-size:10px;"></i>
+                  </span>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="GREEN" :disabled="e.urgencyLevel === 'GREEN'">一般（绿）</el-dropdown-item>
+                      <el-dropdown-item command="YELLOW" :disabled="e.urgencyLevel === 'YELLOW'">重点（黄）</el-dropdown-item>
+                      <el-dropdown-item command="RED" :disabled="e.urgencyLevel === 'RED'">紧急（红）</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
               </td>
               <td style="font-size:12px;color:#6b7280;">{{ sourceLabel(e.sourceSystem || e.sourceType) }}</td>
               <td style="font-size:12px;color:#6b7280;">{{ e.reportUserName || '-' }}</td>
@@ -105,6 +118,8 @@
                   <button v-if="['PENDING_AUDIT', 'IN_AUDIT'].includes(e.status)" @click="handleAudit(e, 'reject')" type="button" style="padding:3px 8px;border:none;border-radius:4px;background:#ff4d4f;color:#fff;font-size:12px;cursor:pointer;">驳回</button>
                   <button v-if="e.status === 'WAITING_DISPATCH'" @click="openDispatch(e)" type="button" style="padding:3px 8px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;">派单</button>
                   <button v-if="e.status === 'WAITING_LEADER_REVIEW'" @click="openLeaderDispatch(e)" type="button" style="padding:3px 8px;border:none;border-radius:4px;background:#722ed1;color:#fff;font-size:12px;cursor:pointer;">组长派单</button>
+                  <button v-if="e.status !== 'CLOSED'" @click="handleClose(e)" type="button" style="padding:3px 8px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#6b7280;">关闭</button>
+                  <button v-else @click="handleReopen(e)" type="button" style="padding:3px 8px;border:1px solid #b7eb8f;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#52c41a;">打开</button>
                   <button @click="toggleHidden(e)" type="button" style="padding:3px 8px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#6b7280;">{{ e.hidden ? '显示' : '隐藏' }}</button>
                   <button @click="handleDelete(e)" type="button" style="padding:3px 8px;border:1px solid #ffccc7;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#ff4d4f;">删除</button>
                 </div>
@@ -257,7 +272,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { getEventSectionEvents, auditEvent, setEventHidden, deleteEvents, getDictItems, dispatchEvent, getSystemUsers, getLeaderDispatchInfo, leaderDispatch } from '../api'
+import { getEventSectionEvents, auditEvent, setEventHidden, deleteEvents, getDictItems, dispatchEvent, getSystemUsers, getLeaderDispatchInfo, leaderDispatch, updateEventUrgency, closeEvent, reopenEvent } from '../api'
 import EventCreateView from './EventCreateView.vue'
 import EventDetailView from './EventDetailView.vue'
 import { showMessage } from '../utils/message'
@@ -298,6 +313,7 @@ const filters = reactive({
   status: '',
   urgencyLevel: '',
   sourceSystem: '',
+  searchKey: '',
   startDate: '',
   endDate: '',
 })
@@ -358,6 +374,58 @@ async function toggleHidden(e: any) {
     loadData()
   } catch (err: any) {
     showMessage(err?.message || '操作失败')
+  }
+}
+
+// 修改紧急程度（后端 PUT /events/{id}/urgency 早已支持，此前 Web 端无入口）
+async function changeUrgency(e: any, level: 'GREEN' | 'YELLOW' | 'RED') {
+  if (!e.id || !level || e.urgencyLevel === level) return
+  try {
+    await updateEventUrgency(e.id, level)
+    const label = level === 'RED' ? '紧急' : level === 'YELLOW' ? '重点' : '一般'
+    showMessage(`紧急程度已改为「${label}」`, 'success')
+    loadData()
+  } catch (err: any) {
+    showMessage(err?.message || '修改紧急程度失败')
+  }
+}
+
+// 关闭事件：需填写关闭原因，关闭后归档
+async function handleClose(e: any) {
+  if (!e.id) { showMessage('该事件缺少主键 ID，无法关闭'); return }
+  const reason = await promptDialog({
+    title: '关闭事件',
+    message: `确定关闭事件「${e.title}」？关闭后将归档，可在「已完成工单」中查看。请填写关闭原因：`,
+    placeholder: '请输入关闭原因（必填）',
+    required: true,
+    rows: 2,
+  })
+  if (!reason) return
+  try {
+    await closeEvent(e.id, reason)
+    showMessage('事件已关闭', 'success')
+    if (displayList.value.length <= 1 && page.value > 1) page.value--
+    loadData()
+  } catch (err: any) {
+    showMessage(err?.message || '关闭失败')
+  }
+}
+
+// 重新打开已关闭事件：回到待派单状态
+async function handleReopen(e: any) {
+  if (!e.id) { showMessage('该事件缺少主键 ID，无法打开'); return }
+  const ok = await confirmDialog({
+    title: '重新打开事件',
+    message: `确定重新打开「${e.title}」？事件将回到「待派单」状态。`,
+    okText: '打开',
+  })
+  if (!ok) return
+  try {
+    await reopenEvent(e.id)
+    showMessage('事件已重新打开', 'success')
+    loadData()
+  } catch (err: any) {
+    showMessage(err?.message || '打开失败')
   }
 }
 
@@ -516,6 +584,7 @@ async function loadData() {
     if (filters.status) params.status = filters.status
     if (filters.urgencyLevel) params.urgencyLevel = filters.urgencyLevel
     if (filters.sourceSystem) params.sourceSystem = filters.sourceSystem
+    if (filters.searchKey) params.searchKey = filters.searchKey.trim()
     if (dateRange.value && dateRange.value.length === 2) {
       if (dateRange.value[0]) params.startDate = dateRange.value[0]
       if (dateRange.value[1]) params.endDate = dateRange.value[1]
