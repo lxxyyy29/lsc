@@ -29,6 +29,9 @@ public class AlarmIntegrationProperties {
     /** 回调验证配置，包含令牌和签名验证相关参数 */
     private final Callback callback = new Callback();
 
+    /** 图片上传配置（面向板端，使用回调令牌鉴权，无需平台登录态） */
+    private final Upload upload = new Upload();
+
     public String getSourceSystem() {
         return sourceSystem;
     }
@@ -55,6 +58,10 @@ public class AlarmIntegrationProperties {
 
     public Callback getCallback() {
         return callback;
+    }
+
+    public Upload getUpload() {
+        return upload;
     }
 
     public static class Callback {
@@ -108,6 +115,61 @@ public class AlarmIntegrationProperties {
 
         public void setSignatureSecret(String signatureSecret) {
             this.signatureSecret = signatureSecret;
+        }
+    }
+
+    /**
+     * 板端图片上传配置。
+     * 该接口不依赖平台登录态，仅使用回调令牌鉴权，供板端上传违停抓拍图后取得可访问 URL。
+     */
+    public static class Upload {
+
+        /**
+         * 返回给板端的公网访问前缀（以 / 结尾）。
+         * 为空时回退到 oss.access —— 但 oss.access 在部分环境为内网地址，板端无法访问，
+         * 生产环境应显式配置本项（如 https://drone.kfktec.cn:8443/minio/）。
+         */
+        private String publicBaseUrl;
+
+        /** 单次最多可上传的图片数量 */
+        private int maxFiles = 5;
+
+        /** 单张图片大小上限（MB） */
+        private int maxFileSizeMb = 10;
+
+        /** 允许的扩展名，逗号分隔 */
+        private String allowedExtensions = "jpg,jpeg,png";
+
+        public String getPublicBaseUrl() {
+            return publicBaseUrl;
+        }
+
+        public void setPublicBaseUrl(String publicBaseUrl) {
+            this.publicBaseUrl = publicBaseUrl;
+        }
+
+        public int getMaxFiles() {
+            return maxFiles;
+        }
+
+        public void setMaxFiles(int maxFiles) {
+            this.maxFiles = maxFiles;
+        }
+
+        public int getMaxFileSizeMb() {
+            return maxFileSizeMb;
+        }
+
+        public void setMaxFileSizeMb(int maxFileSizeMb) {
+            this.maxFileSizeMb = maxFileSizeMb;
+        }
+
+        public String getAllowedExtensions() {
+            return allowedExtensions;
+        }
+
+        public void setAllowedExtensions(String allowedExtensions) {
+            this.allowedExtensions = allowedExtensions;
         }
     }
 }

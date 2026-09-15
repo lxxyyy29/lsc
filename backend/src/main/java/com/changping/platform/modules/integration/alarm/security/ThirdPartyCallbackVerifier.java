@@ -65,6 +65,26 @@ public class ThirdPartyCallbackVerifier {
     }
 
     /**
+     * 仅校验回调令牌，用于 multipart 上传等无法对原始请求体做 HMAC 签名的场景。
+     * 与 verify 的差异：不走签名分支；未配置令牌时直接报错，而不是回退到签名校验。
+     */
+    public boolean verifyTokenOnly(HttpServletRequest request) {
+        AlarmIntegrationProperties.Callback callback = properties.getCallback();
+        if (!callback.isRequireVerification()) {
+            return true;
+        }
+        if (StringUtils.hasText(callback.getToken())) {
+            String headerToken = request.getHeader(callback.getTokenHeader());
+            if (!callback.getToken().equals(headerToken)) {
+                throw new BusinessException("CALLBACK_TOKEN_INVALID", "第三方回调令牌无效");
+            }
+            return true;
+        }
+        throw new BusinessException("CALLBACK_TOKEN_NOT_CONFIGURED",
+                "该接口仅支持令牌鉴权，请先配置回调令牌（请求头 " + callback.getTokenHeader() + "）");
+    }
+
+    /**
      * @Author lxy
      * @Description //计算内容的HMAC-SHA256签名并返回十六进制字符串
      * @Date 2026/04/18 10:00

@@ -83,8 +83,8 @@ public class SecurityConfig {
                         // WebSocket 端点公开（浏览器无法发送认证头）
                         .requestMatchers("/ws/**")
                         .permitAll()
-                        // 告警回调需要签名验证（在 Controller 层校验）
-                        .requestMatchers("/integrations/alarms/callback")
+                        // 告警回调与板端图片上传需要令牌/签名验证（在 Controller 层校验）
+                        .requestMatchers("/integrations/alarms/callback", "/integrations/alarms/upload")
                         .permitAll()
                         // 蚊媒监测设备数据上报公开（设备无平台账号，Controller 层校验参数）
                         .requestMatchers("/integrations/mosquito/device-data")

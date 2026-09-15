@@ -94,6 +94,13 @@ drone:
       token: ${DRONE_ALARM_CALLBACK_TOKEN:changping-default-callback-token}
       signature-header: ${DRONE_ALARM_CALLBACK_SIGNATURE_HEADER:X-Callback-Signature}
       signature-secret: ${DRONE_ALARM_CALLBACK_SIGNATURE_SECRET:changping-default-signature-secret}
+    upload:
+      # 返回给板端的公网访问前缀（以 / 结尾）。留空则回退 oss.access，
+      # 但该值在部分环境是内网地址（板端不可达），生产环境必须显式配置。
+      public-base-url: ${DRONE_ALARM_UPLOAD_PUBLIC_BASE_URL:}
+      max-files: ${DRONE_ALARM_UPLOAD_MAX_FILES:5}
+      max-file-size-mb: ${DRONE_ALARM_UPLOAD_MAX_FILE_SIZE_MB:10}
+      allowed-extensions: ${DRONE_ALARM_UPLOAD_ALLOWED_EXTENSIONS:jpg,jpeg,png}
 oss:
   enable: ${OSS_ENABLE:true}
   provider: ${OSS_PROVIDER:minio}

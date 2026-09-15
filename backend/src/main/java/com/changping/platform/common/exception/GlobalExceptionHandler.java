@@ -144,6 +144,8 @@ public class GlobalExceptionHandler {
         return switch (code) {
             case "AUTH_TOKEN_REQUIRED", "AUTH_TOKEN_INVALID" -> HttpStatus.UNAUTHORIZED;
             case "AUTH_PERMISSION_DENIED", "AUTH_CLIENT_TYPE_FORBIDDEN" -> HttpStatus.FORBIDDEN;
+            // 单张图片超过大小上限，语义上属于 413，便于板端与网关层的 413 统一处理
+            case "FILE_TOO_LARGE" -> HttpStatus.PAYLOAD_TOO_LARGE;
             default -> HttpStatus.BAD_REQUEST;
         };
     }
