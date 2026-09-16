@@ -61,6 +61,12 @@ public class GridServiceImpl implements GridService {
         } else if (gridMapper.existsByCode(entity.getGridCode())) {
             throw new BusinessException("GRID_CODE_DUPLICATE", "网格编码「" + entity.getGridCode() + "」已被占用，请换一个或留空自动编号");
         }
+        // 同级重名校验：grid_name 无唯一索引，重名会在网格树上出现重复节点
+        if (entity.getGridName() != null && !entity.getGridName().isBlank()
+                && gridMapper.existsSameNameUnderParent(entity.getGridName().trim(), entity.getParentId(), null)) {
+            throw new BusinessException("GRID_NAME_DUPLICATE",
+                    "同级下已存在名为「" + entity.getGridName().trim() + "」的网格，请换一个名称");
+        }
         try {
             gridMapper.insert(entity);
         } catch (DuplicateKeyException e) {
@@ -104,6 +110,12 @@ public class GridServiceImpl implements GridService {
             }
         } else if (entity.getParentId() == null) {
             entity.setParentId(exists.getParentId());
+        }
+        // 同级重名校验（排除自身）：改名或改父级都可能撞上同级同名网格
+        if (entity.getGridName() != null && !entity.getGridName().isBlank()
+                && gridMapper.existsSameNameUnderParent(entity.getGridName().trim(), entity.getParentId(), entity.getId())) {
+            throw new BusinessException("GRID_NAME_DUPLICATE",
+                    "同级下已存在名为「" + entity.getGridName().trim() + "」的网格，请换一个名称");
         }
         if (entity.getPopulation() == null) {
             entity.setPopulation(exists.getPopulation());

@@ -111,14 +111,17 @@ public class EventController {
         int safePageSize = Math.min(Math.max(pageSize, 1), 100);
         int offset = (safePage - 1) * safePageSize;
 
-        // 与事件列表页口径一致：仅展示未归档的活跃事件
+        // 「我的上报」是个人历史台账，必须包含已归档（办结/关闭）的事件：
+        // 事件办结/关闭时会置 archived=1，若沿用事件列表的 archived=0 口径，
+        // 居民端「已办结」会恒为 0，已办结事件也永远无法评价。
+        // 这里只排除软删除（deleted=1，属异常工单）。
         Long total = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event WHERE report_user_id = ? AND COALESCE(archived, 0) = 0",
+                "SELECT COUNT(*) FROM biz_event WHERE report_user_id = ? AND COALESCE(deleted, 0) = 0",
                 Long.class,
                 user.id());
         List<Map<String, Object>> items = jdbcTemplate.query(
                 "SELECT id, event_code, title, description, status, created_at, rating, rating_comment AS ratingText " +
-                        "FROM biz_event WHERE report_user_id = ? AND COALESCE(archived, 0) = 0 ORDER BY id DESC LIMIT ? OFFSET ?",
+                        "FROM biz_event WHERE report_user_id = ? AND COALESCE(deleted, 0) = 0 ORDER BY id DESC LIMIT ? OFFSET ?",
                 (rs, rowNum) -> {
                     Map<String, Object> item = new java.util.LinkedHashMap<>();
                     item.put("id", rs.getLong("id"));

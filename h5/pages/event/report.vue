@@ -68,13 +68,14 @@
     <view class="btn-submit" @click="handleSubmit">提交上报</view>
 
     <!-- 上报成功弹窗 -->
-    <view v-if="showCodeDialog" class="mask" @click="showCodeDialog = false">
+    <view v-if="showCodeDialog" class="mask" @click="closeAfterSubmit">
       <view class="dialog" @click.stop>
         <view class="dialog-title">上报成功！</view>
         <view class="dialog-text">事件编号：</view>
         <view class="dialog-code">{{ eventCode }}</view>
         <view class="dialog-text">事件已进入闭环处置流程，等待派单处理</view>
         <view class="dialog-btn" @click="goHistory">查看上报记录</view>
+        <view class="dialog-btn" style="background:#e5e7eb;color:#374151;margin-top:10px;" @click="closeAfterSubmit">返回工作台</view>
       </view>
     </view>
   </view>
@@ -322,6 +323,8 @@ async function handleSubmit() {
     submitting.value = false
     eventCode.value = event.eventCode || ''
     showCodeDialog.value = true
+    // 成功后立刻清空表单：否则关掉弹窗后还能再点「提交上报」，把同一事件重复上报
+    resetForm()
   } catch (e: any) {
     submitting.value = false
     if (isNetworkError(e)) {
@@ -353,6 +356,13 @@ function resetForm() {
 function goHistory() {
   showCodeDialog.value = false
   navigateToPath('/pages/event/history')
+}
+
+// 上报完成后关闭弹窗：直接回工作台，而不是回到上一个页面
+// （原实现关闭后仍停在上报页，点左上角返回会回到旧页面，再点提交就会重复上报）
+function closeAfterSubmit() {
+  showCodeDialog.value = false
+  uni.reLaunch({ url: '/pages/workbench/index' })
 }
 </script>
 

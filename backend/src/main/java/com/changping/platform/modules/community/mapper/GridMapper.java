@@ -91,6 +91,19 @@ public class GridMapper {
         return count != null && count > 0;
     }
 
+    /**
+     * 同一父级下是否已存在同名网格（排除 excludeId 自身）。
+     * cmn_grid.grid_name 没有唯一索引，重名会让树上出现「看起来一模一样」的重复节点。
+     */
+    public boolean existsSameNameUnderParent(String gridName, Long parentId, Long excludeId) {
+        Long count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM cmn_grid WHERE grid_name = ? "
+                        + "AND COALESCE(parent_id, 0) = COALESCE(?, 0) "
+                        + "AND (? IS NULL OR id <> ?)",
+                Long.class, gridName, parentId, excludeId, excludeId);
+        return count != null && count > 0;
+    }
+
     /** 收集以 rootId 为根的全部节点 ID（含自身），用于 parent_id 成环校验 */
     public List<Long> collectSubtreeIds(Long rootId) {
         return jdbcTemplate.query(
