@@ -76,10 +76,12 @@ public class OrgMemberController {
         requireOrgMemberPermission();
         // 1. 创建组织人员
         service.create(entity);
-        // 2. 如果是网格员，同步创建系统用户（用于考核研判和派单）
-        if ("GRID_WORKER".equals(entity.getMemberType())) {
+        // 2. 网格员与网格组长都需要系统账号（考核研判、H5 登录与派单）
+        if (needsSysAccount(entity)) {
             syncToSysUser(entity);
         }
+        // 3. 岗位即角色：新增时同样按岗位同步账号角色（此前只在编辑时同步，新增后角色一直是错的）
+        syncOrgMemberRoleToUser(entity);
         return ApiResponse.ok(true);
     }
     @PutMapping("/{id}")
@@ -106,6 +108,18 @@ public class OrgMemberController {
     private boolean isGridLeader(OrgMemberEntity entity) {
         String pos = entity.getPosition() == null ? "" : entity.getPosition();
         return "LEADER".equals(entity.getMemberType()) || pos.contains("组长") || pos.contains("网格长");
+    }
+
+    /**
+     * 是否需要系统账号：网格员、网格组长/网格长。
+     * 组长此前不会建账号，导致「岗位是组长、账号角色却是网格员甚至没有账号」。
+     */
+    private boolean needsSysAccount(OrgMemberEntity entity) {
+        if ("GRID_WORKER".equals(entity.getMemberType()) || "LEADER".equals(entity.getMemberType())) {
+            return true;
+        }
+        String pos = entity.getPosition() == null ? "" : entity.getPosition();
+        return pos.contains("网格员") || pos.contains("组长") || pos.contains("网格长");
     }
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
@@ -193,6 +207,10 @@ public class OrgMemberController {
             jdbcTemplate.update("DELETE FROM sys_user_role WHERE user_id = ?", entity.getSysUserId());
             jdbcTemplate.update("INSERT INTO sys_user_role (user_id, role_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())",
                     entity.getSysUserId(), roleId);
+            // 与 SystemUserService.assignRolesInternal 保持一致：sys_user.role_id 保存主角色，
+            // 否则「账号管理」等按 role_id 取值的地方会与角色列表不一致
+            jdbcTemplate.update("UPDATE sys_user SET role_id = ?, updated_at = NOW() WHERE id = ?",
+                    roleId, entity.getSysUserId());
         } catch (Exception e) {
             // 角色同步失败不影响成员信息保存，仅记录日志
             org.slf4j.LoggerFactory.getLogger(OrgMemberController.class).warn("同步组织成员角色失败: memberId={}, err={}", entity.getId(), e.getMessage());
@@ -216,33 +234,43 @@ public class OrgMemberController {
      */
     private void syncToSysUser(OrgMemberEntity entity) {
         try {
-            // 检查是否已存在同名用户
-            String username = entity.getName().replaceAll("\\s+", "");
+            String username = entity.getName() == null ? "" : entity.getName().replaceAll("\\s+", "");
+            if (username.isEmpty()) return;
+
+            Long userId;
             Integer exists = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM sys_user WHERE username = ? AND deleted = 0", Integer.class, username);
-            if (exists != null && exists > 0) return;
-
-            // 确保 GRID_WORKER 角色存在
-            Integer roleCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM sys_role WHERE role_code = 'GRID_WORKER'", Integer.class);
-            if (roleCount == null || roleCount == 0) {
+            if (exists != null && exists > 0) {
+                // 同名账号已存在：直接复用并回写关联，避免「组织人员有岗位、账号却是脱钩的」
+                userId = jdbcTemplate.queryForObject(
+                    "SELECT id FROM sys_user WHERE username = ? AND deleted = 0", Long.class, username);
+            } else {
+                // 确保 GRID_WORKER 角色存在（占位角色，随后由 syncOrgMemberRoleToUser 按岗位覆盖）
+                Integer roleCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sys_role WHERE role_code = 'GRID_WORKER'", Integer.class);
+                if (roleCount == null || roleCount == 0) {
+                    jdbcTemplate.update(
+                        "INSERT INTO sys_role (role_code, role_name, status, remark, created_at, updated_at) VALUES ('GRID_WORKER', '网格员', 'ACTIVE', '网格巡查与事件处置人员', NOW(), NOW())");
+                }
+                BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
                 jdbcTemplate.update(
-                    "INSERT INTO sys_role (role_code, role_name, status, remark, created_at, updated_at) VALUES ('GRID_WORKER', '网格员', 'ACTIVE', '网格巡查与事件处置人员', NOW(), NOW())");
+                    "INSERT INTO sys_user (username, password_hash, real_name, phone, status, password_version, deleted, created_at, updated_at) " +
+                    "VALUES (?, ?, ?, ?, 'ACTIVE', 1, 0, NOW(), NOW())",
+                    username, encoder.encode("123456"), entity.getName(), entity.getPhone());
+                userId = jdbcTemplate.queryForObject("SELECT id FROM sys_user WHERE username = ?", Long.class, username);
+                Long roleId = jdbcTemplate.queryForObject("SELECT id FROM sys_role WHERE role_code = 'GRID_WORKER'", Long.class);
+                jdbcTemplate.update("INSERT IGNORE INTO sys_user_role (user_id, role_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", userId, roleId);
             }
-            Long roleId = jdbcTemplate.queryForObject("SELECT id FROM sys_role WHERE role_code = 'GRID_WORKER'", Long.class);
 
-            // 创建系统用户
-            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-            jdbcTemplate.update(
-                "INSERT INTO sys_user (username, password_hash, real_name, phone, status, password_version, deleted, created_at, updated_at) " +
-                "VALUES (?, ?, ?, ?, 'ACTIVE', 1, 0, NOW(), NOW())",
-                username, encoder.encode("123456"), entity.getName(), entity.getPhone());
-            Long userId = jdbcTemplate.queryForObject("SELECT id FROM sys_user WHERE username = ?", Long.class, username);
-            // 分配 GRID_WORKER 角色
-            jdbcTemplate.update("INSERT IGNORE INTO sys_user_role (user_id, role_id) VALUES (?, ?)", userId, roleId);
+            entity.setSysUserId(userId);
+            // 关键修复：此前不回写 sys_user_id，导致编辑岗位时因 sys_user_id 为空而整段跳过角色同步，
+            // 表现为「岗位改成组长，账号角色还是网格员」。
+            if (entity.getId() != null) {
+                jdbcTemplate.update("UPDATE cmn_org_member SET sys_user_id = ? WHERE id = ?", userId, entity.getId());
+            }
         } catch (Exception e) {
             // 同步失败不影响主流程
-            org.slf4j.LoggerFactory.getLogger(OrgMemberController.class).warn("同步网格员到系统用户失败: {}", e.getMessage());
+            LOGGER.warn("同步组织人员到系统账号失败: {}", e.getMessage());
         }
     }
 
