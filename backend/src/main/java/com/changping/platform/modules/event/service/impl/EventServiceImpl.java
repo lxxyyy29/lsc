@@ -348,7 +348,8 @@ public class EventServiceImpl implements EventService {
      */
     @Override
     public PagedResult<Map<String, Object>> querySectionEvents(String section, int page, int size,
-            String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String searchKey, String startDate, String endDate) {
+            String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String searchKey, String startDate, String endDate,
+            boolean excludeHidden) {
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(size, 100));
 
@@ -380,6 +381,10 @@ public class EventServiceImpl implements EventService {
             if (!"completed".equals(section)) {
                 where.add("COALESCE(e.archived, 0) = 0");
             }
+        }
+        // 「排除隐藏事件」开关：勾选后不返回 hidden=1 的事件，便于处置列表聚焦未隐藏工单
+        if (excludeHidden) {
+            where.add("COALESCE(e.hidden, 0) = 0");
         }
         if (status != null && !status.isBlank()) {
             where.add("e.status = ?");

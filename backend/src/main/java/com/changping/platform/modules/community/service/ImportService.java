@@ -14,6 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.*;
 
@@ -73,6 +74,40 @@ public class ImportService {
             throw e;
         } catch (Exception e) {
             throw new BusinessException("IMPORT_FAILED", "导入失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 生成导入模板（Excel/xlsx）。
+     * 表头必须与解析规则严格一致：人口库靠「队别 + 姓名 + 手机」定位表头行，
+     * 因此模板里不能带 * 等装饰字符，否则下载后又回传会识别不到表头。
+     */
+    public byte[] buildTemplate(String type) {
+        String[] header = switch (type) {
+            case "population" -> new String[]{"序号", "队别", "户主", "姓名", "年龄", "性别", "住址", "手机", "与户主关系", "备注"};
+            case "buildings" -> new String[]{"楼栋编号", "地址", "房东姓名", "房东电话", "消防风险等级", "是否群租", "网格"};
+            case "places" -> new String[]{"场所名称", "负责人", "负责人电话", "地址", "备注", "网格"};
+            default -> throw new BusinessException("IMPORT_TYPE_INVALID", "不支持的导入类型: " + type);
+        };
+        try (XSSFWorkbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = wb.createSheet("导入模板");
+            Row head = sheet.createRow(0);
+            CellStyle style = wb.createCellStyle();
+            Font font = wb.createFont();
+            font.setBold(true);
+            style.setFont(font);
+            for (int i = 0; i < header.length; i++) {
+                Cell cell = head.createCell(i);
+                cell.setCellValue(header[i]);
+                cell.setCellStyle(style);
+                sheet.setColumnWidth(i, 16 * 256);
+            }
+            wb.write(out);
+            return out.toByteArray();
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException("IMPORT_TEMPLATE_FAILED", "模板生成失败: " + e.getMessage());
         }
     }
 

@@ -100,7 +100,8 @@ public interface EventService {
      * </ul>
      */
     PagedResult<Map<String, Object>> querySectionEvents(String section, int page, int size,
-            String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String searchKey, String startDate, String endDate);
+            String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String searchKey, String startDate, String endDate,
+            boolean excludeHidden);
 
     /**
      * @Description //设置事件展示隐藏：隐藏后仅事件闭环/工单中心可见，大屏/GIS 面板不再展示

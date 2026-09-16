@@ -5,6 +5,7 @@ export interface EventDetail {
   id: number
   eventCode: string
   title: string
+  description: string
   eventType: string
   sourceSystem: string
   location: string
@@ -18,6 +19,7 @@ interface BackendEventDetail {
   id?: number | null
   eventCode?: string | null
   title?: string | null
+  description?: string | null
   eventType?: string | null
   sourceSystem?: string | null
   location?: string | null
@@ -94,6 +96,7 @@ function mapEventDetail(data: BackendEventDetail): EventDetail {
     id: Number(data.id ?? 0),
     eventCode: data.eventCode || '',
     title: data.title || '',
+    description: data.description || '',
     eventType: data.eventType || '',
     sourceSystem: data.sourceSystem || '',
     location: data.location || '',

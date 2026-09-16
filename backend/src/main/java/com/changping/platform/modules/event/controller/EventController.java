@@ -204,9 +204,10 @@ public class EventController {
             @RequestParam(required = false) String sourceSystem,
             @RequestParam(required = false) String searchKey,
             @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate) {
+            @RequestParam(required = false) String endDate,
+            @RequestParam(defaultValue = "false") boolean excludeHidden) {
         permissionGuard.require(PermissionCodes.API_EVENT_LIST);
-        return ApiResponse.ok(eventService.querySectionEvents(section, page, size, status, workOrderStatus, urgencyLevel, sourceSystem, searchKey, startDate, endDate));
+        return ApiResponse.ok(eventService.querySectionEvents(section, page, size, status, workOrderStatus, urgencyLevel, sourceSystem, searchKey, startDate, endDate, excludeHidden));
     }
 
     /**

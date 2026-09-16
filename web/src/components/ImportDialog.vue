@@ -100,7 +100,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-import { previewImport, executeImport } from '../api'
+import { previewImport, executeImport, downloadImportTemplate } from '../api'
 import { showMessage } from '../utils/message'
 
 const props = defineProps<{
@@ -166,22 +166,21 @@ function formatSize(bytes: number) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
-function downloadTemplate() {
-  // 简单的 CSV 模板下载
-  const cols = currentColumns.value
-  const headers: Record<string, string> = {
-    population: '序号,队别,户主,姓名*,年龄,性别,住址,手机,与户主关系,备注',
-    buildings: '楼栋编号,地址,房东姓名,房东电话,消防风险等级,是否群租,网格',
-    places: '场所名称,负责人,负责人电话,地址,备注,网格'
+async function downloadTemplate() {
+  // 模板改为后端生成的 xlsx：表头与导入解析规则严格一致。
+  // 旧实现下发 CSV，且人口模板把表头写成「姓名*」，而解析器要求精确匹配「姓名」，
+  // 导致下载模板→回传必然报「未识别到表头列」。
+  try {
+    const blob = await downloadImportTemplate(props.type)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${typeLabel.value}导入模板.xlsx`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (e: any) {
+    showMessage(e?.message || '模板下载失败')
   }
-  const csv = headers[props.type] || cols.join(',')
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${typeLabel.value}导入模板.csv`
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 async function handlePreview() {

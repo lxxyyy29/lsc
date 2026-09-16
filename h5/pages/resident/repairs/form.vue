@@ -82,6 +82,10 @@ async function submitRepair() {
     error.value = '请填写标题和描述'
     return
   }
+  if (!form.address.trim()) {
+    error.value = '请填写报修地址'
+    return
+  }
   submitting.value = true
   error.value = ''
   try {

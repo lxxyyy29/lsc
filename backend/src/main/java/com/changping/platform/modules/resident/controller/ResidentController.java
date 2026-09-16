@@ -248,6 +248,9 @@ public class ResidentController {
         if (title == null || title.isEmpty() || repairType == null || repairType.isEmpty()) {
             throw new BusinessException("VALIDATION_ERROR", "请填写报修类型和标题");
         }
+        if (address == null || address.trim().isEmpty()) {
+            throw new BusinessException("VALIDATION_ERROR", "请填写报修地址");
+        }
         String reporterName = jdbcTemplate.query(
             "SELECT real_name FROM sys_user WHERE id = ? AND deleted = 0",
             rs -> rs.next() ? rs.getString(1) : null, userId);
