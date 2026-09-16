@@ -39,6 +39,13 @@
       }
     },
     {
+      "path": "pages/leader/pending",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "组长工作台"
+      }
+    },
+    {
       "path": "pages/verify/index",
       "style": {
         "navigationStyle": "default",

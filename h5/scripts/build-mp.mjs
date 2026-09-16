@@ -27,6 +27,7 @@ const ALL_PAGES = [
   { path: 'pages/workbench/index', style: { navigationStyle: 'default', navigationBarTitleText: '工作台' } },
   { path: 'pages/workorder/list', style: { navigationStyle: 'default', navigationBarTitleText: '任务列表' } },
   { path: 'pages/workorder/detail', style: { navigationStyle: 'default', navigationBarTitleText: '工单详情' } },
+  { path: 'pages/leader/pending', style: { navigationStyle: 'default', navigationBarTitleText: '组长工作台' } },
   { path: 'pages/verify/index', style: { navigationStyle: 'default', navigationBarTitleText: '闭环核查' } },
   { path: 'pages/history/index', style: { navigationStyle: 'default', navigationBarTitleText: '历史记录' } },
   { path: 'pages/mine/index', style: { navigationStyle: 'default', navigationBarTitleText: '个人中心' } },
