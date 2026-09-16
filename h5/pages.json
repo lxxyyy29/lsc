@@ -13,12 +13,6 @@
       }
     },
     {
-      "path": "pages/register/index",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
       "path": "pages/password-reset/index",
       "style": {
         "navigationStyle": "custom"
@@ -148,12 +142,6 @@
     },
     {
       "path": "pages/resident/login/index",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/resident/register/index",
       "style": {
         "navigationStyle": "custom"
       }

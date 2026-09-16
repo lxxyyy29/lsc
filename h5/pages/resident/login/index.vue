@@ -31,9 +31,7 @@
       </button>
       <text v-if="error" class="error">{{ error }}</text>
 
-      <view class="footer-links">
-        <text class="link" @click="goRegister">注册账号</text>
-      </view>
+      <!-- 注册入口已移除：居民通过微信一键登录自动开通账号 -->
     </view>
 
     <view class="quick-login">
@@ -70,9 +68,6 @@ async function handleLogin() {
   }
 }
 
-function goRegister() {
-  uni.navigateTo({ url: '/pages/register/index' })
-}
 </script>
 
 <style scoped>

@@ -19,8 +19,7 @@
       <text v-if="errorMessage" class="error">{{ errorMessage }}</text>
 
       <view class="footer-links">
-        <text class="link" @click="goRegister">注册账号</text>
-        <text class="link-divider">|</text>
+        <!-- 注册入口已移除：网格员由管理后台账号管理/组织人员开通，居民由微信一键登录自动开通 -->
         <text class="link" @click="goForgotPassword">忘记密码</text>
       </view>
     </view>
@@ -71,10 +70,6 @@ async function handleLogin() {
   } finally {
     submitting.value = false
   }
-}
-
-function goRegister() {
-  uni.navigateTo({ url: '/pages/register/index' })
 }
 
 function goForgotPassword() {
