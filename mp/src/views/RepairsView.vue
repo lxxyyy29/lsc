@@ -115,6 +115,10 @@ async function submitRepair() {
     alert('请填写标题和描述')
     return
   }
+  if (!form.address.trim()) {
+    alert('请填写报修地址')
+    return
+  }
   try {
     await submitRepairApi(form)
     alert('提交成功！')

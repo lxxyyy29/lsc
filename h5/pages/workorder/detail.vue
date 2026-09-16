@@ -46,6 +46,12 @@
       <view v-if="sourceEvent" class="section-card">
         <text class="card-title">告警现场</text>
 
+        <!-- 上报详情描述 -->
+        <view v-if="sourceEvent.description" style="margin-bottom:16rpx;">
+          <text style="display:block;font-size:24rpx;color:#9ca3af;margin-bottom:8rpx;">上报描述</text>
+          <text style="display:block;font-size:26rpx;color:#4b5563;line-height:1.7;white-space:pre-wrap;">{{ sourceEvent.description }}</text>
+        </view>
+
         <!-- 现场照片 -->
         <view v-if="mediaReferences.length" class="evidence-section">
           <text class="evidence-subtitle">现场照片</text>

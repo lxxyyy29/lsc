@@ -1,5 +1,8 @@
 -- =============================================================
--- V125 修复：Web 端组长派单权限缺失
+-- V126 修复：Web 端组长派单权限缺失
+-- 注意：本文件原编号为 V125，与 049ea67 引入的 V125__population_party_member.sql
+--       版本号冲突，Flyway 会报 "Found more than one migration with version 125"
+--       导致后端无法启动，故重编号为 V126（本文件全部语句幂等，重跑无副作用）。
 --
 -- 问题：api:leader:pending / api:leader:dispatch 只存在于 Java 常量
 --       （PermissionCodes.API_LEADER_*，对应 WorkOrderController 的

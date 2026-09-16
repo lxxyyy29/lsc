@@ -42,6 +42,10 @@ function translateError(msg: string): string {
 axiosInstance.interceptors.response.use(
   response => {
     const data = response.data
+    // 二进制下载（导入模板等）：不做 JSON 解包，直接把 Blob 交给调用方
+    if (data instanceof Blob) {
+      return data
+    }
     if (data && data.success === true) {
       return data.data
     }
@@ -136,7 +140,7 @@ export async function getEvents(params?: { page?: number; size?: number; status?
 }
 
 // 四类工单工作台：closed-loop 事件闭环处置 / audit 事件审核 / completed 已完成工单 / abnormal 异常工单
-export async function getEventSectionEvents(section: string, params?: { page?: number; size?: number; status?: string; workOrderStatus?: string; urgencyLevel?: string; sourceSystem?: string; searchKey?: string; startDate?: string; endDate?: string }) {
+export async function getEventSectionEvents(section: string, params?: { page?: number; size?: number; status?: string; workOrderStatus?: string; urgencyLevel?: string; sourceSystem?: string; searchKey?: string; startDate?: string; endDate?: string; excludeHidden?: boolean }) {
   return http.get(`/events/sections/${section}`, { params: { page: 1, size: 20, ...params } })
 }
 
@@ -531,6 +535,10 @@ export async function executeImport(type: string, file: File) {
   formData.append('type', type)
   formData.append('file', file)
   return http.post('/community/import/execute', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+}
+/** 下载导入模板：由后端生成 xlsx，表头与导入解析规则一致 */
+export async function downloadImportTemplate(type: string): Promise<Blob> {
+  return http.get<Blob>('/community/import/template', { params: { type }, responseType: 'blob' })
 }
 
 // 表单字段配置器（人口库）

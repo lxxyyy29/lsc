@@ -45,6 +45,10 @@
           end-placeholder="结束日期"
           value-format="YYYY-MM-DD"
         />
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#374151;cursor:pointer;white-space:nowrap;">
+          <input type="checkbox" v-model="filters.excludeHidden" @change="page = 1; loadData()" />
+          排除隐藏事件
+        </label>
         <button @click="page = 1; loadData()" class="filter-action"><i class="fas fa-search"></i> 查询</button>
       </div>
 
@@ -316,6 +320,8 @@ const filters = reactive({
   searchKey: '',
   startDate: '',
   endDate: '',
+  // 默认排除已隐藏事件；取消勾选可把已隐藏事件一并列出
+  excludeHidden: true,
 })
 
 const dateRange = ref<[string, string] | null>(null)
@@ -585,6 +591,7 @@ async function loadData() {
     if (filters.urgencyLevel) params.urgencyLevel = filters.urgencyLevel
     if (filters.sourceSystem) params.sourceSystem = filters.sourceSystem
     if (filters.searchKey) params.searchKey = filters.searchKey.trim()
+    params.excludeHidden = filters.excludeHidden
     if (dateRange.value && dateRange.value.length === 2) {
       if (dateRange.value[0]) params.startDate = dateRange.value[0]
       if (dateRange.value[1]) params.endDate = dateRange.value[1]
