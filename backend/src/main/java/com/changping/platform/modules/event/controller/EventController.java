@@ -205,12 +205,13 @@ public class EventController {
             @RequestParam(required = false) String workOrderStatus,
             @RequestParam(required = false) String urgencyLevel,
             @RequestParam(required = false) String sourceSystem,
+            @RequestParam(required = false) String reportSource,
             @RequestParam(required = false) String searchKey,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate,
             @RequestParam(defaultValue = "false") boolean excludeHidden) {
         permissionGuard.require(PermissionCodes.API_EVENT_LIST);
-        return ApiResponse.ok(eventService.querySectionEvents(section, page, size, status, workOrderStatus, urgencyLevel, sourceSystem, searchKey, startDate, endDate, excludeHidden));
+        return ApiResponse.ok(eventService.querySectionEvents(section, page, size, status, workOrderStatus, urgencyLevel, sourceSystem, reportSource, searchKey, startDate, endDate, excludeHidden));
     }
 
     /**
@@ -519,8 +520,8 @@ public class EventController {
             String externalId = "PUBLIC-" + System.currentTimeMillis();
 
             jdbcTemplate.update(
-                "INSERT INTO biz_event (event_code, external_event_id, source_type, source_system, event_type, title, description, report_user_id, report_user_name, report_phone, incident_address, latitude, longitude, images, status, occurred_at, created_at, updated_at) " +
-                "VALUES (?, ?, 'PUBLIC', 'PUBLIC_REPORT', ?, ?, ?, ?, ?, ?, '拔蛟窝社区', ?, ?, ?, 'WAITING_DISPATCH', NOW(), NOW(), NOW())",
+                "INSERT INTO biz_event (event_code, external_event_id, source_type, source_system, event_type, title, description, report_source, report_user_id, report_user_name, report_phone, incident_address, latitude, longitude, images, status, occurred_at, created_at, updated_at) " +
+                "VALUES (?, ?, 'PUBLIC', 'PUBLIC_REPORT', ?, ?, ?, 'RESIDENT', ?, ?, ?, '拔蛟窝社区', ?, ?, ?, 'WAITING_DISPATCH', NOW(), NOW(), NOW())",
                 eventCode, externalId, type != null ? type : "OTHER", title, description, reporterUserId, reporterName, reporterPhone, latitude, longitude, imagesJson);
 
             Long eventId = jdbcTemplate.queryForObject("SELECT id FROM biz_event WHERE event_code = ?", Long.class, eventCode);

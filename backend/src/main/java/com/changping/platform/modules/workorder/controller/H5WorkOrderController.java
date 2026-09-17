@@ -141,14 +141,10 @@ public class H5WorkOrderController {
         permissionGuard.require(PermissionCodes.API_H5_LEADER_DISPATCH);
         Long userId = currentUserService.requireClientType(AuthService.ClientType.H5).id();
         Map<String, Object> info = smartDispatchService.getLeaderDispatchInfo(eventId);
-        // 验证当前用户是否为该网格的组长
-        Object leaderObj = info.get("leader");
-        if (leaderObj == null || !Boolean.TRUE.equals(info.get("leaderFound"))) {
-            return ApiResponse.ok(info);
-        }
-        Map<String, Object> leader = (Map<String, Object>) leaderObj;
-        Long leaderUserId = (Long) leader.get("userId");
-        if (leaderUserId == null || !leaderUserId.equals(userId)) {
+        // 验证当前用户是否为该网格的组长：只要是该网格「组长之一」即可，
+        // 不要求等于查询排序第一人（同一网格可配置多名组长，否则其余组长会被误拦）
+        if (Boolean.TRUE.equals(info.get("leaderFound"))
+                && !smartDispatchService.isLeaderOfEventGrid(eventId, userId)) {
             throw new com.changping.platform.common.exception.BusinessException(
                     "NOT_LEADER_OF_THIS_GRID", "您不是该事件所属网格的组长，无权派单");
         }
@@ -172,9 +168,8 @@ public class H5WorkOrderController {
             throw new com.changping.platform.common.exception.BusinessException(
                     "NO_LEADER", "该事件未配置组长，无法执行组长派单");
         }
-        Map<String, Object> leader = (Map<String, Object>) info.get("leader");
-        Long leaderUserId = leader == null ? null : (Long) leader.get("userId");
-        if (leaderUserId == null || !leaderUserId.equals(userId)) {
+        // 只要是该网格「组长之一」即可派单，不要求等于查询排序第一人
+        if (!smartDispatchService.isLeaderOfEventGrid(eventId, userId)) {
             throw new com.changping.platform.common.exception.BusinessException(
                     "NOT_LEADER_OF_THIS_GRID", "您不是该事件所属网格的组长，无权派单");
         }
@@ -183,6 +178,15 @@ public class H5WorkOrderController {
         Long assigneeUserId = body.get("assigneeUserId") != null
                 ? Long.valueOf(body.get("assigneeUserId").toString())
                 : null;
+        if (assigneeUserId == null || assigneeUserId <= 0) {
+            throw new com.changping.platform.common.exception.BusinessException(
+                    "VALIDATION_ERROR", "请选择受派人");
+        }
+        // 只能派给本网格内的有效网格员，避免越网格派单或派给已停用/无账号的人员
+        if (!smartDispatchService.isGridWorkerOfEvent(eventId, assigneeUserId)) {
+            throw new com.changping.platform.common.exception.BusinessException(
+                    "ASSIGNEE_NOT_IN_GRID", "受派人必须是该事件所属网格内的网格员");
+        }
         String remark = body.getOrDefault("remark", "") != null
                 ? body.getOrDefault("remark", "").toString()
                 : "";

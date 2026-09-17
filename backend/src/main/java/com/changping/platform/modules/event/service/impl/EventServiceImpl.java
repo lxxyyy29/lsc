@@ -167,12 +167,25 @@ public class EventServiceImpl implements EventService {
                     user.id(), user.userName(), entity.getId()));
         }
 
-        // 创建表单填写的发起人信息：电话（Web 必填）/姓名（选填）落库
+        // 创建表单填写的发起人信息：电话（Web 必填）/姓名（选填）落库。
+        // 只覆盖实际传入的字段：否则「只填电话、不填姓名」会把上面 H5 路径已写入的上报人姓名清成 NULL。
         String reporterName = trimToNull(request.reporterName());
         String reporterPhone = trimToNull(request.reporterPhone());
         if (reporterName != null || reporterPhone != null) {
-            jdbcTemplate.update("UPDATE biz_event SET report_user_name = ?, report_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                    reporterName, reporterPhone, entity.getId());
+            List<String> reporterSets = new ArrayList<>();
+            List<Object> reporterArgs = new ArrayList<>();
+            if (reporterName != null) {
+                reporterSets.add("report_user_name = ?");
+                reporterArgs.add(reporterName);
+            }
+            if (reporterPhone != null) {
+                reporterSets.add("report_phone = ?");
+                reporterArgs.add(reporterPhone);
+            }
+            reporterSets.add("updated_at = CURRENT_TIMESTAMP");
+            reporterArgs.add(entity.getId());
+            jdbcTemplate.update("UPDATE biz_event SET " + String.join(", ", reporterSets) + " WHERE id = ?",
+                    reporterArgs.toArray());
         }
 
         // 证据图片为可选字段，未传时按空列表处理，避免 NPE
@@ -348,7 +361,8 @@ public class EventServiceImpl implements EventService {
      */
     @Override
     public PagedResult<Map<String, Object>> querySectionEvents(String section, int page, int size,
-            String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String searchKey, String startDate, String endDate,
+            String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String reportSource,
+            String searchKey, String startDate, String endDate,
             boolean excludeHidden) {
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(size, 100));
@@ -402,6 +416,12 @@ public class EventServiceImpl implements EventService {
         if (sourceSystem != null && !sourceSystem.isBlank()) {
             where.add("e.source_system = ?");
             params.add(sourceSystem.trim());
+        }
+        // 上报来源过滤（字典 event_report_source：GRID_MEMBER/RESIDENT/12345/PROPERTY 等）
+        // 与 sourceSystem（来源系统，如 H5_APP/PUBLIC_REPORT）语义不同，必须分开过滤
+        if (reportSource != null && !reportSource.isBlank()) {
+            where.add("e.report_source = ?");
+            params.add(reportSource.trim());
         }
         // 关键词搜索：事件编号 / 标题模糊匹配
         if (searchKey != null && !searchKey.isBlank()) {
@@ -1318,6 +1338,9 @@ public class EventServiceImpl implements EventService {
                 entity.getId(), EventStatus.CLOSED.name(), EventStatus.WAITING_DISPATCH.name());
         // 同步 MongoDB：恢复为活跃事件
         alarmEventMongoService.setArchived(eventId, entity.getExternalEventId(), false);
+        // 关键：详情读取时 MongoDB 的 workflowStatus 优先于 MySQL 状态，
+        // 若不同步会出现「重开成功但详情仍显示已关闭」的状态不一致
+        alarmWorkflowStatusSyncService.syncWorkflowStatus(eventId, EventStatus.WAITING_DISPATCH.name());
     }
 
     @Override

@@ -278,16 +278,22 @@ public class SmartDispatchService {
     }
 
     /**
-     * 查询事件所属网格的组长
+     * 查询事件所属网格的组长。
+     *
+     * <p>只认「组织成员状态有效 + 关联账号未删除未禁用」的组长，避免把已离职/已停用账号当成组长；
+     * 并用 ORDER BY 固定取值顺序（原先仅 LIMIT 1 无排序，同一网格存在多名组长时返回值不确定）。
      */
     public Map<String, Object> findGridLeader(Long gridId) {
         if (gridId == null) return null;
         List<Map<String, Object>> leaders = jdbcTemplate.query(
                 "SELECT m.id AS orgMemberId, m.sys_user_id AS userId, m.name, m.position, g.grid_name AS gridName "
                         + "FROM cmn_org_member m "
+                        + "JOIN sys_user u ON u.id = m.sys_user_id "
                         + "LEFT JOIN cmn_grid g ON g.id = m.grid_id "
                         + "WHERE m.grid_id = ? AND m.status = 'ACTIVE' "
+                        + "AND u.deleted = 0 AND u.status = 'ACTIVE' "
                         + "AND (m.position LIKE '%组长%' OR m.position LIKE '%网格长%' OR m.member_type = 'LEADER') "
+                        + "ORDER BY m.id ASC "
                         + "LIMIT 1",
                 (rs, rowNum) -> {
                     Map<String, Object> row = new LinkedHashMap<>();
@@ -312,7 +318,10 @@ public class SmartDispatchService {
     }
 
     /**
-     * 查询组长下属的网格员列表（按待办工单数排序）
+     * 查询组长下属的网格员列表（按待办工单数排序）。
+     *
+     * <p>只返回「关联了有效账号」的成员：组织成员表允许 sys_user_id 为空（如录入后未开通账号），
+     * 这类成员无法接单，若出现在派单列表里，选中后会被受派人校验拒绝。
      */
     public List<Candidate> findLeaderSubordinates(Long leaderOrgMemberId) {
         if (leaderOrgMemberId == null) return List.of();
@@ -325,7 +334,10 @@ public class SmartDispatchService {
         List<Map<String, Object>> subordinates = jdbcTemplate.query(
                 "SELECT m.sys_user_id AS userId, m.name, m.position "
                         + "FROM cmn_org_member m "
+                        + "JOIN sys_user u ON u.id = m.sys_user_id "
                         + "WHERE m.grid_id = ? AND m.status = 'ACTIVE' AND m.member_type = 'GRID_WORKER' "
+                        + "AND m.sys_user_id IS NOT NULL "
+                        + "AND u.deleted = 0 AND u.status = 'ACTIVE' "
                         + "AND m.id != ? "
                         + "AND NOT (m.position LIKE '%组长%' OR m.position LIKE '%网格长%') "
                         + "ORDER BY m.id ASC",
@@ -339,8 +351,9 @@ public class SmartDispatchService {
 
         List<Candidate> candidates = new ArrayList<>();
         for (Map<String, Object> sub : subordinates) {
+            // 注意：ResultSet#getLong 对 NULL 返回 0，不能用 null 判断，必须按 <= 0 兜底
             Long userId = (Long) sub.get("userId");
-            if (userId == null) continue;
+            if (userId == null || userId <= 0) continue;
             String name = (String) sub.get("name");
             long pending = countPending(userId);
             candidates.add(new Candidate(userId, name, pending));
@@ -350,6 +363,44 @@ public class SmartDispatchService {
             return byLoad != 0 ? byLoad : Long.compare(a.id(), b.id());
         });
         return candidates;
+    }
+
+    /**
+     * 判断指定用户是否为事件所属网格的组长（其组织成员状态有效、账号未删除未禁用）。
+     *
+     * <p>组长派单的鉴权以此为准，而不是「必须等于 findGridLeader 查出的那一个人」：
+     * 同一网格允许配置多名组长，findLeaderPendingEvents 会把待办同时推给他们，
+     * 若鉴权只认排序第一人，其余组长就会出现「看得到待办、点派单却被拒」的情况。
+     */
+    public boolean isLeaderOfEventGrid(Long eventId, Long userId) {
+        if (eventId == null || userId == null) return false;
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM biz_event e "
+                        + "JOIN cmn_org_member m ON m.grid_id = e.grid_id "
+                        + "JOIN sys_user u ON u.id = m.sys_user_id "
+                        + "WHERE e.id = ? AND m.sys_user_id = ? AND m.status = 'ACTIVE' "
+                        + "AND u.deleted = 0 AND u.status = 'ACTIVE' "
+                        + "AND (m.position LIKE '%组长%' OR m.position LIKE '%网格长%' OR m.member_type = 'LEADER')",
+                Integer.class, eventId, userId);
+        return count != null && count > 0;
+    }
+
+    /**
+     * 判断受派人是否为事件所属网格内的有效网格员（组长派单只允许派给本网格下属）
+     */
+    public boolean isGridWorkerOfEvent(Long eventId, Long assigneeUserId) {
+        if (eventId == null || assigneeUserId == null) return false;
+        Long gridId = (Long) queryEventMeta(eventId).get("gridId");
+        if (gridId == null) return false;
+        List<Long> workerIds = jdbcTemplate.queryForList(
+                "SELECT DISTINCT m.sys_user_id FROM cmn_org_member m "
+                        + "JOIN sys_user u ON u.id = m.sys_user_id "
+                        + "WHERE m.grid_id = ? AND m.status = 'ACTIVE' AND m.member_type = 'GRID_WORKER' "
+                        + "AND m.sys_user_id IS NOT NULL "
+                        + "AND u.deleted = 0 AND u.status = 'ACTIVE' "
+                        + "AND NOT (m.position LIKE '%组长%' OR m.position LIKE '%网格长%')",
+                Long.class, gridId);
+        return workerIds.contains(assigneeUserId);
     }
 
     /**

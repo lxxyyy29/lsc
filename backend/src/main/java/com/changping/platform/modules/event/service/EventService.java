@@ -100,7 +100,8 @@ public interface EventService {
      * </ul>
      */
     PagedResult<Map<String, Object>> querySectionEvents(String section, int page, int size,
-            String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String searchKey, String startDate, String endDate,
+            String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String reportSource,
+            String searchKey, String startDate, String endDate,
             boolean excludeHidden);
 
     /**
