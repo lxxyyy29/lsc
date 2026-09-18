@@ -361,8 +361,7 @@ public class EventServiceImpl implements EventService {
      */
     @Override
     public PagedResult<Map<String, Object>> querySectionEvents(String section, int page, int size,
-            String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String reportSource,
-            String searchKey, String startDate, String endDate,
+            String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String searchKey, String startDate, String endDate,
             boolean excludeHidden) {
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(size, 100));
@@ -416,12 +415,6 @@ public class EventServiceImpl implements EventService {
         if (sourceSystem != null && !sourceSystem.isBlank()) {
             where.add("e.source_system = ?");
             params.add(sourceSystem.trim());
-        }
-        // 上报来源过滤（字典 event_report_source：GRID_MEMBER/RESIDENT/12345/PROPERTY 等）
-        // 与 sourceSystem（来源系统，如 H5_APP/PUBLIC_REPORT）语义不同，必须分开过滤
-        if (reportSource != null && !reportSource.isBlank()) {
-            where.add("e.report_source = ?");
-            params.add(reportSource.trim());
         }
         // 关键词搜索：事件编号 / 标题模糊匹配
         if (searchKey != null && !searchKey.isBlank()) {

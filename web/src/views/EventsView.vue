@@ -112,7 +112,7 @@
                   </template>
                 </el-dropdown>
               </td>
-              <td style="font-size:12px;color:#6b7280;">{{ e.reportSource ? sourceLabel(e.reportSource) : getSourceSystemName(e.sourceSystem) }}</td>
+              <td style="font-size:12px;color:#6b7280;">{{ sourceLabel(e.sourceSystem || e.sourceType) }}</td>
               <td style="font-size:12px;color:#6b7280;">{{ e.reportUserName || '-' }}</td>
               <td style="font-size:12px;color:#6b7280;">{{ formatTime(e.occurredAt || e.createdAt) }}</td>
               <td>
@@ -281,7 +281,7 @@ import EventCreateView from './EventCreateView.vue'
 import EventDetailView from './EventDetailView.vue'
 import { showMessage } from '../utils/message'
 import { confirmDialog, promptDialog } from '../utils/dialog'
-import { getReportSourceName, getSourceSystemName } from '../utils/eventTypes'
+import { getSourceSystemName } from '../utils/eventTypes'
 
 const list = ref<any[]>([])
 const loading = ref(true)
@@ -571,9 +571,10 @@ function statusLabel(status: string) {
 }
 
 function sourceLabel(source: string) {
-  // 优先用字典（管理员可维护），字典未加载或未命中时回退静态中文映射，避免直接暴露英文码值
+  // 优先用字典（管理员可维护）；字典未覆盖的码值（如 THIRD_PARTY_DRONE/WEB 等）
+  // 回退静态中文映射，避免列表直接暴露英文码值
   const found = reportSourceOptions.value.find(opt => opt.value === source)
-  return found ? found.label : (getReportSourceName(source) || '-')
+  return found ? found.label : getSourceSystemName(source)
 }
 
 function formatTime(value: any) {
@@ -591,9 +592,8 @@ async function loadData() {
     const params: any = { page: page.value, size: pageSize }
     if (filters.status) params.status = filters.status
     if (filters.urgencyLevel) params.urgencyLevel = filters.urgencyLevel
-    // 下拉取值来自字典 event_report_source（GRID_MEMBER/RESIDENT/…），对应后端的 report_source 字段；
-    // 早前误传成 sourceSystem（值域是 H5_APP/PUBLIC_REPORT），导致选了来源必然查不到数据
-    if (filters.sourceSystem) params.reportSource = filters.sourceSystem
+    // 下拉取值来自字典 event_report_source，后端按 source_system 过滤（字典码值即 source_system 值域）
+    if (filters.sourceSystem) params.sourceSystem = filters.sourceSystem
     if (filters.searchKey) params.searchKey = filters.searchKey.trim()
     params.excludeHidden = filters.excludeHidden
     if (dateRange.value && dateRange.value.length === 2) {
