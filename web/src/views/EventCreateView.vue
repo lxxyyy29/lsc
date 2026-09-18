@@ -452,10 +452,14 @@ async function submit() {
   if (!valid) return
   loading.value = true
   try {
+    // 表单里的「上报来源」对应后端的 source_system：
+    // 事件列表「来源」列与来源筛选取的都该字段，字典 event_report_source 的码值即其值域。
+    // 此前 sourceSystem 被写死为 GRID_PLATFORM，导致用户选择的来源被丢弃、列表恒显示「平台录入」。
+    const { reportSource, ...baseFields } = form.value
     const result = await createEvent({
-      ...form.value,
+      ...baseFields,
       sourceType: 'MANUAL',
-      sourceSystem: 'GRID_PLATFORM',
+      sourceSystem: reportSource || 'GRID_PLATFORM',
       externalEventId: 'EVT-' + Date.now(),
       evidenceReferences: images.value,
     })

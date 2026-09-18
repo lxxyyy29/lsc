@@ -68,6 +68,10 @@ const SOURCE_SYSTEM_LABELS: Record<string, string> = {
   WEB: '管理端',
   H5_APP: '居民端',
   H5: '居民端',
+  // 事件创建表单「上报来源」可选项（字典 event_report_source），与上报导入接口写入的取值保持一致
+  '12345': '12345转办',
+  PROPERTY: '物业上报',
+  AI_CAMERA: '智能监控抓拍',
 }
 
 export function getSourceSystemName(system: string): string {
