@@ -117,13 +117,8 @@
               <td style="font-size:12px;color:#6b7280;">{{ formatTime(e.occurredAt || e.createdAt) }}</td>
               <td>
                 <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                  <button @click="goDetail(e)" style="padding:3px 8px;border:1px solid #1890ff;border-radius:4px;background:#fff;color:#1890ff;font-size:12px;cursor:pointer;">详情</button>
-                  <button v-if="['PENDING_AUDIT', 'IN_AUDIT'].includes(e.status)" @click="handleAudit(e, 'pass')" type="button" style="padding:3px 8px;border:none;border-radius:4px;background:#52c41a;color:#fff;font-size:12px;cursor:pointer;">通过</button>
-                  <button v-if="['PENDING_AUDIT', 'IN_AUDIT'].includes(e.status)" @click="handleAudit(e, 'reject')" type="button" style="padding:3px 8px;border:none;border-radius:4px;background:#ff4d4f;color:#fff;font-size:12px;cursor:pointer;">驳回</button>
-                  <button v-if="e.status === 'WAITING_DISPATCH'" @click="openDispatch(e)" type="button" style="padding:3px 8px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;">派单</button>
-                  <button v-if="e.status === 'WAITING_LEADER_REVIEW'" @click="openLeaderDispatch(e)" type="button" style="padding:3px 8px;border:none;border-radius:4px;background:#722ed1;color:#fff;font-size:12px;cursor:pointer;">组长派单</button>
-                  <button v-if="e.status !== 'CLOSED'" @click="handleClose(e)" type="button" style="padding:3px 8px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#6b7280;">关闭</button>
-                  <button v-else @click="handleReopen(e)" type="button" style="padding:3px 8px;border:1px solid #b7eb8f;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#52c41a;">打开</button>
+                  <!-- 详情/通过/驳回/派单/组长派单/关闭（打开）统一收进「操作」弹窗，弹窗内可直接操作 -->
+                  <button @click="openActions(e)" type="button" style="padding:3px 12px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;">操作</button>
                   <button @click="toggleHidden(e)" type="button" style="padding:3px 8px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#6b7280;">{{ e.hidden ? '显示' : '隐藏' }}</button>
                   <button @click="handleDelete(e)" type="button" style="padding:3px 8px;border:1px solid #ffccc7;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#ff4d4f;">删除</button>
                 </div>
@@ -167,10 +162,26 @@
       </template>
     </el-dialog>
 
-    <!-- 事件详情弹窗（纯只读，无任何功能按钮） -->
-    <div v-if="detailEventId" class="modal-overlay" @click.self="detailEventId = null">
-      <div class="modal-box" style="width:960px;max-width:96vw;max-height:92vh;overflow-y:auto;">
-        <EventDetailView embedded :event-id="detailEventId" @close="detailEventId = null" />
+    <!-- 事件「操作」弹窗：上半部为事件详情（只读），底部为该状态下可执行的操作按钮 -->
+    <div v-if="actionRow" class="modal-overlay" style="z-index:9999;" @click.self="closeActions">
+      <div class="modal-box" style="width:960px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding-bottom:12px;border-bottom:1px solid #e5e7eb;">
+          <h3 style="font-size:16px;font-weight:600;">事件处理</h3>
+          <button @click="closeActions" type="button" title="关闭" style="border:none;background:none;font-size:22px;line-height:1;color:#9ca3af;cursor:pointer;">×</button>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto;padding-top:12px;">
+          <!-- key 绑定刷新计数：操作成功后强制重建，使详情与时间轴同步刷新 -->
+          <EventDetailView :key="actionDetailKey" embedded :event-id="actionRow.id" @close="closeActions" />
+        </div>
+        <div style="flex-shrink:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;padding-top:12px;border-top:1px solid #e5e7eb;">
+          <span style="margin-right:auto;font-size:12px;color:#9ca3af;">当前状态：{{ statusLabel(actionRow.status) }}</span>
+          <button v-if="['PENDING_AUDIT', 'IN_AUDIT'].includes(actionRow.status)" @click="handleAudit(actionRow, 'pass')" type="button" class="btn" style="background:#52c41a;color:#fff;">通过</button>
+          <button v-if="['PENDING_AUDIT', 'IN_AUDIT'].includes(actionRow.status)" @click="handleAudit(actionRow, 'reject')" type="button" class="btn" style="background:#ff4d4f;color:#fff;">驳回</button>
+          <button v-if="actionRow.status === 'WAITING_DISPATCH'" @click="openDispatch(actionRow)" type="button" class="btn btn-primary">派单</button>
+          <button v-if="actionRow.status === 'WAITING_LEADER_REVIEW'" @click="openLeaderDispatch(actionRow)" type="button" class="btn" style="background:#722ed1;color:#fff;">组长派单</button>
+          <button v-if="actionRow.status !== 'CLOSED'" @click="handleClose(actionRow)" type="button" class="btn btn-default">关闭</button>
+          <button v-else @click="handleReopen(actionRow)" type="button" class="btn" style="border:1px solid #b7eb8f;background:#fff;color:#52c41a;">打开</button>
+        </div>
       </div>
     </div>
 
@@ -276,7 +287,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { getEventSectionEvents, auditEvent, setEventHidden, deleteEvents, getDictItems, dispatchEvent, getSystemUsers, getLeaderDispatchInfo, leaderDispatch, updateEventUrgency, closeEvent, reopenEvent } from '../api'
+import { getEventSectionEvents, getEventDetail, auditEvent, setEventHidden, deleteEvents, getDictItems, dispatchEvent, getSystemUsers, getLeaderDispatchInfo, leaderDispatch, updateEventUrgency, closeEvent, reopenEvent } from '../api'
 import EventCreateView from './EventCreateView.vue'
 import EventDetailView from './EventDetailView.vue'
 import { showMessage } from '../utils/message'
@@ -296,8 +307,35 @@ const showCreateModal = ref(false)
 const createRef = ref<InstanceType<typeof EventCreateView> | null>(null)
 const createLoading = ref(false)
 
-// 详情弹窗（纯只读）
-const detailEventId = ref<string | number | null>(null)
+// 「操作」弹窗：选中行 + 详情面板重建计数
+const actionRow = ref<any>(null)
+const actionDetailKey = ref(0)
+
+function openActions(e: any) {
+  actionRow.value = { ...e }
+  actionDetailKey.value++
+}
+
+function closeActions() {
+  actionRow.value = null
+}
+
+/**
+ * 操作成功后的收尾：重建详情面板并重新拉取事件状态，
+ * 使弹窗底部按钮随状态切换（如通过后由「通过/驳回」变为「派单」）。
+ */
+async function afterAction() {
+  actionDetailKey.value++
+  const id = actionRow.value?.id
+  if (!id) return
+  try {
+    const detail: any = await getEventDetail(id)
+    if (detail) actionRow.value = { ...actionRow.value, ...detail }
+  } catch {
+    // 事件已不可读（如已删除）时关闭弹窗
+    actionRow.value = null
+  }
+}
 
 async function onCreate() {
   createLoading.value = true
@@ -361,10 +399,6 @@ async function loadReportSources() {
 
 const displayList = computed(() => list.value)
 
-function goDetail(e: any) {
-  detailEventId.value = e.id || e.externalEventId
-}
-
 async function toggleHidden(e: any) {
   const target = !e.hidden
   const ok = await confirmDialog({
@@ -413,6 +447,7 @@ async function handleClose(e: any) {
     showMessage('事件已关闭', 'success')
     if (displayList.value.length <= 1 && page.value > 1) page.value--
     loadData()
+    await afterAction()
   } catch (err: any) {
     showMessage(err?.message || '关闭失败')
   }
@@ -431,6 +466,7 @@ async function handleReopen(e: any) {
     await reopenEvent(e.id)
     showMessage('事件已重新打开', 'success')
     loadData()
+    await afterAction()
   } catch (err: any) {
     showMessage(err?.message || '打开失败')
   }
@@ -475,6 +511,7 @@ async function confirmAudit() {
     auditModal.visible = false
     showMessage(action === 'pass' ? '审核已通过' : '已驳回，事件进入异常工单', 'success')
     loadData()
+    await afterAction()
   } catch (e: any) {
     showMessage(e?.message || '操作失败')
   }
@@ -508,6 +545,7 @@ async function confirmDispatch() {
     showDispatch.value = false
     showMessage('派单成功', 'success')
     loadData()
+    await afterAction()
   } catch (e: any) {
     showMessage(e?.message || '派单失败')
   }
@@ -550,6 +588,7 @@ async function confirmLeaderDispatch() {
     showLeaderDispatch.value = false
     showMessage('组长派单成功', 'success')
     loadData()
+    await afterAction()
   } catch (e: any) {
     showMessage(e?.message || '组长派单失败')
   }
