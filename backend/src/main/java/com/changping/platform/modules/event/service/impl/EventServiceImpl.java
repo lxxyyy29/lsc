@@ -171,6 +171,17 @@ public class EventServiceImpl implements EventService {
                     user.id(), user.userName(), entity.getId()));
         }
 
+        // 上报来源归一化：创建表单选择的「上报来源」此前只写入 source_system，
+        // report_source 则取数据库默认值 GRID_MEMBER，导致事件详情、台账与 Excel 导出
+        // 把「12345转办 / 居民上报 / 平台录入」等一律显示成「网格员上报」。
+        // 这里按映射补写 report_source（放在 H5 分支之后，H5_APP 映射结果与之一致，不会互相覆盖）。
+        String normalizedReportSource = normalizeReportSource(request.sourceSystem());
+        if (normalizedReportSource != null) {
+            jdbcTemplate.update("UPDATE biz_event SET report_source = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    normalizedReportSource, entity.getId());
+            entity.setReportSource(normalizedReportSource);
+        }
+
         // 创建表单填写的发起人信息：电话（Web 必填）/姓名（选填）落库。
         // 只覆盖实际传入的字段：否则「只填电话、不填姓名」会把上面 H5 路径已写入的上报人姓名清成 NULL。
         String reporterName = trimToNull(request.reporterName());
@@ -200,6 +211,26 @@ public class EventServiceImpl implements EventService {
         alarmEventMongoService.upsertManualEvent(request, entity.getId(), entity.getEventCode(), entity.getStatus());
         alarmWorkflowStatusSyncService.syncWorkflowStatus(entity.getId(), EventStatus.PENDING_AUDIT.name());
         return getEventDetail(entity.getId());
+    }
+
+    /**
+     * 把「上报来源」（创建表单 → source_system）归一到 report_source 域。
+     *
+     * <p>取值与 LedgerService 台账/导出的 CASE 分支对齐：
+     * GRID_MEMBER=网格员、PUBLIC_REPORT/RESIDENT_REPORT=居民、12345、PROPERTY、MANUAL=平台录入。
+     * 未识别的值原样保留（不伪装成「网格员上报」）；超过列宽 32 时返回 null 跳过写入，避免插入报错。
+     */
+    private static String normalizeReportSource(String sourceSystem) {
+        if (sourceSystem == null || sourceSystem.isBlank()) {
+            return null;
+        }
+        String s = sourceSystem.trim();
+        String mapped = switch (s.toUpperCase(java.util.Locale.ROOT)) {
+            case "H5_APP" -> "GRID_MEMBER";
+            case "GRID_PLATFORM" -> "MANUAL";
+            default -> s;
+        };
+        return mapped.length() <= 32 ? mapped : null;
     }
 
     @Override

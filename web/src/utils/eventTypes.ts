@@ -47,6 +47,9 @@ const REPORT_SOURCE_LABELS: Record<string, string> = {
   GRID_MEMBER: '网格员上报',
   PROPERTY: '物业上报',
   RESIDENT: '居民上报',
+  // 创建事件表单的「上报来源」经后端归一化后可能出现的取值（见 EventServiceImpl.normalizeReportSource）
+  PUBLIC_REPORT: '居民上报',
+  MANUAL: '平台录入',
 }
 
 export function getReportSourceName(source: string): string {
