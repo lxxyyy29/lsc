@@ -76,10 +76,30 @@ public record EventDetailVo(
         };
     }
 
+    /**
+     * 生命周期记录（处置时间轴条目）。
+     *
+     * <p>前 4 个字段为历史兼容字段，前端旧逻辑按「操作人 — 备注」渲染 remark；
+     * 其余为结构化补充，用于回答「谁、以什么角色、做了什么、交给了谁」，例如派单环节的派单人与受派人。
+     */
     public record LifecycleRecordVo(
             String action,
             String status,
             String remark,
-            LocalDateTime occurredAt) {
+            LocalDateTime occurredAt,
+            /** 原始动作码（如 LEADER_DISPATCH），便于前端按动作着色/取图标 */
+            String rawAction,
+            /** 操作人姓名 */
+            String operatorName,
+            /** 操作人角色（如「网格组长」「网格员」「管理员」），无则 null */
+            String operatorRole,
+            /** 操作人填写的备注原文（不含操作人姓名） */
+            String operatorRemark,
+            /** 该动作涉及的对象摘要，如「派单给 刘核实」「处置结论：需补充证据」 */
+            String detail,
+            /** 关联工单号，无工单时为 null */
+            String workOrderNo,
+            /** 关联工单当前状态中文 */
+            String workOrderStatus) {
     }
 }

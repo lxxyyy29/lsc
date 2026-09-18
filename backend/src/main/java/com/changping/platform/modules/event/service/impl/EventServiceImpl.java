@@ -18,8 +18,10 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -949,7 +951,9 @@ public class EventServiceImpl implements EventService {
             return List.of();
         }
         return document.getLifecycle().stream()
-                .map(record -> new EventDetailVo.LifecycleRecordVo(record.getAction(), record.getStatus(), record.getRemark(), record.getOccurredAt()))
+                .map(record -> new EventDetailVo.LifecycleRecordVo(
+                        record.getAction(), record.getStatus(), record.getRemark(), record.getOccurredAt(),
+                        record.getAction(), null, null, record.getRemark(), null, null, null))
                 .toList();
     }
 
@@ -1339,28 +1343,150 @@ public class EventServiceImpl implements EventService {
     @Override
     public List<EventDetailVo.LifecycleRecordVo> getTimeline(Long eventId) {
         List<EventDetailVo.LifecycleRecordVo> timeline = new ArrayList<>();
-        // 从事件记录表获取操作历史
+        // 从事件记录表获取操作历史（带 operator_user_id，用于反查操作人角色）
         List<Map<String, Object>> records = jdbcTemplate.queryForList(
-                "SELECT action_type, from_status, to_status, operator_name, remark, created_at FROM biz_event_record WHERE event_id = ? ORDER BY created_at ASC, id ASC",
+                "SELECT action_type, from_status, to_status, operator_name, operator_user_id, remark, created_at "
+                        + "FROM biz_event_record WHERE event_id = ? ORDER BY created_at ASC, id ASC",
                 eventId);
+
+        // 关联工单：事件与工单一一对应，派单/处置/复核等记录都对应同一张工单，
+        // 时间轴据此展示「派单人派给了谁」「工单当前状态」等信息
+        Map<String, Object> workOrder = null;
+        List<Map<String, Object>> workOrders = jdbcTemplate.queryForList(
+                "SELECT work_order_no, status, assignee_name, dispatcher_name "
+                        + "FROM biz_work_order WHERE source_event_id = ? ORDER BY id DESC LIMIT 1",
+                eventId);
+        if (!workOrders.isEmpty()) {
+            workOrder = workOrders.get(0);
+        }
+
+        // 一次性解析本时间轴涉及的操作人角色，避免逐条查库
+        Map<Long, String> roleNames = resolveUserRoleNames(records);
+
         for (Map<String, Object> record : records) {
             String rawActionType = (String) record.get("action_type");
             String action = mapActionName(rawActionType);
             String status = mapStatusLabel((String) record.get("to_status"));
             String operator = (String) record.get("operator_name");
             String remark = (String) record.get("remark");
-            // remark 为空或等于原始英文 action_type 时不拼入展示文本，避免时间轴出现英文代码
+            // 备注为空、或等于原始英文 action_type 时不展示，避免时间轴出现英文代码
             String displayRemark = "";
             if (remark != null && !remark.isBlank() && !remark.equals(rawActionType)) {
                 displayRemark = remark;
             }
+            Long operatorId = asLong(record.get("operator_user_id"));
+            String operatorRole = operatorId == null ? null : roleNames.get(operatorId);
             java.sql.Timestamp ts = (java.sql.Timestamp) record.get("created_at");
             timeline.add(new EventDetailVo.LifecycleRecordVo(
                     action, status != null ? status : "",
                     (operator != null ? operator : "") + (displayRemark.isEmpty() ? "" : " — " + displayRemark),
-                    ts != null ? ts.toLocalDateTime() : LocalDateTime.now()));
+                    ts != null ? ts.toLocalDateTime() : LocalDateTime.now(),
+                    rawActionType,
+                    operator,
+                    operatorRole,
+                    displayRemark.isEmpty() ? null : displayRemark,
+                    buildRecordDetail(rawActionType, status, workOrder),
+                    workOrder == null ? null : (String) workOrder.get("work_order_no"),
+                    workOrder == null ? null : mapWorkOrderStatus((String) workOrder.get("status"))));
         }
         return timeline;
+    }
+
+    /**
+     * 批量解析操作人角色名称（多角色用「、」连接），用于时间轴展示「谁以什么角色操作」。
+     */
+    private Map<Long, String> resolveUserRoleNames(List<Map<String, Object>> records) {
+        Map<Long, String> result = new LinkedHashMap<>();
+        List<Long> userIds = records.stream()
+                .map(record -> asLong(record.get("operator_user_id")))
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (userIds.isEmpty()) {
+            return result;
+        }
+        String placeholders = String.join(",", userIds.stream().map(id -> "?").toList());
+        jdbcTemplate.query(
+                "SELECT ur.user_id AS userId, r.role_name AS roleName "
+                        + "FROM sys_user_role ur JOIN sys_role r ON r.id = ur.role_id "
+                        + "WHERE ur.user_id IN (" + placeholders + ") ORDER BY r.id ASC",
+                rs -> {
+                    Long userId = rs.getLong("userId");
+                    String roleName = rs.getString("roleName");
+                    if (roleName == null || roleName.isBlank()) {
+                        return;
+                    }
+                    result.merge(userId, roleName, (a, b) -> a.equals(b) ? a : a + "、" + b);
+                },
+                userIds.toArray());
+        return result;
+    }
+
+    /**
+     * 生成时间轴某条记录的「涉及对象」摘要，例如派单记录标明派给了谁、处置记录标明结论。
+     */
+    private String buildRecordDetail(String actionType, String toStatusLabel, Map<String, Object> workOrder) {
+        if (actionType == null) {
+            return null;
+        }
+        String assignee = workOrder == null ? null : (String) workOrder.get("assignee_name");
+        String dispatcher = workOrder == null ? null : (String) workOrder.get("dispatcher_name");
+        String woNo = workOrder == null ? null : (String) workOrder.get("work_order_no");
+        String woSuffix = woNo == null ? "" : "（工单 " + woNo + "）";
+        return switch (actionType) {
+            case "WORK_ORDER_DISPATCH", "DISPATCH" -> (assignee == null ? "已派发工单" : "派单给 " + assignee) + woSuffix;
+            case "LEADER_DISPATCH" -> (assignee == null ? "组长派单" : "组长派单给 " + assignee) + woSuffix;
+            case "WORK_ORDER_NOT_TRUE" -> "处置结论：不属实" + woSuffix;
+            case "WORK_ORDER_NEEDS_EVIDENCE" -> "处置结论：需补充证据" + woSuffix;
+            case "WORK_ORDER_WAITING_CLOSE" -> "处置结论：属实并已处理，待复核" + woSuffix;
+            case "WORK_ORDER_CONTINUE" -> "退回继续处理" + woSuffix;
+            case "CONFIRM_CLOSE" -> "复核通过并关闭" + woSuffix;
+            case "REJECT_CLOSE" -> "复核驳回，退回处理" + woSuffix;
+            case "EVENT_INTAKE" -> "事件登记入库，进入待审核";
+            case "SUPERVISION_ESCALATE" -> "超期自动升级督办";
+            default -> {
+                if (toStatusLabel == null || toStatusLabel.isBlank()) {
+                    yield dispatcher == null ? null : "处理人：" + dispatcher;
+                }
+                yield "状态流转至「" + toStatusLabel + "」";
+            }
+        };
+    }
+
+    /**
+     * 工单状态 → 中文标签（时间轴展示用）
+     */
+    private String mapWorkOrderStatus(String status) {
+        if (status == null) {
+            return null;
+        }
+        return switch (status) {
+            case "WAITING_ACCEPT" -> "待接单";
+            case "PROCESSING" -> "处理中";
+            case "WAITING_VERIFY" -> "待补充证据";
+            case "WAITING_CLOSE_CONFIRM" -> "待关闭确认";
+            case "COMPLETED" -> "已完成";
+            case "CLOSED" -> "已关闭";
+            case "TIMEOUT" -> "已超时";
+            default -> status;
+        };
+    }
+
+    /**
+     * 宽松地把结果集字段转为 Long（兼容 Integer/Long/String，无法解析时返回 null）
+     */
+    private static Long asLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            return Long.parseLong(String.valueOf(value).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     @Override

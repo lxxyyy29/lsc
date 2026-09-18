@@ -55,11 +55,33 @@
           <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">处置时间轴</h3>
           <div v-if="timeline.length" style="position:relative;padding-left:20px;">
             <div style="position:absolute;left:7px;top:0;bottom:0;width:2px;background:#e5e7eb;"></div>
-            <div v-for="(item, idx) in timeline" :key="idx" style="position:relative;margin-bottom:16px;">
+            <div v-for="(item, idx) in timeline" :key="idx" style="position:relative;margin-bottom:18px;">
               <div style="position:absolute;left:-17px;top:4px;width:10px;height:10px;border-radius:50%;background:#1890ff;border:2px solid #fff;"></div>
-              <div style="font-size:13px;font-weight:600;color:#374151;">{{ item.action }}</div>
-              <div style="font-size:12px;color:#6b7280;margin-top:2px;">{{ item.remark }}</div>
-              <div style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ item.occurredAt }}</div>
+
+              <!-- 动作 + 操作后的状态 -->
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-size:13px;font-weight:600;color:#374151;">{{ item.action }}</span>
+                <span v-if="item.status" style="font-size:11px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:1px 6px;">{{ item.status }}</span>
+              </div>
+
+              <!-- 涉及对象：派单派给了谁 / 处置结论 -->
+              <div v-if="item.detail" style="font-size:12px;color:#1890ff;margin-top:4px;">{{ item.detail }}</div>
+
+              <!-- 关联工单 -->
+              <div v-if="item.workOrderNo" style="font-size:12px;color:#6b7280;margin-top:2px;">
+                工单 {{ item.workOrderNo }}<span v-if="item.workOrderStatus"> · {{ item.workOrderStatus }}</span>
+              </div>
+
+              <!-- 操作人及其角色 -->
+              <div v-if="item.operatorName" style="font-size:12px;color:#6b7280;margin-top:3px;">
+                操作人：{{ item.operatorName }}<span v-if="item.operatorRole" style="color:#9ca3af;">（{{ item.operatorRole }}）</span>
+              </div>
+              <div v-else-if="item.remark" style="font-size:12px;color:#6b7280;margin-top:3px;">{{ item.remark }}</div>
+
+              <!-- 该操作的备注 -->
+              <div v-if="item.operatorRemark" style="font-size:12px;color:#9ca3af;margin-top:2px;">备注：{{ item.operatorRemark }}</div>
+
+              <div style="font-size:11px;color:#9ca3af;margin-top:3px;">{{ formatTime(item.occurredAt) }}</div>
             </div>
           </div>
           <p v-else style="font-size:12px;color:#9ca3af;text-align:center;padding:20px;">暂无操作记录</p>
@@ -113,6 +135,13 @@ function statusLabel(status: string) {
     IGNORED: '已忽略'
   }
   return map[status] || status
+}
+
+/** 时间轴时间格式化：2026-09-17T16:36:11.966 → 2026-09-17 16:36 */
+function formatTime(value: any) {
+  if (!value) return '-'
+  const normalized = String(value).replace('T', ' ')
+  return normalized.length >= 16 ? normalized.slice(0, 16) : normalized
 }
 
 async function loadData() {
