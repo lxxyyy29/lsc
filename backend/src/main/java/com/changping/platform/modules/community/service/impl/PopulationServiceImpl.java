@@ -182,6 +182,11 @@ public class PopulationServiceImpl implements PopulationService {
             entity.setIsPartyMember(
                     current != null && current.getIsPartyMember() != null ? current.getIsPartyMember() : 0);
         }
+        // 自定义字段：调用方未提交该信息（null）时沿用原值，避免整列自定义字段被清空；
+        // 提交了空 Map 则视为「显式清空」，按空写入
+        if (entity.getExtraFields() == null && current != null) {
+            entity.setExtraFields(current.getExtraFields());
+        }
         Long headHouseholdId = applyHousehold(entity, false);
         boolean ok = populationMapper.update(entity) > 0;
         if (ok && headHouseholdId != null) {

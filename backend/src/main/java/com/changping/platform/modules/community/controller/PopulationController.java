@@ -7,6 +7,7 @@ import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.community.entity.PopulationEntity;
 import com.changping.platform.modules.community.service.PopulationService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.HttpHeaders;
@@ -17,24 +18,72 @@ import org.springframework.web.bind.annotation.*;
 import java.io.ByteArrayOutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/community/population")
 public class PopulationController {
 
+    /**
+     * cmn_population 的物理列（驼峰形式，与前端提交键一致）。
+     * 不在此集合内的业务字段一律按「自定义字段」写入 extra_fields（JSON），
+     * 因此字段配置器新增的字段无需动态建列即可落库。
+     */
+    private static final Set<String> COLUMN_KEYS = Set.of(
+            "gridId", "householdId", "name", "idCard", "phone", "gender", "age", "birthday",
+            "householdType", "specialPopulation", "specialPopulationType", "isPartyMember",
+            "relation", "address", "buildingNo", "roomNo", "tags", "photoUrl", "status", "remark");
+
+    /**
+     * 请求体中出现但不属于业务字段的键，直接忽略，避免被误当成自定义字段存进 extra_fields：
+     * 主键/审计字段、查询期 JOIN 填充字段，以及列表接口使用的查询参数（populationType）。
+     */
+    private static final Set<String> IGNORED_KEYS = Set.of(
+            "id", "createdAt", "updatedAt", "gridName", "householdAddress", "householdNo",
+            "extraFields", "populationType");
+
     private final PopulationService populationService;
     private final CurrentUserService currentUserService;
     private final PermissionGuard permissionGuard;
+    private final ObjectMapper objectMapper;
 
     public PopulationController(
             PopulationService populationService,
             CurrentUserService currentUserService,
-            PermissionGuard permissionGuard) {
+            PermissionGuard permissionGuard,
+            ObjectMapper objectMapper) {
         this.populationService = populationService;
         this.currentUserService = currentUserService;
         this.permissionGuard = permissionGuard;
+        this.objectMapper = objectMapper;
+    }
+
+    /**
+     * 请求体 → 实体：内置列按属性绑定，其余业务字段收进 extraFields。
+     *
+     * <p>这里必须用 Map 接收再手工分流：直接绑定 PopulationEntity 时，
+     * Jackson 会把字段配置器新增的自定义字段静默丢弃（表现为"填了但没保存"）。
+     */
+    private PopulationEntity toEntity(Map<String, Object> body) {
+        Map<String, Object> columns = new LinkedHashMap<>();
+        Map<String, Object> extra = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : body.entrySet()) {
+            String key = entry.getKey();
+            if (IGNORED_KEYS.contains(key)) {
+                continue;
+            }
+            if (COLUMN_KEYS.contains(key)) {
+                columns.put(key, entry.getValue());
+            } else {
+                extra.put(key, entry.getValue());
+            }
+        }
+        PopulationEntity entity = objectMapper.convertValue(columns, PopulationEntity.class);
+        entity.setExtraFields(extra);
+        return entity;
     }
 
     @GetMapping
@@ -134,8 +183,9 @@ public class PopulationController {
     }
 
     @PostMapping
-    public ApiResponse<Boolean> create(@RequestBody PopulationEntity entity) {
+    public ApiResponse<Boolean> create(@RequestBody Map<String, Object> body) {
         requirePopulationPermission();
+        PopulationEntity entity = toEntity(body);
         // status 未传时默认 ACTIVE，避免插入 NULL 导致列表（WHERE status='ACTIVE'）查不到
         if (entity.getStatus() == null || entity.getStatus().isBlank()) {
             entity.setStatus("ACTIVE");
@@ -144,8 +194,9 @@ public class PopulationController {
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable Long id, @RequestBody PopulationEntity entity) {
+    public ApiResponse<Boolean> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         requirePopulationPermission();
+        PopulationEntity entity = toEntity(body);
         entity.setId(id);
         // 编辑表单可能不带 status：保留原状态，避免全字段更新把 status 置 NULL 后数据"消失"
         if (entity.getStatus() == null || entity.getStatus().isBlank()) {

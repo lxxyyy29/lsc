@@ -129,10 +129,13 @@
                     <el-button style="height:42px;flex-shrink:0;" @click="confirmCustom('specialPopulationType')">确定</el-button>
                   </div>
                 </template>
-                <!-- 出生日期：由身份证自动推算，与性别/年龄保持一致只读，避免手工值与身份证不一致 -->
-                <el-date-picker v-else-if="f.fieldType === 'date'" v-model="form.birthday" type="date"
-                                value-format="YYYY-MM-DD" placeholder="填写身份证后自动带出" style="width:100%;"
-                                disabled @change="autoFillAge" />
+                <!-- 日期字段：出生日期由身份证自动推算（只读），其余自定义日期字段可正常选择 -->
+                <el-date-picker v-else-if="f.fieldType === 'date'" v-model="form[camel(f.fieldKey)]" type="date"
+                                value-format="YYYY-MM-DD"
+                                :placeholder="isKey(f, 'birthday') ? '填写身份证后自动带出' : '请选择日期'"
+                                style="width:100%;"
+                                :disabled="isKey(f, 'birthday')"
+                                @change="isKey(f, 'birthday') ? autoFillAge() : undefined" />
                 <!-- 与户主关系（自定义...为显式入口） -->
                 <template v-else-if="isKey(f, 'relation')">
                   <el-select v-if="!customEditing['relation']"
@@ -176,23 +179,60 @@
 
     <!-- 字段配置弹窗 -->
     <div v-if="showConfig" class="modal-overlay">
-      <div class="modal-box" style="width:560px;">
+      <div class="modal-box" style="width:680px;">
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">字段配置</h3>
-        <p style="font-size:12px;color:#6b7280;margin-bottom:12px;">勾选启用的字段将显示在新增/编辑表单中，可调整排序与必填。（导入模板列固定，不受此配置影响）</p>
-        <div style="max-height:55vh;overflow-y:auto;">
-          <div v-for="(f, idx) in configFields" :key="f.id" style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid #f3f4f6;">
+        <p style="font-size:12px;color:#6b7280;margin-bottom:12px;">
+          勾选启用的字段将显示在新增/编辑表单中，可调整排序与必填；可新增自定义字段、删除不需要的字段。
+          <b>新增与删除在点「保存配置」后生效。</b>（导入模板列固定，不受此配置影响）
+        </p>
+
+        <!-- 新增字段 -->
+        <div style="border:1px dashed #d1d5db;border-radius:8px;padding:10px 12px;margin-bottom:12px;background:#fafafa;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input v-model="newField.fieldKey" class="form-input" style="width:132px;padding:4px 8px;font-size:12px;"
+                   placeholder="字段键 如 nativePlace" />
+            <input v-model="newField.fieldLabel" class="form-input" style="width:110px;padding:4px 8px;font-size:12px;"
+                   placeholder="显示名 如 籍贯" />
+            <select v-model="newField.fieldType" class="filter-select" style="height:28px;font-size:12px;padding:0 8px;">
+              <option v-for="t in FIELD_TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
+            </select>
+            <button @click="addConfigField" class="btn btn-primary" style="padding:4px 12px;font-size:12px;">+ 添加字段</button>
+          </div>
+          <div v-if="newField.fieldType === 'select'" style="margin-top:8px;">
+            <input v-model="newField.options" class="form-input" style="width:100%;padding:4px 8px;font-size:12px;"
+                   placeholder="下拉选项，逗号分隔；需要「值:显示名」时可写成 1:本地,2:外地" />
+          </div>
+          <p style="font-size:11px;color:#9ca3af;margin-top:6px;line-height:1.6;">
+            字段键用于存储，建议英文且创建后不要改动。自定义字段的值保存在该人员记录的扩展字段中，
+            不参与关键字搜索与 Excel 导出。
+          </p>
+        </div>
+
+        <div style="max-height:46vh;overflow-y:auto;">
+          <div v-for="(f, idx) in configFields" :key="f.id != null ? f.id : f._tmpKey"
+               style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid #f3f4f6;">
             <input type="checkbox" v-model="f.enabled" :true-value="1" :false-value="0" style="accent-color:#1890ff;" />
-            <input v-model="f.fieldLabel" class="form-input" style="width:120px;padding:4px 8px;font-size:12px;" />
-            <span style="flex:1;font-size:12px;color:#9ca3af;">{{ f.fieldKey }}</span>
+            <input v-model="f.fieldLabel" class="form-input" style="width:110px;padding:4px 8px;font-size:12px;" />
+            <span style="flex:1;font-size:12px;color:#9ca3af;">
+              {{ f.fieldKey }}
+              <span v-if="f.id == null" style="margin-left:6px;padding:1px 6px;border-radius:999px;background:#e6f4ff;color:#0958d9;font-size:11px;">待新增</span>
+            </span>
             <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:#6b7280;cursor:pointer;">
               <input type="checkbox" v-model="f.required" :true-value="1" :false-value="0" style="accent-color:#ff4d4f;" />必填
             </label>
             <div style="display:flex;gap:4px;">
               <button @click="moveConfig(idx, -1)" :disabled="idx === 0" class="btn btn-default" style="padding:2px 8px;font-size:11px;">↑</button>
               <button @click="moveConfig(idx, 1)" :disabled="idx === configFields.length - 1" class="btn btn-default" style="padding:2px 8px;font-size:11px;">↓</button>
+              <button @click="removeConfigField(idx)" :disabled="isSystemField(f)"
+                      :title="isSystemField(f) ? '系统必需字段，不能删除' : '删除该字段'"
+                      class="btn btn-danger" style="padding:2px 8px;font-size:11px;">删除</button>
             </div>
           </div>
         </div>
+        <p style="font-size:11px;color:#9ca3af;margin-top:10px;">
+          姓名、身份证号、与户主关系、所属网格为系统必需字段，不可删除（可改显示名或取消勾选停用）。
+          删除字段不会清除已录入的数据，仅使其不再出现在表单中。
+        </p>
         <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
           <button @click="showConfig = false" class="btn btn-default">取消</button>
           <button @click="saveConfig" class="btn btn-primary" :disabled="saving">{{ saving ? '保存中...' : '保存配置' }}</button>
@@ -371,15 +411,23 @@ const filters = reactive({
   gridId: null as number | null,
 })
 
-const emptyForm = () => ({
-  id: null as number | null,
-  householdId: null as number | null,
-  name: '', gender: '', age: null as number | null, phone: '', idCard: '', birthday: '',
-  householdType: '', specialPopulation: 0, specialPopulationType: '', isPartyMember: 0, relation: '',
-  address: '', buildingNo: '', roomNo: '',
-  gridId: null as number | null, remark: '',
-  status: 'ACTIVE',
-})
+const emptyForm = () => {
+  const base: any = {
+    id: null as number | null,
+    householdId: null as number | null,
+    name: '', gender: '', age: null as number | null, phone: '', idCard: '', birthday: '',
+    householdType: '', specialPopulation: 0, specialPopulationType: '', isPartyMember: 0, relation: '',
+    address: '', buildingNo: '', roomNo: '',
+    gridId: null as number | null, remark: '',
+    status: 'ACTIVE',
+  }
+  // 字段配置器新增的自定义字段补默认值：保证表单 v-model 有初值，避免提交时缺失该键
+  for (const f of formFields.value) {
+    const key = camel(f.fieldKey)
+    if (!(key in base)) base[key] = f.fieldType === 'checkbox' ? 0 : ''
+  }
+  return base
+}
 const form = ref(emptyForm())
 const formRef = ref<any>()
 
@@ -585,7 +633,82 @@ async function loadFieldConfig() {
   }
 }
 
+// 字段类型选项（需与后端 FormFieldConfigController.ALLOWED_TYPES 及表单渲染分支一致）
+const FIELD_TYPES = [
+  { value: 'text', label: '单行文本' },
+  { value: 'textarea', label: '多行文本' },
+  { value: 'select', label: '下拉选择' },
+  { value: 'date', label: '日期' },
+  { value: 'checkbox', label: '勾选' },
+]
+
+// 系统必需字段（归一化键，与后端 FormFieldConfigMapper.SYSTEM_REQUIRED_KEYS 一致）：不可删除
+const SYSTEM_FIELD_KEYS = ['name', 'idcard', 'relation', 'gridid']
+function isSystemField(f: any): boolean {
+  if (f?.systemRequired === true) return true
+  return SYSTEM_FIELD_KEYS.includes(String(f?.fieldKey || '').replace(/_/g, '').toLowerCase())
+}
+
+// 新增字段的草稿
+const newField = ref<{ fieldKey: string; fieldLabel: string; fieldType: string; options: string }>({
+  fieldKey: '', fieldLabel: '', fieldType: 'text', options: '',
+})
+
+// 字段键归一化（去下划线 + 小写），用于「重复字段」判断
+const normalizeFieldKey = (key: any) => String(key || '').replace(/_/g, '').toLowerCase()
+
+function addConfigField() {
+  const key = newField.value.fieldKey.trim()
+  const label = newField.value.fieldLabel.trim()
+  if (!key) { showMessage('请填写字段键', 'warning'); return }
+  if (!/^[A-Za-z][A-Za-z0-9_]{0,31}$/.test(key)) {
+    showMessage('字段键需以字母开头，只能包含字母、数字、下划线，最长 32 位', 'warning'); return
+  }
+  if (!label) { showMessage('请填写字段显示名', 'warning'); return }
+  if (configFields.value.some(f => normalizeFieldKey(f.fieldKey) === normalizeFieldKey(key))) {
+    showMessage(`字段键「${key}」已存在`, 'warning'); return
+  }
+  if (newField.value.fieldType === 'select' && !newField.value.options.trim()) {
+    showMessage('下拉类型必须填写选项', 'warning'); return
+  }
+  configFields.value.push({
+    // id 为 null 表示本次新增，保存时由后端插入
+    id: null,
+    _tmpKey: 'new-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    module: 'population',
+    fieldKey: key,
+    fieldLabel: label,
+    fieldType: newField.value.fieldType,
+    options: newField.value.options.trim() || null,
+    enabled: 1,
+    required: 0,
+    sortOrder: configFields.value.length + 1,
+  })
+  newField.value = { fieldKey: '', fieldLabel: '', fieldType: 'text', options: '' }
+}
+
+async function removeConfigField(idx: number) {
+  const f = configFields.value[idx]
+  if (!f) return
+  if (isSystemField(f)) {
+    showMessage('系统必需字段不能删除', 'warning')
+    return
+  }
+  // 已保存的字段删除影响面更大（表单少一项），先确认；未保存的新增行直接移除
+  if (f.id != null) {
+    const ok = await confirmDialog({
+      message: `确定删除字段「${f.fieldLabel || f.fieldKey}」？点「保存配置」后该字段将不再出现在表单中（已录入的数据不会被清除）。`,
+      danger: true,
+      okText: '删除',
+    })
+    if (!ok) return
+  }
+  configFields.value.splice(idx, 1)
+  configFields.value.forEach((x, i) => { x.sortOrder = i + 1 })
+}
+
 function openFieldConfig() {
+  newField.value = { fieldKey: '', fieldLabel: '', fieldType: 'text', options: '' }
   showConfig.value = true
 }
 
@@ -602,7 +725,19 @@ function moveConfig(idx: number, dir: number) {
 async function saveConfig() {
   saving.value = true
   try {
-    await saveFormFieldConfig(configFields.value.map((f, i) => ({ ...f, sortOrder: i + 1 })))
+    // 后端按「对账」处理：有 id 更新、无 id 新增、名单里缺失的删除
+    const payload = configFields.value.map((f, i) => ({
+      id: f.id ?? null,
+      module: 'population',
+      fieldKey: f.fieldKey,
+      fieldLabel: f.fieldLabel,
+      fieldType: f.fieldType,
+      options: f.options ?? null,
+      enabled: f.enabled,
+      required: f.required,
+      sortOrder: i + 1,
+    }))
+    await saveFormFieldConfig(payload)
     showMessage('配置已保存')
     showConfig.value = false
     await loadFieldConfig()
@@ -626,20 +761,34 @@ function openCreate(prefill?: { householdId?: number | null; address?: string; g
   nextTick(() => formRef.value?.clearValidate())
 }
 
-function openEdit(p: any) {
+async function openEdit(p: any) {
+  // 列表（常驻为"户→成员"树）返回的行可能不带自定义字段值，
+  // 统一按 id 取一次详情再回填，避免编辑保存时把已有自定义字段值覆盖成空
+  let full: any = p
+  if (p?.id) {
+    try {
+      const detail: any = await http.get(`/community/population/${p.id}`)
+      if (detail && typeof detail === 'object') full = detail
+    } catch (e) {
+      // 详情获取失败时退化为用列表行数据回填
+    }
+  }
   form.value = {
-    id: p.id,
-    householdId: p.householdId || null,
-    name: p.name || '', gender: p.gender || '', age: p.age != null ? p.age : null,
-    phone: p.phone || '', idCard: p.idCard || '', birthday: p.birthday || '',
-    householdType: p.householdType || '',
-    specialPopulation: p.specialPopulation || 0,
-    specialPopulationType: p.specialPopulationType || '',
-    isPartyMember: p.isPartyMember || 0,
-    relation: p.relation || '',
-    address: p.address || '', buildingNo: p.buildingNo || '', roomNo: p.roomNo || '',
-    gridId: p.gridId || null, remark: p.remark || '',
-    status: p.status || 'ACTIVE',
+    ...emptyForm(),
+    id: full.id,
+    householdId: full.householdId || null,
+    name: full.name || '', gender: full.gender || '', age: full.age != null ? full.age : null,
+    phone: full.phone || '', idCard: full.idCard || '', birthday: full.birthday || '',
+    householdType: full.householdType || '',
+    specialPopulation: full.specialPopulation || 0,
+    specialPopulationType: full.specialPopulationType || '',
+    isPartyMember: full.isPartyMember || 0,
+    relation: full.relation || '',
+    address: full.address || '', buildingNo: full.buildingNo || '', roomNo: full.roomNo || '',
+    gridId: full.gridId || null, remark: full.remark || '',
+    status: full.status || 'ACTIVE',
+    // 自定义字段值原样回填
+    ...(full.extraFields && typeof full.extraFields === 'object' ? full.extraFields : {}),
   }
   showForm.value = true
   nextTick(() => formRef.value?.clearValidate())

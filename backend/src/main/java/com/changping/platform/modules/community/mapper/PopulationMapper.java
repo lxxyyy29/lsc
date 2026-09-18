@@ -1,10 +1,13 @@
 package com.changping.platform.modules.community.mapper;
 
 import com.changping.platform.modules.community.entity.PopulationEntity;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +15,33 @@ import java.util.Map;
 public class PopulationMapper {
 
     private final JdbcTemplate jdbcTemplate;
+
+    /** extra_fields（自定义字段值 JSON）序列化器 */
+    private static final ObjectMapper EXTRA_JSON = new ObjectMapper();
+
+    /** 自定义字段值 → JSON 文本；空集合写 NULL（等价于"没有自定义字段值"） */
+    private static String toExtraJson(Map<String, Object> extra) {
+        if (extra == null || extra.isEmpty()) {
+            return null;
+        }
+        try {
+            return EXTRA_JSON.writeValueAsString(extra);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** JSON 文本 → 自定义字段值；解析失败按"无自定义字段"处理，不影响主数据读取 */
+    private static Map<String, Object> parseExtraJson(String json) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            return EXTRA_JSON.readValue(json, new TypeReference<LinkedHashMap<String, Object>>() {});
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     private static final RowMapper<PopulationEntity> ROW_MAPPER = (rs, rowNum) -> {
         PopulationEntity entity = new PopulationEntity();
@@ -38,6 +68,7 @@ public class PopulationMapper {
         entity.setPhotoUrl(rs.getString("photo_url"));
         entity.setStatus(rs.getString("status"));
         entity.setRemark(rs.getString("remark"));
+        entity.setExtraFields(parseExtraJson(rs.getString("extra_fields")));
         entity.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
         entity.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
         return entity;
@@ -209,7 +240,7 @@ public class PopulationMapper {
     }
 
     public Long insert(PopulationEntity entity) {
-        String sql = "INSERT INTO cmn_population (grid_id, household_id, name, id_card, phone, gender, age, birthday, household_type, special_population, special_population_type, is_party_member, relation, address, building_no, room_no, tags, photo_url, status, remark, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+        String sql = "INSERT INTO cmn_population (grid_id, household_id, name, id_card, phone, gender, age, birthday, household_type, special_population, special_population_type, is_party_member, relation, address, building_no, room_no, tags, photo_url, status, remark, extra_fields, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
         jdbcTemplate.update(sql,
                 entity.getGridId(), entity.getHouseholdId(), entity.getName(), entity.getIdCard(),
                 entity.getPhone(), entity.getGender(), entity.getAge(),
@@ -219,12 +250,13 @@ public class PopulationMapper {
                 entity.getRelation(),
                 entity.getAddress(), entity.getBuildingNo(), entity.getRoomNo(),
                 entity.getTags(), entity.getPhotoUrl(),
-                entity.getStatus(), entity.getRemark());
+                entity.getStatus(), entity.getRemark(),
+                toExtraJson(entity.getExtraFields()));
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
     }
 
     public int update(PopulationEntity entity) {
-        String sql = "UPDATE cmn_population SET grid_id = ?, household_id = ?, name = ?, id_card = ?, phone = ?, gender = ?, age = ?, birthday = ?, household_type = ?, special_population = ?, special_population_type = ?, is_party_member = ?, relation = ?, address = ?, building_no = ?, room_no = ?, tags = ?, photo_url = ?, status = ?, remark = ?, updated_at = NOW() WHERE id = ?";
+        String sql = "UPDATE cmn_population SET grid_id = ?, household_id = ?, name = ?, id_card = ?, phone = ?, gender = ?, age = ?, birthday = ?, household_type = ?, special_population = ?, special_population_type = ?, is_party_member = ?, relation = ?, address = ?, building_no = ?, room_no = ?, tags = ?, photo_url = ?, status = ?, remark = ?, extra_fields = ?, updated_at = NOW() WHERE id = ?";
         return jdbcTemplate.update(sql,
                 entity.getGridId(), entity.getHouseholdId(), entity.getName(), entity.getIdCard(),
                 entity.getPhone(), entity.getGender(), entity.getAge(),
@@ -235,6 +267,7 @@ public class PopulationMapper {
                 entity.getAddress(), entity.getBuildingNo(), entity.getRoomNo(),
                 entity.getTags(), entity.getPhotoUrl(),
                 entity.getStatus(), entity.getRemark(),
+                toExtraJson(entity.getExtraFields()),
                 entity.getId());
     }
 

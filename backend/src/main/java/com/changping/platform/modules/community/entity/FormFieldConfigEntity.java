@@ -1,6 +1,7 @@
 package com.changping.platform.modules.community.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -44,4 +45,12 @@ public class FormFieldConfigEntity {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    /**
+     * 是否系统必需字段（姓名/身份证号/与户主关系/所属网格）：
+     * 被列表展示、身份证推算、户关联等逻辑依赖，允许改标签与排序，但不允许删除。
+     * 仅查询时计算，非表字段。
+     */
+    @TableField(exist = false)
+    private Boolean systemRequired;
 }

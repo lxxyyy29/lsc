@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @TableName("cmn_population")
@@ -61,6 +62,12 @@ public class PopulationEntity {
     private String status;
 
     private String remark;
+
+    /**
+     * 自定义字段值（字段配置器中新增的字段，键值对），存 cmn_population.extra_fields（JSON）。
+     * 这些字段没有对应的物理列，故统一以 JSON 承载，避免运行期动态建列。
+     */
+    private Map<String, Object> extraFields;
 
     /** 关联网格名称（查询时 JOIN 填充，非表字段） */
     @TableField(exist = false)
