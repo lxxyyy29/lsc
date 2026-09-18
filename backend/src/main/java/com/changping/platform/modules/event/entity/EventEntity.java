@@ -48,6 +48,8 @@ public class EventEntity {
     private BigDecimal latitude;
     /** 事件发生时间 */
     private LocalDateTime occurredAt;
+    /** 预期完成时间（创建事件时登记，可空） */
+    private LocalDateTime expectedCompletionTime;
     /** 创建时间 */
     private LocalDateTime createdAt;
     /** 更新时间 */

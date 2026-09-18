@@ -125,6 +125,8 @@ public class EventServiceImpl implements EventService {
         entity.setTitle(request.title());
         entity.setDescription(request.description());
         entity.setOccurredAt(request.occurredAt());
+        // 预期完成时间：创建表单选填，未传时保持为空（不伪造时限）
+        entity.setExpectedCompletionTime(request.expectedCompletionTime());
         entity.setLocation(request.location());
         entity.setLongitude(request.longitude());
         entity.setLatitude(request.latitude());
@@ -208,7 +210,7 @@ public class EventServiceImpl implements EventService {
                 externalId, "PUBLIC", "12345",
                 eventType != null ? eventType : "COMPLAINT", title, description,
                 java.time.LocalDateTime.now(), location,
-                null, null, java.util.List.of(), null, null, null, null);
+                null, null, java.util.List.of(), null, null, null, null, null);
         EventDetailVo vo = createEvent(request);
         // 更新来源标记为 12345，并记录来电人信息
         jdbcTemplate.update("UPDATE biz_event SET report_source = '12345', report_user_name = ?, report_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -233,7 +235,7 @@ public class EventServiceImpl implements EventService {
                 externalId, "PROPERTY", "PROPERTY_REPORT",
                 eventType != null ? eventType : "COMPLAINT", title, description,
                 java.time.LocalDateTime.now(), locationFull.isBlank() ? "拔蛟窝社区" : locationFull,
-                null, null, java.util.List.of(), null, null, null, null);
+                null, null, java.util.List.of(), null, null, null, null, null);
         EventDetailVo vo = createEvent(request);
         // 更新来源标记为 PROPERTY，记录上报人
         jdbcTemplate.update("UPDATE biz_event SET report_source = 'PROPERTY', report_user_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -256,7 +258,7 @@ public class EventServiceImpl implements EventService {
                 eventType != null && !eventType.isBlank() ? eventType : "OTHER", title, description,
                 java.time.LocalDateTime.now(),
                 location != null && !location.isBlank() ? location : "拔蛟窝社区",
-                longitude, latitude, java.util.List.of(), null, null, null, null);
+                longitude, latitude, java.util.List.of(), null, null, null, null, null);
         EventDetailVo vo = createEvent(request);
         // 来源标记为 RESIDENT，记录上报人信息，便于“我的上报”与事件详情追溯
         jdbcTemplate.update("UPDATE biz_event SET report_source = 'RESIDENT', report_user_id = ?, report_user_name = ?, report_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -707,7 +709,8 @@ public class EventServiceImpl implements EventService {
                 Boolean.TRUE.equals(document.getHidden()),
                 entity.getDeleted() != null && entity.getDeleted() == 1,
                 entity.getDeletedReason(),
-                resolveAssigneeName(entity.getId()));
+                resolveAssigneeName(entity.getId()),
+                entity.getExpectedCompletionTime());
     }
 
     /**
@@ -760,7 +763,8 @@ public class EventServiceImpl implements EventService {
                 entity == null ? null : entity.getDeletedReason(),
                 // 本方法按文档列表逐条投影，逐条查询受派人会产生 N+1，故此处不填充；
                 // 需要「当前受派人」请走事件详情接口，或 /events/sections/* 列表（已含 assigneeName）。
-                null);
+                null,
+                entity == null ? null : entity.getExpectedCompletionTime());
     }
 
     /**
@@ -922,7 +926,8 @@ public class EventServiceImpl implements EventService {
                 entity.getHidden() != null && entity.getHidden() == 1,
                 entity.getDeleted() != null && entity.getDeleted() == 1,
                 entity.getDeletedReason(),
-                resolveAssigneeName(entity.getId()));
+                resolveAssigneeName(entity.getId()),
+                entity.getExpectedCompletionTime());
     }
 
     /**

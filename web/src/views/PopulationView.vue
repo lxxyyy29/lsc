@@ -15,9 +15,6 @@
         <button @click="exportData" class="filter-action ghost">
           <i class="fas fa-download"></i> 导出Excel
         </button>
-        <button v-if="isResidentTab" @click="openHouseholdCreate" class="filter-action ghost">
-          <i class="fas fa-home"></i> 新建户
-        </button>
         <button @click="openCreate()" class="filter-action">
           <i class="fas fa-plus"></i> 新增人员
         </button>
@@ -107,7 +104,7 @@
             <el-option v-for="h in households" :key="h.id" :label="householdLabel(h)" :value="h.id" />
           </el-select>
           <div v-if="!households.length" style="font-size:12px;color:#9ca3af;margin-top:4px;">
-            暂无可选户，可先点右上角「新建户」创建。
+            暂无可选户，可不归户直接添加为独立人员。
           </div>
         </el-form-item>
         <el-row :gutter="16">
@@ -132,10 +129,6 @@
                     <el-button style="height:42px;flex-shrink:0;" @click="confirmCustom('specialPopulationType')">确定</el-button>
                   </div>
                 </template>
-                <!-- 户籍类型：流动库隐藏 -->
-                <el-select v-else-if="isKey(f, 'householdType')" v-model="form.householdType" placeholder="请选择" style="width:100%;">
-                  <el-option v-for="t in residentHouseholdTypes" :key="t.value" :label="t.label" :value="t.value" />
-                </el-select>
                 <!-- 出生日期：由身份证自动推算，与性别/年龄保持一致只读，避免手工值与身份证不一致 -->
                 <el-date-picker v-else-if="f.fieldType === 'date'" v-model="form.birthday" type="date"
                                 value-format="YYYY-MM-DD" placeholder="填写身份证后自动带出" style="width:100%;"
@@ -206,38 +199,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 新建/编辑户弹窗 -->
-    <el-dialog v-model="showHouseholdForm" :title="householdForm.id ? '编辑户' : '新建户'" width="520px"
-               class="ui-dialog" align-center :close-on-click-modal="false">
-      <el-form label-position="top">
-        <el-form-item label="户地址" required>
-          <el-input v-model="householdForm.address" placeholder="请输入户地址（同一网格下不可重复）" />
-        </el-form-item>
-        <el-form-item label="所属网格">
-          <el-select v-model="householdForm.gridId" placeholder="请选择" clearable filterable style="width:100%;">
-            <el-option v-for="g in grids" :key="g.id" :label="g.gridName" :value="Number(g.id)" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="户籍类型">
-          <el-select v-model="householdForm.householdType" placeholder="请选择" clearable style="width:100%;">
-            <el-option v-for="t in residentHouseholdTypes" :key="t.value" :label="t.label" :value="t.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="户号">
-          <el-input v-model="householdForm.householdNo" placeholder="选填" />
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="householdForm.remark" type="textarea" :rows="2" placeholder="选填" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <div style="display:flex;gap:12px;justify-content:flex-end;">
-          <el-button @click="showHouseholdForm = false">取消</el-button>
-          <el-button type="primary" :loading="saving" @click="submitHousehold">{{ householdForm.id ? '保存' : '创建' }}</el-button>
-        </div>
-      </template>
-    </el-dialog>
 
     <!-- 变更户主弹窗：选择新户主 → 预览关系重算结果 → 确认 -->
     <el-dialog v-model="showHeadDialog" title="变更户主" width="640px"
@@ -332,6 +293,11 @@ const residentHouseholdTypes = [
   { value: 'OTHER', label: '其他' },
 ]
 
+// 户籍按当前页签自动归类：常驻人口页 → 本地户籍，流动人口页 → 流动人口。
+// 「户籍类型」不再在新增/编辑表单中展示（见 isFormVisible），由页面上下文决定，避免人工选错造成口径不一致。
+const RESIDENT_HOUSEHOLD_TYPE = 'LOCAL'
+const FLOATING_HOUSEHOLD_TYPE = 'FLOATING'
+
 // 特殊人群类型预置 + 自定义
 const specialPopulationTypes = ['低保户', '优抚对象', '残疾人', '孤寡老人', '困境儿童']
 // 与户主关系预置
@@ -348,8 +314,6 @@ const showConfig = ref(false)
 
 // ===== 户相关状态 =====
 const households = ref<any[]>([])
-const showHouseholdForm = ref(false)
-const householdForm = ref<any>({ id: null, address: '', gridId: null, householdType: '', householdNo: '', remark: '' })
 const showHeadDialog = ref(false)
 const headTarget = ref<any>(null)
 const headMembers = ref<any[]>([])
@@ -500,9 +464,9 @@ function confirmCustom(field: 'specialPopulationType' | 'relation') {
   customEditing[field] = false
 }
 
-// 流动库隐藏户籍类型
+// 户籍类型统一不在新增/编辑表单中展示：由当前页签自动匹配（常驻→本地户籍，流动→流动人口）
 function isFormVisible(f: any) {
-  if (isKey(f, 'householdType') && !isResidentTab.value) return false
+  if (isKey(f, 'householdType')) return false
   return true
 }
 
@@ -651,6 +615,8 @@ async function saveConfig() {
 
 function openCreate(prefill?: { householdId?: number | null; address?: string; gridId?: number | null }) {
   form.value = emptyForm()
+  // 户籍按当前页签自动归类（表单不展示该选项）
+  form.value.householdType = isResidentTab.value ? RESIDENT_HOUSEHOLD_TYPE : FLOATING_HOUSEHOLD_TYPE
   if (prefill?.householdId) {
     form.value.householdId = prefill.householdId
     form.value.address = prefill.address || ''
@@ -692,11 +658,15 @@ async function handleSubmit() {
     if (!payload.birthday) payload.birthday = null
     if (!payload.gridId) payload.gridId = null
     if (!isResidentTab.value) {
-      // 流动人口不参与归户
-      payload.householdType = 'FLOATING'
+      // 流动人口不参与归户，户籍固定为「流动人口」
+      payload.householdType = FLOATING_HOUSEHOLD_TYPE
       payload.householdId = null
       payload.relation = ''
+    } else if (!form.value.id) {
+      // 新增常驻人员：户籍按当前页签自动归为「本地户籍」（表单已不展示该选项）
+      payload.householdType = RESIDENT_HOUSEHOLD_TYPE
     }
+    // 编辑常驻人员时保留其原有户籍分类（外地户籍/低保户/优抚对象等），避免自动归类覆盖历史数据
     if (form.value.id) {
       await http.put(`/community/population/${form.value.id}`, payload)
       showMessage('保存成功')
@@ -747,39 +717,6 @@ function onHouseholdChange(id: any) {
   if (!h) return
   if (!form.value.address) form.value.address = h.address || ''
   if (!form.value.gridId) form.value.gridId = h.gridId || null
-}
-
-function openHouseholdCreate() {
-  householdForm.value = {
-    id: null, address: '', gridId: filters.gridId || null,
-    householdType: '', householdNo: '', remark: '',
-  }
-  showHouseholdForm.value = true
-}
-
-async function submitHousehold() {
-  const f = householdForm.value
-  if (!f.address || !String(f.address).trim()) {
-    showMessage('请填写户地址', 'warning')
-    return
-  }
-  saving.value = true
-  try {
-    if (f.id) {
-      await http.put(`/community/household/${f.id}`, f)
-      showMessage('保存成功')
-    } else {
-      await http.post('/community/household', f)
-      showMessage('创建成功')
-    }
-    showHouseholdForm.value = false
-    await fetchHouseholds()
-    await fetchData()
-  } catch (e: any) {
-    showMessage(e?.message || '操作失败')
-  } finally {
-    saving.value = false
-  }
 }
 
 // 户卡片「新增成员」：打开人员表单并预填所属户
@@ -937,5 +874,20 @@ onMounted(() => {
   background: #fff7e6;
   color: #ad6800;
   border: 0.5px solid #ffd591;
+}
+
+/* 由身份证自动推算的只读字段（出生日期 / 年龄 / 性别）：
+   保持只读语义，但外观与其它可输入文本框保持一致（默认置灰样式会让它们看起来像不可用） */
+.pop-form-dialog .el-input.is-disabled .el-input__wrapper,
+.pop-form-dialog .el-select.is-disabled .el-select__wrapper,
+.pop-form-dialog .el-date-editor.is-disabled .el-input__wrapper {
+  background-color: #fff;
+  box-shadow: none;
+}
+.pop-form-dialog .el-input.is-disabled .el-input__inner,
+.pop-form-dialog .el-select.is-disabled .el-select__selected-item,
+.pop-form-dialog .el-date-editor.is-disabled .el-input__inner {
+  color: #606266;
+  -webkit-text-fill-color: #606266;
 }
 </style>

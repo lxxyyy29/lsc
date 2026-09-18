@@ -55,6 +55,21 @@
           </el-col>
         </el-row>
 
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="预期完成时间">
+              <el-date-picker
+                v-model="form.expectedCompletionTime"
+                type="datetime"
+                format="YYYY-MM-DD HH:mm"
+                value-format="YYYY-MM-DDTHH:mm"
+                placeholder="选择预期完成时间（选填）"
+                style="width:100%;"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <!-- 事发地点 - 地图定位（内含地图复合控件，el-form-item 仅承载校验） -->
         <el-form-item label="事发地点" prop="location" required>
           <div style="display:flex;gap:8px;margin-bottom:8px;">
@@ -222,6 +237,7 @@ const form = ref({
   eventType: '',
   urgencyLevel: 'GREEN',
   occurredAt: new Date().toISOString().slice(0, 16),
+  expectedCompletionTime: '',
   location: '',
   description: '',
   reportSource: '',
@@ -419,6 +435,7 @@ function resetForm() {
     eventType: '',
     urgencyLevel: 'GREEN',
     occurredAt: new Date().toISOString().slice(0, 16),
+    expectedCompletionTime: '',
     location: '',
     description: '',
     reportSource: '',
@@ -458,6 +475,8 @@ async function submit() {
     const { reportSource, ...baseFields } = form.value
     const result = await createEvent({
       ...baseFields,
+      // 清空日期后 el-date-picker 会给出空串，需转 null，否则后端解析 LocalDateTime 失败
+      expectedCompletionTime: baseFields.expectedCompletionTime || null,
       sourceType: 'MANUAL',
       sourceSystem: reportSource || 'GRID_PLATFORM',
       externalEventId: 'EVT-' + Date.now(),

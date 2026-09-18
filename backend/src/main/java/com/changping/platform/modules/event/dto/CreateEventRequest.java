@@ -37,5 +37,7 @@ public record CreateEventRequest(
         /** 发起人姓名（选填） */
         String reporterName,
         /** 发起人电话（Web 创建事件表单必填，其他端上报兼容选填） */
-        String reporterPhone) {
+        String reporterPhone,
+        /** 预期完成时间（选填）：创建事件时登记，作为处置时限，历史/三方接入可为空 */
+        LocalDateTime expectedCompletionTime) {
 }

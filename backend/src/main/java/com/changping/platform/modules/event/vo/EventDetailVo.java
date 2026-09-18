@@ -46,7 +46,9 @@ public record EventDetailVo(
         Boolean deleted,
         String deletedReason,
         /** 当前跟进的受派人：取该事件最新一张工单的受派人，未派单时为空 */
-        String assigneeName) {
+        String assigneeName,
+        /** 预期完成时间（创建事件时登记，可空） */
+        LocalDateTime expectedCompletionTime) {
 
     @JsonProperty
     public String statusLabel() {

@@ -30,6 +30,7 @@
           <div style="font-size:13px;color:#374151;line-height:2;">
             <div><span style="color:#9ca3af;">事件类型：</span>{{ getEventTypeName(event.eventType) }}</div>
             <div><span style="color:#9ca3af;">发生时间：</span>{{ event.occurredAt || '-' }}</div>
+            <div><span style="color:#9ca3af;">预期完成时间：</span>{{ formatTime(event.expectedCompletionTime) }}</div>
             <div><span style="color:#9ca3af;">事发地点：</span>{{ event.location || '-' }}</div>
             <div><span style="color:#9ca3af;">所属网格：</span>{{ event.gridName || '-' }}</div>
             <div><span style="color:#9ca3af;">上报人：</span>{{ event.reportUserName || '-' }}<span v-if="event.reportSource" style="color:#9ca3af;margin-left:4px;">（{{ getReportSourceName(event.reportSource) }}）</span></div>
