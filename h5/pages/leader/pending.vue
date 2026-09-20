@@ -11,6 +11,15 @@
       <text class="state-title">加载中...</text>
     </view>
 
+    <!-- 请求失败：不能与「暂无待办」混为一谈 -->
+    <view v-else-if="loadError" class="state-card">
+      <view class="state-icon">
+        <text class="iconfont">⚠️</text>
+      </view>
+      <text class="state-title">{{ loadError }}</text>
+      <text class="state-sub">请退出重进本页重试；若提示权限问题请联系管理员</text>
+    </view>
+
     <view v-else-if="!events.length" class="state-card">
       <view class="state-icon">
         <text class="iconfont">📋</text>
@@ -157,11 +166,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { getLeaderPendingEvents, getLeaderDispatchInfo, leaderDispatch, type LeaderPendingEvent, type LeaderDispatchInfo } from '../../src/api/workorder'
+import { ensureAuthenticated } from '../../src/uni/navigation'
 
 const events = ref<LeaderPendingEvent[]>([])
 const isLoading = ref(true)
+const loadError = ref('')
 const showDispatch = ref(false)
 const dispatchLoading = ref(false)
 const dispatching = ref(false)
@@ -175,10 +187,12 @@ function formatTime(t: string) {
 
 async function loadData() {
   isLoading.value = true
+  loadError.value = ''
   try {
     events.value = await getLeaderPendingEvents()
-  } catch (e) {
-    console.error('加载组长待办失败:', e)
+  } catch (e: any) {
+    // 请求失败不能静默成「暂无待办事件」：权限失效/网络异常会被误读成"没有待办"
+    loadError.value = e?.message || '加载待办失败'
     events.value = []
   } finally {
     isLoading.value = false
@@ -211,22 +225,36 @@ function closeDispatch() {
 }
 
 async function confirmDispatch() {
-  if (!dispatchForm.value.assigneeUserId) return
+  if (!dispatchForm.value.assigneeUserId) {
+    // 原先这里静默 return，用户只看到"点了没反应"
+    uni.showToast?.({ title: '请先选择下属网格员', icon: 'none' })
+    return
+  }
+  const evtId = dispatchInfo.value?.event?.id
+  if (!evtId) {
+    uni.showToast?.({ title: '未获取到事件信息，请重新进入', icon: 'none' })
+    return
+  }
   dispatching.value = true
   try {
-    const evtId = dispatchInfo.value?.event?.id
-    if (!evtId) return
     await leaderDispatch(evtId, dispatchForm.value.assigneeUserId, dispatchForm.value.remark)
+    uni.showToast?.({ title: '派单成功', icon: 'success' })
     showDispatch.value = false
-    loadData()
+    await loadData()
   } catch (e) {
+    // 失败原因（如「事件已派发为工单」）由 http 层统一弹出提示，这里仅保留日志便于排查
     console.error('组长派单失败:', e)
   } finally {
     dispatching.value = false
   }
 }
 
-onMounted(loadData)
+// 每次进入页面都重新拉取：Web 端管理员可代为「组长派单」，若沿用上次的旧列表，
+// 组长会看到已被派发的事件，点「确认派单」只会得到「事件已派发为工单」
+onShow(() => {
+  if (!ensureAuthenticated('/pages/leader/pending')) return
+  loadData()
+})
 </script>
 
 <style scoped>
