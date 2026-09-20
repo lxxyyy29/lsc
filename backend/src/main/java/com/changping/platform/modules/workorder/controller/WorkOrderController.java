@@ -141,6 +141,17 @@ public class WorkOrderController {
     }
 
     /**
+     * 普通派单的候选受派人：按事件归属收敛（有网格→该网格工作人员；无网格→网格工作人员角色），
+     * 避免把居民、纯管理员混进受派人列表。
+     */
+    @GetMapping("/dispatch-candidates")
+    public ApiResponse<Map<String, Object>> dispatchCandidates(@RequestParam Long eventId) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_WORKORDER_DISPATCH);
+        return ApiResponse.ok(smartDispatchService.findDispatchCandidates(eventId));
+    }
+
+    /**
      * 一键智能派单：按规则自动选择推荐人派发工单
      */
     @PostMapping("/{eventId}/smart-dispatch")

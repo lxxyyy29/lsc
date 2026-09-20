@@ -649,6 +649,18 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         if (users.isEmpty()) {
             throw new BusinessException("WORK_ORDER_ASSIGNEE_INVALID", "请选择有效的受派人员");
         }
+        // 纯居民账号（角色只有 PUBLIC）不能作为受派人：事件只能派给网格工作人员。
+        // 无角色记录的账号（历史数据）不拦截，避免误伤存量账号。
+        Map<String, Object> roleStat = jdbcTemplate.queryForMap(
+                "SELECT COUNT(*) AS total, "
+                        + "COALESCE(SUM(CASE WHEN r.role_code <> 'PUBLIC' THEN 1 ELSE 0 END), 0) AS staff "
+                        + "FROM sys_user_role ur JOIN sys_role r ON r.id = ur.role_id WHERE ur.user_id = ?",
+                assigneeUserId);
+        long total = ((Number) roleStat.get("total")).longValue();
+        long staff = ((Number) roleStat.get("staff")).longValue();
+        if (total > 0 && staff == 0) {
+            throw new BusinessException("WORK_ORDER_ASSIGNEE_INVALID", "受派人必须是网格工作人员，不能派给居民");
+        }
         return users.get(0);
     }
 

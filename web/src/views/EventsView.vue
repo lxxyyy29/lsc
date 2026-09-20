@@ -205,11 +205,23 @@
         <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">派发工单</h3>
         <div class="form-group">
           <label class="form-label">选择受派人员 <span class="required">*</span></label>
+          <p style="font-size:12px;color:#6b7280;margin-bottom:6px;">
+            <template v-if="dispatchScope.scope === 'GRID'">
+              该事件所属网格：<b>{{ dispatchScope.gridName || '—' }}</b>，仅列出该网格的工作人员
+            </template>
+            <template v-else-if="dispatchScope.scope === 'ROLE'">
+              该事件未关联网格，列出全部网格工作人员（网格员 / 网格组长）
+            </template>
+          </p>
           <select v-model="dispatchForm.assigneeUserId" class="form-select">
             <option :value="null">请选择受派人员</option>
-            <option v-for="u in workers" :key="u.id" :value="Number(u.id)">{{ u.realName || u.username }}{{ u.roleNames ? `（${u.roleNames}）` : '' }}</option>
+            <option v-for="u in workers" :key="u.userId" :value="Number(u.userId)">
+              {{ u.name }}{{ u.positionLabel ? `（${u.positionLabel}）` : '' }}{{ u.pendingCount ? ` · 待办 ${u.pendingCount}` : '' }}
+            </option>
           </select>
-          <p v-if="!workers.length" style="font-size:12px;color:#dc2626;margin-top:6px;">⚠️ 暂无可用人员，请先添加系统用户</p>
+          <p v-if="!workers.length" style="font-size:12px;color:#dc2626;margin-top:6px;">
+            ⚠️ {{ dispatchScope.scope === 'GRID' ? '该事件所属网格暂无可用工作人员，请先在组织管理中配置该网格成员' : '暂无网格工作人员账号，请先在系统管理中配置' }}
+          </p>
         </div>
         <div class="form-group">
           <label class="form-label">备注</label>
@@ -325,7 +337,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { getEventSectionEvents, getEventDetail, auditEvent, setEventHidden, deleteEvents, getDictItems, dispatchEvent, getSystemUsers, getLeaderDispatchInfo, leaderDispatch, updateEventUrgency, closeEvent, reopenEvent } from '../api'
+import { getEventSectionEvents, getEventDetail, auditEvent, setEventHidden, deleteEvents, getDictItems, dispatchEvent, getLeaderDispatchInfo, leaderDispatch, getDispatchCandidates, updateEventUrgency, closeEvent, reopenEvent } from '../api'
 import EventCreateView from './EventCreateView.vue'
 import EventDetailView from './EventDetailView.vue'
 import { showMessage } from '../utils/message'
@@ -560,13 +572,22 @@ const showDispatch = ref(false)
 const dispatchEventId = ref<number | null>(null)
 const dispatchForm = ref({ assigneeUserId: null as number | null, remark: '' })
 const workers = ref<any[]>([])
+// 候选范围：GRID=仅该事件所属网格工作人员 / ROLE=事件未关联网格，列出全部网格工作人员
+const dispatchScope = ref<{ scope: string; gridName: string | null }>({ scope: '', gridName: null })
 
 async function openDispatch(e: any) {
   dispatchEventId.value = e.id
   dispatchForm.value = { assigneeUserId: null, remark: '' }
+  workers.value = []
+  dispatchScope.value = { scope: '', gridName: null }
   try {
-    const users: any[] = await getSystemUsers()
-    workers.value = (Array.isArray(users) ? users : []).filter((u: any) => u.status === 'ACTIVE')
+    const res: any = await getDispatchCandidates(e.id)
+    workers.value = res?.items || []
+    dispatchScope.value = { scope: res?.scope || '', gridName: res?.gridName || null }
+    // 只有一名候选时默认选中，减少一次点击
+    if (workers.value.length === 1) {
+      dispatchForm.value.assigneeUserId = Number(workers.value[0].userId)
+    }
   } catch (err) {
     workers.value = []
   }

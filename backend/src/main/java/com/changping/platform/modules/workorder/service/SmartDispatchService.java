@@ -4,8 +4,10 @@ import com.changping.platform.common.exception.BusinessException;
 import com.changping.platform.modules.workorder.entity.WorkOrderEntity;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -158,6 +160,88 @@ public class SmartDispatchService {
             return byLoad != 0 ? byLoad : Long.compare(a.id(), b.id());
         });
         return candidates;
+    }
+
+    /**
+     * 普通派单（Web 端「派发工单」）的候选受派人。
+     *
+     * <p>修复背景：原先 Web 端派单弹窗直接取「系统用户列表」并只按 status=ACTIVE 过滤，
+     * 居民、纯管理员都会出现在受派人下拉里，甚至可以被派单。
+     * 现在按事件归属收敛：
+     * <ul>
+     *   <li>事件已关联网格 → 只给该网格内状态有效、账号可用的组织成员</li>
+     *   <li>事件未关联网格（无人机/监控抓拍等）→ 退化为「网格工作人员」角色（GRID_WORKER / GRID_LEADER）</li>
+     * </ul>
+     *
+     * @return scope=GRID|ROLE、gridId、gridName 与 items（含待办工单数）
+     */
+    public Map<String, Object> findDispatchCandidates(Long eventId) {
+        Map<String, Object> event = queryEventMeta(eventId);
+        Long gridId = (Long) event.get("gridId");
+        String gridName = (String) event.get("gridName");
+
+        List<Map<String, Object>> rows;
+        String scope;
+        if (gridId != null) {
+            scope = "GRID";
+            rows = jdbcTemplate.query(
+                    "SELECT m.sys_user_id AS userId, m.name, m.position "
+                            + "FROM cmn_org_member m JOIN sys_user u ON u.id = m.sys_user_id "
+                            + "WHERE m.grid_id = ? AND m.status = 'ACTIVE' "
+                            + "AND u.deleted = 0 AND u.status = 'ACTIVE' "
+                            + "ORDER BY m.id ASC",
+                    (rs, rowNum) -> {
+                        Map<String, Object> row = new LinkedHashMap<>();
+                        row.put("userId", rs.getLong("userId"));
+                        row.put("name", rs.getString("name"));
+                        row.put("position", rs.getString("position"));
+                        return row;
+                    },
+                    gridId);
+        } else {
+            scope = "ROLE";
+            rows = jdbcTemplate.query(
+                    "SELECT DISTINCT u.id AS userId, u.real_name AS name FROM sys_user u "
+                            + "JOIN sys_user_role ur ON ur.user_id = u.id "
+                            + "JOIN sys_role r ON r.id = ur.role_id "
+                            + "WHERE r.role_code IN ('GRID_WORKER', 'GRID_LEADER') "
+                            + "AND u.deleted = 0 AND u.status = 'ACTIVE' "
+                            + "ORDER BY u.id ASC",
+                    (rs, rowNum) -> {
+                        Map<String, Object> row = new LinkedHashMap<>();
+                        row.put("userId", rs.getLong("userId"));
+                        row.put("name", rs.getString("name"));
+                        row.put("position", null);
+                        return row;
+                    });
+        }
+
+        List<Map<String, Object>> items = new ArrayList<>();
+        Set<Long> seen = new LinkedHashSet<>();
+        for (Map<String, Object> row : rows) {
+            // 注意：ResultSet#getLong 对 NULL 返回 0，不能用 null 判断
+            Long userId = (Long) row.get("userId");
+            if (userId == null || userId <= 0 || !seen.add(userId)) {
+                continue;
+            }
+            String position = (String) row.get("position");
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("userId", userId);
+            item.put("name", row.get("name"));
+            item.put("position", position);
+            item.put("positionLabel", mapPositionLabel(position));
+            item.put("pendingCount", countPending(userId));
+            items.add(item);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("scope", scope);
+        result.put("gridId", gridId);
+        result.put("gridName", gridName);
+        result.put("items", items);
+        log.info("[DISPATCH-CANDIDATES] eventId={}, gridId={}, scope={}, count={}",
+                eventId, gridId, scope, items.size());
+        return result;
     }
 
     /**

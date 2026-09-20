@@ -201,6 +201,12 @@ export async function getLeaderPendingEvents() {
   return http.get('/work-orders/leader/pending-events')
 }
 
+// 普通派单的候选受派人：按事件归属收敛（有网格 → 该网格工作人员；无网格 → 网格工作人员角色），
+// 不再直接返回全量系统用户（原先会把居民、纯管理员混进受派人列表）
+export async function getDispatchCandidates(eventId: number) {
+  return http.get('/work-orders/dispatch-candidates', { params: { eventId } })
+}
+
 // 趋势预判/反复投诉自动预警
 // 自动扫描：同一网格同类型事件 7 天内 ≥3 起、同一地点 7 天内 ≥2 次 → 预警
 export async function getTrendAlerts(params?: { status?: string; dimension?: string; page?: number; size?: number }) {
