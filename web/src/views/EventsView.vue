@@ -274,8 +274,42 @@
                style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;">
             <p style="font-size:13px;color:#0369a1;line-height:1.7;">
               该事件已派给组长 <b>{{ leaderDispatchData.leader?.name }}</b> 处置。
-              请组长在<b>移动端小程序「组长工作台」</b>查看事件详情后，自行选择下属网格员派单；此处不再由管理员代派。
+              请组长在<b>移动端小程序「组长工作台」</b>查看事件详情后，自行选择下属网格员派单。
             </p>
+          </div>
+
+          <!-- 管理员强制代派：默认收起，仅用于组长离职/请假等无法处置的异常场景 -->
+          <div v-if="leaderDispatchData.leaderFound" style="margin-top:14px;border-top:1px dashed #e5e7eb;padding-top:12px;">
+            <a href="javascript:void(0)" @click="toggleForceDispatch" style="font-size:12px;color:#9ca3af;text-decoration:none;">
+              {{ showForceDispatch ? '▲ 收起强制代派' : '▼ 组长无法处置？管理员强制代派' }}
+            </a>
+
+            <div v-if="showForceDispatch" style="margin-top:12px;">
+              <p style="font-size:12px;color:#cf1324;line-height:1.7;background:#fff1f0;border:1px solid #ffa39e;border-radius:6px;padding:8px 12px;">
+                ⚠️ 强制代派会跳过组长环节，直接把事件派给下属网格员，并以你的身份记录派单人。
+                请仅在组长离职、长期请假等确实无法处置时使用。
+              </p>
+              <div class="form-group" style="margin-top:12px;">
+                <label class="form-label">选择下属网格员 <span class="required">*</span></label>
+                <select v-model="forceForm.assigneeUserId" class="form-select">
+                  <option :value="null">请选择下属网格员</option>
+                  <option v-for="s in leaderDispatchData.subordinates" :key="s.userId" :value="Number(s.userId)">
+                    {{ s.name }}（待办 {{ s.pendingCount || 0 }} 条）
+                  </option>
+                </select>
+                <p v-if="!leaderDispatchData.subordinates?.length" style="font-size:12px;color:#dc2626;margin-top:6px;">⚠️ 该网格暂无下属网格员，请先在组织管理中添加</p>
+              </div>
+              <div class="form-group">
+                <label class="form-label">代派原因（建议填写）</label>
+                <textarea v-model="forceForm.remark" rows="2" placeholder="如：组长休假，代为派单..." class="form-textarea"></textarea>
+              </div>
+              <div style="display:flex;justify-content:flex-end;">
+                <button @click="confirmForceDispatch" class="btn btn-danger"
+                        :disabled="!forceForm.assigneeUserId || forceSubmitting">
+                  {{ forceSubmitting ? '代派中...' : '确认强制代派' }}
+                </button>
+              </div>
+            </div>
           </div>
         </template>
         <template v-else>
@@ -291,7 +325,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { getEventSectionEvents, getEventDetail, auditEvent, setEventHidden, deleteEvents, getDictItems, dispatchEvent, getSystemUsers, getLeaderDispatchInfo, updateEventUrgency, closeEvent, reopenEvent } from '../api'
+import { getEventSectionEvents, getEventDetail, auditEvent, setEventHidden, deleteEvents, getDictItems, dispatchEvent, getSystemUsers, getLeaderDispatchInfo, leaderDispatch, updateEventUrgency, closeEvent, reopenEvent } from '../api'
 import EventCreateView from './EventCreateView.vue'
 import EventDetailView from './EventDetailView.vue'
 import { showMessage } from '../utils/message'
@@ -555,13 +589,25 @@ async function confirmDispatch() {
   }
 }
 
-// 派单信息弹窗（WAITING_LEADER_REVIEW 专用）：只读展示，实际派发由组长在小程序完成
+// 派单信息弹窗（WAITING_LEADER_REVIEW 专用）：默认只读展示，实际派发由组长在小程序完成
 const showLeaderDispatch = ref(false)
 const leaderDispatchData = ref<any>(null)
 const leaderDispatchLoading = ref(false)
 
+// 管理员强制代派（组长离职/请假等异常场景）：默认收起，二次确认后才提交
+const showForceDispatch = ref(false)
+const forceSubmitting = ref(false)
+const forceForm = ref<{ assigneeUserId: number | null; remark: string }>({ assigneeUserId: null, remark: '' })
+
+function resetForceDispatch() {
+  showForceDispatch.value = false
+  forceSubmitting.value = false
+  forceForm.value = { assigneeUserId: null, remark: '' }
+}
+
 async function openLeaderDispatch(e: any) {
   leaderDispatchData.value = null
+  resetForceDispatch()
   leaderDispatchLoading.value = true
   showLeaderDispatch.value = true
   try {
@@ -571,6 +617,55 @@ async function openLeaderDispatch(e: any) {
     showLeaderDispatch.value = false
   } finally {
     leaderDispatchLoading.value = false
+  }
+}
+
+function toggleForceDispatch() {
+  showForceDispatch.value = !showForceDispatch.value
+  // 展开时默认选中第一位下属，减少一次点击（仍可改选）
+  if (showForceDispatch.value && !forceForm.value.assigneeUserId) {
+    const subs = leaderDispatchData.value?.subordinates || []
+    if (subs.length) forceForm.value.assigneeUserId = Number(subs[0].userId)
+  }
+}
+
+async function confirmForceDispatch() {
+  const eventId = leaderDispatchData.value?.event?.id
+  if (!eventId) {
+    showMessage('未获取到事件信息，请关闭后重新打开')
+    return
+  }
+  if (!forceForm.value.assigneeUserId) {
+    showMessage('请选择下属网格员')
+    return
+  }
+  const subs = leaderDispatchData.value?.subordinates || []
+  const target = subs.find((s: any) => Number(s.userId) === Number(forceForm.value.assigneeUserId))
+  const confirmed = await confirmDialog({
+    title: '确认强制代派？',
+    message: `将跳过组长环节，直接把该事件派给「${target?.name || forceForm.value.assigneeUserId}」。\n\n`
+      + `组长：${leaderDispatchData.value?.leader?.name || '-'}\n`
+      + '该操作会以当前登录账号记录派单人，请确认组长确实无法处置。',
+    okText: '确认代派',
+    danger: true,
+  })
+  if (!confirmed) return
+
+  forceSubmitting.value = true
+  try {
+    await leaderDispatch(eventId, {
+      assigneeUserId: forceForm.value.assigneeUserId,
+      remark: forceForm.value.remark || '管理员强制代派',
+    })
+    showLeaderDispatch.value = false
+    resetForceDispatch()
+    showMessage('已强制代派成功', 'success')
+    loadData()
+    await afterAction()
+  } catch (e: any) {
+    showMessage(e?.message || '强制代派失败')
+  } finally {
+    forceSubmitting.value = false
   }
 }
 
