@@ -47,6 +47,10 @@
         <text class="event-title">{{ evt.title }}</text>
 
         <view class="meta-row">
+          <text class="meta-item">🏷 {{ evt.eventType || '未分类' }}</text>
+          <text class="meta-item">⚡ {{ evt.urgencyLabel || '一般' }}</text>
+        </view>
+        <view class="meta-row">
           <text class="meta-item">📍 {{ evt.location || '无位置信息' }}</text>
         </view>
         <view class="meta-row">
@@ -93,6 +97,45 @@
               <text class="urgency-tag" :class="`urgency-tag--${dispatchInfo.event?.urgency}`">
                 {{ dispatchInfo.event?.urgencyLabel }}
               </text>
+            </view>
+          </view>
+
+          <!-- 事件具体信息：组长据此判断派给哪位下属（取不到不影响派单） -->
+          <view v-if="eventDetail" class="detail-section">
+            <text class="section-label">事件具体信息</text>
+
+            <view class="detail-row">
+              <text class="detail-key">事发时间</text>
+              <text class="detail-val">{{ formatTime(eventDetail.occurredAt) || '—' }}</text>
+            </view>
+            <view v-if="eventDetail.reportUserName" class="detail-row">
+              <text class="detail-key">上报人</text>
+              <text class="detail-val">{{ eventDetail.reportUserName }}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-key">事发地点</text>
+              <text class="detail-val">{{ eventDetail.location || '—' }}</text>
+            </view>
+
+            <view v-if="eventDetail.description" class="detail-block">
+              <text class="detail-key">上报描述</text>
+              <text class="detail-desc">{{ eventDetail.description }}</text>
+            </view>
+
+            <view v-if="eventDetail.evidenceReferences && eventDetail.evidenceReferences.length" class="detail-block">
+              <text class="detail-key">现场照片（{{ eventDetail.evidenceReferences.length }} 张，点击可放大）</text>
+              <scroll-view class="photo-scroll" scroll-x>
+                <view class="photo-list">
+                  <image
+                    v-for="(url, i) in eventDetail.evidenceReferences"
+                    :key="i"
+                    class="photo-thumb"
+                    :src="url"
+                    mode="aspectFill"
+                    @click="previewEvidence(i)"
+                  />
+                </view>
+              </scroll-view>
             </view>
           </view>
 
@@ -169,6 +212,7 @@
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getLeaderPendingEvents, getLeaderDispatchInfo, leaderDispatch, type LeaderPendingEvent, type LeaderDispatchInfo } from '../../src/api/workorder'
+import { getEventDetail, type EventDetail } from '../../src/api/event'
 import { ensureAuthenticated } from '../../src/uni/navigation'
 
 const events = ref<LeaderPendingEvent[]>([])
@@ -178,6 +222,8 @@ const showDispatch = ref(false)
 const dispatchLoading = ref(false)
 const dispatching = ref(false)
 const dispatchInfo = ref<LeaderDispatchInfo | null>(null)
+// 事件具体信息（描述/现场照片/上报人/时间）：组长据此判断派给哪位下属
+const eventDetail = ref<EventDetail | null>(null)
 const dispatchForm = ref({ assigneeUserId: null as number | null, remark: '' })
 
 function formatTime(t: string) {
@@ -202,6 +248,7 @@ async function loadData() {
 async function openDispatch(evt: LeaderPendingEvent) {
   showDispatch.value = true
   dispatchInfo.value = null
+  eventDetail.value = null
   dispatchForm.value = { assigneeUserId: null, remark: '' }
   dispatchLoading.value = true
   try {
@@ -210,12 +257,21 @@ async function openDispatch(evt: LeaderPendingEvent) {
     if (subs.length) {
       dispatchForm.value.assigneeUserId = Number(subs[0].userId)
     }
+    // 附加事件具体信息，让组长看清情况再决定派给谁；取不到（无权限/接口异常）不影响派单
+    eventDetail.value = (await getEventDetail(evt.id).catch(() => undefined)) ?? null
   } catch (e) {
     console.error('加载派单信息失败:', e)
     showDispatch.value = false
   } finally {
     dispatchLoading.value = false
   }
+}
+
+/** 现场照片点击放大（小程序与 H5 均由 uni.previewImage 承担） */
+function previewEvidence(index: number) {
+  const urls = eventDetail.value?.evidenceReferences || []
+  if (!urls.length) return
+  uni.previewImage({ urls, current: urls[index] || urls[0] })
 }
 
 function closeDispatch() {
@@ -502,6 +558,68 @@ onShow(() => {
   font-weight: 600;
   max-width: 60%;
   text-align: right;
+}
+
+/* 事件具体信息（描述 / 现场照片 / 上报人 / 时间） */
+.detail-section {
+  background: rgba(255,255,255,0.06);
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.detail-key {
+  font-size: 26rpx;
+  color: #8db0d0;
+  flex-shrink: 0;
+}
+
+.detail-val {
+  font-size: 26rpx;
+  color: #fff;
+  flex: 1;
+  text-align: right;
+  word-break: break-all;
+}
+
+.detail-block {
+  margin-top: 16rpx;
+}
+
+.detail-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: #cfe3f5;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.photo-scroll {
+  margin-top: 12rpx;
+  white-space: nowrap;
+}
+
+.photo-list {
+  display: flex;
+  gap: 12rpx;
+}
+
+.photo-thumb {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 12rpx;
+  border: 1px solid rgba(255,255,255,0.12);
+  flex-shrink: 0;
 }
 
 .urgency-tag {

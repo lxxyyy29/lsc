@@ -13,6 +13,8 @@ export interface EventDetail {
   latitude: number
   occurredAt: string
   evidenceReferences: string[]
+  /** 上报人姓名（组长派单时用于判断事件可信度，选填） */
+  reportUserName?: string
 }
 
 interface BackendEventDetail {
@@ -27,6 +29,7 @@ interface BackendEventDetail {
   latitude?: number | string | null
   occurredAt?: string | null
   evidenceReferences?: string[] | null
+  reportUserName?: string | null
 }
 
 /** 创建事件请求体（对应后端 CreateEventRequest） */
@@ -71,7 +74,7 @@ function resolveSharedApiBaseUrl(): string {
     h5Base = envValue.trim()
   } else {
     // #ifdef MP-WEIXIN
-    h5Base = 'https://drone.kfktec.cn:8443/api/h5'
+    h5Base = 'http://127.0.0.1:8080/api/h5'
     // #endif
     // #ifndef MP-WEIXIN
     h5Base = '/api/h5'
@@ -105,7 +108,8 @@ function mapEventDetail(data: BackendEventDetail): EventDetail {
     occurredAt: data.occurredAt || '',
     evidenceReferences: Array.isArray(data.evidenceReferences)
       ? data.evidenceReferences.map(proxyMinioUrl)
-      : []
+      : [],
+    reportUserName: data.reportUserName || ''
   }
 }
 
