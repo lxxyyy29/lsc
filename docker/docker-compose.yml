@@ -7,7 +7,7 @@
 # - 数据库/Redis/MongoDB/MinIO 不映射宿主机端口，仅在 Docker 内部网络访问
 # - 所有容器添加日志轮转，防止磁盘爆满
 # - 容器名统一使用 changping- 前缀，避免与现有容器冲突
-# - 数据目录使用 /home/docker/uav/changping/data/，与现有项目分离
+# - 数据目录由 .env 的 DATA_ROOT 控制（默认 /uav_data），与服务器上其他项目分离
 #
 # 安全建议：
 # - 生产环境必须修改 .env 中所有默认密码
@@ -40,7 +40,7 @@ services:
     expose:
       - "3306"
     volumes:
-      - /home/docker/uav/changping/data/mysql:/var/lib/mysql
+      - ${DATA_ROOT:-/uav_data}/data/mysql:/var/lib/mysql
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -67,7 +67,7 @@ services:
     expose:
       - "6379"
     volumes:
-      - /home/docker/uav/changping/data/redis:/data
+      - ${DATA_ROOT:-/uav_data}/data/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
@@ -90,7 +90,7 @@ services:
     expose:
       - "27017"
     volumes:
-      - /home/docker/uav/changping/data/mongodb:/data/db
+      - ${DATA_ROOT:-/uav_data}/data/mongodb:/data/db
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh --quiet
       interval: 10s
@@ -115,7 +115,7 @@ services:
       - "9000"
       - "9001"
     volumes:
-      - /home/docker/uav/changping/data/minio:/data
+      - ${DATA_ROOT:-/uav_data}/data/minio:/data
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -176,9 +176,9 @@ services:
     ports:
       - "${BACKEND_PORT:-9072}:8080"
     volumes:
-      - /home/docker/uav/changping/uploads:/app/uploads
+      - ${DATA_ROOT:-/uav_data}/uploads:/app/uploads
       # 固定摄像头 HLS 转流目录（宿主机 ffmpeg 输出，后端代理提供浏览器播放）
-      - /opt/zhsq/video-hls:/app/video-hls
+      - ${VIDEO_HLS_DIR:-/uav_data/video-hls}:/app/video-hls
     depends_on:
       changping-mysql:
         condition: service_healthy

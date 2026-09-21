@@ -32,9 +32,10 @@ fi
 
 # 2. 创建项目目录
 echo "[3/6] 创建项目目录..."
-mkdir -p /opt/changping
-mkdir -p /home/docker/uav/changping/data/{mysql,redis,mongodb,minio}
-mkdir -p /home/docker/uav/changping/uploads
+mkdir -p /uav_data
+mkdir -p /uav_data/data/{mysql,redis,mongodb,minio}
+mkdir -p /uav_data/uploads
+mkdir -p /uav_data/video-hls
 
 # 3. 克隆代码
 cd /opt/changping

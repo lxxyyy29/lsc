@@ -83,13 +83,14 @@ docker exec -it changping-backend sh
 所有数据存储在服务器独立目录：
 
 ```
-/home/docker/uav/changping/
+/uav_data/                 # ← 由 .env 的 DATA_ROOT 控制，可改
 ├── data/
 │   ├── mysql/       # MySQL 数据
 │   ├── redis/       # Redis 数据
 │   ├── mongodb/     # MongoDB 数据
 │   └── minio/       # MinIO 文件存储
-└── uploads/         # 上传文件
+├── uploads/         # 上传文件
+└── video-hls/       # 固定摄像头 HLS 转流（由 VIDEO_HLS_DIR 控制）
 ```
 
 ## ⚠️ 重要提醒
