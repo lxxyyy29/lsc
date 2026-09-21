@@ -102,7 +102,9 @@ services:
   # MinIO 对象存储（不映射宿主机端口）
   # ==========================================
   dgjr-minio:
-    image: minio/minio:latest
+    # Docker Hub 的 minio/minio 已不可拉取（pull access denied），改用 MinIO 官方 quay 仓库
+    # （quay.io 上同时提供 amd64/arm64 manifest）
+    image: quay.io/minio/minio:latest
     container_name: dgjr-minio
     restart: unless-stopped
     environment:

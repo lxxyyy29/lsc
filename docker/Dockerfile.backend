@@ -3,7 +3,11 @@
 # 使用本地 Maven 构建产物（mvn clean package -DskipTests），
 # 避免容器内安装 Maven 依赖 alpine 包源网络
 # ============================================
-FROM eclipse-temurin:17-jdk-alpine
+# 基础镜像：BellSoft Liberica JDK 17（alpine 变体）
+# 不用 eclipse-temurin:17-jdk-alpine —— 该 tag 只发布 amd64，在 arm64 服务器上构建会报
+# "no matching manifest for linux/arm64"。Liberica 的 alpine 变体同时提供 amd64/arm64，
+# 且同为 alpine（busybox nc 可用），下方健康检查无需改动。
+FROM bellsoft/liberica-openjdk-alpine:17
 
 WORKDIR /app
 
