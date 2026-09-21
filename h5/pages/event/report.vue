@@ -151,7 +151,7 @@ function removePhoto(idx: number) { photos.value.splice(idx, 1) }
 /** 媒体上传基址：小程序用绝对 HTTPS 域名，H5 用相对路径走代理 */
 function resolveMediaBaseUrl(): string {
   // #ifdef MP-WEIXIN
-  return 'https://drone.kfktec.cn:8443'
+  return 'http://8.138.97.118:9071'
   // #endif
   // #ifndef MP-WEIXIN
   return ''

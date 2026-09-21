@@ -288,7 +288,7 @@ export async function registerH5(payload: H5RegisterPayload): Promise<void> {
   // 注册接口位于 /api/registration（非 /api/h5），需要覆盖 baseURL；
   // 小程序端 uni.request 只接受绝对 URL，相对路径会直接请求失败
   // #ifdef MP-WEIXIN
-  await http.post<void, void>('/registration/submit', payload, { baseURL: 'https://drone.kfktec.cn:8443/api' })
+  await http.post<void, void>('/registration/submit', payload, { baseURL: 'http://8.138.97.118:9071/api' })
   // #endif
   // #ifndef MP-WEIXIN
   await http.post<void, void>('/registration/submit', payload, { baseURL: '/api' })
@@ -307,7 +307,7 @@ export interface PasswordResetStatus {
 /** 提交密码重置申请（无需登录）：账号+注册手机号校验，管理员审批后重置为手机号后6位 */
 export async function submitPasswordReset(payload: { account: string; phone: string }): Promise<void> {
   // #ifdef MP-WEIXIN
-  await http.post<void, void>('/password-reset/submit', payload, { baseURL: 'https://drone.kfktec.cn:8443/api' })
+  await http.post<void, void>('/password-reset/submit', payload, { baseURL: 'http://8.138.97.118:9071/api' })
   // #endif
   // #ifndef MP-WEIXIN
   await http.post<void, void>('/password-reset/submit', payload, { baseURL: '/api' })
@@ -318,7 +318,7 @@ export async function submitPasswordReset(payload: { account: string; phone: str
 export async function queryPasswordResetStatus(account: string, phone: string): Promise<PasswordResetStatus> {
   const url = `/password-reset/status?account=${encodeURIComponent(account)}&phone=${encodeURIComponent(phone)}`
   // #ifdef MP-WEIXIN
-  return http.get<PasswordResetStatus, PasswordResetStatus>(url, { baseURL: 'https://drone.kfktec.cn:8443/api' })
+  return http.get<PasswordResetStatus, PasswordResetStatus>(url, { baseURL: 'http://8.138.97.118:9071/api' })
   // #endif
   // #ifndef MP-WEIXIN
   return http.get<PasswordResetStatus, PasswordResetStatus>(url, { baseURL: '/api' })

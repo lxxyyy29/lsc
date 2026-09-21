@@ -109,7 +109,7 @@ export function clearResidentSession() {
 
 function resolveApiBaseUrl() {
   // #ifdef MP-WEIXIN
-  return 'https://drone.kfktec.cn:8443/api'
+  return 'http://8.138.97.118:9071/api'
   // #endif
   // #ifndef MP-WEIXIN
   return '/api'

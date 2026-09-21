@@ -74,7 +74,7 @@ function resolveSharedApiBaseUrl(): string {
     h5Base = envValue.trim()
   } else {
     // #ifdef MP-WEIXIN
-    h5Base = 'http://127.0.0.1:8080/api/h5'
+    h5Base = 'http://8.138.97.118:9071/api/h5'
     // #endif
     // #ifndef MP-WEIXIN
     h5Base = '/api/h5'

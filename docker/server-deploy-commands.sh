@@ -80,7 +80,7 @@ MINIO_PASSWORD=${MINIO_PASS}
 JWT_SECRET=${JWT_SECRET}
 
 # 访问地址
-DOMAIN=http://8.156.93.151:9071
+DOMAIN=http://8.138.97.118:9071
 EOF
     chmod 600 .env
     echo "[✓] .env 文件已创建（密码已自动生成，权限已设为 600）"
@@ -103,10 +103,10 @@ for i in $(seq 1 30); do
         echo "============================================"
         echo ""
         echo "访问地址："
-        echo "  Web 管理端:  http://8.156.93.151:9071"
-        echo "  H5 移动端:   http://8.156.93.151:9073"
-        echo "  小程序:      http://8.156.93.151:9074"
-        echo "  后端 API:    http://8.156.93.151:9072/api"
+        echo "  Web 管理端:  http://8.138.97.118:9071"
+        echo "  H5 移动端:   http://8.138.97.118:9073"
+        echo "  小程序:      http://8.138.97.118:9074"
+        echo "  后端 API:    http://8.138.97.118:9072/api"
         echo ""
         echo "默认账号: admin / admin123"
         echo ""

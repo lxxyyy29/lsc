@@ -72,7 +72,7 @@ MINIO_PASSWORD=Changping@2026
 JWT_SECRET=ChangpingGridCommunity2026SecretKeyPleaseChangeThis
 
 # 域名（修改为你的域名或IP）
-DOMAIN=http://8.156.93.151
+DOMAIN=http://8.138.97.118:9071
 
 # 端口配置
 WEB_PORT=9071
@@ -128,10 +128,10 @@ show_status() {
     echo "============================================"
     echo ""
     echo "服务地址："
-    echo "  Web 管理端:  http://8.156.93.151:9071"
-    echo "  H5 移动端:   http://8.156.93.151:9073"
-    echo "  小程序:      http://8.156.93.151:9074"
-    echo "  后端 API:    http://8.156.93.151:9072/api"
+    echo "  Web 管理端:  http://8.138.97.118:9071"
+    echo "  H5 移动端:   http://8.138.97.118:9073"
+    echo "  小程序:      http://8.138.97.118:9074"
+    echo "  后端 API:    http://8.138.97.118:9072/api"
     echo ""
     echo "常用命令："
     echo "  查看日志:  docker-compose logs -f"

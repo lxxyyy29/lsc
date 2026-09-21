@@ -120,7 +120,7 @@ function loadMyGridIds(): Promise<Set<number>> {
   // 小程序端必须用绝对 HTTPS 地址（相对路径 invalid url）；先赋变量避开条件编译双 url 的 TS 误报
   let myGridUrl = '/api/community/grids/h5/my-grid'
   // #ifdef MP-WEIXIN
-  myGridUrl = 'https://drone.kfktec.cn:8443/api/community/grids/h5/my-grid'
+  myGridUrl = 'http://8.138.97.118:9071/api/community/grids/h5/my-grid'
   // #endif
   return new Promise((resolve) => {
     uni.request({
@@ -454,7 +454,7 @@ async function loadEvents() {
   // 小程序端必须使用绝对 HTTPS 地址（相对路径 invalid url）
   let eventsUrl = '/api/events/h5/map-points'
   // #ifdef MP-WEIXIN
-  eventsUrl = 'https://drone.kfktec.cn:8443/api/events/h5/map-points'
+  eventsUrl = 'http://8.138.97.118:9071/api/events/h5/map-points'
   // #endif
   try {
     const res: any = await uni.request({
