@@ -11,8 +11,8 @@ echo "  东莞杰瑞智慧网格治理平台 - Docker 部署"
 echo "============================================"
 
 # 配置
-PROJECT_DIR="/uav_data/lsc"          # 代码目录
-DATA_ROOT="/uav_data/lsc-data"       # 数据目录（与代码分开，避免与服务器上其他项目混用）
+PROJECT_DIR="/uav_data/dgjr"         # 代码目录（仓库根，compose 在 ${PROJECT_DIR}/docker）
+DATA_ROOT="/uav_data/dgjr"           # 数据目录（在其下，已被 .dockerignore 排除）
 DOCKER_COMPOSE_VERSION="2.20.0"
 
 # 1. 安装 Docker（如已存在则跳过）

@@ -26,3 +26,9 @@ Thumbs.db
 # Docker
 docker-compose.yml
 .docker/
+
+# 运行时数据目录（仅在根目录匹配）：若 DATA_ROOT 指向仓库内，
+# 避免把 MySQL 数据/上传文件当作构建上下文传给 docker daemon
+/data/
+/uploads/
+/video-hls/

@@ -83,16 +83,21 @@ docker exec -it changping-backend sh
 所有数据存储在服务器独立目录：
 
 ```
-/uav_data/lsc/             # 代码目录（由部署时决定，示例）
-/uav_data/lsc-data/        # ← 数据目录，由 .env 的 DATA_ROOT 控制，可改
-├── data/
-│   ├── mysql/       # MySQL 数据
-│   ├── redis/       # Redis 数据
-│   ├── mongodb/     # MongoDB 数据
-│   └── minio/       # MinIO 文件存储
-├── uploads/         # 上传文件
-└── video-hls/       # 固定摄像头 HLS 转流（由 VIDEO_HLS_DIR 控制）
+/uav_data/dgjr/            # 代码目录（仓库根；compose 在 docker/ 子目录）
+├── docker/                # docker-compose.yml / .env / Dockerfile / nginx 配置 / ssl
+├── backend/target/*.jar   # 后端构建产物
+├── web/dist, h5/dist, mp/dist
+├── data/                  # ← 由 .env 的 DATA_ROOT 控制
+│   ├── mysql/             # MySQL 数据
+│   ├── redis/             # Redis 数据
+│   ├── mongodb/           # MongoDB 数据
+│   └── minio/             # MinIO 文件存储
+├── uploads/               # 上传文件
+└── video-hls/             # 固定摄像头 HLS 转流（由 VIDEO_HLS_DIR 控制）
 ```
+
+> `data/`、`uploads/`、`video-hls/` 已在根 `.dockerignore` 中排除，不会被当作
+> docker 构建上下文上传（否则每次 `docker compose build` 都要把整个 MySQL 数据目录发给 daemon）。
 
 > ⚠️ `DATA_ROOT` 必须指向**空目录或新建目录**：若指向已有其他项目数据的目录，
 > 容器会尝试挂载别人的数据（MySQL/Mongo 会因数据目录非本实例而启动失败）。
