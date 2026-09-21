@@ -59,6 +59,12 @@ sms:
   access-key-secret: ${SMS_ACCESS_KEY_SECRET:}
   sign-name: ${SMS_SIGN_NAME:}
   template-code: ${SMS_TEMPLATE_CODE:}
+  # 固定验证码（联调用）：开关为 true 且 test-code 非空时，该码可直接登录，
+  # 且「获取验证码」不再依赖阿里云短信，便于没有短信资质/额度的环境跑通小程序验证码登录。
+  # ⚠️ 正式环境请设 SMS_TEST_CODE_ENABLED=false 关闭（不要用「置空 SMS_TEST_CODE」的方式：
+  #    .env / compose 的 ${VAR:-默认} 语法会把空值回退成默认值，反而关不掉）。
+  test-code-enabled: ${SMS_TEST_CODE_ENABLED:true}
+  test-code: ${SMS_TEST_CODE:123456}
 
 wechat:
   appid: ${WECHAT_APPID:}

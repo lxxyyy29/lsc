@@ -167,6 +167,10 @@ services:
       SMS_ACCESS_KEY_SECRET: ${SMS_ACCESS_KEY_SECRET:-}
       SMS_SIGN_NAME: ${SMS_SIGN_NAME:-}
       SMS_TEMPLATE_CODE: ${SMS_TEMPLATE_CODE:-}
+      # 联调固定验证码：默认 123456，让没有短信资质/额度的环境也能走通小程序验证码登录；
+      # 正式环境请在 .env 中设 SMS_TEST_CODE_ENABLED=false 关闭（不建议用置空方式，见 .env.example 说明）
+      SMS_TEST_CODE_ENABLED: ${SMS_TEST_CODE_ENABLED:-true}
+      SMS_TEST_CODE: ${SMS_TEST_CODE:-123456}
       # 时区
       TZ: Asia/Shanghai
     ports:

@@ -14,6 +14,9 @@ import com.changping.platform.modules.auth.vo.CurrentUserVo;
 import com.changping.platform.modules.auth.vo.LoginResponse;
 import com.changping.platform.modules.common.security.RateLimit;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -47,6 +50,21 @@ public class AuthController {
     private final SmsService smsService;
     private final WechatService wechatService;
 
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
+    /**
+     * 联调用固定验证码（sms.test-code）：开关打开且该值非空时，此码可直接登录，
+     * 且「获取验证码」不再依赖阿里云短信。
+     */
+    private final String smsTestCode;
+
+    /**
+     * 固定验证码总开关（sms.test-code-enabled）。
+     * 之所以用显式布尔值而不是「留空即关闭」：.env / docker-compose 里写 `SMS_TEST_CODE=`（空值）
+     * 会被 `${VAR:-默认值}` 语法回退成默认值，导致永远关不掉；显式 false 没有这种歧义。
+     */
+    private final boolean smsTestCodeEnabled;
+
     /** 验证码 Redis key 前缀 */
     private static final String SMS_CODE_KEY_PREFIX = "sms:code:";
     /** 验证码有效期（分钟） */
@@ -62,7 +80,9 @@ public class AuthController {
     public AuthController(AuthService authService, CurrentUserService currentUserService,
                           JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder,
                           StringRedisTemplate stringRedisTemplate, SmsService smsService,
-                          WechatService wechatService) {
+                          WechatService wechatService,
+                          @Value("${sms.test-code:}") String smsTestCode,
+                          @Value("${sms.test-code-enabled:true}") boolean smsTestCodeEnabled) {
         this.authService = authService;
         this.currentUserService = currentUserService;
         this.jdbcTemplate = jdbcTemplate;
@@ -70,6 +90,19 @@ public class AuthController {
         this.stringRedisTemplate = stringRedisTemplate;
         this.smsService = smsService;
         this.wechatService = wechatService;
+        this.smsTestCode = smsTestCode;
+        this.smsTestCodeEnabled = smsTestCodeEnabled;
+        if (isTestCodeEnabled()) {
+            log.warn("固定验证码登录已启用（sms.test-code={}）：任意已绑定手机号均可凭该验证码登录，"
+                    + "请勿在正式环境开启；关闭方式：环境变量 SMS_TEST_CODE_ENABLED=false", smsTestCode);
+        } else if (smsTestCodeEnabled) {
+            log.info("固定验证码开关为开，但 sms.test-code 为空，固定验证码不生效");
+        }
+    }
+
+    /** 是否启用固定验证码：开关打开且码非空 */
+    private boolean isTestCodeEnabled() {
+        return smsTestCodeEnabled && smsTestCode != null && !smsTestCode.isBlank();
     }
 
     /**
@@ -135,6 +168,18 @@ public class AuthController {
             return ApiResponse.fail("ACCOUNT_DISABLED", "账号已被禁用，请联系管理员");
         }
 
+        // 固定验证码模式：跳过阿里云短信，直接把固定码写入 Redis，
+        // 保证「未配置短信 / 无短信额度」的联调环境也能完整走通 获取验证码 → 登录
+        if (isTestCodeEnabled()) {
+            stringRedisTemplate.opsForValue().set(SMS_CODE_KEY_PREFIX + phone, smsTestCode, SMS_CODE_TTL);
+            log.info("[SMS-TEST-CODE] 已为 {} 下发固定验证码（未调用阿里云短信）", phone);
+            Map<String, Object> testResult = new HashMap<>();
+            testResult.put("phone", phone);
+            testResult.put("expireMinutes", SMS_CODE_TTL.toMinutes());
+            testResult.put("message", "验证码已发送（当前为联调固定验证码 " + smsTestCode + "）");
+            return ApiResponse.ok(testResult);
+        }
+
         // 生成随机验证码并发送阿里云短信
         String code = smsService.generateCode();
         boolean sent = smsService.sendCode(phone, code);
@@ -163,15 +208,20 @@ public class AuthController {
     public ApiResponse<LoginResponse> phoneLogin(@Valid @RequestBody PhoneLoginRequest request) {
         String phone = request.phone();
         String redisKey = SMS_CODE_KEY_PREFIX + phone;
-        String cachedCode = stringRedisTemplate.opsForValue().get(redisKey);
 
-        if (cachedCode == null) {
-            return ApiResponse.fail("SMS_CODE_EXPIRED", "验证码已过期，请重新获取");
+        // 固定验证码优先：联调环境可能从未真正发出短信，故此处不比对 Redis 中的随机码
+        if (isTestCodeEnabled() && smsTestCode.equals(request.code())) {
+            log.warn("[SMS-TEST-CODE] 手机号 {} 使用固定验证码登录成功（仅限联调环境）", phone);
+        } else {
+            String cachedCode = stringRedisTemplate.opsForValue().get(redisKey);
+            if (cachedCode == null) {
+                return ApiResponse.fail("SMS_CODE_EXPIRED", "验证码已过期，请重新获取");
+            }
+            if (!cachedCode.equals(request.code())) {
+                return ApiResponse.fail("SMS_CODE_INVALID", "验证码错误");
+            }
         }
-        if (!cachedCode.equals(request.code())) {
-            return ApiResponse.fail("SMS_CODE_INVALID", "验证码错误");
-        }
-        // 验证码校验通过即删除，防止重放
+        // 校验通过即删除，防止重放（固定验证码路径也顺手清掉可能残留的真实码）
         stringRedisTemplate.delete(redisKey);
 
         try {
