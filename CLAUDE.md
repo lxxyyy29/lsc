@@ -36,15 +36,23 @@ docker compose up -d --force-recreate <服务名>   # 重建后重启
 docker ps --filter name=changping      # 查看状态
 ```
 
-端口映射（`docker/.env`）：后端 10081→8080、web 8888→80、h5 10082→80、mp 10083→80、**HTTPS 聚合入口 8443→443（changping-web）**。
+端口映射（`docker/.env`）：后端 9072→8080、web 9071→80、h5 9073→80、mp 9074→80、**HTTPS 聚合入口 9075→443（changping-web）**。
 
 ### 访问地址
 
-| 端 | HTTP（兼容） | HTTPS（精确定位需要） |
-|---|---|---|
-| 管理端 | http://8.156.93.151:8888 | https://drone.kfktec.cn:8443/ |
-| H5 移动端 | http://8.156.93.151:10082/h5/ | https://drone.kfktec.cn:8443/h5/ |
-| 居民端 | http://8.156.93.151:10083 | https://drone.kfktec.cn:8443/mp/ |
+**当前部署：新服务器 `8.138.97.118`，部署根目录 `/uav_data`，暂无域名与证书，走 HTTP**
+
+| 端 | HTTP |
+|---|---|
+| 管理端 | http://8.138.97.118:9071 |
+| H5 移动端 | http://8.138.97.118:9073/h5/ |
+| 居民端 | http://8.138.97.118:9074 |
+
+小程序端接口地址是硬编码的（`h5/src/api/` 6 个文件 + `h5/pages/` 3 个文件），当前为 `http://8.138.97.118:9071`；微信真机要求 HTTPS + 已备案域名（不支持 IP），换域名时需同步修改这些地址。
+
+---
+
+以下为**老服务器**（`8.156.93.151` / 域名 `drone.kfktec.cn`）的环境事实，仅对那台服务器成立：
 
 域名 `drone.kfktec.cn` 是借用服务器上无人机老项目的（仅开发阶段借挂，交付时客户自购域名切换：换 docker/ssl/ 证书 + nginx server_name + .env DOMAIN + 重建容器）。证书为 DigiCert 90 天期，**已续期至 2026-11-22**（2026-09-08 本机 TLS 握手验证生效，Issuer: Encryption Everywhere DV TLS CA - G2），到期前需再次续期。⚠️ 证书一旦过期，小程序端（h5/src/api/ 下硬编码 `https://drone.kfktec.cn:8443`）全部请求会失败，H5 浏览器端走同源相对路径不受影响。443 端口被老项目 dgcp-web-nginx 占用，勿动。
 
@@ -58,12 +66,12 @@ docker ps --filter name=changping      # 查看状态
 
 - **HTTPS 聚合入口**：`docker/nginx-web.conf` 同时监听 80/443，代理 `/h5/` `/mp/` 子入口；这两个 location 必须带 `^~`（否则静态资源被正则 location 拦截 404）；后端 CORS 白名单在 SecurityConfig.java，新增域名需同步
 - **定位**：浏览器精确定位仅 HTTPS 可用；H5 工具在 `h5/src/utils/geolocation.ts`（navigator.geolocation + WGS84→GCJ02 → 高德 IP 定位回退），web 端同款工具在 `web/src/utils/geolocation.ts`；AMap 2.0 的 CitySearch 只有 `getLocalCity`（1.x 的 getLocalPosition 已移除）
-- **媒体文件**：扁平存储 `/media/files/{filename}`，公网 URL 前缀由 `docker/.env` 的 `DOMAIN` 拼接（当前为 HTTPS 域名）；上传目录挂载 `/home/docker/uav/changping/uploads`
+- **媒体文件**：扁平存储 `/media/files/{filename}`，公网 URL 前缀由 `docker/.env` 的 `DOMAIN` 拼接（新服务器为 `http://8.138.97.118:9071`，老服务器为 HTTPS 域名）；上传目录挂载 `${DATA_ROOT}/uploads`（默认 `/uav_data/uploads`）
 - **网格数据**：cmn_grid（grid_level 1=社区/2=大网格/3=小网格，roiJson 存边界）；H5 专用接口 `/community/grids/h5/tree`、`/community/grids/h5/my-grid`、`/events/h5/map-points`（WEB 专属接口 H5 令牌会被拒，勿混用）
 
 ### 硬性约束
 
-- 只允许修改 `/opt/zhsq` 目录；服务器上还有其他老项目在跑，严禁影响（如 443 端口的 dgcp-web-nginx、/home/docker/uav 下的其他服务，只读不写）
+- 只允许修改本项目目录：老服务器 `/opt/zhsq`、新服务器 `/uav_data`；服务器上还有其他项目在跑，严禁影响（如老服务器 443 端口的 dgcp-web-nginx、/home/docker/uav 下的其他服务，只读不写）
 - 文档不可全信，以代码和运行时实际状态为准
 - 私钥类文件（docker/ssl/）不入库，已在 .gitignore
 

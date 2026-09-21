@@ -182,11 +182,11 @@ Flyway 数据库迁移脚本位于：`backend/src/main/resources/db/migration/`�
 
 | 容器 | 端口 | 说明 |
 |------|------|------|
-| changping-backend | 10081 | 后端 API |
-| changping-web | 8888 | Web 管理端 |
-| changping-web | 8443 | HTTPS 聚合入口（代理 /h5/ /mp/ 子入口，定位类功能需走此入口） |
-| changping-h5 | 10082 | H5 移动端 |
-| changping-mp | 10083 | 居民小程序 |
+| changping-backend | 9072 | 后端 API |
+| changping-web | 9071 | Web 管理端 |
+| changping-web | 9075 | HTTPS 聚合入口（代理 /h5/ /mp/ 子入口，定位类功能需走此入口） |
+| changping-h5 | 9073 | H5 移动端 |
+| changping-mp | 9074 | 居民小程序 |
 
 端口、密码等在 `docker/.env` 中配置，详细步骤见 `docs/部署实操指南.md`。
 

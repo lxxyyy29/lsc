@@ -117,7 +117,7 @@ doc.add_paragraph()
 P('-- 功能全景 · 导航走读 · 业务联动 · 平台机制 · 外部对接 --', size=12, align=WD_ALIGN_PARAGRAPH.CENTER)
 doc.add_paragraph()
 P('文档版本：V3.0    生成日期：2026-08-19', size=10, align=WD_ALIGN_PARAGRAPH.CENTER)
-P('演示环境：https://drone.kfktec.cn:8443', size=10, align=WD_ALIGN_PARAGRAPH.CENTER)
+P('演示环境：http://8.138.97.118:9071', size=10, align=WD_ALIGN_PARAGRAPH.CENTER)
 doc.add_page_break()
 
 # ==================== 目录 ====================
@@ -553,7 +553,7 @@ BUL([
     '手机准备好真实随手拍演示数据（现场上报一条）',
     '无人机实时流可用（失效则演示媒体回放）',
     '系统设置页可正常进入（角色/账号/菜单管理）',
-    '演示场地可访问 https://drone.kfktec.cn:8443',
+    '演示场地可访问 http://8.138.97.118:9071',
 ])
 
 H('附录三：测试账号速查', 2)
