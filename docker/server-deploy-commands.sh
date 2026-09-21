@@ -59,10 +59,11 @@ if [ ! -f ".env" ]; then
 # ⚠️ 请妥善保管此文件，不要提交到 Git
 
 # 端口配置（已确认与现有服务无冲突）
-WEB_PORT=10080
-H5_PORT=10082
-MP_PORT=10083
-BACKEND_PORT=10081
+WEB_PORT=9071
+H5_PORT=9073
+MP_PORT=9074
+BACKEND_PORT=9072
+HTTPS_PORT=9075
 
 # MySQL（已自动生成强密码）
 MYSQL_ROOT_PASSWORD=${MYSQL_PASS}
@@ -78,7 +79,7 @@ MINIO_PASSWORD=${MINIO_PASS}
 JWT_SECRET=${JWT_SECRET}
 
 # 访问地址
-DOMAIN=http://8.156.93.151:10080
+DOMAIN=http://8.156.93.151:9071
 EOF
     chmod 600 .env
     echo "[✓] .env 文件已创建（密码已自动生成，权限已设为 600）"
@@ -94,24 +95,24 @@ docker compose up -d
 # 6. 等待就绪
 echo "[6/6] 等待服务就绪..."
 for i in $(seq 1 30); do
-    if curl -s http://localhost:10081/api/auth/login -X POST -H "Content-Type: application/json" -d '{"account":"health","password":"check"}' > /dev/null 2>&1; then
+    if curl -s http://localhost:9072/api/auth/login -X POST -H "Content-Type: application/json" -d '{"account":"health","password":"check"}' > /dev/null 2>&1; then
         echo ""
         echo "============================================"
         echo "  部署完成！"
         echo "============================================"
         echo ""
         echo "访问地址："
-        echo "  Web 管理端:  http://8.156.93.151:10080"
-        echo "  H5 移动端:   http://8.156.93.151:10082"
-        echo "  小程序:      http://8.156.93.151:10083"
-        echo "  后端 API:    http://8.156.93.151:10081/api"
+        echo "  Web 管理端:  http://8.156.93.151:9071"
+        echo "  H5 移动端:   http://8.156.93.151:9073"
+        echo "  小程序:      http://8.156.93.151:9074"
+        echo "  后端 API:    http://8.156.93.151:9072/api"
         echo ""
         echo "默认账号: admin / admin123"
         echo ""
         echo "⚠️  安全提醒："
         echo "  1. 数据库/Redis/MongoDB 端口未映射到宿主机"
         echo "  2. .env 文件包含敏感信息，请勿提交到 Git"
-        echo "  3. 建议配置阿里云安全组，仅开放 10080-10083"
+        echo "  3. 建议配置阿里云安全组，仅开放 9071-9074（启用 HTTPS 再加 9075）"
         echo ""
         echo "常用命令："
         echo "  查看日志:  docker compose logs -f"

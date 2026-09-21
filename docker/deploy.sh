@@ -74,10 +74,11 @@ JWT_SECRET=ChangpingGridCommunity2026SecretKeyPleaseChangeThis
 DOMAIN=http://8.156.93.151
 
 # 端口配置
-WEB_PORT=10080
-H5_PORT=10082
-MP_PORT=10083
-BACKEND_PORT=10081
+WEB_PORT=9071
+H5_PORT=9073
+MP_PORT=9074
+BACKEND_PORT=9072
+HTTPS_PORT=9075
 ENVEOF
     echo "[✓] .env 文件创建完成（请修改密码）"
 }
@@ -108,7 +109,7 @@ deploy() {
 wait_ready() {
     echo "[...] 等待服务就绪..."
     for i in $(seq 1 30); do
-        if curl -s http://localhost:10081/api/auth/login -X POST -H "Content-Type: application/json" -d '{"account":"health","password":"check"}' > /dev/null 2>&1; then
+        if curl -s http://localhost:9072/api/auth/login -X POST -H "Content-Type: application/json" -d '{"account":"health","password":"check"}' > /dev/null 2>&1; then
             echo "[✓] 后端服务就绪"
             return
         fi
@@ -126,10 +127,10 @@ show_status() {
     echo "============================================"
     echo ""
     echo "服务地址："
-    echo "  Web 管理端:  http://8.156.93.151:10080"
-    echo "  H5 移动端:   http://8.156.93.151:10082"
-    echo "  小程序:      http://8.156.93.151:10083"
-    echo "  后端 API:    http://8.156.93.151:10081/api"
+    echo "  Web 管理端:  http://8.156.93.151:9071"
+    echo "  H5 移动端:   http://8.156.93.151:9073"
+    echo "  小程序:      http://8.156.93.151:9074"
+    echo "  后端 API:    http://8.156.93.151:9072/api"
     echo ""
     echo "常用命令："
     echo "  查看日志:  docker-compose logs -f"

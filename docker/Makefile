@@ -30,9 +30,9 @@ up:
 	docker compose up -d
 	@echo ""
 	@echo "✅ 服务已启动！"
-	@echo "  Web 管理端: http://localhost:10080"
-	@echo "  H5 移动端:  http://localhost:10082"
-	@echo "  小程序:     http://localhost:10083"
+	@echo "  Web 管理端: http://localhost:9071"
+	@echo "  H5 移动端:  http://localhost:9073"
+	@echo "  小程序:     http://localhost:9074"
 	@echo ""
 
 # 停止服务（仅本项目容器）

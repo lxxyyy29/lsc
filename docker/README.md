@@ -6,10 +6,11 @@
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| Web 管理端 | 10080 | Nginx 前端 |
-| 后端 API | 10081 | Spring Boot |
-| H5 移动端 | 10082 | uni-app H5 |
-| 小程序 | 10083 | Vue3 小程序 |
+| Web 管理端 | 9071 | Nginx 前端 |
+| 后端 API | 9072 | Spring Boot |
+| H5 移动端 | 9073 | uni-app H5 |
+| 小程序 | 9074 | Vue3 小程序 |
+| Web HTTPS | 9075 | 可选，不需要 HTTPS 时删除 compose 里 443 的映射 |
 
 **数据库/Redis/MinIO 不映射宿主机端口**，仅在 Docker 网络内部访问。
 
@@ -46,10 +47,10 @@ docker compose logs -f
 
 | 服务 | 地址 |
 |------|------|
-| Web 管理端 | http://服务器IP:10080 |
-| H5 移动端 | http://服务器IP:10082 |
-| 小程序 | http://服务器IP:10083 |
-| 后端 API | http://服务器IP:10081/api |
+| Web 管理端 | http://服务器IP:9071 |
+| H5 移动端 | http://服务器IP:9073 |
+| 小程序 | http://服务器IP:9074 |
+| 后端 API | http://服务器IP:9072/api |
 
 ### 4. 测试账号
 
@@ -96,7 +97,7 @@ docker exec -it changping-backend sh
 1. **不要执行全局 docker 命令**：`docker stop $(docker ps -q)` 会停止所有项目
 2. **只在本项目目录执行** `docker compose` 命令
 3. **修改密码**：生产环境必须修改 `.env` 中的所有密码
-4. **防火墙**：部署后需要在阿里云安全组开放 10080-10083 端口
+4. **防火墙**：部署后需要在阿里云安全组开放 9071-9074 端口（启用 HTTPS 再加 9075）
 5. **日志轮转**：已配置单容器日志最大 100MB，保留 3 个文件
 
 ## 故障排查
@@ -109,7 +110,7 @@ docker compose ps
 docker compose logs --tail=100
 
 # 检查端口占用
-ss -tulpen | grep 10080
+ss -tulpen | grep 9071
 
 # 重启单个服务
 docker compose restart changping-backend

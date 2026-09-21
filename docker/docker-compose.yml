@@ -2,7 +2,7 @@
 # 东莞杰瑞智慧网格治理平台 - Docker Compose 配置
 #
 # 部署注意事项：
-# - 使用 10080/10081/10082/10083 空闲端口，避开已有服务
+# - 使用 9071/9072/9073/9074 空闲端口（HTTPS 另占 9075），避开已有服务
 #   （已确认与 uav/emqx/wvp/gitlab/gov 等项目无冲突）
 # - 数据库/Redis/MongoDB/MinIO 不映射宿主机端口，仅在 Docker 内部网络访问
 # - 所有容器添加日志轮转，防止磁盘爆满
@@ -127,7 +127,7 @@ services:
     logging: *default-logging
 
   # ==========================================
-  # 后端 API（映射 10081）
+  # 后端 API（映射 9072）
   # ==========================================
   changping-backend:
     build:
@@ -155,7 +155,7 @@ services:
       JWT_SECRET: changping-grid-community-2026-secret-key
       # 文件上传
       MEDIA_UPLOAD_DIR: /app/uploads/
-      MEDIA_ACCESS_URL: ${DOMAIN:-http://localhost:8888}/media/files/
+      MEDIA_ACCESS_URL: ${DOMAIN:-http://localhost:9071}/media/files/
       # MinIO/OSS 配置
       OSS_ENDPOINT: http://changping-minio:9000/
       OSS_ACCESS: ${OSS_ACCESS:-https://drone.kfktec.cn:8443/minio/}
@@ -174,7 +174,7 @@ services:
       # 时区
       TZ: Asia/Shanghai
     ports:
-      - "${BACKEND_PORT:-10081}:8080"
+      - "${BACKEND_PORT:-9072}:8080"
     volumes:
       - /home/docker/uav/changping/uploads:/app/uploads
       # 固定摄像头 HLS 转流目录（宿主机 ffmpeg 输出，后端代理提供浏览器播放）
@@ -191,7 +191,7 @@ services:
     logging: *default-logging
 
   # ==========================================
-  # Web 管理端（映射 10080）
+  # Web 管理端（映射 9071，HTTPS 9075）
   # ==========================================
   changping-web:
     build:
@@ -201,8 +201,8 @@ services:
     container_name: changping-web
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-8888}:80"
-      - "${HTTPS_PORT:-8443}:443"
+      - "${WEB_PORT:-9071}:80"
+      - "${HTTPS_PORT:-9075}:443"
     volumes:
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
@@ -214,7 +214,7 @@ services:
     logging: *default-logging
 
   # ==========================================
-  # H5 移动端（映射 10082）
+  # H5 移动端（映射 9073）
   # ==========================================
   changping-h5:
     build:
@@ -224,7 +224,7 @@ services:
     container_name: changping-h5
     restart: unless-stopped
     ports:
-      - "${H5_PORT:-10082}:80"
+      - "${H5_PORT:-9073}:80"
     depends_on:
       - changping-backend
     networks:
@@ -232,7 +232,7 @@ services:
     logging: *default-logging
 
   # ==========================================
-  # 小程序（映射 10083）
+  # 小程序（映射 9074）
   # ==========================================
   changping-mp:
     build:
@@ -242,7 +242,7 @@ services:
     container_name: changping-mp
     restart: unless-stopped
     ports:
-      - "${MP_PORT:-10083}:80"
+      - "${MP_PORT:-9074}:80"
     depends_on:
       - changping-backend
     networks:
