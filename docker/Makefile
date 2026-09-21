@@ -51,7 +51,7 @@ logs:
 
 # 查看后端日志
 logs-backend:
-	docker compose logs -f changping-backend
+	docker compose logs -f dgjr-backend
 
 # 查看服务状态
 status:
@@ -64,12 +64,12 @@ clean:
 
 # 进入后端容器
 shell-backend:
-	docker exec -it changping-backend sh
+	docker exec -it dgjr-backend sh
 
 # 数据库控制台
 mysql-cli:
-	docker exec -it changping-mysql mysql -u root -p$${MYSQL_ROOT_PASSWORD} zhsq
+	docker exec -it dgjr-mysql mysql -u root -p$${MYSQL_ROOT_PASSWORD} zhsq
 
 # Redis 控制台
 redis-cli:
-	docker exec -it changping-redis redis-cli -a $${REDIS_PASSWORD}
+	docker exec -it dgjr-redis redis-cli -a $${REDIS_PASSWORD}

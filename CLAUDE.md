@@ -31,12 +31,12 @@ Start with `docs/系统说明文档.md` for the current API reference (403 endpo
 ### 部署命令（在 `docker/` 目录）
 
 ```bash
-docker compose build <服务名>          # 重建镜像（服务名: changping-backend/web/h5/mp）
+docker compose build <服务名>          # 重建镜像（服务名: dgjr-backend/web/h5/mp）
 docker compose up -d --force-recreate <服务名>   # 重建后重启
-docker ps --filter name=changping      # 查看状态
+docker ps --filter name=dgjr      # 查看状态
 ```
 
-端口映射（`docker/.env`）：后端 9072→8080、web 9071→80、h5 9073→80、mp 9074→80、**HTTPS 聚合入口 9075→443（changping-web）**。
+端口映射（`docker/.env`）：后端 9072→8080、web 9071→80、h5 9073→80、mp 9074→80、**HTTPS 聚合入口 9075→443（dgjr-web）**。
 
 ### 访问地址
 
@@ -60,7 +60,7 @@ docker ps --filter name=changping      # 查看状态
 
 - 管理端：admin / admin123
 - H5 网格员：grid01~grid06 / 123456（登录端点 `/api/h5/auth/login`，不要用 WEB 端点）
-- MySQL：容器 changping-mysql，库名 **zhsq**（不是 changping），root 密码在 `docker/.env`；sys_user 表用户名字段是 `username`
+- MySQL：容器 dgjr-mysql，库名 **zhsq**（不是 changping），root 密码在 `docker/.env`；sys_user 表用户名字段是 `username`
 
 ### 近期关键实现（2026-08）
 

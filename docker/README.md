@@ -63,7 +63,7 @@ docker compose logs -f
 
 ```bash
 # 查看日志
-docker compose logs -f changping-backend
+docker compose logs -f dgjr-backend
 
 # 重启服务
 docker compose restart
@@ -72,10 +72,10 @@ docker compose restart
 docker compose down
 
 # 备份数据库
-docker exec changping-mysql mysqldump -u root -p密码 zhsq > backup.sql
+docker exec dgjr-mysql mysqldump -u root -p密码 zhsq > backup.sql
 
 # 进入容器
-docker exec -it changping-backend sh
+docker exec -it dgjr-backend sh
 ```
 
 ## 数据持久化
@@ -123,5 +123,5 @@ docker compose logs --tail=100
 ss -tulpen | grep 9071
 
 # 重启单个服务
-docker compose restart changping-backend
+docker compose restart dgjr-backend
 ```
