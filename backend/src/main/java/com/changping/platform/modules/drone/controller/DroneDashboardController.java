@@ -75,8 +75,12 @@ public class DroneDashboardController {
 
         try {
             // AI告警（从告警事件表中统计，与事件列表页口径一致：仅计未归档的活跃事件）
+            // 注意：AI_CAMERA 是 report_source（来源）的取值，source_type（事件来源类型）在无人机告警下是 DRONE_ALARM，
+            // 之前错用 source_type = 'AI_CAMERA' 导致这条统计恒为 0，此处按 来源/来源系统/来源类型 三选一匹配。
             Long aiAlerts = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event WHERE source_type = 'AI_CAMERA' AND COALESCE(archived, 0) = 0 AND status NOT IN ('CLOSED', 'IGNORED')", Long.class);
+                "SELECT COUNT(*) FROM biz_event WHERE (report_source = 'AI_CAMERA' "
+                    + "OR source_system = 'THIRD_PARTY_DRONE' OR source_type = 'DRONE_ALARM') "
+                    + "AND COALESCE(archived, 0) = 0 AND status NOT IN ('CLOSED', 'IGNORED')", Long.class);
             result.put("aiAlerts", aiAlerts != null ? aiAlerts : 0);
         } catch (Exception e) {
             result.put("aiAlerts", 0);
@@ -146,7 +150,8 @@ public class DroneDashboardController {
             List<Map<String, Object>> alerts = jdbcTemplate.queryForList(
                 "SELECT e.event_code, e.title, e.event_type, e.urgency_level, e.status, e.occurred_at, e.incident_address, " +
                 "g.grid_name FROM biz_event e LEFT JOIN cmn_grid g ON g.id = e.grid_id " +
-                "WHERE e.source_type = 'AI_CAMERA' AND COALESCE(e.archived, 0) = 0 ORDER BY e.created_at DESC LIMIT 50");
+                "WHERE (e.report_source = 'AI_CAMERA' OR e.source_system = 'THIRD_PARTY_DRONE' OR e.source_type = 'DRONE_ALARM') " +
+                "AND COALESCE(e.archived, 0) = 0 ORDER BY e.created_at DESC LIMIT 50");
             return ApiResponse.ok(alerts);
         } catch (Exception e) {
             return ApiResponse.ok(List.of());

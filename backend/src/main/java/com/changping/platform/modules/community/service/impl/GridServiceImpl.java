@@ -6,15 +6,38 @@ import com.changping.platform.modules.community.mapper.GridMapper;
 import com.changping.platform.modules.community.service.GridService;
 import com.changping.platform.modules.community.vo.GridTreeVo;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class GridServiceImpl implements GridService {
+
+    /**
+     * 引用网格的业务表 → 提示用的中文名（顺序即提示顺序）。
+     * cmn_grid 上有外键引用，被引用时无法直接删除；此处用于删除前给出可读提示，
+     * 与 GridMapper.countReferences 的表清单保持一致。
+     */
+    private static final Map<String, String> GRID_REFERENCE_LABELS = new LinkedHashMap<>();
+
+    static {
+        GRID_REFERENCE_LABELS.put("biz_event", "事件");
+        GRID_REFERENCE_LABELS.put("cmn_population", "人口");
+        GRID_REFERENCE_LABELS.put("cmn_building", "房屋");
+        GRID_REFERENCE_LABELS.put("cmn_place", "场所");
+        GRID_REFERENCE_LABELS.put("cmn_household", "户");
+        GRID_REFERENCE_LABELS.put("cmn_resident_report", "居民上报");
+        GRID_REFERENCE_LABELS.put("cmn_patrol_record", "巡查记录");
+        GRID_REFERENCE_LABELS.put("cmn_patrol_task", "巡查任务");
+        GRID_REFERENCE_LABELS.put("cmn_org_member", "组织人员");
+    }
 
     private final GridMapper gridMapper;
 
@@ -164,7 +187,32 @@ public class GridServiceImpl implements GridService {
         if (gridMapper.countChildren(id) > 0) {
             throw new BusinessException("GRID_HAS_CHILDREN", "该网格下存在子网格，无法删除");
         }
-        return gridMapper.deleteById(id) > 0;
+        // cmn_grid 被人口/房屋/场所/事件/组织人员等表通过 grid_id 外键引用。
+        // 不先校验就直接 DELETE，会抛外键约束异常，被全局兜底成 500「服务器内部错误」——
+        // 用户完全不知道是哪些数据挡住了。这里先统计引用量，给出可读提示。
+        String references = describeReferences(gridMapper.countReferences(id));
+        if (references != null) {
+            throw new BusinessException("GRID_IN_USE",
+                    "该网格下还有" + references + "，请先迁移或删除这些数据后再删除网格");
+        }
+        try {
+            return gridMapper.deleteById(id) > 0;
+        } catch (DataIntegrityViolationException e) {
+            // 兜底：表清单若有遗漏（新增了引用网格的表），仍返回可读错误而不是 500
+            throw new BusinessException("GRID_IN_USE", "该网格仍被其它业务数据引用，无法删除");
+        }
+    }
+
+    /** 汇总引用明细，如「人口 3 条、事件 1 条」；无引用返回 null */
+    private String describeReferences(Map<String, Long> references) {
+        List<String> parts = new ArrayList<>();
+        for (Map.Entry<String, String> entry : GRID_REFERENCE_LABELS.entrySet()) {
+            Long count = references.get(entry.getKey());
+            if (count != null && count > 0) {
+                parts.add(entry.getValue() + " " + count + " 条");
+            }
+        }
+        return parts.isEmpty() ? null : String.join("、", parts);
     }
 
     private List<GridTreeVo> buildTree(List<GridEntity> all, Long parentId) {

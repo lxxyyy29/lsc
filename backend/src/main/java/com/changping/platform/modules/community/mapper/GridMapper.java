@@ -5,7 +5,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class GridMapper {
@@ -76,6 +78,29 @@ public class GridMapper {
 
     public int deleteById(Long id) {
         return jdbcTemplate.update("DELETE FROM cmn_grid WHERE id = ?", id);
+    }
+
+    /**
+     * 统计仍引用该网格的各业务表行数。
+     * cmn_grid 被多张业务表通过 grid_id 外键引用（biz_event、cmn_population 等），
+     * 删除前先统计，才能给出可读提示而不是让外键约束把接口打成 500。
+     * 注意：新增引用网格的表时，这里和 GridServiceImpl.GRID_REFERENCE_LABELS 要同步维护。
+     */
+    public Map<String, Long> countReferences(Long gridId) {
+        String sql = "SELECT 'biz_event' AS ref_table, COUNT(*) AS ref_count FROM biz_event WHERE grid_id = ? "
+                + "UNION ALL SELECT 'cmn_population', COUNT(*) FROM cmn_population WHERE grid_id = ? "
+                + "UNION ALL SELECT 'cmn_building', COUNT(*) FROM cmn_building WHERE grid_id = ? "
+                + "UNION ALL SELECT 'cmn_place', COUNT(*) FROM cmn_place WHERE grid_id = ? "
+                + "UNION ALL SELECT 'cmn_household', COUNT(*) FROM cmn_household WHERE grid_id = ? "
+                + "UNION ALL SELECT 'cmn_resident_report', COUNT(*) FROM cmn_resident_report WHERE grid_id = ? "
+                + "UNION ALL SELECT 'cmn_patrol_record', COUNT(*) FROM cmn_patrol_record WHERE grid_id = ? "
+                + "UNION ALL SELECT 'cmn_patrol_task', COUNT(*) FROM cmn_patrol_task WHERE grid_id = ? "
+                + "UNION ALL SELECT 'cmn_org_member', COUNT(*) FROM cmn_org_member WHERE grid_id = ?";
+        Map<String, Long> counts = new LinkedHashMap<>();
+        jdbcTemplate.query(sql, rs -> {
+            counts.put(rs.getString("ref_table"), rs.getLong("ref_count"));
+        }, gridId, gridId, gridId, gridId, gridId, gridId, gridId, gridId, gridId);
+        return counts;
     }
 
     public long countChildren(Long parentId) {

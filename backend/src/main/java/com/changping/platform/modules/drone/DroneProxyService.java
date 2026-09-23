@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -25,6 +27,8 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @Service
 public class DroneProxyService {
+
+    private static final Logger log = LoggerFactory.getLogger(DroneProxyService.class);
 
     private static final String WORKSPACE_LIST_PATH = "/dj-prod-api/manage/api/v1/workspaces/getWorkspaceListPageVo";
     private static final String DEVICE_LIST_PATH = "/dj-prod-api/manage/api/v1/devices/getDeviceListPageVo";
@@ -100,6 +104,8 @@ public class DroneProxyService {
             List<Map<String, Object>> items = extractItems(data);
             return pageResult(data, items, page, pageSize);
         } catch (Exception e) {
+            log.warn("调用上游设备列表失败：workspaceId={}, page={}, pageSize={}, 原因={}",
+                    workspaceId, page, pageSize, e.toString());
             return new PageResult<>(List.of(), 0, page, pageSize);
         }
     }
@@ -112,9 +118,38 @@ public class DroneProxyService {
      * @return PageResult<Map<String, Object>> 航线分页结果
      */
     public PageResult<Map<String, Object>> listWaylines(String workspaceId, int page, int pageSize) {
-        Map<String, Object> data = getForMap(WAYLINE_LIST_PATH.formatted(workspaceId, page, pageSize));
-        List<Map<String, Object>> items = extractItems(data);
-        return pageResult(data, items, page, pageSize);
+        try {
+            Map<String, Object> data = getForMap(WAYLINE_LIST_PATH.formatted(workspaceId, page, pageSize));
+            List<Map<String, Object>> items = extractItems(data);
+            if (items.isEmpty()) {
+                // 航线为空时打印上游响应结构：用于区分「平台上这个工作空间确实没有航线」
+                // 与「上游返回字段和解析逻辑不一致（例如分页 key 不同）」
+                log.warn("上游航线列表为空：workspaceId={}, page={}, pageSize={}, 上游响应结构={}",
+                        workspaceId, page, pageSize, summarizeUpstream(data));
+            }
+            return pageResult(data, items, page, pageSize);
+        } catch (Exception e) {
+            // 原实现让异常一路冒泡到 Controller 被吞成空数组，前端只显示「没有航线」，
+            // 排查时看不到任何线索，这里补一条日志
+            log.warn("调用上游航线列表失败：workspaceId={}, page={}, pageSize={}, 原因={}",
+                    workspaceId, page, pageSize, e.toString());
+            throw e;
+        }
+    }
+
+    /** 上游响应结构摘要（只取 key 与分页字段），避免把整包数据写进日志 */
+    private Object summarizeUpstream(Map<String, Object> data) {
+        if (data == null) {
+            return "null";
+        }
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("keys", data.keySet());
+        for (String key : List.of("page_num", "page_size", "total", "count", "total_count")) {
+            if (data.containsKey(key)) {
+                summary.put(key, data.get(key));
+            }
+        }
+        return summary;
     }
 
     /**
@@ -164,6 +199,8 @@ public class DroneProxyService {
             List<Map<String, Object>> items = extractItems(data);
             return pageResult(data, items, page, pageSize);
         } catch (Exception e) {
+            log.warn("调用上游任务列表失败：workspaceId={}, page={}, pageSize={}, status={}, 原因={}",
+                    workspaceId, page, pageSize, status, e.toString());
             return new PageResult<>(List.of(), 0, page, pageSize);
         }
     }
