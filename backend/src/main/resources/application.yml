@@ -107,6 +107,16 @@ drone:
       max-files: ${DRONE_ALARM_UPLOAD_MAX_FILES:5}
       max-file-size-mb: ${DRONE_ALARM_UPLOAD_MAX_FILE_SIZE_MB:10}
       allowed-extensions: ${DRONE_ALARM_UPLOAD_ALLOWED_EXTENSIONS:jpg,jpeg,png}
+    # 主动拉取三方平台告警（与「平台推送」二选一；平台侧没配回调时用这个）
+    # 接口来自大疆 AI 智慧巡查平台的 alarmData 模块，返回原始告警项后复用推送链路入库
+    # （归一化 → 去重 → Mongo alarm_events → 投影成事件 → 违章区域过滤）
+    pull:
+      enabled: ${DRONE_ALARM_PULL_ENABLED:false}
+      path: ${DRONE_ALARM_PULL_PATH:/dj-prod-api/manage/api/v1/alarmData/getAlarmDataListPageVo}
+      page-size: ${DRONE_ALARM_PULL_PAGE_SIZE:50}
+      max-pages: ${DRONE_ALARM_PULL_MAX_PAGES:3}
+      include-workspace: ${DRONE_ALARM_PULL_INCLUDE_WORKSPACE:true}
+      cron: ${DRONE_ALARM_PULL_CRON:0 */5 * * * *}
 oss:
   enable: ${OSS_ENABLE:true}
   provider: ${OSS_PROVIDER:minio}

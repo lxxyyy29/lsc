@@ -32,6 +32,13 @@ public class AlarmIntegrationProperties {
     /** 图片上传配置（面向板端，使用回调令牌鉴权，无需平台登录态） */
     private final Upload upload = new Upload();
 
+    /** 主动拉取三方平台告警的配置 */
+    private final Pull pull = new Pull();
+
+    public Pull getPull() {
+        return pull;
+    }
+
     public String getSourceSystem() {
         return sourceSystem;
     }
@@ -115,6 +122,90 @@ public class AlarmIntegrationProperties {
 
         public void setSignatureSecret(String signatureSecret) {
             this.signatureSecret = signatureSecret;
+        }
+    }
+
+    /**
+     * 主动拉取三方平台告警的配置。
+     *
+     * 背景：平台侧只有「推送」能力时（板端 POST 到 /integrations/alarms/callback）不需要本配置；
+     * 但部分平台（如大疆 AI 智慧巡查平台的 alarmData 模块）支持查询告警列表，
+     * 本平台可定时主动抓取，避免依赖平台侧配置回调。
+     *
+     * 接口路径来自平台前端源码：
+     * ${Je}/alarmData/getAlarmDataListPageVo，其中 ${Je} = /dj-prod-api/manage/api/v1。
+     */
+    public static class Pull {
+
+        /**
+         * 是否启用定时拉取。默认关闭：
+         * 平台若没有该接口，开启后会每轮刷错误日志，故交由部署方显式打开。
+         */
+        private boolean enabled = false;
+
+        /** 三方告警列表接口路径 */
+        @NotBlank
+        private String path = "/dj-prod-api/manage/api/v1/alarmData/getAlarmDataListPageVo";
+
+        /** 每页条数 */
+        private int pageSize = 50;
+
+        /** 单次最多拉取页数（防止首启全量拉取过大） */
+        private int maxPages = 3;
+
+        /** 请求体是否携带固定工作空间ID（该接口按工作空间过滤） */
+        private boolean includeWorkspace = true;
+
+        /** 定时任务表达式，默认每 5 分钟 */
+        @NotBlank
+        private String cron = "0 */5 * * * *";
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public void setPath(String path) {
+            this.path = path;
+        }
+
+        public int getPageSize() {
+            return pageSize;
+        }
+
+        public void setPageSize(int pageSize) {
+            this.pageSize = pageSize;
+        }
+
+        public int getMaxPages() {
+            return maxPages;
+        }
+
+        public void setMaxPages(int maxPages) {
+            this.maxPages = maxPages;
+        }
+
+        public boolean isIncludeWorkspace() {
+            return includeWorkspace;
+        }
+
+        public void setIncludeWorkspace(boolean includeWorkspace) {
+            this.includeWorkspace = includeWorkspace;
+        }
+
+        public String getCron() {
+            return cron;
+        }
+
+        public void setCron(String cron) {
+            this.cron = cron;
         }
     }
 

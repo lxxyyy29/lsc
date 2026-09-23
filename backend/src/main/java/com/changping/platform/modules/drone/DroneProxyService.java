@@ -137,6 +137,21 @@ public class DroneProxyService {
         }
     }
 
+    /**
+     * 拉取三方平台告警列表（供告警同步任务调用）。
+     * 复用与设备/任务相同的响应解析逻辑（extractItems 兼容 items/list/records 等键名），
+     * 返回原始告警项，交由告警摄入管线做归一化、去重、Mongo 存储与事件投影。
+     * 注意：这里不吞异常 —— 拉取失败要让调用方（同步任务）知道原因。
+     */
+    public List<Map<String, Object>> fetchAlarmList(String path, Map<String, Object> request) {
+        Map<String, Object> data = postForMap(path, request);
+        List<Map<String, Object>> items = extractItems(data);
+        if (items.isEmpty()) {
+            log.warn("上游告警列表为空：path={}, 请求体={}, 上游响应结构={}", path, request, summarizeUpstream(data));
+        }
+        return items;
+    }
+
     /** 上游响应结构摘要（只取 key 与分页字段），避免把整包数据写进日志 */
     private Object summarizeUpstream(Map<String, Object> data) {
         if (data == null) {

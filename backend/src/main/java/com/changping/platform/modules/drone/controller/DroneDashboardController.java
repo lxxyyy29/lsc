@@ -7,6 +7,7 @@ import com.changping.platform.modules.auth.service.AuthService;
 import com.changping.platform.modules.auth.service.CurrentUserService;
 import com.changping.platform.modules.drone.DroneProxyService;
 import com.changping.platform.modules.drone.config.DroneApiProperties;
+import com.changping.platform.modules.integration.alarm.service.AlarmPullService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,18 +22,21 @@ public class DroneDashboardController {
     private final JdbcTemplate jdbcTemplate;
     private final CurrentUserService currentUserService;
     private final PermissionGuard permissionGuard;
+    private final AlarmPullService alarmPullService;
 
     public DroneDashboardController(
             DroneProxyService droneProxyService,
             DroneApiProperties droneApiProperties,
             JdbcTemplate jdbcTemplate,
             CurrentUserService currentUserService,
-            PermissionGuard permissionGuard) {
+            PermissionGuard permissionGuard,
+            AlarmPullService alarmPullService) {
         this.droneProxyService = droneProxyService;
         this.droneApiProperties = droneApiProperties;
         this.jdbcTemplate = jdbcTemplate;
         this.currentUserService = currentUserService;
         this.permissionGuard = permissionGuard;
+        this.alarmPullService = alarmPullService;
     }
 
     /**
@@ -156,6 +160,16 @@ public class DroneDashboardController {
         } catch (Exception e) {
             return ApiResponse.ok(List.of());
         }
+    }
+
+    /**
+     * 手动拉取一次三方平台告警（接入调试 / 补历史数据用）。
+     * 定时拉取默认关闭，需要长期自动同步时把 drone.alarm-integration.pull.enabled 设为 true。
+     */
+    @PostMapping("/alarms/pull")
+    public ApiResponse<Map<String, Object>> pullAlarms() {
+        requireDroneDashboardPermission();
+        return ApiResponse.ok(alarmPullService.pullOnce());
     }
 
     private void requireDroneDashboardPermission() {
