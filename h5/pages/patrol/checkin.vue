@@ -30,9 +30,26 @@
         <view class="location-text">{{ locationText }}</view>
         <view class="location-actions">
           <text class="link" @click="getLocation">定位</text>
+          <!-- #ifdef MP-WEIXIN -->
           <text class="link link-divider">|</text>
           <text class="link" @click="chooseLocation">地图选点</text>
+          <!-- #endif -->
         </view>
+        <!-- #ifndef MP-WEIXIN -->
+        <!--
+          网页端没有微信原生选点能力，复用「事件上报」页同一个组件：
+          点击后打开高德地图全屏选点浮层（可搜索、可点地图取点）。
+          小程序端不渲染它（走上面的微信原生选点）。
+        -->
+        <view class="amap-picker-wrap">
+          <AMapPointPicker
+            ref="amapPickerRef"
+            v-model:longitude="longitude"
+            v-model:latitude="latitude"
+            placeholder="在地图上选择打卡位置"
+          />
+        </view>
+        <!-- #endif -->
       </view>
 
       <!-- 地址输入 + 关键词联想（历史地址 + 网格名） -->
@@ -90,6 +107,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import GridWorkerTabBar from '../../src/components/GridWorkerTabBar.vue'
+import AMapPointPicker from '../../src/components/AMapPointPicker.vue'
 import { getGridTree, createPatrolRecord, getAddressSuggestions, GridTreeVo, PatrolRecord } from '../../src/api/community'
 import { getH5Session } from '../../src/api/auth'
 import { locateWithFallback } from '../../src/utils/geolocation'
@@ -120,6 +138,9 @@ let suggestionTimer: any = null
 const mapLat = ref(22.971231)
 const mapLng = ref(113.939521)
 const mapMarkers = ref<any[]>([])
+
+// 网页端高德选点组件引用（小程序端不渲染该组件，此引用为 null）
+const amapPickerRef = ref<{ openPicker?: () => void } | null>(null)
 
 function updateMapMarker(lat: number, lng: number) {
   mapLat.value = lat
@@ -258,18 +279,15 @@ function chooseLocation() {
   })
   // #endif
   // #ifndef MP-WEIXIN
-  // H5 网页端：uni.chooseLocation 依赖地图 key，能调则调，不能调给出明确提示（不再静默无反应）
-  const uniRef = (globalThis as { uni?: { chooseLocation?: (options: any) => void } }).uni
-  if (typeof uniRef?.chooseLocation === 'function') {
-    uniRef.chooseLocation({
-      success: (res: any) => applyChosenLocation(res),
-      fail: () => uni.showToast({ title: '未选择位置', icon: 'none' })
-    })
+  // 网页端：打开高德地图选点浮层（复用「事件上报」页同一个组件 AMapPointPicker）
+  const picker = amapPickerRef.value
+  if (picker?.openPicker) {
+    picker.openPicker()
     return
   }
   uni.showModal({
-    title: '地图选点不可用',
-    content: '网页端未配置地图选点能力，请在小程序内使用，或直接手动填写「打卡地址」。',
+    title: '选点组件未就绪',
+    content: '请稍后重试；也可直接在「打卡地址」里手动填写地址。',
     showCancel: false
   })
   // #endif
@@ -398,6 +416,7 @@ onMounted(async () => {
 .location-text { font-size: 12px; color: #7ea4c8; margin-bottom: 4px; }
 .location-map { width: 100%; height: 380rpx; border-radius: 12rpx; margin-bottom: 8rpx; }
 .map-hint { font-size: 11px; color: #5a7a9a; margin-bottom: 6px; }
+.amap-picker-wrap { margin-top: 10px; }
 .location-actions { display: flex; align-items: center; gap: 12rpx; }
 .address-row { display: flex; align-items: center; gap: 8px; }
 .address-row .text-input { flex: 1; }

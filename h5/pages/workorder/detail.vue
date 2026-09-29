@@ -480,29 +480,46 @@ async function initDetailMap() {
   const container = document.getElementById(mapElId)
   if (!container) return
 
-  ;(window as any)._AMapSecurityConfig = {
-    securityJsCode: '0a57a5453a660300283bebf7323d8bce'
+  // 仅在页面尚未配置时设置：重复/冲突配置安全密钥同样会触发高德"多种API加载方式混用"
+  const amapWindow = window as any
+  if (!amapWindow._AMapSecurityConfig) {
+    amapWindow._AMapSecurityConfig = {
+      securityJsCode: '0a57a5453a660300283bebf7323d8bce'
+    }
   }
 
+  // 复用页面已加载的高德实例：其它模块用 <script> 方式加载过，
+  // 这里再用 AMapLoader 二次加载会被高德拒绝渲染（页面表现为地图空白）
   const AMapLoader = (await import('@amap/amap-jsapi-loader')).default
-  const AMapLib = await AMapLoader.load({
-    key: '5e00e01d2d2b6ca9e1eed533a15572e4',
-    version: '2.0',
-    plugins: []
-  })
+  const AMapLib =
+    amapWindow.AMap ||
+    (await AMapLoader.load({
+      key: '5e00e01d2d2b6ca9e1eed533a15572e4',
+      version: '2.0',
+      plugins: ['AMap.TileLayer']
+    }))
 
   const lng = sourceEvent.value?.longitude
   const lat = sourceEvent.value?.latitude
 
-  const satelliteLayer = new AMapLib.TileLayer.Satellite()
-  const roadNetLayer = new AMapLib.TileLayer.RoadNet()
+  // 卫星底图按需叠加：图层类不可用时退回默认矢量底图，绝不因此让整张地图创建失败
+  const layers: any[] = []
+  const satelliteCls = AMapLib.TileLayer?.Satellite
+  const roadNetCls = AMapLib.TileLayer?.RoadNet
+  if (typeof satelliteCls === 'function' && typeof roadNetCls === 'function') {
+    try {
+      layers.push(new satelliteCls(), new roadNetCls())
+    } catch (e) {
+      layers.length = 0
+    }
+  }
 
   detailMap = new AMapLib.Map(container, {
     zoom: 16,
     center: [lng, lat],
     viewMode: '2D',
-    layers: [satelliteLayer, roadNetLayer],
-    resizeEnable: false
+    ...(layers.length ? { layers } : {}),
+    resizeEnable: true
   })
 
   new AMapLib.Marker({
