@@ -89,6 +89,7 @@ import { locateWithFallback } from '../../src/utils/geolocation'
 import { getH5Session } from '../../src/api/auth'
 import { navigateToPath } from '../../src/uni/navigation'
 import { enqueueOfflineTask, isNetworkError } from '../../src/utils/offlineQueue'
+import { MP_ORIGIN } from '../../src/api/endpoints'
 
 // 事件类型字典驱动（event_type），接口不可用时兜底内置列表（与 Web 端「创建事件」保持一致）
 const FALLBACK_EVENT_TYPES = [
@@ -151,7 +152,7 @@ function removePhoto(idx: number) { photos.value.splice(idx, 1) }
 /** 媒体上传基址：小程序用绝对 HTTPS 域名，H5 用相对路径走代理 */
 function resolveMediaBaseUrl(): string {
   // #ifdef MP-WEIXIN
-  return 'http://8.138.97.118:9071'
+  return MP_ORIGIN
   // #endif
   // #ifndef MP-WEIXIN
   return ''

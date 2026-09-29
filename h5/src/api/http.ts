@@ -1,3 +1,4 @@
+import { MP_H5_API_BASE } from './endpoints'
 // #ifndef MP-WEIXIN
 import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig } from 'axios'
 // #endif
@@ -43,7 +44,7 @@ function resolveApiBaseUrl() {
   const envValue = (globalThis as { __H5_API_BASE_URL__?: string }).__H5_API_BASE_URL__
   if (typeof envValue === 'string' && envValue.trim().length > 0) return envValue.trim()
   // #ifdef MP-WEIXIN
-  return 'http://8.138.97.118:9071/api/h5'
+  return MP_H5_API_BASE
   // #endif
   return '/api/h5'
 }

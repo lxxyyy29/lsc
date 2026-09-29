@@ -16,13 +16,16 @@
       <view class="form-item">
         <text class="label">当前位置</text>
         <!-- #ifdef MP-WEIXIN -->
+        <!-- 地图可点击直接选点：此前地图无任何点击响应，用户反馈"点地图没反应" -->
         <map
           class="location-map"
           :latitude="mapLat"
           :longitude="mapLng"
           :scale="16"
           :markers="mapMarkers"
+          @tap="chooseLocation"
         ></map>
+        <view class="map-hint">点地图或下方「地图选点」可选取打卡位置</view>
         <!-- #endif -->
         <view class="location-text">{{ locationText }}</view>
         <view class="location-actions">
@@ -35,14 +38,18 @@
       <!-- 地址输入 + 关键词联想（历史地址 + 网格名） -->
       <view class="form-item">
         <text class="label">打卡地址</text>
-        <input
-          v-model="address"
-          class="text-input"
-          placeholder="请输入打卡地址"
-          @input="onAddressInput"
-          @focus="onAddressInput"
-          @blur="closeSuggestions"
-        />
+        <view class="address-row">
+          <input
+            v-model="address"
+            class="text-input"
+            placeholder="请输入打卡地址"
+            @input="onAddressInput"
+            @focus="onAddressInput"
+            @blur="closeSuggestions"
+          />
+          <!-- 输入框旁直接给一个选点入口：地图/输入框任一入口都能选点，避免"点不动"无路可走 -->
+          <view class="address-pick" @click="chooseLocation">📍 选点</view>
+        </view>
         <view v-if="suggestions.length" class="suggest-list">
           <view v-for="(s, idx) in suggestions" :key="idx" class="suggest-item" @mousedown.prevent="selectAddress(s)">
             {{ s }}
@@ -87,6 +94,7 @@ import { getGridTree, createPatrolRecord, getAddressSuggestions, GridTreeVo, Pat
 import { getH5Session } from '../../src/api/auth'
 import { locateWithFallback } from '../../src/utils/geolocation'
 import { enqueueOfflineTask, isNetworkError } from '../../src/utils/offlineQueue'
+import { MP_ORIGIN } from '../../src/api/endpoints'
 
 interface GridOption {
   label: string
@@ -199,25 +207,70 @@ function getLocation() {
   })
 }
 
-/** 地图选点：微信原生地图，返回地址名称（小程序端使用） */
+/** 选点结果统一写入：经纬度 + 地图标记 + 打卡地址 */
+function applyChosenLocation(res: any) {
+  const lat = Number(res?.latitude)
+  const lng = Number(res?.longitude)
+  if (!lat || !lng) return
+  longitude.value = Number(lng.toFixed(6))
+  latitude.value = Number(lat.toFixed(6))
+  // #ifdef MP-WEIXIN
+  updateMapMarker(lat, lng)
+  // #endif
+  locationText.value = res.address || res.name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+  // 选点地址同步填入"打卡地址"输入框
+  if (res.address || res.name) {
+    address.value = res.address || res.name
+    suggestions.value = []
+  }
+}
+
+/**
+ * 地图选点。
+ * 历史问题：H5 端此函数是空实现、小程序端失败时只弹「取消选点」，
+ * 用户反馈"点地图/点选点没反应"，无从判断原因。现在任何分支都有明确反馈。
+ */
 function chooseLocation() {
   // #ifdef MP-WEIXIN
+  const wxRef = (globalThis as { wx?: { chooseLocation?: unknown } }).wx
+  if (!wxRef || typeof wxRef.chooseLocation !== 'function') {
+    uni.showModal({
+      title: '地图选点不可用',
+      content: '当前小程序未开通地理位置接口（个人主体小程序不开放该接口）。请改用「定位」，或直接在「打卡地址」里手动填写。',
+      showCancel: false
+    })
+    return
+  }
   uni.chooseLocation({
-    success: (res: any) => {
-      if (!res.latitude || !res.longitude) return
-      longitude.value = Number(res.longitude.toFixed(6))
-      latitude.value = Number(res.latitude.toFixed(6))
-      updateMapMarker(Number(res.latitude), Number(res.longitude))
-      locationText.value = res.address || res.name || `${res.latitude.toFixed(6)}, ${res.longitude.toFixed(6)}`
-      // 选点地址同步填入"打卡地址"输入框
-      if (res.address || res.name) {
-        address.value = res.address || res.name
-        suggestions.value = []
+    success: (res: any) => applyChosenLocation(res),
+    fail: (err: any) => {
+      const msg = String(err?.errMsg || '')
+      if (msg.includes('cancel')) {
+        uni.showToast({ title: '已取消选点', icon: 'none' })
+      } else {
+        uni.showModal({
+          title: '地图选点失败',
+          content: '请确认已允许获取位置信息；若仍失败，可改用「定位」或手动填写打卡地址。',
+          showCancel: false
+        })
       }
-    },
-    fail: () => {
-      uni.showToast({ title: '取消选点', icon: 'none' })
     }
+  })
+  // #endif
+  // #ifndef MP-WEIXIN
+  // H5 网页端：uni.chooseLocation 依赖地图 key，能调则调，不能调给出明确提示（不再静默无反应）
+  const uniRef = (globalThis as { uni?: { chooseLocation?: (options: any) => void } }).uni
+  if (typeof uniRef?.chooseLocation === 'function') {
+    uniRef.chooseLocation({
+      success: (res: any) => applyChosenLocation(res),
+      fail: () => uni.showToast({ title: '未选择位置', icon: 'none' })
+    })
+    return
+  }
+  uni.showModal({
+    title: '地图选点不可用',
+    content: '网页端未配置地图选点能力，请在小程序内使用，或直接手动填写「打卡地址」。',
+    showCancel: false
   })
   // #endif
 }
@@ -225,7 +278,7 @@ function chooseLocation() {
 /** 媒体上传基址：小程序用绝对 HTTPS 域名，H5 用相对路径走代理 */
 function resolveMediaBaseUrl(): string {
   // #ifdef MP-WEIXIN
-  return 'http://8.138.97.118:9071'
+  return MP_ORIGIN
   // #endif
   // #ifndef MP-WEIXIN
   return ''
@@ -344,7 +397,12 @@ onMounted(async () => {
 .suggest-item:active { background: #14304f; }
 .location-text { font-size: 12px; color: #7ea4c8; margin-bottom: 4px; }
 .location-map { width: 100%; height: 380rpx; border-radius: 12rpx; margin-bottom: 8rpx; }
+.map-hint { font-size: 11px; color: #5a7a9a; margin-bottom: 6px; }
 .location-actions { display: flex; align-items: center; gap: 12rpx; }
+.address-row { display: flex; align-items: center; gap: 8px; }
+.address-row .text-input { flex: 1; }
+.address-pick { flex: none; padding: 10px 12px; background: #10344f; color: #57b9ff; border-radius: 8px; font-size: 13px; white-space: nowrap; }
+.address-pick:active { background: #14304f; }
 .link { font-size: 12px; color: #57b9ff; }
 .link-divider { color: #3a5a7a; }
 .photo-grid { display: flex; flex-wrap: wrap; gap: 8px; }

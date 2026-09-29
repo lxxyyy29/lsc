@@ -1,3 +1,4 @@
+import { MP_API_BASE } from './endpoints'
 /**
  * 居民端（微信小程序 / H5 居民入口）API 层
  *
@@ -109,7 +110,7 @@ export function clearResidentSession() {
 
 function resolveApiBaseUrl() {
   // #ifdef MP-WEIXIN
-  return 'http://8.138.97.118:9071/api'
+  return MP_API_BASE
   // #endif
   // #ifndef MP-WEIXIN
   return '/api'

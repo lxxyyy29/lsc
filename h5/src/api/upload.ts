@@ -1,3 +1,4 @@
+import { MP_API_BASE, MP_ORIGIN } from './endpoints'
 import { HttpResponseError } from './http'
 import { getH5Session } from './auth'
 
@@ -9,7 +10,7 @@ export interface UploadedFile {
 
 function resolveUploadBaseUrl(): string {
   // #ifdef MP-WEIXIN
-  return 'http://8.138.97.118:9071/api'
+  return MP_API_BASE
   // #endif
   // #ifndef MP-WEIXIN
   return '/api'
@@ -46,9 +47,9 @@ export async function fetchAccessPrefix(): Promise<string> {
 
 function ensureHttps(url: string): string {
   // #ifdef MP-WEIXIN
-  url = url.replace('http://8.137.79.139:8768', 'http://8.138.97.118:9071')
-  url = url.replace('http://8.135.237.224:9001', 'http://8.138.97.118:9071/minio-proxy')
-  url = url.replace('http://127.0.0.1:8768', 'http://8.138.97.118:9071/minio')
+  url = url.replace('http://8.137.79.139:8768', MP_ORIGIN)
+  url = url.replace('http://8.135.237.224:9001', MP_ORIGIN + '/minio-proxy')
+  url = url.replace('http://127.0.0.1:8768', MP_ORIGIN + '/minio')
   return url
   // #endif
   // #ifndef MP-WEIXIN

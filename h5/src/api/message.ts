@@ -1,3 +1,4 @@
+import { MP_API_BASE } from './endpoints'
 import { http } from './http'
 
 export interface ConversationItem {
@@ -26,7 +27,7 @@ export interface MessageItem {
 // 小程序端必须使用绝对 HTTPS 地址；先声明再条件赋值避开重复声明的 TS 误报
 let webApiConfig = { baseURL: '/api' }
 // #ifdef MP-WEIXIN
-webApiConfig = { baseURL: 'http://8.138.97.118:9071/api' }
+webApiConfig = { baseURL: MP_API_BASE }
 // #endif
 
 /** 获取当前用户的会话列表 */

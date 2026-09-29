@@ -1,3 +1,4 @@
+import { MP_H5_API_BASE } from './endpoints'
 import { getH5Session } from './auth'
 import { HttpResponseError } from './http'
 
@@ -74,7 +75,7 @@ function resolveSharedApiBaseUrl(): string {
     h5Base = envValue.trim()
   } else {
     // #ifdef MP-WEIXIN
-    h5Base = 'http://8.138.97.118:9071/api/h5'
+    h5Base = MP_H5_API_BASE
     // #endif
     // #ifndef MP-WEIXIN
     h5Base = '/api/h5'

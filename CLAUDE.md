@@ -40,15 +40,15 @@ docker ps --filter name=dgjr      # 查看状态
 
 ### 访问地址
 
-**当前部署：新服务器 `8.138.97.118`，部署根目录 `/uav_data`，暂无域名与证书，走 HTTP**
+**当前部署：新服务器 `202.168.190.132`，部署根目录 `/uav_data`，暂无域名与证书，走 HTTP**
 
 | 端 | HTTP |
 |---|---|
-| 管理端 | http://8.138.97.118:9071 |
-| H5 移动端 | http://8.138.97.118:9073/h5/ |
-| 居民端 | http://8.138.97.118:9074 |
+| 管理端 | http://202.168.190.132:9071 |
+| H5 移动端 | http://202.168.190.132:9073/h5/ |
+| 居民端 | http://202.168.190.132:9074 |
 
-小程序端接口地址是硬编码的（`h5/src/api/` 6 个文件 + `h5/pages/` 3 个文件），当前为 `http://8.138.97.118:9071`；微信真机要求 HTTPS + 已备案域名（不支持 IP），换域名时需同步修改这些地址。
+小程序端接口地址是硬编码的（`h5/src/api/` 6 个文件 + `h5/pages/` 3 个文件），当前为 `http://202.168.190.132:9071`；微信真机要求 HTTPS + 已备案域名（不支持 IP），换域名时需同步修改这些地址。
 
 ---
 
@@ -66,7 +66,7 @@ docker ps --filter name=dgjr      # 查看状态
 
 - **HTTPS 聚合入口**：`docker/nginx-web.conf` 同时监听 80/443，代理 `/h5/` `/mp/` 子入口；这两个 location 必须带 `^~`（否则静态资源被正则 location 拦截 404）；后端 CORS 白名单在 SecurityConfig.java，新增域名需同步
 - **定位**：浏览器精确定位仅 HTTPS 可用；H5 工具在 `h5/src/utils/geolocation.ts`（navigator.geolocation + WGS84→GCJ02 → 高德 IP 定位回退），web 端同款工具在 `web/src/utils/geolocation.ts`；AMap 2.0 的 CitySearch 只有 `getLocalCity`（1.x 的 getLocalPosition 已移除）
-- **媒体文件**：扁平存储 `/media/files/{filename}`，公网 URL 前缀由 `docker/.env` 的 `DOMAIN` 拼接（新服务器为 `http://8.138.97.118:9071`，老服务器为 HTTPS 域名）；上传目录挂载 `${DATA_ROOT}/uploads`（默认 `/uav_data/uploads`）
+- **媒体文件**：扁平存储 `/media/files/{filename}`，公网 URL 前缀由 `docker/.env` 的 `DOMAIN` 拼接（新服务器为 `http://202.168.190.132:9071`，老服务器为 HTTPS 域名）；上传目录挂载 `${DATA_ROOT}/uploads`（默认 `/uav_data/uploads`）
 - **网格数据**：cmn_grid（grid_level 1=社区/2=大网格/3=小网格，roiJson 存边界）；H5 专用接口 `/community/grids/h5/tree`、`/community/grids/h5/my-grid`、`/events/h5/map-points`（WEB 专属接口 H5 令牌会被拒，勿混用）
 
 ### 硬性约束

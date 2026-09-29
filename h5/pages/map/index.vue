@@ -72,6 +72,7 @@ import GridWorkerTabBar from '../../src/components/GridWorkerTabBar.vue'
 import { locateWithFallback } from '../../src/utils/geolocation'
 import { getH5Session } from '../../src/api/auth'
 import { getGridTree } from '../../src/api/community'
+import { MP_API_BASE } from '../../src/api/endpoints'
 
 const AMAP_KEY = '5e00e01d2d2b6ca9e1eed533a15572e4'
 const AMAP_SECURITY_CODE = '0a57a5453a660300283bebf7323d8bce'
@@ -120,7 +121,7 @@ function loadMyGridIds(): Promise<Set<number>> {
   // 小程序端必须用绝对 HTTPS 地址（相对路径 invalid url）；先赋变量避开条件编译双 url 的 TS 误报
   let myGridUrl = '/api/community/grids/h5/my-grid'
   // #ifdef MP-WEIXIN
-  myGridUrl = 'http://8.138.97.118:9071/api/community/grids/h5/my-grid'
+  myGridUrl = `${MP_API_BASE}/community/grids/h5/my-grid`
   // #endif
   return new Promise((resolve) => {
     uni.request({
@@ -454,7 +455,7 @@ async function loadEvents() {
   // 小程序端必须使用绝对 HTTPS 地址（相对路径 invalid url）
   let eventsUrl = '/api/events/h5/map-points'
   // #ifdef MP-WEIXIN
-  eventsUrl = 'http://8.138.97.118:9071/api/events/h5/map-points'
+  eventsUrl = `${MP_API_BASE}/events/h5/map-points`
   // #endif
   try {
     const res: any = await uni.request({
