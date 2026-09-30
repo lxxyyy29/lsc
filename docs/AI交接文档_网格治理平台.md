@@ -136,7 +136,9 @@ docker ps --filter name=changping
 ### 5.3 小程序构建注意事项
 - `h5/scripts/build-mp.mjs`：自动备份/生成/恢复 pages.json（33 页，首屏 role-select）
 - 构建产物：`h5/dist/build/mp-weixin`（微信开发者工具导入）
-- 平台品牌：**东莞杰瑞智慧网格治理平台**（AppID wxaf987875eaf3b53c）
+- 平台品牌：**东莞杰瑞智慧网格治理平台**
+- 部署目标服务器：**202.168.190.132**（小程序接口 `http://202.168.190.132:9071`；正式发布须改用 HTTPS 已备案域名 `https://drone.kfktec.cn`）
+- 小程序 AppID：**wxff33c70a062b17bc**（旧主体 `wxaf987875eaf3b53c`；改 appid 需同步 `h5/manifest.json` 与 `h5/project.config.json`，并重新 `build:mp:weixin`）
 
 ---
 

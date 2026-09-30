@@ -7,8 +7,12 @@
   "versionCode": "100",
   "transformPx": false,
   "mp-weixin": {
-    // TODO: 若更换小程序主体，请同步更新此处与 project.config.json 的 appid
-    "appid": "wxaf987875eaf3b53c",
+    // 本小程序面向服务器：202.168.190.132
+    //   接口地址（开发/调试）http://202.168.190.132:9071
+    //   正式发布须改用 HTTPS 已备案域名 https://drone.kfktec.cn（并加入小程序后台合法域名）
+    // 换小程序主体时，此处 appid 与 h5/project.config.json 必须同步修改：
+    // 构建产物 h5/dist/build/mp-weixin/project.config.json 的 appid 由此处生成
+    "appid": "wxff33c70a062b17bc",
     "permission": {
       "scope.userLocation": {
         "desc": "用于选择商户/摊贩位置及查看事发地点"
