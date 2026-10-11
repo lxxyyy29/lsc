@@ -317,4 +317,46 @@ public class ResidentController {
         }
         return ApiResponse.ok(items.get(0));
     }
+
+    /**
+     * 修改本人报修信息（缺陷 BUG-16：报修后不能修改）。
+     *
+     * 仅本人、且仅「待处理(PENDING)」状态可改 —— 已受理/已处理的报修单以处置记录为准。
+     */
+    @PutMapping("/repairs/{id}")
+    public ApiResponse<Boolean> updateRepair(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        Long userId = AuthenticatedUserContextHolder.getRequired().id();
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT status FROM biz_repair_request WHERE id = ? AND reporter_user_id = ?", id, userId);
+        if (rows.isEmpty()) {
+            throw new BusinessException("NOT_FOUND", "报修单不存在");
+        }
+        String status = String.valueOf(rows.get(0).get("status"));
+        if (!"PENDING".equalsIgnoreCase(status)) {
+            throw new BusinessException("REPAIR_STATUS_NOT_EDITABLE", "报修单已受理，无法修改");
+        }
+        String title = trimToNull(body.get("title"));
+        String description = trimToNull(body.get("description"));
+        String address = trimToNull(body.get("address"));
+        String repairType = trimToNull(body.get("repairType"));
+        String phone = trimToNull(body.get("reporterPhone"));
+        if (title == null) {
+            throw new BusinessException("VALIDATION_ERROR", "请填写报修标题");
+        }
+        jdbcTemplate.update(
+                "UPDATE biz_repair_request SET title = ?, description = ?, address = ?, repair_type = ?, " +
+                        "reporter_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND reporter_user_id = ?",
+                title, description, address, repairType, phone, id, userId);
+        return ApiResponse.ok(true);
+    }
+
+    /** 空白字符串统一转 null，避免把 "" 写进库 */
+    private String trimToNull(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = String.valueOf(value).trim();
+        return text.isEmpty() ? null : text;
+    }
 }

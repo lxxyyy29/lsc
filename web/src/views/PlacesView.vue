@@ -164,13 +164,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import http from '../api'
+import http, { getDictItems } from '../api'
 import ImportDialog from '../components/ImportDialog.vue'
 import { showMessage } from '../utils/message'
 import { confirmDialog } from '../utils/dialog'
 
-// 场所类型（与场所台账分类一致，直接存中文便于展示）
-const placeTypes = ['出租屋', '小档口', '小娱乐场所', '小作坊', '工业园', '住宅小区', '其他场所']
+// 场所类型：优先读字典 place_type（可在「系统设置 → 字典管理」里新增），
+// 字典无配置时回退到内置列表（缺陷 BUG-07：经营类别和类型也要能在字典内创建）
+const PLACE_TYPE_DICT = 'place_type'
+const PLACE_CATEGORY_DICT = 'place_business_category'
+const placeTypes = ref<string[]>(['出租屋', '小档口', '小娱乐场所', '小作坊', '工业园', '住宅小区', '其他场所'])
 
 const list = ref<any[]>([])
 const grids = ref<any[]>([])
@@ -239,7 +242,32 @@ function resetFilters() {
   fetchData()
 }
 
+/** 字典项 → 选项值（按 sortOrder 排序，取 itemValue 作为存库值，与历史数据一致） */
+function dictValues(items: any): string[] {
+  if (!Array.isArray(items)) return []
+  return items
+    .filter((i: any) => (i.status ?? 'ACTIVE') === 'ACTIVE')
+    .sort((a: any, b: any) => Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0))
+    .map((i: any) => String(i.itemValue ?? i.itemLabel ?? '').trim())
+    .filter(Boolean)
+}
+
+/** 场所类型 / 经营类别读字典：管理员在字典管理里新增即可扩展（缺陷 BUG-07） */
+async function loadDictOptions() {
+  try {
+    const values = dictValues(await getDictItems(PLACE_TYPE_DICT, true))
+    if (values.length) placeTypes.value = values
+  } catch (e) { /* 无权限或字典未配置：保留内置列表 */ }
+  try {
+    const values = dictValues(await getDictItems(PLACE_CATEGORY_DICT, true))
+    if (values.length) categories.value = values
+  } catch (e) { /* 回退到台账推导 */ }
+}
+
 async function fetchCategories() {
+  // 先读字典（管理员可维护）；字典没配置时再用台账里已有的经营类别兜底
+  await loadDictOptions()
+  if (categories.value.length) return
   try {
     categories.value = await http.get('/community/places/categories') || []
   } catch(e) {}

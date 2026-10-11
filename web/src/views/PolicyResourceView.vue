@@ -51,8 +51,10 @@
             </td>
             <td style="font-size:12px;">{{ item.publishDate || '-' }}</td>
             <td>
-              <button @click="openMatchPeople(item)" style="padding:4px 10px;border:1px solid #52c41a;border-radius:4px;background:#fff;color:#52c41a;font-size:12px;cursor:pointer;margin-right:4px;">政策找人</button>
-              <button @click="openPush(item)" style="padding:4px 10px;border:1px solid #0284c7;border-radius:4px;background:#fff;color:#0284c7;font-size:12px;cursor:pointer;margin-right:4px;">定向推送</button>
+              <!-- 「政策找人」与「定向推送」原本打开同一个弹窗、调同一个接口（缺陷 BUG-09 功能重复），
+                   合并保留「定向推送」：弹窗内已包含匹配人群列表与「定向推送到居民端」按钮，
+                   两件事在同一处完成，不再给用户两个入口 -->
+              <button @click="openPush(item)" style="padding:4px 10px;border:1px solid #0284c7;border-radius:4px;background:#fff;color:#0284c7;font-size:12px;cursor:pointer;margin-right:4px;">政策找人 / 定向推送</button>
               <button @click="openEdit(item)" style="padding:4px 10px;border:1px solid #1890ff;border-radius:4px;background:#fff;color:#1890ff;font-size:12px;cursor:pointer;margin-right:4px;">编辑</button>
               <button @click="toggleStatus(item)" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;">
                 {{ item.status === 'ACTIVE' ? '停用' : '启用' }}

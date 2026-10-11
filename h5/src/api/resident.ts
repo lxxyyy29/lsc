@@ -340,6 +340,43 @@ export async function getRepairDetail(id: number): Promise<unknown> {
   return request('get', `/resident/repairs/${id}`)
 }
 
+/** 修改报修信息（缺陷 BUG-16：不能修改报修信息） */
+export async function updateRepair(id: number, data: Record<string, unknown>): Promise<unknown> {
+  return request('put', `/resident/repairs/${id}`, data)
+}
+
+// ==================== 志愿活动（缺陷 BUG-15：不能查看活动详情） ====================
+
+export interface ActivityItem {
+  id: number
+  title: string
+  description: string | null
+  activityDate: string | null
+  maxParticipants: number | null
+  status: string | null
+  attendedCount: number | null
+  signedUp: boolean
+  checkedIn: boolean
+  creatorName: string | null
+}
+
+export async function getActivities(): Promise<ActivityItem[]> {
+  return request<ActivityItem[]>('get', '/resident/activities')
+}
+
+export async function signupActivity(id: number): Promise<unknown> {
+  return request('post', `/resident/activities/${id}/signup`)
+}
+
+export async function cancelActivitySignup(id: number): Promise<unknown> {
+  return request('delete', `/resident/activities/${id}/signup`)
+}
+
+/** 修改上报信息（缺陷 BUG-12：上报后无法修改） */
+export async function updateMyReport(id: number, data: Record<string, unknown>): Promise<unknown> {
+  return request('put', `/events/my-reports/${id}`, data)
+}
+
 // ==================== 图片上传 ====================
 
 // #ifndef MP-WEIXIN

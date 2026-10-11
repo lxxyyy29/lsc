@@ -120,7 +120,8 @@ public class EventController {
                 Long.class,
                 user.id());
         List<Map<String, Object>> items = jdbcTemplate.query(
-                "SELECT id, event_code, title, description, status, created_at, rating, rating_comment AS ratingText " +
+                "SELECT id, event_code, title, description, status, created_at, incident_address, latitude, longitude, " +
+                        "rating, rating_comment AS ratingText " +
                         "FROM biz_event WHERE report_user_id = ? AND COALESCE(deleted, 0) = 0 ORDER BY id DESC LIMIT ? OFFSET ?",
                 (rs, rowNum) -> {
                     Map<String, Object> item = new java.util.LinkedHashMap<>();
@@ -130,6 +131,10 @@ public class EventController {
                     item.put("description", rs.getString("description"));
                     item.put("status", rs.getString("status"));
                     item.put("createdAt", rs.getTimestamp("created_at"));
+                    // 详细地址/坐标：居民端详情页展示更完整信息（缺陷 BUG-12）
+                    item.put("address", rs.getString("incident_address"));
+                    item.put("latitude", rs.getObject("latitude"));
+                    item.put("longitude", rs.getObject("longitude"));
                     // 评分：居民上报历史页据此区分「已评价」与「请评价」，已办结事件避免重复评价
                     Object ratingObj = rs.getObject("rating");
                     item.put("rating", ratingObj == null ? null : rs.getInt("rating"));
@@ -141,6 +146,39 @@ public class EventController {
                 offset);
 
         return ApiResponse.ok(PagedResult.of(items, total == null ? 0 : total, safePage, safePageSize));
+    }
+
+    /**
+     * 修改本人上报信息（缺陷 BUG-12：上报后无法修改）。
+     *
+     * 仅本人可改，且仅「待审核 / 审核中 / 待派单」阶段允许 —— 一旦进入处置流程或已办结，
+     * 信息以工单流转记录为准，不再允许改写。
+     */
+    @PutMapping("/my-reports/{id}")
+    public ApiResponse<Boolean> updateMyReport(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        AuthenticatedUser user = AuthenticatedUserContextHolder.getOptional()
+                .orElseThrow(() -> new BusinessException("AUTH_TOKEN_REQUIRED", "请提供认证令牌"));
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT status FROM biz_event WHERE id = ? AND report_user_id = ? AND COALESCE(deleted, 0) = 0",
+                id, user.id());
+        if (rows.isEmpty()) {
+            throw new BusinessException("EVENT_NOT_FOUND", "上报记录不存在");
+        }
+        String status = String.valueOf(rows.get(0).get("status"));
+        if (!List.of("PENDING_AUDIT", "IN_AUDIT", "WAITING_DISPATCH").contains(status)) {
+            throw new BusinessException("EVENT_STATUS_NOT_EDITABLE", "事件已进入处置流程，无法修改");
+        }
+        String title = body.get("title") == null ? null : String.valueOf(body.get("title")).trim();
+        String description = body.get("description") == null ? null : String.valueOf(body.get("description")).trim();
+        String address = body.get("address") == null ? null : String.valueOf(body.get("address")).trim();
+        if (title == null || title.isBlank()) {
+            throw new BusinessException("VALIDATION_ERROR", "请填写问题标题");
+        }
+        jdbcTemplate.update(
+                "UPDATE biz_event SET title = ?, description = ?, incident_address = ?, updated_at = NOW() " +
+                        "WHERE id = ? AND report_user_id = ?",
+                title, description, address, id, user.id());
+        return ApiResponse.ok(true);
     }
 
     /**
