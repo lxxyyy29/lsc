@@ -67,6 +67,12 @@
 
       <!-- 数据表格 -->
       <template v-else>
+        <!-- 导出：缺陷 BUG-19「不能导出工单」——按当前筛选结果导出 CSV（带 BOM，Excel 直接打开不乱码） -->
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px;flex-shrink:0;">
+          <button @click="exportList" type="button" class="btn btn-default" style="font-size:13px;">
+            <i class="fas fa-file-export" style="margin-right:4px;"></i>导出当前列表
+          </button>
+        </div>
         <div class="table-scroll" style="flex:1;min-height:0;overflow-y:auto;">
         <table class="table">
           <thead>
@@ -77,6 +83,7 @@
               <th>紧急程度</th>
               <th>来源</th>
               <th>上报人</th>
+              <th>当前受派人</th>
               <th>上报时间</th>
               <th style="width:320px;">操作</th>
             </tr>
@@ -114,6 +121,7 @@
               </td>
               <td style="font-size:12px;color:#6b7280;">{{ sourceLabel(e.sourceSystem || e.sourceType) }}</td>
               <td style="font-size:12px;color:#6b7280;">{{ e.reportUserName || '-' }}</td>
+              <td style="font-size:12px;color:#6b7280;">{{ e.assigneeName || '尚未派单' }}</td>
               <td style="font-size:12px;color:#6b7280;">{{ formatTime(e.occurredAt || e.createdAt) }}</td>
               <td>
                 <div style="display:flex;flex-wrap:wrap;gap:4px;">
@@ -546,6 +554,41 @@ async function handleDelete(e: any) {
 // 审核确认弹窗（接入审核：通过/驳回）
 const auditModal = reactive({ visible: false, id: 0, action: '', remark: '' })
 
+/**
+ * 导出当前筛选结果（缺陷 BUG-19：不能导出工单）。
+ * 用 CSV + BOM，Excel 直接双击可打开且中文不乱码；不依赖后端接口，随筛选用。
+ */
+function exportList() {
+  const rows = (list.value || []) as any[]
+  if (!rows.length) { showMessage('当前没有可导出的数据', 'warning'); return }
+  const header = ['事件编号', '标题', '状态', '紧急程度', '来源', '上报人', '当前受派人', '上报时间', '事发地点']
+  const esc = (v: any) => `"${(v === null || v === undefined ? '' : String(v)).replace(/"/g, '""')}"`
+  const lines = [header.join(',')]
+  for (const e of rows) {
+    lines.push([
+      e.eventCode,
+      e.title,
+      statusLabel(e.status),
+      e.urgencyLevel === 'RED' ? '紧急' : e.urgencyLevel === 'YELLOW' ? '重点' : '一般',
+      sourceLabel(e.sourceSystem || e.sourceType),
+      e.reportUserName || '',
+      e.assigneeName || '尚未派单',
+      formatTime(e.occurredAt || e.createdAt),
+      e.location || ''
+    ].map(esc).join(','))
+  }
+  const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `事件工单_${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+  showMessage(`已导出 ${rows.length} 条`, 'success')
+}
+
 function handleAudit(e: any, action: string) {
   auditModal.id = e.id
   auditModal.action = action
@@ -559,12 +602,58 @@ async function confirmAudit() {
   try {
     await auditEvent(id, action, remark.trim())
     auditModal.visible = false
-    showMessage(action === 'pass' ? '审核已通过' : '已驳回，事件进入异常工单', 'success')
     loadData()
     await afterAction()
+    if (action !== 'pass') {
+      showMessage('已驳回，事件进入异常工单', 'success')
+      return
+    }
+    // 需求（BUG-05）：通过后就地衔接派单，不再"先点通过、再点操作、再点派单"
+    await autoDispatchAfterPass(id)
   } catch (e: any) {
     showMessage(e?.message || '操作失败')
   }
+}
+
+/**
+ * 审核通过后衔接派单（缺陷 BUG-05：通过/操作两个按钮功能重合、要点两次）。
+ * - 已进入「组长审核」的网格：保持原流程，等组长在移动端指派；
+ * - 无组长（可直接派单）：候选唯一 → 直接派发；候选多个 → 直接打开派单弹窗一键确认；
+ * - 任何异常都退化为人工派单，不影响已完成的审核结果。
+ */
+async function autoDispatchAfterPass(id: number) {
+  let status = ''
+  try {
+    const detail: any = await getEventDetail(id)
+    status = detail?.currentStatus || detail?.status || ''
+  } catch (e) {
+    showMessage('审核已通过，请手动派单', 'success')
+    return
+  }
+  if (status === 'DISPATCHED_TO_WORK_ORDER' || status === 'CLOSED') {
+    showMessage('审核已通过，工单已派发', 'success')
+    return
+  }
+  if (status !== 'WAITING_DISPATCH') {
+    showMessage('审核已通过，已转组长审核', 'success')
+    return
+  }
+  try {
+    const res: any = await getDispatchCandidates(id)
+    const items: any[] = res?.items || []
+    if (items.length === 1) {
+      const worker = items[0]
+      await dispatchEvent(id, { assigneeUserId: Number(worker.userId), remark: '审核通过后自动派单' })
+      showMessage(`审核已通过，已自动派单给${worker.userName || worker.name || '处置人'}`, 'success')
+      loadData()
+      await afterAction()
+      return
+    }
+  } catch (e) {
+    /* 候选查询失败 → 走人工派单 */
+  }
+  showMessage('审核已通过，请选择派单人员', 'success')
+  await openDispatch({ id })
 }
 
 // 派单弹窗（普通派单）

@@ -61,8 +61,8 @@
 
               <!-- 动作 + 操作后的状态 -->
               <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                <span style="font-size:13px;font-weight:600;color:#374151;">{{ item.action }}</span>
-                <span v-if="item.status" style="font-size:11px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:1px 6px;">{{ item.status }}</span>
+                <span style="font-size:13px;font-weight:600;color:#374151;">{{ actionLabel(item.action) }}</span>
+                <span v-if="item.status" style="font-size:11px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:1px 6px;">{{ statusLabel(item.status) }}</span>
               </div>
 
               <!-- 涉及对象：派单派给了谁 / 处置结论 -->
@@ -70,7 +70,7 @@
 
               <!-- 关联工单 -->
               <div v-if="item.workOrderNo" style="font-size:12px;color:#6b7280;margin-top:2px;">
-                工单 {{ item.workOrderNo }}<span v-if="item.workOrderStatus"> · {{ item.workOrderStatus }}</span>
+                工单 {{ item.workOrderNo }}<span v-if="item.workOrderStatus"> · {{ statusLabel(item.workOrderStatus) }}</span>
               </div>
 
               <!-- 操作人及其角色 -->
@@ -123,19 +123,62 @@ const loading = ref(true)
 // 现场照片预览：非 null 时打开全屏预览浮层，值为当前预览下标
 const previewIdx = ref<number | null>(null)
 
+const STATUS_LABELS: Record<string, string> = {
+  PENDING_AUDIT: '待审核',
+  IN_AUDIT: '审核中',
+  AUDIT_APPROVED: '已通过',
+  AUDIT_REJECTED: '已驳回',
+  WAITING_DISPATCH: '待派单',
+  WAITING_LEADER_REVIEW: '组长审核',
+  DISPATCHED_TO_WORK_ORDER: '已派单',
+  WAITING_ACCEPT: '待接单',
+  PROCESSING: '处置中',
+  WAITING_VERIFY: '待核查',
+  WAITING_CLOSE_CONFIRM: '待办结确认',
+  COMPLETED: '已办结',
+  CLOSED: '已关闭',
+  TIMEOUT: '已超期',
+  IGNORED: '已忽略',
+  ARCHIVED: '已归档'
+}
+
+/**
+ * 时间轴动作中文映射。
+ * 后端 getTimeline 已做一次映射，但 MongoDB 告警分支与历史数据仍可能直接返回英文枚举，
+ * 前端再兜一层，避免界面出现 CREATE / AUDIT_PASS 这类编码（用户反馈"时间轴显示的还是英文"）。
+ */
+const ACTION_LABELS: Record<string, string> = {
+  CREATE: '创建事件',
+  CREATE_EVENT: '创建事件',
+  REPORT: '事件上报',
+  PUBLIC_REPORT: '居民上报',
+  SUBMIT: '提交',
+  AUDIT_PASS: '审核通过',
+  AUDIT_APPROVE: '审核通过',
+  AUDIT_REJECT: '审核驳回',
+  DISPATCH: '派单',
+  LEADER_DISPATCH: '组长派单',
+  ACCEPT: '接单',
+  PROCESS: '处置',
+  HANDLE: '处置',
+  VERIFY: '核查',
+  CLOSE: '关闭',
+  REOPEN: '重新打开',
+  IGNORE: '忽略',
+  ESCALATE: '自动升级',
+  AUTO_ESCALATE: '自动升级',
+  RATE: '事件评价',
+  UPDATE_URGENCY: '调整紧急程度'
+}
+
 function statusLabel(status: string) {
-  const map: Record<string, string> = {
-    PENDING_AUDIT: '待审核',
-    IN_AUDIT: '审核中',
-    AUDIT_APPROVED: '已通过',
-    AUDIT_REJECTED: '已驳回',
-    WAITING_DISPATCH: '待派单',
-    WAITING_LEADER_REVIEW: '组长审核',
-    DISPATCHED_TO_WORK_ORDER: '已派单',
-    CLOSED: '已关闭',
-    IGNORED: '已忽略'
-  }
-  return map[status] || status
+  if (!status) return '-'
+  return STATUS_LABELS[status] || status
+}
+
+function actionLabel(action: string) {
+  if (!action) return '-'
+  return ACTION_LABELS[action] || action
 }
 
 /** 时间轴时间格式化：2026-09-17T16:36:11.966 → 2026-09-17 16:36 */

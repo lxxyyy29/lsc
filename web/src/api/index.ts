@@ -560,6 +560,14 @@ export async function getBigScreenData() {
   return http.get('/community/dashboard/big-screen')
 }
 
+/**
+ * 大屏指标明细：与大屏卡片数值同源（后端同一过滤条件），
+ * 保证「点开详情的条数 == 卡片数值」（缺陷 BUG-22）。
+ */
+export async function getBigScreenEvents(preset: 'total' | 'today' | 'pending' | 'closed', size = 300) {
+  return http.get('/community/dashboard/big-screen-events', { params: { preset, size } })
+}
+
 // 事件评价
 export async function submitRating(data: { eventId: number; score: number; content?: string; tags?: string }) {
   return http.post('/event-ratings', data)

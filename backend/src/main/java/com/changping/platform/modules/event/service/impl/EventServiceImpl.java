@@ -986,10 +986,12 @@ public class EventServiceImpl implements EventService {
         if (document == null || document.getLifecycle() == null) {
             return List.of();
         }
+        // 与 biz_event_record 分支保持一致：动作/状态统一映射为中文，
+        // 否则外部告警事件的处置时间轴会直接显示英文枚举（用户反馈"时间轴显示的还是英文"）
         return document.getLifecycle().stream()
                 .map(record -> new EventDetailVo.LifecycleRecordVo(
-                        record.getAction(), record.getStatus(), record.getRemark(), record.getOccurredAt(),
-                        record.getAction(), null, null, record.getRemark(), null, null, null))
+                        mapActionName(record.getAction()), mapStatusLabel(record.getStatus()), record.getRemark(), record.getOccurredAt(),
+                        mapActionName(record.getAction()), null, null, record.getRemark(), null, null, null))
                 .toList();
     }
 

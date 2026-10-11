@@ -80,7 +80,7 @@
           <tbody>
             <tr v-for="item in list" :key="item.id">
               <td>{{ item.areaName || item.name || '-' }}</td>
-              <td><span class="tag tag-red">{{ item.violationType || '-' }}</span></td>
+              <td><span class="tag tag-red">{{ violationTypeLabel(item.areaType) }}</span></td>
               <td><span :class="['tag', item.status === 'ACTIVE' ? 'tag-green' : 'tag-orange']">{{ item.status === 'ACTIVE' ? '启用中' : '已停用' }}</span></td>
               <td>
                 <button @click="openEdit(item)" style="padding:3px 10px;border:1px solid #1890ff;border-radius:4px;background:#fff;color:#1890ff;font-size:12px;cursor:pointer;margin-right:4px;">编辑</button>
@@ -142,6 +142,18 @@ const urls: Record<string, string> = {
 
 const currentTabLabel = computed(() => tabs.find(t => t.key === activeTab.value)?.label || '')
 
+/** 违禁区域类型枚举 → 中文（后端返回 areaType 编码） */
+const VIOLATION_TYPE_LABELS: Record<string, string> = {
+  ILLEGAL_STALL: '占道经营',
+  ILLEGAL_ROAD_OCCUPATION: '乱堆乱放占道',
+  ILLEGAL_ADVERTISING: '违规广告',
+  ILLEGAL_PARKING: '违规停车'
+}
+function violationTypeLabel(type: string) {
+  if (!type) return '-'
+  return VIOLATION_TYPE_LABELS[type] || type
+}
+
 // 各 Tab 表单字段配置（key 与后端实体字段一致）
 const fieldConfigs: Record<string, any[]> = {
   areas: [
@@ -167,7 +179,15 @@ const fieldConfigs: Record<string, any[]> = {
   ],
   violations: [
     { key: 'areaName', label: '区域名称', required: true, placeholder: '如：学校门口' },
-    { key: 'violationType', label: '类型', placeholder: '如：占道经营' },
+    // 后端只接受固定枚举（BizManagementService.SUPPORTED_VIOLATION_AREA_TYPE）且字段名为 areaType。
+    // 原实现用自由文本 + 字段名 violationType，提交必被拒（"不支持的违规区域类型"），
+    // 表现就是「违禁区域创建不了」。
+    { key: 'areaType', label: '类型', type: 'select', options: [
+      { value: 'ILLEGAL_STALL', label: '占道经营' },
+      { value: 'ILLEGAL_ROAD_OCCUPATION', label: '乱堆乱放占道' },
+      { value: 'ILLEGAL_ADVERTISING', label: '违规广告' },
+      { value: 'ILLEGAL_PARKING', label: '违规停车' }
+    ] },
     { key: 'status', label: '状态', type: 'select', options: [{ value: 'ACTIVE', label: '启用' }, { value: 'DISABLED', label: '停用' }] },
     { key: 'remark', label: '备注', placeholder: '备注说明' },
   ],

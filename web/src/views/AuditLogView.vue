@@ -124,7 +124,7 @@
             <tbody>
               <tr v-for="(row, idx) in diffData.diffRows" :key="idx" :style="row.changed ? 'background:#fff7e6;' : ''">
                 <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-weight:500;">
-                  {{ row.field }}
+                  {{ fieldLabel(row.field) }}
                   <span v-if="row.changed" style="margin-left:4px;color:#fa8c16;font-size:11px;">&#9654;</span>
                 </td>
                 <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;color:#ff4d4f;font-family:monospace;font-size:12px;">
@@ -243,6 +243,132 @@ function opLabel(type: string) {
   return map[type] || type
 }
 
+/**
+ * 审计变更详情的字段名来自数据库列名（old_values / new_values 的 key），
+ * 直接展示是英文下划线，看不懂（用户反馈"那些字段显示看不懂"）。这里映射为中文，
+ * 未收录的列名回退显示原名，保证不丢信息。
+ */
+const FIELD_LABELS: Record<string, string> = {
+  id: 'ID',
+  name: '姓名',
+  gender: '性别',
+  age: '年龄',
+  phone: '电话',
+  id_card: '身份证号',
+  birthday: '出生日期',
+  address: '地址',
+  remark: '备注',
+  status: '状态',
+  relation: '与户主关系',
+  household_id: '所属户',
+  household_type: '户籍类型',
+  household_flag: '是否户主',
+  grid_id: '所属网格',
+  grid_name: '网格名称',
+  building_id: '所属房屋',
+  building_no: '楼栋号',
+  room_no: '房号',
+  special_population: '是否特殊人群',
+  special_population_type: '特殊人群类型',
+  is_party_member: '是否党员',
+  place_type: '类型',
+  place_name: '场所名称',
+  business_category: '经营类别',
+  ledger_id: '台账ID',
+  extra_data: '扩展字段',
+  merchant_name: '商户名称',
+  legal_person_name: '负责人',
+  legal_person_phone: '负责人电话',
+  vendor_name: '摊贩名称',
+  area_id: '所属辖区',
+  area_name: '辖区名称',
+  area_type: '区域类型',
+  violation_type: '违规类型',
+  longitude: '经度',
+  latitude: '纬度',
+  event_code: '事件编号',
+  title: '标题',
+  event_title: '事件标题',
+  event_type: '事件类型',
+  source_type: '来源类型',
+  source_system: '来源系统',
+  urgency_level: '紧急程度',
+  current_status: '当前状态',
+  report_user_name: '上报人',
+  report_phone: '上报电话',
+  reporter_name: '上报人',
+  reporter_phone: '上报电话',
+  occurred_at: '发生时间',
+  expected_completion_time: '预期完成时间',
+  closed_at: '关闭时间',
+  archived: '是否归档',
+  hidden: '是否隐藏',
+  deleted: '是否删除',
+  deleted_reason: '删除原因',
+  work_order_no: '工单编号',
+  assignee_id: '受理人ID',
+  assignee_name: '受理人',
+  dispatcher_name: '派单人',
+  user_id: '用户ID',
+  username: '账号',
+  real_name: '真实姓名',
+  role_id: '角色ID',
+  role_code: '角色标识',
+  role_name: '角色名称',
+  permission_id: '权限ID',
+  landlord_name: '房东姓名',
+  landlord_phone: '房东电话',
+  fire_risk_level: '消防风险等级',
+  is_group_rental: '是否群租房',
+  household_count: '居住人数',
+  password: '密码',
+  password_version: '密码版本',
+  created_at: '创建时间',
+  updated_at: '更新时间',
+  created_by: '创建人',
+  updated_by: '更新人',
+}
+
+/** 常见枚举值中文化，避免 ACTIVE / DISABLED 这类值看不懂 */
+const VALUE_LABELS: Record<string, string> = {
+  ACTIVE: '启用',
+  DISABLED: '停用',
+  INACTIVE: '未启用',
+  PENDING_AUDIT: '待审核',
+  IN_AUDIT: '审核中',
+  AUDIT_APPROVED: '已通过',
+  AUDIT_REJECTED: '已驳回',
+  WAITING_DISPATCH: '待派单',
+  WAITING_LEADER_REVIEW: '组长审核',
+  DISPATCHED_TO_WORK_ORDER: '已派单',
+  CLOSED: '已关闭',
+  IGNORED: '已忽略',
+  GREEN: '一般',
+  YELLOW: '重点',
+  RED: '紧急',
+  LOCAL: '本地户籍',
+  FLOATING: '流动人口',
+  MANUAL: '手动',
+  AUTO: '自动',
+  SUPER_ADMIN: '超级管理员',
+  EVENT_OPERATOR: '管理员',
+  GRID_WORKER: '网格员',
+  GRID_LEADER: '网格组长',
+  PUBLIC: '居民',
+}
+
+function fieldLabel(field: string) {
+  if (!field) return '-'
+  const key = String(field)
+  return FIELD_LABELS[key] || FIELD_LABELS[key.toLowerCase()] || key
+}
+
+function valueLabel(val: string) {
+  if (!val) return val
+  const key = String(val)
+  return VALUE_LABELS[key] || key
+}
+
 /** 审计切面按接口路径首段记录模块代号，这里映射为中文便于阅读 */
 function moduleLabel(name: string) {
   const map: Record<string, string> = {
@@ -288,8 +414,9 @@ function formatTime(time: any) {
 
 function formatValue(val: any) {
   if (val === null || val === undefined) return '(空)'
+  if (typeof val === 'boolean') return val ? '是' : '否'
   if (typeof val === 'object') return JSON.stringify(val)
-  return String(val)
+  return valueLabel(String(val))
 }
 
 async function loadTables() {

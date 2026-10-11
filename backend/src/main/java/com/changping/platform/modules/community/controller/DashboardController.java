@@ -54,6 +54,20 @@ public class DashboardController {
     }
 
     /**
+     * 大屏指标明细：卡片「事件总数 / 今日新增 / 待处置 / 已处置」点开后拉取的事件列表。
+     * 与卡片数值同源（后端同一 WHERE 条件），保证两者条数一致（缺陷 BUG-22）。
+     *
+     * @param preset total | today | pending | closed
+     */
+    @GetMapping("/big-screen-events")
+    public ApiResponse<Map<String, Object>> bigScreenEvents(
+            @RequestParam(defaultValue = "total") String preset,
+            @RequestParam(defaultValue = "200") Integer size) {
+        requireDashboardPermission();
+        return ApiResponse.ok(dashboardMapper.bigScreenEvents(preset, size == null ? 200 : size));
+    }
+
+    /**
      * 月度汇总报表
      */
     @GetMapping("/monthly-summary")

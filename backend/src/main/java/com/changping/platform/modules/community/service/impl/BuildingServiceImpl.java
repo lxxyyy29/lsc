@@ -17,6 +17,15 @@ public class BuildingServiceImpl implements BuildingService {
         return gridId != null ? mapper.findByGridId(gridId) : mapper.findAllActive();
     }
     @Override
+    public List<BuildingEntity> search(Long gridId, String landlordName, Integer isGroupRental, String fireRiskLevel) {
+        boolean noFilter = (landlordName == null || landlordName.isBlank()) && isGroupRental == null
+                && (fireRiskLevel == null || fireRiskLevel.isBlank());
+        if (noFilter) {
+            return list(gridId);
+        }
+        return mapper.search(gridId, landlordName, isGroupRental, fireRiskLevel);
+    }
+    @Override
     public BuildingEntity detail(Long id) { return mapper.findById(id); }
     @Override
     public boolean create(BuildingEntity e) {

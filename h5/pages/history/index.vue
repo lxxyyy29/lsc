@@ -35,24 +35,34 @@
       </view>
     </view>
 
+    <!-- 快捷入口：原来 6 个图标是纯静态占位、无任何点击事件（用户反馈"不能点击使用"），
+         现改为真实可用入口，并让下方直接展示已办结工单明细 -->
     <view class="action-section">
-      <text class="section-title">功能模块</text>
+      <text class="section-title">快捷入口</text>
       <view class="action-grid">
-        <view class="action-item"><view class="action-icon"><AppIcon name="folder" size="24rpx" /></view><text class="action-text">商户历史</text></view>
-        <view class="action-item"><view class="action-icon"><AppIcon name="briefcase" size="24rpx" /></view><text class="action-text">违法查询</text></view>
-        <view class="action-item"><view class="action-icon"><AppIcon name="upload-records" size="24rpx" /></view><text class="action-text">上传记录</text></view>
-        <view class="action-item"><view class="action-icon"><AppIcon name="recent-update" size="24rpx" /></view><text class="action-text">最近更新</text></view>
-        <view class="action-item"><view class="action-icon"><AppIcon name="activity" size="24rpx" /></view><text class="action-text">历史动态</text></view>
-        <view class="action-item"><view class="action-icon"><AppIcon name="plus" size="24rpx" /></view><text class="action-text">更多功能</text></view>
+        <view class="action-item" @click="goMerchants"><view class="action-icon"><AppIcon name="briefcase" size="24rpx" /></view><text class="action-text">商户管理</text></view>
+        <view class="action-item" @click="goVendors"><view class="action-icon"><AppIcon name="folder" size="24rpx" /></view><text class="action-text">摊贩管理</text></view>
+        <view class="action-item" @click="goWorkbench"><view class="action-icon"><AppIcon name="plus" size="24rpx" /></view><text class="action-text">开启新任务</text></view>
       </view>
     </view>
 
+    <!-- 已办结工单：渲染真实数据并可点击进入工单详情（原实现只有一个空面板） -->
     <view class="detail-section">
-      <text class="section-title">记录明细</text>
-      <view class="empty-panel">
+      <text class="section-title">已办结工单（{{ history.completedOrders.length }}）</text>
+      <view v-if="history.completedOrders.length" class="record-list">
+        <view v-for="order in history.completedOrders" :key="order.id" class="record-card" @click="openOrder(order.id)">
+          <view class="record-head">
+            <text class="record-title">{{ order.eventTitle || '工单' }}</text>
+            <text class="record-status">{{ order.statusText || order.status }}</text>
+          </view>
+          <text class="record-meta">{{ order.workOrderNo }}<text v-if="order.eventLocation"> · {{ order.eventLocation }}</text></text>
+          <text class="record-meta">办结时间：{{ order.closedAt || order.completedAt || order.updatedAt || '-' }}</text>
+        </view>
+      </view>
+      <view v-else class="empty-panel">
         <view class="empty-icon"><AppIcon name="archive" size="32rpx" /></view>
         <text class="empty-title">{{ emptyTitle }}</text>
-        <text class="empty-copy">{{ emptyCopy }}</text>
+        <text class="empty-copy">办结后的工单会自动归档到这里，点击可查看处置全过程</text>
         <button class="empty-button" @click="goWorkbench">开启新任务</button>
       </view>
     </view>
@@ -78,11 +88,7 @@ const emptyTitle = computed(() => {
   if (history.completedOrders.length) return history.completedOrders[0].eventTitle
   return '暂无已办结工单'
 })
-const emptyCopy = computed(() => {
-  if (loadError.value) return '暂无核查提交记录'
-  if (history.verifyRecords.length) return history.verifyRecords[0].note
-  return '暂无核查提交记录'
-})
+
 
 function goMine() {
   navigateToPath('/mine')
@@ -90,6 +96,19 @@ function goMine() {
 
 function goWorkbench() {
   navigateToPath('/workbench')
+}
+
+function goMerchants() {
+  navigateToPath('/merchants')
+}
+
+function goVendors() {
+  navigateToPath('/vendors')
+}
+
+// 已办结工单 → 工单详情（与工单列表页保持同一跳转方式）
+function openOrder(id: string) {
+  navigateToPath(`/work-orders/${id}`)
 }
 
 onShow(async () => {
@@ -314,6 +333,49 @@ onShow(async () => {
   justify-items: center;
   gap: 14rpx;
   padding: 52rpx 24rpx 44rpx;
+}
+
+/* 已办结工单列表 */
+.record-list {
+  display: grid;
+  gap: 14rpx;
+}
+
+.record-card {
+  display: grid;
+  gap: 8rpx;
+  padding: 18rpx;
+  border-radius: 16rpx;
+  background: linear-gradient(180deg, rgba(18, 32, 49, 0.98) 0%, rgba(13, 25, 38, 0.98) 100%);
+  border: 1px solid rgba(118, 189, 255, 0.08);
+}
+
+.record-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.record-title {
+  flex: 1;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #f3f8ff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-status {
+  flex-shrink: 0;
+  font-size: 22rpx;
+  color: #8ddcff;
+}
+
+.record-meta {
+  font-size: 22rpx;
+  color: rgba(214, 225, 239, 0.6);
 }
 
 .empty-icon {

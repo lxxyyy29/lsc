@@ -136,7 +136,6 @@ function toggle(id: string | number) {
               <th>性别</th>
               <th>电话</th>
               <th>户籍类型</th>
-              <th>特殊人群</th>
               <th>网格</th>
               <th>备注</th>
               <th class="col-act">操作</th>
@@ -157,10 +156,6 @@ function toggle(id: string | number) {
               <td class="masked">{{ m.phone || '-' }}</td>
               <td>
                 <span v-if="m.householdType" class="pop-tag" :class="hhTypeClass(m.householdType)">{{ hhTypeLabel(m.householdType) }}</span>
-                <span v-else class="muted">-</span>
-              </td>
-              <td>
-                <span v-if="m.specialPopulation === 1 && m.specialPopulationType" class="pop-tag pop-tag-special">{{ m.specialPopulationType }}</span>
                 <span v-else class="muted">-</span>
               </td>
               <td class="muted">{{ m.gridName || '-' }}</td>

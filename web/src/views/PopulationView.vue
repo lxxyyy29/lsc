@@ -109,7 +109,8 @@
         </el-form-item>
         <el-row :gutter="16">
           <template v-for="f in formFields" :key="f.fieldKey">
-            <el-col v-if="isFormVisible(f) && !(isKey(f, 'specialPopulationType') && form.specialPopulation != 1)" :span="isFullField(f) ? 24 : 12">
+            <!-- 特殊人群相关字段不再展示（需求：特殊人群无需展示）；库中数据保留，仅隐藏录入与展示入口 -->
+            <el-col v-if="isFormVisible(f) && !isKey(f, 'specialPopulation') && !isKey(f, 'specialPopulationType')" :span="isFullField(f) ? 24 : 12">
               <el-form-item :label="f.fieldLabel" :required="f.required == 1" :prop="camel(f.fieldKey)">
                 <!-- 特殊人群勾选 -->
                 <el-checkbox v-if="isKey(f, 'specialPopulation')" v-model="form.specialPopulation"
@@ -340,8 +341,10 @@ const FLOATING_HOUSEHOLD_TYPE = 'FLOATING'
 
 // 特殊人群类型预置 + 自定义
 const specialPopulationTypes = ['低保户', '优抚对象', '残疾人', '孤寡老人', '困境儿童']
-// 与户主关系预置
-const relationTypes = ['户主', '配偶', '儿子', '女儿', '父亲', '母亲']
+// 与户主关系预置（流动人口多为租房居住，需要「租户」选项）
+const relationTypes = ['户主', '配偶', '儿子', '女儿', '父亲', '母亲', '租户']
+// 流动人口与户主关系的默认值（需求：流动人口与户主的关系默认租户）
+const FLOATING_DEFAULT_RELATION = '租户'
 
 const list = ref<any[]>([])
 const grids = ref<any[]>([])
@@ -752,6 +755,8 @@ function openCreate(prefill?: { householdId?: number | null; address?: string; g
   form.value = emptyForm()
   // 户籍按当前页签自动归类（表单不展示该选项）
   form.value.householdType = isResidentTab.value ? RESIDENT_HOUSEHOLD_TYPE : FLOATING_HOUSEHOLD_TYPE
+  // 流动人口与户主默认「租户」关系，避免列表里关系为空（仍可在表单中修改）
+  if (!isResidentTab.value) form.value.relation = FLOATING_DEFAULT_RELATION
   if (prefill?.householdId) {
     form.value.householdId = prefill.householdId
     form.value.address = prefill.address || ''
@@ -810,7 +815,8 @@ async function handleSubmit() {
       // 流动人口不参与归户，户籍固定为「流动人口」
       payload.householdType = FLOATING_HOUSEHOLD_TYPE
       payload.householdId = null
-      payload.relation = ''
+      // 与户主关系默认「租户」；原实现强制清空，导致流动人口关系列一直为空
+      payload.relation = payload.relation || FLOATING_DEFAULT_RELATION
     } else if (!form.value.id) {
       // 新增常驻人员：户籍按当前页签自动归为「本地户籍」（表单已不展示该选项）
       payload.householdType = RESIDENT_HOUSEHOLD_TYPE

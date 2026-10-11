@@ -106,9 +106,15 @@ export function toPageUrl(path: string) {
       return '/pages/patrol/checkin'
     case '/mine':
       return '/pages/mine/index'
-    // 志愿服务已取消（需求12.2），保留代码便于追溯后续开发
-    // case '/volunteer':
-    //   return '/pages/volunteer/index'
+    // 商户/摊贩管理：此前缺这两条映射，点击后落入 default 原地跳回工作台
+    // （工作台快捷动作与「我的」页入口都受影响，用户反馈"点了没反应/看不了信息"）
+    case '/merchants':
+      return '/pages/merchant/list'
+    case '/vendors':
+      return '/pages/vendor/list'
+    // 志愿服务：恢复入口映射（对应页面 pages/volunteer/index 与详情页）
+    case '/volunteer':
+      return '/pages/volunteer/index'
     // 信息互通（实时聊天）功能暂不启用，保留代码后续开发
     // case '/messages':
     //   return '/pages/message/index'

@@ -54,11 +54,14 @@
               <td>{{ p.contactName || '-' }}</td>
               <td>{{ p.contactPhone || '-' }}</td>
               <td>
-                <div v-if="p.id" style="display:flex;gap:6px;">
-                  <button @click="openEdit(p)" class="btn btn-default" style="padding:4px 10px;font-size:12px;">编辑</button>
-                  <button @click="handleDelete(p)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;">删除</button>
+                <div style="display:flex;gap:6px;">
+                  <!-- 详情：台账行（无 id）也能看，直接展示该行已有字段 -->
+                  <button @click="openDetail(p)" class="btn btn-default" style="padding:4px 10px;font-size:12px;">详情</button>
+                  <template v-if="p.id">
+                    <button @click="openEdit(p)" class="btn btn-default" style="padding:4px 10px;font-size:12px;">编辑</button>
+                    <button @click="handleDelete(p)" class="btn btn-danger" style="padding:4px 10px;font-size:12px;">删除</button>
+                  </template>
                 </div>
-                <span v-else style="font-size:12px;color:#9ca3af;">台账数据</span>
               </td>
             </tr>
           </tbody>
@@ -129,6 +132,31 @@
       </div>
     </div>
 
+    <!-- 场所详情弹窗（需求：不能查看场所详情 → 可查看详情，并显示类型、经营类别） -->
+    <div v-if="detailVisible" class="modal-overlay" @click.self="detailVisible = false">
+      <div class="modal-box" style="width:560px;">
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">场所详情</h3>
+        <div v-if="detailLoading" style="text-align:center;padding:30px;color:#9ca3af;">加载中...</div>
+        <div v-else-if="detailItem" style="font-size:13px;color:#374151;line-height:2;">
+          <div><span style="color:#9ca3af;">场所名称：</span>{{ detailItem.placeName || '-' }}</div>
+          <div><span style="color:#9ca3af;">类型：</span>{{ detailItem.placeType || '-' }}</div>
+          <div><span style="color:#9ca3af;">经营类别：</span>{{ detailItem.businessCategory || '-' }}</div>
+          <div><span style="color:#9ca3af;">地址：</span>{{ detailItem.address || '-' }}</div>
+          <div><span style="color:#9ca3af;">联系人：</span>{{ detailItem.contactName || '-' }}</div>
+          <div><span style="color:#9ca3af;">联系电话：</span>{{ detailItem.contactPhone || '-' }}</div>
+          <div><span style="color:#9ca3af;">消防设施：</span>{{ detailItem.fireFacilities || '-' }}</div>
+          <div><span style="color:#9ca3af;">风险标签：</span>{{ detailItem.riskTags || '-' }}</div>
+          <div><span style="color:#9ca3af;">所属网格：</span>{{ detailItem.gridName || '-' }}</div>
+          <div><span style="color:#9ca3af;">状态：</span>{{ detailItem.status === 'ACTIVE' ? '启用' : (detailItem.status || '-') }}</div>
+          <div><span style="color:#9ca3af;">备注：</span>{{ detailItem.remark || '-' }}</div>
+          <div><span style="color:#9ca3af;">更新时间：</span>{{ detailItem.updatedAt || '-' }}</div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+          <button @click="detailVisible = false" class="btn btn-default">关闭</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 导入对话框 -->
     <ImportDialog v-model:visible="showImport" type="places" @success="fetchData" />
   </div>
@@ -166,6 +194,27 @@ const emptyForm = () => ({
   status: 'ACTIVE',
 })
 const form = ref(emptyForm())
+
+// ===== 场所详情（需求：不能查看场所详情）======
+const detailVisible = ref(false)
+const detailLoading = ref(false)
+const detailItem = ref<any>(null)
+
+/** 打开详情：台账合并行没有 id，直接用行数据展示；正式场所记录再拉一次详情接口取最新值 */
+async function openDetail(row: any) {
+  detailItem.value = { ...row }
+  detailVisible.value = true
+  if (!row?.id) return
+  detailLoading.value = true
+  try {
+    const detail = await http.get(`/community/places/${row.id}`)
+    if (detail) detailItem.value = { ...row, ...detail }
+  } catch (e) {
+    // 详情接口失败时保留列表行数据，不影响查看
+  } finally {
+    detailLoading.value = false
+  }
+}
 
 async function fetchData() {
   loading.value = true

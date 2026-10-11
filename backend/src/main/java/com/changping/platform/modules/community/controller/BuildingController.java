@@ -24,10 +24,17 @@ public class BuildingController {
         this.permissionGuard = permissionGuard;
     }
 
+    /**
+     * 房屋列表。除网格外支持三类筛选（需求）：房东（姓名/电话模糊）、是否群租房、消防风险等级。
+     */
     @GetMapping
-    public ApiResponse<List<BuildingEntity>> list(@RequestParam(required = false) Long gridId) {
+    public ApiResponse<List<BuildingEntity>> list(
+            @RequestParam(required = false) Long gridId,
+            @RequestParam(required = false) String landlordName,
+            @RequestParam(required = false) Integer isGroupRental,
+            @RequestParam(required = false) String fireRiskLevel) {
         requireBuildingPermission();
-        return ApiResponse.ok(service.list(gridId));
+        return ApiResponse.ok(service.search(gridId, landlordName, isGroupRental, fireRiskLevel));
     }
     @GetMapping("/{id}")
     public ApiResponse<BuildingEntity> detail(@PathVariable Long id) {

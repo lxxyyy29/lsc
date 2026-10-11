@@ -81,6 +81,38 @@ public class DashboardMapper {
     }
 
     /**
+     * 大屏指标对应的明细列表。
+     *
+     * 与大屏 KPI 使用**同一组 WHERE 条件**（见 getBigScreenData 的 event* 指标），
+     * 保证「点开详情的条数 == 卡片数值」。
+     * 此前前端是拿事件列表接口再本地过滤，而列表接口默认排除
+     * DISPATCHED_TO_WORK_ORDER / IGNORED 且 size 上限 100，
+     * 导致「事件总数」与「全部事件数」对不上（缺陷 BUG-22）。
+     *
+     * @param preset total | today | pending | closed
+     * @param size   明细返回条数上限
+     */
+    public Map<String, Object> bigScreenEvents(String preset, int size) {
+        String where = switch (preset == null ? "total" : preset) {
+            case "today" -> "COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 AND DATE(created_at) = CURDATE()";
+            case "pending" -> "COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 AND status NOT IN ('CLOSED')";
+            case "closed" -> "COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0 AND status = 'CLOSED'";
+            default -> "COALESCE(archived, 0) = 0 AND COALESCE(hidden, 0) = 0";
+        };
+        Long total = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM biz_event WHERE " + where, Long.class);
+        List<Map<String, Object>> items = jdbcTemplate.queryForList(
+                "SELECT id, event_code, title, status, urgency_level, event_type, report_user_name, created_at, "
+                        + "longitude, latitude, grid_id FROM biz_event WHERE " + where
+                        + " ORDER BY created_at DESC, id DESC LIMIT ?",
+                Math.max(1, Math.min(size, 500)));
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", total == null ? 0L : total);
+        result.put("items", items);
+        return result;
+    }
+
+    /**
      * 大屏汇总数据 — 一次性返回所有指标
      */
     public Map<String, Object> getBigScreenData() {

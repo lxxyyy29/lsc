@@ -14,6 +14,29 @@
         </button>
       </div>
     </div>
+    <!-- 筛选栏：房东输入 + 群租房 + 消防风险（需求：希望增加这三项筛选） -->
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;padding:12px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;">
+      <input
+        v-model.trim="filters.landlordName"
+        placeholder="房东姓名 / 电话"
+        @keyup.enter="fetchData"
+        style="width:200px;padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;"
+      />
+      <select v-model="filters.isGroupRental" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+        <option value="">群租房：全部</option>
+        <option value="1">仅群租房</option>
+        <option value="0">非群租房</option>
+      </select>
+      <select v-model="filters.fireRiskLevel" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+        <option value="">消防风险：全部</option>
+        <option value="HIGH">高风险</option>
+        <option value="MEDIUM">中风险</option>
+        <option value="LOW">低风险</option>
+      </select>
+      <button @click="fetchData" class="filter-action">查询</button>
+      <button @click="resetFilters" class="filter-action ghost">重置</button>
+    </div>
+
     <div class="card">
       <div v-if="loading" style="text-align:center;padding:40px;color:#9ca3af;">
         <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
@@ -113,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import http from '../api'
 import ImportDialog from '../components/ImportDialog.vue'
 import { showMessage } from '../utils/message'
@@ -143,11 +166,34 @@ function fireRiskLabel(level: string) {
   return level || '-'
 }
 
+// 筛选条件：房东（姓名/电话模糊）、群租房、消防风险（需求：增加这三项筛选）
+const filters = reactive({
+  landlordName: '',
+  isGroupRental: '' as '' | '0' | '1',
+  fireRiskLevel: ''
+})
+
+function buildQuery() {
+  const params = new URLSearchParams()
+  if (filters.landlordName) params.set('landlordName', filters.landlordName)
+  if (filters.isGroupRental !== '') params.set('isGroupRental', filters.isGroupRental)
+  if (filters.fireRiskLevel) params.set('fireRiskLevel', filters.fireRiskLevel)
+  const qs = params.toString()
+  return qs ? `?${qs}` : ''
+}
+
+function resetFilters() {
+  filters.landlordName = ''
+  filters.isGroupRental = ''
+  filters.fireRiskLevel = ''
+  void fetchData()
+}
+
 async function fetchData() {
   loading.value = true
   error.value = ''
   try {
-    list.value = await http.get('/community/buildings') || []
+    list.value = await http.get(`/community/buildings${buildQuery()}`) || []
   } catch(e: any) {
     error.value = e?.message || '加载失败，请稍后重试'
   } finally {

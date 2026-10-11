@@ -204,7 +204,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getBigScreenData, getGridTree, getEvents, getWorkOrders } from '../api'
+import { getBigScreenData, getBigScreenEvents, getGridTree, getEvents, getWorkOrders } from '../api'
 import http from '../api'
 import { getEventTypeName } from '../utils/eventTypes'
 import AMapLoader from '@amap/amap-jsapi-loader'
@@ -264,12 +264,31 @@ function toggleStream(cat: typeof streamCategory.value) {
 }
 function closeStream() { streamOpen.value = false }
 
+// 事件明细：与大屏 KPI 同源（后端同一过滤条件），**不再本地二次过滤**。
+// 此前用事件列表接口 + 本地过滤，列表接口默认排除 DISPATCHED_TO_WORK_ORDER / IGNORED
+// 且 size 上限 100，导致「事件总数」与「全部事件数」对不上（缺陷 BUG-22）。
+const streamEventTotal = ref(0)
+
+function isEventCategory(cat: string) {
+  return cat === 'all' || cat === 'today' || cat === 'pending' || cat === 'closed'
+}
+
+async function loadStreamEvents() {
+  const cat = streamCategory.value
+  if (!isEventCategory(cat)) return
+  try {
+    const res: any = await getBigScreenEvents(cat as 'total' | 'today' | 'pending' | 'closed', 300)
+    liveEvents.value = (res?.items || []).map((e: any) => ({ ...e, kind: 'event' }))
+    streamEventTotal.value = Number(res?.total || 0)
+  } catch (e) {
+    liveEvents.value = []
+    streamEventTotal.value = 0
+  }
+}
+
 // 拉取事件 + 工单并打 kind 标记，供事件流筛选（随大屏 60s 轮询刷新）
 async function loadStreamData() {
-  try {
-    const ev: any = await getEvents({ excludeHidden: true, size: 200 })
-    liveEvents.value = (ev?.items || []).map((e: any) => ({ ...e, kind: 'event' }))
-  } catch (e) {}
+  await loadStreamEvents()
   try {
     const wo: any = await getWorkOrders({ pageSize: 100 })
     const list = wo?.items || wo?.list || (Array.isArray(wo) ? wo : [])
@@ -288,21 +307,14 @@ async function loadStreamData() {
 
 const streamItems = computed(() => {
   const cat = streamCategory.value
-  const isWo = cat === 'woAll' || cat === 'woProc'
-  const base = isWo ? liveWorkOrders.value : liveEvents.value
-  if (cat === 'all' || cat === 'woAll') return base
-  if (cat === 'today') {
-    const t = new Date(); t.setHours(0, 0, 0, 0)
-    return base.filter((e: any) => new Date(e.createdAt).getTime() >= t.getTime())
+  if (cat === 'woAll' || cat === 'woProc') {
+    const base = liveWorkOrders.value
+    return cat === 'woProc'
+      ? base.filter((w: any) => w.status === 'PROCESSING' || w.status === 'WAITING_ACCEPT')
+      : base
   }
-  if (cat === 'pending') {
-    // 待处置 = 仍需处理；已关闭/已忽略/已驳回 均属终态不处理，排除
-    const done = new Set(['CLOSED', 'IGNORED', 'AUDIT_REJECTED'])
-    return base.filter((e: any) => !done.has(e.currentStatus))
-  }
-  if (cat === 'closed') return base.filter((e: any) => e.currentStatus === 'CLOSED')
-  if (cat === 'woProc') return base.filter((w: any) => w.status === 'PROCESSING' || w.status === 'WAITING_ACCEPT')
-  return base
+  // 事件类明细已由后端按与卡片完全相同的口径过滤，直接展示即可（保证条数与卡片数值一致）
+  return liveEvents.value
 })
 
 function streamColor(it: any) {

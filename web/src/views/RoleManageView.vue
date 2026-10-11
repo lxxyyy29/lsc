@@ -78,11 +78,6 @@
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">角色名称 <span style="color:#ff4d4f;">*</span></label>
           <input v-model="roleForm.roleName" placeholder="如：纪检监督员" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;" />
         </div>
-        <div v-if="roleForm.id" style="margin-bottom:14px;">
-          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">角色标识</label>
-          <input v-model="roleForm.roleCode" disabled style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;background:#f9fafb;" />
-          <p style="font-size:11px;color:#9ca3af;margin:4px 0 0;">角色标识用于系统识别，创建后不可修改</p>
-        </div>
         <div style="margin-bottom:14px;">
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">状态</label>
           <select v-model="roleForm.status" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">
@@ -149,11 +144,16 @@ const saving = ref(false)
 const roles = ref<any[]>([])
 const searchKey = ref('')
 
+// 居民角色（PUBLIC）仅用于小程序居民端登录，不需要在后台角色管理中维护，列表内不展示
+// （需求：可取消居民角色 —— 居民无需登录后台）
+const HIDDEN_ROLE_CODES = ['PUBLIC']
+
 // 按名称/中文释义/英文标识/备注模糊搜索，角色多了可快速定位
 const filteredRoles = computed(() => {
   const key = searchKey.value.trim().toLowerCase()
-  if (!key) return roles.value
-  return roles.value.filter(r =>
+  const visible = roles.value.filter(r => !HIDDEN_ROLE_CODES.includes(r.roleCode))
+  if (!key) return visible
+  return visible.filter(r =>
     (r.roleName || '').toLowerCase().includes(key)
     || (r.roleCode || '').toLowerCase().includes(key)
     || roleCodeName(r.roleCode).toLowerCase().includes(key)
