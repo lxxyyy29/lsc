@@ -112,9 +112,10 @@ export function toPageUrl(path: string) {
       return '/pages/merchant/list'
     case '/vendors':
       return '/pages/vendor/list'
-    // 志愿服务：恢复入口映射（对应页面 pages/volunteer/index 与详情页）
-    case '/volunteer':
-      return '/pages/volunteer/index'
+    // 志愿服务：页面尚未落地（BUG-15 待做：居民端志愿活动列表 + 详情），
+    // 暂不映射，避免跳到不存在的页面；入口本身受 menu:h5:volunteer:view 权限控制，默认不展示
+    // case '/volunteer':
+    //   return '/pages/volunteer/index'
     // 信息互通（实时聊天）功能暂不启用，保留代码后续开发
     // case '/messages':
     //   return '/pages/message/index'
