@@ -65,6 +65,20 @@
       </view>
     </view>
 
+    <!-- 详细地址（缺陷 BUG-13：随手拍缺少地址填写栏） -->
+    <view class="card">
+      <text class="card-title">详细地址（选填）</text>
+      <input
+        v-model="form.address"
+        placeholder="如：xx路xx号xx栋xx室"
+        class="form-input"
+        placeholder-style="color:#999;font-size:30rpx;"
+      />
+      <text v-if="locationText && !form.address" class="relocate" @click="fillAddressFromLocation">
+        点击使用定位结果：{{ locationText }}
+      </text>
+    </view>
+
     <view class="card">
       <text class="card-title">联系方式（选填）</text>
       <input v-model="form.contactName" placeholder="您的姓名" class="form-input" placeholder-style="color:#999;font-size:30rpx;" />
@@ -147,9 +161,17 @@ const types = [
 const form = reactive({
   type: 'ROAD',
   description: '',
+  // 详细地址：随手拍新增地址栏（BUG-13），随上报一起提交，后端写入事件的事发地点
+  address: '',
   contactName: '',
   contactPhone: ''
 })
+
+/** 把定位文本一键填入地址栏（定位精度有限时用户可再手工修正） */
+function fillAddressFromLocation() {
+  const text = String(locationText.value || '').replace(/^[^：:]*[：:]/, '').trim()
+  if (text) form.address = text
+}
 
 const selectedType = computed(() => types.find(t => t.value === form.type) || types[0])
 
@@ -326,6 +348,7 @@ async function handleSubmit() {
       title: selectedType.value.label,
       description: form.description,
       type: form.type,
+      address: form.address.trim(),
       contactName: form.contactName,
       contactPhone: form.contactPhone,
       photos: photoUrls,
@@ -335,6 +358,7 @@ async function handleSubmit() {
     success.value = '上报成功！查询码：' + (result?.eventCode || result?.id || '')
     // 重置表单
     form.description = ''
+    form.address = ''
     form.contactName = ''
     form.contactPhone = ''
     photos.value = []

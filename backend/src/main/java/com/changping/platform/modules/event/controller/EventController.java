@@ -514,14 +514,20 @@ public class EventController {
                 return ResponseEntity.badRequest().body(ApiResponse.fail("VALIDATION_ERROR", "请填写问题标题"));
             }
 
+            // 详细地址：随手拍新增地址栏（BUG-13）。未填写时沿用社区默认值
+            String incidentAddress = body.get("address") == null ? null : String.valueOf(body.get("address")).trim();
+            if (incidentAddress == null || incidentAddress.isBlank()) {
+                incidentAddress = "拔蛟窝社区";
+            }
+
             // 直接插入数据库，避免复杂的服务层逻辑
             String eventCode = "EVT-" + System.currentTimeMillis();
             String externalId = "PUBLIC-" + System.currentTimeMillis();
 
             jdbcTemplate.update(
                 "INSERT INTO biz_event (event_code, external_event_id, source_type, source_system, event_type, title, description, report_source, report_user_id, report_user_name, report_phone, incident_address, latitude, longitude, images, status, occurred_at, created_at, updated_at) " +
-                "VALUES (?, ?, 'PUBLIC', 'PUBLIC_REPORT', ?, ?, ?, 'RESIDENT', ?, ?, ?, '拔蛟窝社区', ?, ?, ?, 'WAITING_DISPATCH', NOW(), NOW(), NOW())",
-                eventCode, externalId, type != null ? type : "OTHER", title, description, reporterUserId, reporterName, reporterPhone, latitude, longitude, imagesJson);
+                "VALUES (?, ?, 'PUBLIC', 'PUBLIC_REPORT', ?, ?, ?, 'RESIDENT', ?, ?, ?, ?, ?, ?, ?, 'WAITING_DISPATCH', NOW(), NOW(), NOW())",
+                eventCode, externalId, type != null ? type : "OTHER", title, description, reporterUserId, reporterName, reporterPhone, incidentAddress, latitude, longitude, imagesJson);
 
             Long eventId = jdbcTemplate.queryForObject("SELECT id FROM biz_event WHERE event_code = ?", Long.class, eventCode);
 
