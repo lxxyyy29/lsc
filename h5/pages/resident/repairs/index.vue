@@ -13,7 +13,7 @@
     <view class="section-title">我的报修</view>
     <view v-if="loading" class="loading">加载中...</view>
     <view v-else>
-      <view v-for="r in repairs" :key="r.id" class="card">
+      <view v-for="r in repairs" :key="r.id" class="card" @click="openRepair(r)">
         <view class="card-top">
           <text class="title">{{ r.title }}</text>
           <text :class="['status', statusClass(r.status)]">{{ statusLabel(r.status) }}</text>
@@ -49,6 +49,11 @@ const repairs = ref<any[]>([])
 
 function goForm() {
   uni.navigateTo({ url: '/pages/resident/repairs/form' })
+}
+
+/** 点击报修卡片进入详情；未受理的报修单可在同一页直接修改（缺陷 BUG-16） */
+function openRepair(r: any) {
+  uni.navigateTo({ url: `/pages/resident/repairs/form?id=${r.id}` })
 }
 
 function statusLabel(status: string) {

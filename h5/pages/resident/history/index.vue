@@ -8,7 +8,7 @@
 
     <view v-if="loading" class="loading">加载中...</view>
     <view v-else>
-      <view v-for="item in reports" :key="item.id" class="card">
+      <view v-for="item in reports" :key="item.id" class="card" @click="openDetail(item)">
         <view class="card-top">
           <text class="title">{{ item.title }}</text>
           <text :class="['status', statusClass(item.status)]">{{ statusLabel(item.status) }}</text>
@@ -29,7 +29,7 @@
           <view v-else class="rating-action">
             <text class="rating-label">请评价：</text>
             <view class="stars-input">
-              <text v-for="n in 5" :key="n" class="star-input" @click="rateItem(item, n)">★</text>
+              <text v-for="n in 5" :key="n" class="star-input" @click.stop="rateItem(item, n)">★</text>
             </view>
           </view>
         </view>
@@ -37,17 +37,102 @@
       <text v-if="!reports.length" class="empty">暂无上报记录</text>
     </view>
 
+    <!-- 上报详情 / 修改（缺陷 BUG-12：上报后看不到更详细信息、也无法修改） -->
+    <view v-if="detailItem" class="sheet-mask" @click.self="closeDetail">
+      <view class="sheet">
+        <view class="sheet-head">
+          <text class="sheet-title">上报详情</text>
+          <text class="sheet-close" @click="closeDetail">×</text>
+        </view>
+
+        <view class="sheet-body">
+          <view class="row"><text class="row-label">当前状态</text><text class="row-value">{{ statusLabel(detailItem.status) }}</text></view>
+          <view class="row"><text class="row-label">查询码</text><text class="row-value">{{ detailItem.eventCode || detailItem.id }}</text></view>
+          <view class="row"><text class="row-label">上报时间</text><text class="row-value">{{ detailItem.createdAt }}</text></view>
+          <view v-if="detailItem.rating" class="row"><text class="row-label">我的评价</text><text class="row-value">{{ detailItem.rating }} 分</text></view>
+
+          <view class="field">
+            <text class="row-label">问题标题</text>
+            <input v-if="canEdit" v-model="editForm.title" class="edit-input" placeholder="请输入标题" />
+            <text v-else class="field-text">{{ detailItem.title || '-' }}</text>
+          </view>
+          <view class="field">
+            <text class="row-label">问题描述</text>
+            <textarea v-if="canEdit" v-model="editForm.description" class="edit-textarea" placeholder="请输入问题描述" />
+            <text v-else class="field-text">{{ detailItem.description || '-' }}</text>
+          </view>
+          <view class="field">
+            <text class="row-label">详细地址</text>
+            <input v-if="canEdit" v-model="editForm.address" class="edit-input" placeholder="请输入详细地址" />
+            <text v-else class="field-text">{{ detailItem.address || '-' }}</text>
+          </view>
+          <text v-if="!canEdit" class="sheet-tip">事件已进入处置流程，如需补充信息请联系工作人员</text>
+        </view>
+
+        <view class="sheet-actions">
+          <button v-if="canEdit" class="btn-primary" :disabled="saving" @click="saveEdit">{{ saving ? '保存中...' : '保存修改' }}</button>
+          <button v-else class="btn-default" @click="closeDetail">关闭</button>
+        </view>
+      </view>
+    </view>
+
     <ResidentTabBar current="/pages/resident/history/index" />
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useStatusBar } from '../../../src/utils/useStatusBar'
 import ResidentBackBar from '../../../src/components/ResidentBackBar.vue'
 import ResidentTabBar from '../../../src/components/ResidentTabBar.vue'
-import { getMyReports, rateEvent } from '../../../src/api/resident'
+import { getMyReports, rateEvent, updateMyReport } from '../../../src/api/resident'
+
+// ===== 上报详情 / 修改（缺陷 BUG-12）=====
+const detailItem = ref<any>(null)
+const saving = ref(false)
+const editForm = reactive({ title: '', description: '', address: '' })
+
+// 与后端 PUT /events/my-reports/{id} 的允许范围保持一致：进入处置流程后仅可查看
+const EDITABLE_STATUSES = ['PENDING', 'PENDING_AUDIT', 'IN_AUDIT', 'WAITING_DISPATCH']
+const canEdit = computed(() => !!detailItem.value && EDITABLE_STATUSES.includes(String(detailItem.value.status)))
+
+function openDetail(item: any) {
+  detailItem.value = item
+  editForm.title = item.title || ''
+  editForm.description = item.description || ''
+  editForm.address = item.address || ''
+}
+
+function closeDetail() {
+  detailItem.value = null
+}
+
+async function saveEdit() {
+  if (!detailItem.value) return
+  if (!editForm.title.trim()) {
+    uni.showToast({ title: '请填写问题标题', icon: 'none' })
+    return
+  }
+  saving.value = true
+  try {
+    await updateMyReport(Number(detailItem.value.id), {
+      title: editForm.title.trim(),
+      description: editForm.description.trim(),
+      address: editForm.address.trim()
+    })
+    // 就地回写列表，避免整页重载
+    detailItem.value.title = editForm.title.trim()
+    detailItem.value.description = editForm.description.trim()
+    detailItem.value.address = editForm.address.trim()
+    uni.showToast({ title: '修改成功', icon: 'success' })
+    closeDetail()
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '修改失败', icon: 'none' })
+  } finally {
+    saving.value = false
+  }
+}
 
 const { statusBarPadding } = useStatusBar()
 
@@ -102,6 +187,24 @@ onLoad(() => { loadData() })
 
 <style scoped>
 .page { padding: 32rpx; padding-bottom: 160rpx; background: #f5f7fa; min-height: 100vh; }
+/* 上报详情 / 修改弹层（BUG-12） */
+.sheet-mask { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(15,23,42,0.5); display: flex; align-items: flex-end; z-index: 999; }
+.sheet { width: 100%; max-height: 80vh; overflow-y: auto; padding: 28rpx; border-radius: 24rpx 24rpx 0 0; background: #fff; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
+.sheet-title { font-size: 32rpx; font-weight: 700; color: #1f2937; }
+.sheet-close { font-size: 40rpx; line-height: 1; color: #9ca3af; padding: 0 8rpx; }
+.sheet-body { display: grid; gap: 16rpx; }
+.row { display: flex; justify-content: space-between; gap: 16rpx; font-size: 26rpx; }
+.row-label { color: #6b7280; flex-shrink: 0; }
+.row-value { color: #1f2937; text-align: right; word-break: break-all; }
+.field { display: grid; gap: 8rpx; }
+.field-text { font-size: 26rpx; color: #374151; line-height: 1.7; }
+.edit-input { width: 100%; height: 76rpx; padding: 0 20rpx; border: 1px solid #d1d5db; border-radius: 12rpx; font-size: 28rpx; box-sizing: border-box; }
+.edit-textarea { width: 100%; min-height: 150rpx; padding: 16rpx 20rpx; border: 1px solid #d1d5db; border-radius: 12rpx; font-size: 28rpx; box-sizing: border-box; }
+.sheet-tip { font-size: 24rpx; color: #9ca3af; }
+.sheet-actions { margin-top: 24rpx; }
+.sheet-actions .btn-primary { height: 84rpx; line-height: 84rpx; border-radius: 14rpx; font-size: 30rpx; background: linear-gradient(135deg, #52c41a, #389e0d); color: #fff; }
+.sheet-actions .btn-default { height: 84rpx; line-height: 84rpx; border-radius: 14rpx; font-size: 30rpx; background: #f3f4f6; color: #4b5563; }
 .header {
   background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
   border-radius: 24rpx; padding: 40rpx; color: #fff; margin-bottom: 32rpx;

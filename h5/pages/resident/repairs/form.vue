@@ -1,8 +1,8 @@
 <template>
   <view class="resident-repair-form-page">
     <view class="form-header">
-      <text class="form-title">🔧 提交报修</text>
-      <text class="form-sub">填写报修信息，提交后由工作人员处理</text>
+      <text class="form-title">{{ isEdit ? '✏️ 报修详情' : '🔧 提交报修' }}</text>
+      <text class="form-sub">{{ isEdit ? (isReadonly ? '该报修单已受理，仅可查看' : '未受理前可修改报修信息') : '填写报修信息，提交后由工作人员处理' }}</text>
     </view>
 
     <view class="form-card">
@@ -35,7 +35,11 @@
 
       <view class="form-actions">
         <button @click="cancel" class="btn-default">取消</button>
-        <button @click="submitRepair" :disabled="submitting" class="btn-primary">{{ submitting ? '提交中...' : '提交' }}</button>
+        <button
+          @click="submitRepair"
+          :disabled="submitting || isReadonly"
+          class="btn-primary"
+        >{{ submitting ? '提交中...' : (isEdit ? (isReadonly ? '已受理，不可修改' : '保存修改') : '提交') }}</button>
       </view>
       <text v-if="error" class="error">{{ error }}</text>
     </view>
@@ -44,10 +48,21 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
-import { submitRepair as submitRepairApi } from '../../../src/api/resident'
+import { onLoad } from '@dcloudio/uni-app'
+import {
+  submitRepair as submitRepairApi,
+  getRepairDetail,
+  updateRepair
+} from '../../../src/api/resident'
 
 const submitting = ref(false)
 const error = ref('')
+// 编辑/详情模式（缺陷 BUG-16：报修后不能查看详情、不能修改）：
+// 带 id 进入本页即为详情，未受理时可改；已受理只读
+const editingId = ref<number | null>(null)
+const currentStatus = ref('')
+const isEdit = computed(() => editingId.value !== null)
+const isReadonly = computed(() => isEdit.value && currentStatus.value !== 'PENDING')
 const form = reactive({
   repairType: 'WATER',
   title: '',
@@ -78,6 +93,10 @@ function cancel() {
 }
 
 async function submitRepair() {
+  if (isReadonly.value) {
+    uni.showToast({ title: '该报修单已受理，无法修改', icon: 'none' })
+    return
+  }
   if (!form.title.trim() || !form.description.trim()) {
     error.value = '请填写标题和描述'
     return
@@ -89,8 +108,13 @@ async function submitRepair() {
   submitting.value = true
   error.value = ''
   try {
-    await submitRepairApi(form)
-    uni.showToast({ title: '提交成功！', icon: 'success' })
+    if (isEdit.value && editingId.value !== null) {
+      await updateRepair(editingId.value, { ...form })
+      uni.showToast({ title: '修改成功', icon: 'success' })
+    } else {
+      await submitRepairApi(form)
+      uni.showToast({ title: '提交成功！', icon: 'success' })
+    }
     setTimeout(() => uni.navigateBack(), 800)
   } catch (e: any) {
     error.value = e?.message || '提交失败'
@@ -98,6 +122,26 @@ async function submitRepair() {
     submitting.value = false
   }
 }
+
+// 带 ?id=xx 进入 → 详情/修改模式：先拉详情回填，未受理时可保存
+onLoad(async (query?: Record<string, string | undefined>) => {
+  const id = query?.id ? Number(query.id) : NaN
+  if (!Number.isFinite(id)) return
+  editingId.value = id
+  try {
+    const detail: any = await getRepairDetail(id)
+    if (detail) {
+      form.repairType = detail.repairType || form.repairType
+      form.title = detail.title || ''
+      form.description = detail.description || ''
+      form.address = detail.address || ''
+      form.reporterPhone = detail.reporterPhone || ''
+      currentStatus.value = detail.status || ''
+    }
+  } catch (e: any) {
+    error.value = e?.message || '加载报修详情失败'
+  }
+})
 </script>
 
 <style>

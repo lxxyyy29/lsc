@@ -291,6 +291,47 @@
         </div>
       </div>
 
+      <!-- 监控点位（本地台账）：缺陷 BUG-02 —— 视频监控原先没有任何新增入口 -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h3 style="font-size:14px;font-weight:600;">监控点位 ({{ cameras.length }})</h3>
+          <button @click="openCameraForm" style="padding:4px 12px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;">
+            <i class="fas fa-plus"></i> 新增点位
+          </button>
+        </div>
+
+        <!-- 新增表单：与后端 POST /video/cameras 字段一一对应 -->
+        <div v-if="showCameraForm" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;">
+          <input v-model="cameraForm.cameraName" placeholder="点位名称 *" style="height:34px;padding:0 10px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;" />
+          <input v-model="cameraForm.deviceNo" placeholder="设备编号 *（需唯一）" style="height:34px;padding:0 10px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;" />
+          <input v-model="cameraForm.address" placeholder="安装地址" style="height:34px;padding:0 10px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;" />
+          <select v-model="cameraForm.streamType" style="height:34px;padding:0 10px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;">
+            <option value="HLS">HLS</option>
+            <option value="FLV">FLV</option>
+            <option value="RTSP">RTSP</option>
+          </select>
+          <input v-model="cameraForm.streamUrl" placeholder="视频流地址 *（如 http://ip:port/live/xxx.m3u8）" style="grid-column:1/-1;height:34px;padding:0 10px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;" />
+          <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;">
+            <button @click="showCameraForm = false" style="padding:4px 14px;border:1px solid #d1d5db;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;">取消</button>
+            <button @click="submitCamera" :disabled="cameraSaving" style="padding:4px 14px;border:none;border-radius:4px;background:#1890ff;color:#fff;font-size:12px;cursor:pointer;">{{ cameraSaving ? '保存中...' : '保存' }}</button>
+          </div>
+        </div>
+
+        <table v-if="cameras.length" class="table">
+          <thead><tr><th>点位名称</th><th>设备编号</th><th>流类型</th><th>安装地址</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr v-for="c in cameras" :key="c.id || c.deviceNo">
+              <td style="font-size:12px;">{{ c.cameraName || c.name || '-' }}</td>
+              <td style="font-size:12px;">{{ c.deviceNo || '-' }}</td>
+              <td style="font-size:12px;">{{ c.streamType || '-' }}</td>
+              <td style="font-size:12px;">{{ c.address || '-' }}</td>
+              <td><span :class="['tag', (c.status || 'ACTIVE') === 'ACTIVE' ? 'tag-green' : 'tag-gray']">{{ (c.status || 'ACTIVE') === 'ACTIVE' ? '在线' : '离线' }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-else style="text-align:center;padding:24px;color:#9ca3af;font-size:12px;">暂无监控点位，点击「新增点位」接入</p>
+      </div>
+
       <!-- 设备列表 -->
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -528,6 +569,47 @@ const jobs = ref<any[]>([])
 const waylines = ref<any[]>([])
 const cameras = ref<any[]>([])
 const externalSources = ref<any[]>([])
+
+// ===== 监控点位新增（缺陷 BUG-02：视频监控此前没有任何新增入口）=====
+const showCameraForm = ref(false)
+const cameraSaving = ref(false)
+const cameraForm = ref({
+  cameraName: '',
+  deviceNo: '',
+  address: '',
+  streamType: 'HLS',
+  streamUrl: ''
+})
+
+function openCameraForm() {
+  cameraForm.value = { cameraName: '', deviceNo: '', address: '', streamType: 'HLS', streamUrl: '' }
+  showCameraForm.value = true
+}
+
+async function submitCamera() {
+  const f = cameraForm.value
+  if (!f.cameraName.trim() || !f.deviceNo.trim() || !f.streamUrl.trim()) {
+    showMessage('点位名称、设备编号、视频流地址为必填项', 'warning')
+    return
+  }
+  cameraSaving.value = true
+  try {
+    await http.post('/video/cameras', {
+      cameraName: f.cameraName.trim(),
+      deviceNo: f.deviceNo.trim(),
+      address: f.address.trim(),
+      streamType: f.streamType,
+      streamUrl: f.streamUrl.trim()
+    })
+    showMessage('监控点位已新增', 'success')
+    showCameraForm.value = false
+    await loadData()
+  } catch (e: any) {
+    showMessage(e?.message || '新增失败', 'error')
+  } finally {
+    cameraSaving.value = false
+  }
+}
 
 // 航线由无人机平台侧创建，本平台只做查询代理：
 // 上游开放平台只提供「航线列表」「航点坐标」两个 GET 接口，没有「新建航线」，
