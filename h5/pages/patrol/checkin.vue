@@ -47,6 +47,8 @@
             v-model:longitude="longitude"
             v-model:latitude="latitude"
             placeholder="在地图上选择打卡位置"
+            @update:longitude="onPickedFromMap"
+            @update:latitude="onPickedFromMap"
           />
         </view>
         <!-- #endif -->
@@ -141,6 +143,18 @@ const mapMarkers = ref<any[]>([])
 
 // 网页端高德选点组件引用（小程序端不渲染该组件，此引用为 null）
 const amapPickerRef = ref<{ openPicker?: () => void } | null>(null)
+
+/**
+ * 网页端高德选点确认后同步页面文案。
+ * 此前只回填了经纬度、没有更新「位置信息」文字，用户点「确定」后页面上看不出任何变化，
+ * 表现就是"点确定没反应"。
+ */
+function onPickedFromMap() {
+  const lng = Number(longitude.value)
+  const lat = Number(latitude.value)
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return
+  locationText.value = `地图选点：经度 ${lng.toFixed(6)}, 纬度 ${lat.toFixed(6)}`
+}
 
 function updateMapMarker(lat: number, lng: number) {
   mapLat.value = lat

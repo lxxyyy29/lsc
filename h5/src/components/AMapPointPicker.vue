@@ -166,17 +166,34 @@ function openPicker() {
 }
 
 function cancelPicker() {
-  destroyPickerMap()
+  closePicker()
+}
+
+/**
+ * 关闭浮层。
+ * destroy 失败也必须把浮层关掉 —— 否则用户看到的就是"点确定没反应"
+ * （destroyPickerMap 里调 AMap 的 remove/destroy，异常会中断后面的语句）。
+ */
+function closePicker() {
+  try {
+    destroyPickerMap()
+  } catch (e) {
+    console.error('[AMapPointPicker] 销毁地图失败', e)
+  }
   pickerVisible.value = false
 }
 
 function confirmPicker() {
-  if (tempLng.value !== null && tempLat.value !== null) {
-    emit('update:longitude', tempLng.value)
-    emit('update:latitude', tempLat.value)
+  // 未在地图上落点（也没带进来旧坐标）时给出明确反馈，不再静默无反应
+  if (tempLng.value === null || tempLat.value === null) {
+    uni.showToast({ title: '请先在地图上点选位置', icon: 'none' })
+    return
   }
-  destroyPickerMap()
-  pickerVisible.value = false
+  emit('update:longitude', tempLng.value)
+  emit('update:latitude', tempLat.value)
+  // 确认反馈：即使选的是与原来相同的点，也让用户看到"操作已生效"
+  uni.showToast({ title: '已选择位置', icon: 'none' })
+  closePicker()
 }
 
 function setTempMarker(lng: number, lat: number) {
