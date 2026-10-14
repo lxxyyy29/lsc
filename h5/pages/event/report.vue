@@ -45,6 +45,7 @@
             v-model:latitude="latitude"
             placeholder="在地图上选择事发位置（选填）"
             :use-current-location="false"
+            @update:address="onPickedAddress"
           />
         </view>
         <text v-if="locationHint" class="location-hint">{{ locationHint }}</text>
@@ -240,6 +241,11 @@ async function searchAddress() {
   } finally {
     uni.hideLoading()
   }
+}
+
+/** 高德选点解析出地址后回填「事发地点」（网页端路径，先前只回填了经纬度） */
+function onPickedAddress(value: string | null) {
+  if (value) location.value = value
 }
 
 /** 地图选点（小程序端）：微信原生地图选择位置，自动回填地址与经纬度 */

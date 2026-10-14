@@ -79,6 +79,8 @@ import AMapLoader from '@amap/amap-jsapi-loader'
 const props = defineProps<{
   longitude?: number | string | null
   latitude?: number | string | null
+  /** 已选地址文本（逆地理结果），由父页面双向绑定，用于回填「打卡地址」输入框 */
+  address?: string | null
   placeholder?: string
   /** When true, auto-locate via GPS on mount and use as initial map center */
   useCurrentLocation?: boolean
@@ -87,6 +89,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:longitude': [value: number | null]
   'update:latitude': [value: number | null]
+  'update:address': [value: string | null]
 }>()
 
 const mapElId = 'h5-amap-picker-' + Math.random().toString(36).slice(2, 8)
@@ -96,6 +99,8 @@ const searchText = ref('')
 const searchResults = ref<any[]>([])
 const tempLng = ref<number | null>(null)
 const tempLat = ref<number | null>(null)
+/** 取点的逆地理结果（地址文本） */
+const tempAddress = ref<string | null>(null)
 
 /** 地图初始化失败原因（网络不可达 / key 限制 / 图层异常）。非空时浮层内显示提示，而不是空白一片 */
 const mapError = ref('')
@@ -108,6 +113,7 @@ let pickerMap: any = null
 let pickerMarker: any = null
 let AMapLib: any = null
 let placeSearch: any = null
+let geocoder: any = null
 
 // Auto-locate via GPS when useCurrentLocation prop is set
 onMounted(() => {
@@ -132,6 +138,8 @@ const hasValue = computed(() => {
 
 const displayText = computed(() => {
   if (!hasValue.value) return ''
+  // 有逆向解析出的地址时优先显示地址，更直观
+  if (props.address) return String(props.address)
   return `${props.longitude}, ${props.latitude}`
 })
 
@@ -159,6 +167,7 @@ function openPicker() {
   searchResults.value = []
   tempLng.value = hasValue.value ? Number(props.longitude) : null
   tempLat.value = hasValue.value ? Number(props.latitude) : null
+  tempAddress.value = props.address ? String(props.address) : null
   // uni-app needs extra time after v-if toggle for DOM to be ready
   void nextTick(() => {
     setTimeout(() => initPickerMap(), 100)
@@ -183,6 +192,49 @@ function closePicker() {
   pickerVisible.value = false
 }
 
+/**
+ * 坐标 → 地址（逆地理）。
+ * 优先用 JS API 的 AMap.Geocoder（配合 securityJsCode），失败则退回高德 REST 接口。
+ * 解析成功就 emit update:address，父页面可直接把它填进「打卡地址」。
+ */
+function resolveAddress(lng: number, lat: number) {
+  tempAddress.value = null
+  if (geocoder && AMapLib) {
+    try {
+      geocoder.getAddress(new AMapLib.LngLat(lng, lat), (status: string, result: any) => {
+        const addr = result?.regeocode?.formattedAddress
+        if (status === 'complete' && addr) {
+          tempAddress.value = String(addr)
+          emit('update:address', tempAddress.value)
+        } else {
+          void fetchReverseGeocode(lng, lat)
+        }
+      })
+      return
+    } catch (e) {
+      console.error('[AMapPointPicker] Geocoder 逆地理失败，改用 REST 兜底', e)
+    }
+  }
+  void fetchReverseGeocode(lng, lat)
+}
+
+/** 兜底逆地理（与事件上报页同一套 REST key） */
+async function fetchReverseGeocode(lng: number, lat: number) {
+  try {
+    const res = await fetch(
+      `https://restapi.amap.com/v3/geocode/regeo?location=${lng},${lat}&key=5e00e01d2d2b6ca9e1eed533a15572e4&extensions=base`
+    )
+    const data: any = await res.json()
+    const addr = data?.regeocode?.formatted_address
+    if (data?.status === '1' && addr) {
+      tempAddress.value = String(addr)
+      emit('update:address', tempAddress.value)
+    }
+  } catch (e) {
+    // 逆地理失败不影响取点，用户仍可手动填写地址
+  }
+}
+
 function confirmPicker() {
   // 未在地图上落点（也没带进来旧坐标）时给出明确反馈，不再静默无反应
   if (tempLng.value === null || tempLat.value === null) {
@@ -191,14 +243,18 @@ function confirmPicker() {
   }
   emit('update:longitude', tempLng.value)
   emit('update:latitude', tempLat.value)
+  // 地址只在解析到时才回填，避免把用户手填的地址清空
+  if (tempAddress.value) emit('update:address', tempAddress.value)
   // 确认反馈：即使选的是与原来相同的点，也让用户看到"操作已生效"
-  uni.showToast({ title: '已选择位置', icon: 'none' })
+  uni.showToast({ title: tempAddress.value ? '已选择位置' : '已选择坐标', icon: 'none' })
   closePicker()
 }
 
 function setTempMarker(lng: number, lat: number) {
   tempLng.value = Math.round(lng * 1000000) / 1000000
   tempLat.value = Math.round(lat * 1000000) / 1000000
+  // 取点即解析地址（异步）：解析完成就回填，避免用户紧接着点确定导致地址拿不到
+  resolveAddress(tempLng.value, tempLat.value)
 
   if (!pickerMap || !AMapLib) return
   const position = new AMapLib.LngLat(lng, lat)
@@ -227,8 +283,30 @@ async function doSearch() {
 }
 
 function selectPlace(poi: any) {
-  const lng = poi.location.getLng()
-  const lat = poi.location.getLat()
+  // AMap 2.0 的 PlaceSearch 结果里 location 可能是 LngLat 对象，也可能是 "lng,lat" 字符串。
+  // 直接调 poi.location.getLng() 在字符串形态下会抛异常，异常被吞掉后表现就是"选了没反应"。
+  let lng: number | null = null
+  let lat: number | null = null
+  try {
+    const loc = poi?.location
+    if (loc && typeof loc.getLng === 'function') {
+      lng = Number(loc.getLng())
+      lat = Number(loc.getLat())
+    } else if (typeof loc === 'string' && loc.indexOf(',') > -1) {
+      const parts = loc.split(',').map((v: string) => Number(v))
+      lng = parts[0]
+      lat = parts[1]
+    } else if (loc && typeof loc.lng === 'number') {
+      lng = Number(loc.lng)
+      lat = Number(loc.lat)
+    }
+  } catch (e) {
+    console.error('[AMapPointPicker] 解析搜索结果坐标失败', e)
+  }
+  if (lng === null || lat === null || !Number.isFinite(lng) || !Number.isFinite(lat)) {
+    uni.showToast({ title: '该地点没有坐标，请直接点地图选取', icon: 'none' })
+    return
+  }
   searchText.value = poi.name
   searchResults.value = []
   setTempMarker(lng, lat)
@@ -295,7 +373,7 @@ function ensurePlaceSearchPlugin(AMap: any): Promise<void> {
         resolve()
         return
       }
-      AMap.plugin(['AMap.PlaceSearch', 'AMap.TileLayer'], () => resolve())
+      AMap.plugin(['AMap.PlaceSearch', 'AMap.TileLayer', 'AMap.Geocoder'], () => resolve())
       // 兜底：个别情况下回调不触发，2s 后继续，避免整段逻辑卡死
       setTimeout(resolve, 2000)
     } catch (e) {
@@ -325,6 +403,15 @@ async function initPickerMap() {
 
     // 搜索与地图渲染解耦：先建好搜索，即使地图没渲染出来也能靠搜索结果取点
     placeSearch = new AMapLib.PlaceSearch({ city: '全国', pageSize: 10 })
+
+    // 逆地理（坐标 → 地址）：用于把选点地址回填到「打卡地址」
+    try {
+      if (typeof AMapLib.Geocoder === 'function') {
+        geocoder = new AMapLib.Geocoder({})
+      }
+    } catch (e) {
+      console.warn('[AMapPointPicker] Geocoder 初始化失败，将使用 REST 兜底', e)
+    }
 
     const container = document.getElementById(mapElId)
     if (!container) {
@@ -360,7 +447,18 @@ async function initPickerMap() {
     })
 
     pickerMap.on('click', (e: any) => {
-      setTempMarker(e.lnglat.getLng(), e.lnglat.getLat())
+      // 取点失败时给出可读日志与提示，避免"点了地图却什么都没发生"
+      try {
+        const pos = e?.lnglat
+        if (!pos) {
+          uni.showToast({ title: '未取到坐标，请重试', icon: 'none' })
+          return
+        }
+        setTempMarker(Number(pos.getLng()), Number(pos.getLat()))
+      } catch (err) {
+        console.error('[AMapPointPicker] 地图点击取点失败', err)
+        uni.showToast({ title: '取点失败，请重试', icon: 'none' })
+      }
     })
 
     if (hasValue.value) {

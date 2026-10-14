@@ -46,9 +46,11 @@
             ref="amapPickerRef"
             v-model:longitude="longitude"
             v-model:latitude="latitude"
+            v-model:address="address"
             placeholder="在地图上选择打卡位置"
             @update:longitude="onPickedFromMap"
             @update:latitude="onPickedFromMap"
+            @update:address="onPickedAddress"
           />
         </view>
         <!-- #endif -->
@@ -149,6 +151,13 @@ const amapPickerRef = ref<{ openPicker?: () => void } | null>(null)
  * 此前只回填了经纬度、没有更新「位置信息」文字，用户点「确定」后页面上看不出任何变化，
  * 表现就是"点确定没反应"。
  */
+/** 逆地理解析出地址后：回填「打卡地址」并把「当前位置」文案替换成地址 */
+function onPickedAddress(value: string | null) {
+  if (!value) return
+  address.value = value
+  locationText.value = value
+}
+
 function onPickedFromMap() {
   const lng = Number(longitude.value)
   const lat = Number(latitude.value)

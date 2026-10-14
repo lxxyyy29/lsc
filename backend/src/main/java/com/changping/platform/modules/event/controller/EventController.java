@@ -574,7 +574,10 @@ public class EventController {
                 com.changping.platform.modules.event.dto.CreateEventRequest mongoRequest = new com.changping.platform.modules.event.dto.CreateEventRequest(
                     externalId, "PUBLIC", "PUBLIC_REPORT",
                     type != null ? type : "OTHER", title, description,
-                    java.time.LocalDateTime.now(), "拔蛟窝社区", null, null,
+                    // 事发地点：写入居民填写的真实地址。
+                    // 原来这里写死成"拔蛟窝社区"，而事件详情/列表的 VO 一律 Mongo 优先，
+                    // 导致 Web 端「事发地点」被覆盖成固定值（MySQL 里其实是对的）。
+                    java.time.LocalDateTime.now(), incidentAddress, null, null,
                     new java.util.ArrayList<>(), null, null, null, null, null);
                 alarmEventMongoService.upsertManualEvent(mongoRequest, eventId, eventCode, "WAITING_DISPATCH");
             } catch (Exception mongoEx) {
