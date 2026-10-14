@@ -249,24 +249,144 @@ public class ImportService {
 
     // ==================== 房屋 ====================
 
+    /**
+     * 房屋导入表头别名 → 字段名。
+     *
+     * 缺陷 BUG-08 根因：此前按「固定列下标」取列，用户 Excel 只要多一列「序号」
+     * （或首行是合并标题行）就会整体错位 —— 地址被写进 landlord_name、
+     * 居住人数被写进 fire_risk_level，于是「消防风险等级」筛选永远查不到数据、
+     * 列表上风险等级显示成数字。改为按表头文字识别列，多列/少列/乱序都能正确落库。
+     */
+    private static final Map<String, String> BUILDING_HEADER_ALIASES = Map.ofEntries(
+            Map.entry("楼栋编号", "buildingNo"),
+            Map.entry("楼栋号", "buildingNo"),
+            Map.entry("房屋编号", "buildingNo"),
+            Map.entry("地址", "address"),
+            Map.entry("住址", "address"),
+            Map.entry("房屋地址", "address"),
+            Map.entry("房东姓名", "landlordName"),
+            Map.entry("房东", "landlordName"),
+            Map.entry("房东电话", "landlordPhone"),
+            Map.entry("联系电话", "landlordPhone"),
+            Map.entry("手机号", "landlordPhone"),
+            Map.entry("消防风险等级", "fireRiskLevel"),
+            Map.entry("消防风险", "fireRiskLevel"),
+            Map.entry("是否群租", "isGroupRental"),
+            Map.entry("是否群租房", "isGroupRental"),
+            Map.entry("群租房", "isGroupRental"),
+            Map.entry("队别", "gridName"),
+            Map.entry("网格", "gridName"),
+            Map.entry("所属网格", "gridName"));
+
+    /** 旧版固定列顺序：表头识别失败时兜底，保持向后兼容 */
+    private static final List<String> BUILDING_LEGACY_ORDER = List.of(
+            "buildingNo", "address", "landlordName", "landlordPhone", "fireRiskLevel", "isGroupRental", "gridName");
+
+    /**
+     * 按表头文字识别列下标。第 0 行识别不到时再看第 1 行（兼容「首行是标题行」的 Excel）。
+     * 至少识别出 3 列才认为表头有效，否则退回固定列顺序。
+     */
+    private Map<String, Integer> resolveHeaderColumns(Sheet sheet, Map<String, String> aliases) {
+        for (int headerRowIndex = 0; headerRowIndex <= 1; headerRowIndex++) {
+            Row header = sheet.getRow(headerRowIndex);
+            if (header == null) {
+                continue;
+            }
+            Map<String, Integer> resolved = new LinkedHashMap<>();
+            for (int c = 0; c < header.getLastCellNum(); c++) {
+                String text = getCellString(header, c);
+                if (text == null || text.isBlank()) {
+                    continue;
+                }
+                String field = aliases.get(text.trim());
+                if (field != null) {
+                    resolved.putIfAbsent(field, c);
+                }
+            }
+            if (resolved.size() >= 3) {
+                resolved.put("__headerRow", headerRowIndex);
+                return resolved;
+            }
+        }
+        return new LinkedHashMap<>();
+    }
+
+    /**
+     * 取字段值：识别到表头时严格按表头列取值（表头里没有该列就返回 null，
+     * 绝不退回固定下标 —— 否则又可能取到隔壁列，把数据写脏）；
+     * 只有整体没识别出表头（老格式）时才用旧版固定列顺序兜底。
+     */
+    private String buildingCell(Row row, Map<String, Integer> cols, String field) {
+        if (cols.containsKey("__headerRow")) {
+            Integer idx = cols.get(field);
+            return idx == null ? null : getCellString(row, idx);
+        }
+        int legacy = BUILDING_LEGACY_ORDER.indexOf(field);
+        return legacy < 0 ? null : getCellString(row, legacy);
+    }
+
+    /**
+     * 消防风险等级归一化：吃「高/中/低」「高风险/中风险/低风险」等中文写法与
+     * HIGH/MEDIUM/LOW，统一成 HIGH/MEDIUM/LOW，保证筛选与列表标签一致。
+     * 无法识别时原样返回（不猜），避免把未知数据错标成某个等级。
+     */
+    private String normalizeFireRiskLevel(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String v = raw.trim();
+        if (v.isBlank()) {
+            return null;
+        }
+        switch (v) {
+            case "高", "高风险", "重大风险", "红色", "红", "HIGH":
+                return "HIGH";
+            case "中", "中风险", "较大风险", "橙色", "橙", "MEDIUM":
+                return "MEDIUM";
+            case "低", "低风险", "一般风险", "黄色", "黄", "LOW":
+                return "LOW";
+            default:
+                return v.toUpperCase();
+        }
+    }
+
+    /** 是否群租：兼容 是/否、1/0、true/false、群租（含"是（群租）"这类带说明的写法） */
+    private boolean isGroupRentalValue(String raw) {
+        if (raw == null) {
+            return false;
+        }
+        String v = raw.trim().toLowerCase();
+        return v.equals("是") || v.startsWith("是") || v.equals("1") || v.equals("true")
+                || v.equals("yes") || v.equals("y") || v.contains("群租");
+    }
+
+    /** 是否表头文字（用于跳过被当成数据行的表头） */
+    private boolean isHeaderLikeBuildingNo(String value) {
+        return value != null && BUILDING_HEADER_ALIASES.containsKey(value.trim());
+    }
+
     private Map<String, Object> previewBuildings(Sheet sheet, int previewRows) {
         List<Map<String, Object>> rows = new ArrayList<>();
         List<String> errors = new ArrayList<>();
         int total = 0;
 
-        for (int i = 1; i <= sheet.getLastRowNum() && total < previewRows; i++) {
+        Map<String, Integer> cols = resolveHeaderColumns(sheet, BUILDING_HEADER_ALIASES);
+        Integer headerRow = cols.get("__headerRow");
+        int firstDataRow = headerRow == null ? 1 : headerRow + 1;
+
+        for (int i = firstDataRow; i <= sheet.getLastRowNum() && total < previewRows; i++) {
             Row row = sheet.getRow(i);
             if (row == null) continue;
             total++;
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("row", i);
-            data.put("buildingNo", getCellString(row, 0));
-            data.put("address", getCellString(row, 1));
-            data.put("landlordName", getCellString(row, 2));
-            data.put("landlordPhone", getCellString(row, 3));
-            data.put("fireRiskLevel", getCellString(row, 4));
-            data.put("isGroupRental", getCellString(row, 5));
-            data.put("gridName", getCellString(row, 6));
+            data.put("buildingNo", buildingCell(row, cols, "buildingNo"));
+            data.put("address", buildingCell(row, cols, "address"));
+            data.put("landlordName", buildingCell(row, cols, "landlordName"));
+            data.put("landlordPhone", buildingCell(row, cols, "landlordPhone"));
+            data.put("fireRiskLevel", normalizeFireRiskLevel(buildingCell(row, cols, "fireRiskLevel")));
+            data.put("isGroupRental", buildingCell(row, cols, "isGroupRental"));
+            data.put("gridName", buildingCell(row, cols, "gridName"));
 
             if (data.get("buildingNo") == null || data.get("buildingNo").toString().isBlank()) {
                 data.put("error", "楼栋编号不能为空");
@@ -283,29 +403,36 @@ public class ImportService {
         int fail = 0;
         List<String> errorList = new ArrayList<>();
 
-        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+        Map<String, Integer> cols = resolveHeaderColumns(sheet, BUILDING_HEADER_ALIASES);
+        Integer headerRow = cols.get("__headerRow");
+        int firstDataRow = headerRow == null ? 1 : headerRow + 1;
+
+        for (int i = firstDataRow; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             if (row == null) continue;
             try {
-                String buildingNo = getCellString(row, 0);
-                String address = getCellString(row, 1);
-                if (buildingNo.isBlank()) {
+                String buildingNo = buildingCell(row, cols, "buildingNo");
+                String address = buildingCell(row, cols, "address");
+                // 表头行防御：楼栋编号是表头文字（如"序号""楼栋编号"）时视为表头，跳过不入库
+                if (isHeaderLikeBuildingNo(buildingNo)) {
+                    continue;
+                }
+                if (buildingNo == null || buildingNo.isBlank()) {
                     fail++;
                     errorList.add("第" + i + "行: 楼栋编号不能为空");
                     continue;
                 }
 
                 BuildingEntity entity = new BuildingEntity();
-                entity.setBuildingNo(buildingNo);
+                entity.setBuildingNo(buildingNo.trim());
                 entity.setAddress(address);
-                entity.setLandlordName(getCellString(row, 2));
-                entity.setLandlordPhone(getCellString(row, 3));
-                entity.setFireRiskLevel(getCellString(row, 4));
-                String groupRental = getCellString(row, 5);
-                entity.setIsGroupRental("是".equals(groupRental) || "1".equals(groupRental) ? 1 : 0);
+                entity.setLandlordName(buildingCell(row, cols, "landlordName"));
+                entity.setLandlordPhone(buildingCell(row, cols, "landlordPhone"));
+                entity.setFireRiskLevel(normalizeFireRiskLevel(buildingCell(row, cols, "fireRiskLevel")));
+                entity.setIsGroupRental(isGroupRentalValue(buildingCell(row, cols, "isGroupRental")) ? 1 : 0);
                 entity.setStatus("ACTIVE");
 
-                String gridName = getCellString(row, 6);
+                String gridName = buildingCell(row, cols, "gridName");
                 Long gridId = findGridIdByName(gridName);
                 entity.setGridId(gridId);
 

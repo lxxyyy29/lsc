@@ -289,6 +289,16 @@ const FIELD_LABELS: Record<string, string> = {
   event_code: '事件编号',
   title: '标题',
   event_title: '事件标题',
+  // 事件 diff 里出现但此前未收录的字段（未收录时会回退显示英文原名）
+  location: '位置',
+  description: '描述',
+  external_event_id: '外部事件编号',
+  evidence_references: '证据附件',
+  report_source: '上报来源',
+  process_template_id: '流程模板ID',
+  process_template_name: '流程模板',
+  current_node_name: '当前节点',
+  current_node_status: '节点状态',
   event_type: '事件类型',
   source_type: '来源类型',
   source_system: '来源系统',
@@ -360,7 +370,12 @@ const VALUE_LABELS: Record<string, string> = {
 function fieldLabel(field: string) {
   if (!field) return '-'
   const key = String(field)
-  return FIELD_LABELS[key] || FIELD_LABELS[key.toLowerCase()] || key
+  // 后端 diff 返回的字段名有两种风格：数据库列名（snake_case，如 report_user_name）
+  // 与实体属性名（camelCase，如 eventType / sourceSystem / externalEventId）。
+  // 映射表按列名维护，所以先把 camelCase 归一成 snake_case 再查表，
+  // 否则未命中就直接显示英文原名（缺陷 BUG-06）。
+  const snake = key.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase()
+  return FIELD_LABELS[key] || FIELD_LABELS[key.toLowerCase()] || FIELD_LABELS[snake] || key
 }
 
 function valueLabel(val: string) {

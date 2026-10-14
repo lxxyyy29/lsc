@@ -353,8 +353,17 @@ public class SystemRoleService {
             return "ACTIVE";
         }
         String normalized = status.trim().toUpperCase();
+        // 兼容前端/历史客户端可能提交的别名：ENABLED→ACTIVE、INACTIVE→DISABLED。
+        // 此前只认 ACTIVE/DISABLED，客户端一旦传 ENABLED 就直接 400「不支持的角色状态」，
+        // 页面表现就是「新增角色一点保存就报错」。
+        if ("ENABLED".equals(normalized) || "ENABLE".equals(normalized)) {
+            normalized = "ACTIVE";
+        } else if ("INACTIVE".equals(normalized) || "DISABLE".equals(normalized) || "STOPPED".equals(normalized)) {
+            normalized = "DISABLED";
+        }
         if (!Set.of("ACTIVE", "DISABLED").contains(normalized)) {
-            throw new BusinessException("VALIDATION_ERROR", "不支持的角色状态: " + status);
+            throw new BusinessException("VALIDATION_ERROR",
+                    "不支持的角色状态: " + status + "（支持 ACTIVE/ENABLED 与 DISABLED）");
         }
         return normalized;
     }

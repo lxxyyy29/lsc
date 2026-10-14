@@ -31,10 +31,32 @@ public class BuildingController {
     public ApiResponse<List<BuildingEntity>> list(
             @RequestParam(required = false) Long gridId,
             @RequestParam(required = false) String landlordName,
-            @RequestParam(required = false) Integer isGroupRental,
+            @RequestParam(required = false) String isGroupRental,
             @RequestParam(required = false) String fireRiskLevel) {
         requireBuildingPermission();
-        return ApiResponse.ok(service.search(gridId, landlordName, isGroupRental, fireRiskLevel));
+        return ApiResponse.ok(service.search(gridId, landlordName, parseGroupRental(isGroupRental), fireRiskLevel));
+    }
+
+    /**
+     * 群租房筛选值容错解析。
+     *
+     * 页面下拉传的是 '0'/'1'，但外部调用或历史链接可能传 true/false/是/否；
+     * 该参数原先声明为 Integer，收到 "true" 时 Spring 类型转换失败 → 整个请求 500
+     * （用户看到的是"服务器内部错误"，筛选直接不可用）。这里统一容错，
+     * 无法识别时按"不筛选"处理，绝不因为一个查询参数把列表打成 500。
+     */
+    private Integer parseGroupRental(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String v = raw.trim().toLowerCase();
+        if (java.util.List.of("1", "true", "yes", "y", "是", "群租", "群租房").contains(v)) {
+            return 1;
+        }
+        if (java.util.List.of("0", "false", "no", "n", "否", "非群租", "非群租房").contains(v)) {
+            return 0;
+        }
+        return null;
     }
     @GetMapping("/{id}")
     public ApiResponse<BuildingEntity> detail(@PathVariable Long id) {

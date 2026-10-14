@@ -1628,7 +1628,15 @@ public class EventServiceImpl implements EventService {
             case "WORK_ORDER_COMPLETE" -> "工单完成";
             case "WORK_ORDER_CONTINUE" -> "工单继续处理";
             case "WORK_ORDER_NODE_COMPLETE" -> "工单节点完成";
-            default -> actionType;
+            // 事件入库时随事件一起写入的同步动作（此前未映射，时间轴上直接显示英文 WORKFLOW_SYNC）
+            case "WORKFLOW_SYNC" -> "流程同步";
+            default -> {
+                // 兜底：形如 WORKFLOW_SYNC 的全大写内部动作码不再把英文直接抛给页面
+                if (actionType.matches("^[A-Z][A-Z0-9_]*$")) {
+                    yield "系统处理";
+                }
+                yield actionType;
+            }
         };
     }
 
