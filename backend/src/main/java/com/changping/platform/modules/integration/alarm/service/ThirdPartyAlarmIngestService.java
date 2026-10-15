@@ -86,6 +86,16 @@ public class ThirdPartyAlarmIngestService {
                     jdbcTemplate.update(
                             "UPDATE biz_event SET suppress_until = ?, suppress_rule_id = ? WHERE external_event_id = ?",
                             java.sql.Timestamp.valueOf(h.until()), h.ruleId(), externalEventId);
+                    // 「不显示」复用 hidden 开关：现有事件列表/大屏/统计/地图（SQL 与 MongoDB）均已按 hidden 过滤，
+                    // 因此无需逐个改动查询；由 SuppressReleaseTask 在 suppress_until 到点后自动恢复显示。
+                    if (h.actions().contains("HIDE")) {
+                        jdbcTemplate.update("UPDATE biz_event SET hidden = 1 WHERE external_event_id = ?", externalEventId);
+                        try {
+                            alarmEventMongoService.setHidden(externalEventId, true);
+                        } catch (Exception ignoredMongo) {
+                            // Mongo 未启用或同步失败时忽略：SQL 侧已标记，不影响抑制效果
+                        }
+                    }
                     // TODO(阶段B)：Mongo 文档同步写 suppressUntil 并在 Mongo 查询追加可见性条件，
                     //           否则以 MongoDB 为数据源的列表/大屏仍会显示被抑制事件。
                 }
