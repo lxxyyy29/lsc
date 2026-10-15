@@ -51,6 +51,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'system-users', component: () => import('../views/UserManageView.vue') },
       { path: 'system-menus', component: () => import('../views/MenuManageView.vue') },
       { path: 'system-dicts', component: () => import('../views/DictManageView.vue') },
+      { path: 'system-suppress', component: () => import('../views/SuppressWindowView.vue') },
  
       { path: 'processes', component: () => import('../views/ProcessView.vue') },
       { path: 'help', component: () => import('../views/HelpView.vue') },

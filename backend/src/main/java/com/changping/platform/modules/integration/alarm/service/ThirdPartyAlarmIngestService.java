@@ -28,14 +28,21 @@ public class ThirdPartyAlarmIngestService {
     private final AlarmEventMongoService alarmEventMongoService;
     private final EventProjectionBridgeService eventProjectionBridgeService;
     private final WaylineAlgoViolationAreaService waylineAlgoViolationAreaService;
+    /** 时段抑制（夜间静默）规则：命中则在事件上打标记，查询层据此过滤 */
+    private final com.changping.platform.modules.system.service.SuppressWindowService suppressWindowService;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     public ThirdPartyAlarmIngestService(
             AlarmEventMongoService alarmEventMongoService,
             EventProjectionBridgeService eventProjectionBridgeService,
-            WaylineAlgoViolationAreaService waylineAlgoViolationAreaService) {
+            WaylineAlgoViolationAreaService waylineAlgoViolationAreaService,
+            com.changping.platform.modules.system.service.SuppressWindowService suppressWindowService,
+            org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
         this.alarmEventMongoService = alarmEventMongoService;
         this.eventProjectionBridgeService = eventProjectionBridgeService;
         this.waylineAlgoViolationAreaService = waylineAlgoViolationAreaService;
+        this.suppressWindowService = suppressWindowService;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     /**
@@ -63,6 +70,30 @@ public class ThirdPartyAlarmIngestService {
         AlarmEventDocument document = alarmEventMongoService.saveNewAlarm(normalizedEvent, verified);
         boolean duplicate = document.getWorkflowStatus() != null && document.getWorkflowStatus().getSqlEventId() != null;
         EventEntity projection = eventProjectionBridgeService.createOrReuseProjection(normalizedEvent);
+
+        // 时段抑制（夜间静默）：命中规则则打标记；查询层按 suppress_until 统一过滤 → 时段内"不显示"，
+        // 时段结束后自动恢复可见（无需定时任务）。标记写入失败不影响告警入库。
+        try {
+            Object extRaw = rawPayload.get("externalEventId");
+            String externalEventId = extRaw == null ? null : String.valueOf(extRaw);
+            String eventType = rawPayload.get("eventType") == null ? null : String.valueOf(rawPayload.get("eventType"));
+            String urgency = rawPayload.get("urgencyLevel") == null ? null : String.valueOf(rawPayload.get("urgencyLevel"));
+            if (externalEventId != null && !externalEventId.isBlank()) {
+                java.util.Optional<com.changping.platform.modules.system.service.SuppressWindowService.Hit> hit =
+                        suppressWindowService.evaluate("THIRD_PARTY_DRONE", eventType, urgency, java.time.LocalDateTime.now());
+                if (hit.isPresent()) {
+                    com.changping.platform.modules.system.service.SuppressWindowService.Hit h = hit.get();
+                    jdbcTemplate.update(
+                            "UPDATE biz_event SET suppress_until = ?, suppress_rule_id = ? WHERE external_event_id = ?",
+                            java.sql.Timestamp.valueOf(h.until()), h.ruleId(), externalEventId);
+                    // TODO(阶段B)：Mongo 文档同步写 suppressUntil 并在 Mongo 查询追加可见性条件，
+                    //           否则以 MongoDB 为数据源的列表/大屏仍会显示被抑制事件。
+                }
+            }
+        } catch (Exception ignored) {
+            // 抑制标记属于「锦上添花」，任何异常都不应影响告警正常入库
+        }
+
         return new ThirdPartyAlarmIngestResult(
                 projection.getId(),
                 projection.getExternalEventId(),

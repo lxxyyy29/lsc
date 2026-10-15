@@ -88,6 +88,8 @@ export const menuGroups: MenuGroup[] = [
       { path: '/system-users', name: '账号管理', permKey: 'web:menu:system-users' },
       { path: '/system-menus', name: '菜单管理', permKey: 'web:menu:system-menus' },
       { path: '/system-dicts', name: '字典管理', permKey: 'web:menu:system-dicts' },
+      // 时段抑制（夜间静默）：后台可自助调整时段，控制哪些时段的事件不显示/不派单/不通知
+      { path: '/system-suppress', name: '时段抑制', permKey: 'web:menu:system-suppress' },
     ]
   },
 ]
