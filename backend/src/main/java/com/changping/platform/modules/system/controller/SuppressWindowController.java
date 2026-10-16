@@ -74,6 +74,33 @@ public class SuppressWindowController {
     }
 
     /**
+     * 读取总开关与时区（页面顶部开关）：{ enabled, timezone }
+     */
+    @GetMapping("/global")
+    public ApiResponse<Map<String, Object>> getGlobal() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        return ApiResponse.ok(service.globalSwitch());
+    }
+
+    /**
+     * 修改总开关/时区（应急一键关闭）：body { enabled: true|false, timezone: 'Asia/Shanghai' }
+     */
+    @PutMapping("/global")
+    public ApiResponse<Map<String, Object>> updateGlobal(@RequestBody Map<String, Object> body) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        return ApiResponse.ok(service.updateGlobalSwitch(body));
+    }
+
+    /**
+     * 抑制概况：当前仍在抑制中的条数 + 近 12 小时自动恢复的条数（白天「昨夜抑制 N 条」提示用）
+     */
+    @GetMapping("/summary")
+    public ApiResponse<Map<String, Object>> summary() {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        return ApiResponse.ok(service.summary());
+    }
+
+    /**
      * 命中预演：保存前先看某时间点是否会被抑制、抑制到何时。
      * 例：?sourceSystem=THIRD_PARTY_DRONE&eventType=市容环境&urgency=GREEN&at=2026-10-15T23:30
      */

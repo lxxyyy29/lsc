@@ -140,7 +140,7 @@ export async function getEvents(params?: { page?: number; size?: number; status?
 }
 
 // 四类工单工作台：closed-loop 事件闭环处置 / audit 事件审核 / completed 已完成工单 / abnormal 异常工单
-export async function getEventSectionEvents(section: string, params?: { page?: number; size?: number; status?: string; workOrderStatus?: string; urgencyLevel?: string; sourceSystem?: string; searchKey?: string; startDate?: string; endDate?: string; excludeHidden?: boolean }) {
+export async function getEventSectionEvents(section: string, params?: { page?: number; size?: number; status?: string; workOrderStatus?: string; urgencyLevel?: string; sourceSystem?: string; searchKey?: string; startDate?: string; endDate?: string; excludeHidden?: boolean; suppressOnly?: boolean }) {
   return http.get(`/events/sections/${section}`, { params: { page: 1, size: 20, ...params } })
 }
 
@@ -232,6 +232,25 @@ export async function archiveEvent(id: number) {
 // 事件展示隐藏切换：隐藏后大屏/GIS 等面板不再展示，仅事件闭环可见
 export async function setEventHidden(id: number | string, hidden: boolean) {
   return http.put(`/events/${id}/hidden`, { hidden })
+}
+
+// 时段抑制（夜间静默）单条强制放出/收回：manual=true 立即放出该条，false 收回
+export async function setEventSuppressManual(id: number | string, manual: boolean) {
+  return http.put(`/events/${id}/suppress-manual`, { manual })
+}
+
+// 时段抑制概况：当前仍在抑制中 / 近 12 小时自动恢复的条数（白天「昨夜抑制 N 条」提示）
+export async function getSuppressSummary() {
+  return http.get('/system/suppress-windows/summary')
+}
+
+// 时段抑制总开关（应急一键关闭）
+export async function getSuppressGlobal() {
+  return http.get('/system/suppress-windows/global')
+}
+
+export async function setSuppressGlobal(payload: { enabled?: boolean; timezone?: string }) {
+  return http.put('/system/suppress-windows/global', payload)
 }
 
 // 删除事件：级联删除关联工单/审核记录/附件，并同步清理 MongoDB 文档

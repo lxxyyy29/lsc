@@ -40,7 +40,8 @@ public class SuppressReleaseTask {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                     "SELECT id, external_event_id FROM biz_event "
                             + "WHERE suppress_until IS NOT NULL AND suppress_until <= NOW() "
-                            + "AND COALESCE(suppress_manual, 0) = 0 AND suppress_rule_id IS NOT NULL");
+                            + "AND COALESCE(suppress_manual, 0) = 0 AND suppress_rule_id IS NOT NULL "
+                            + "AND suppress_released_at IS NULL");
             if (rows == null || rows.isEmpty()) {
                 return;
             }
@@ -48,8 +49,10 @@ public class SuppressReleaseTask {
             for (Map<String, Object> row : rows) {
                 Object id = row.get("id");
                 Object externalEventId = row.get("external_event_id");
+                // 只恢复显示，保留 suppress_until/rule_id/actions 作为「曾被夜间抑制」的痕迹，
+                // 供事件列表标记与白天「昨夜抑制 N 条」提示统计（suppress_released_at 作为幂等标记）
                 jdbcTemplate.update(
-                        "UPDATE biz_event SET hidden = 0, suppress_until = NULL, suppress_rule_id = NULL WHERE id = ?", id);
+                        "UPDATE biz_event SET hidden = 0, suppress_released_at = NOW() WHERE id = ?", id);
                 if (externalEventId != null && !String.valueOf(externalEventId).isBlank()) {
                     try {
                         alarmEventMongoService.setHidden(String.valueOf(externalEventId), false);

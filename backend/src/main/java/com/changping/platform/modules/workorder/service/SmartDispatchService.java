@@ -98,6 +98,18 @@ public class SmartDispatchService {
      * 一键智能派单：按建议自动选择推荐人派发工单
      */
     public WorkOrderEntity smartDispatch(Long eventId, String remark) {
+        // 时段抑制（夜间静默）中的事件不自动派单：与"没有候选人"同样以业务异常终止，
+        // 调用方原本就需要容忍 suggest() 抛出的业务异常，因此不会破坏既有流程。
+        // 仅当规则确实勾选了 NO_DISPATCH 才拦截（只勾 HIDE 时夜间仍可正常派单）。
+        Integer muted = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM biz_event WHERE id = ? AND COALESCE(suppress_manual, 0) = 0 "
+                        + "AND suppress_until IS NOT NULL AND suppress_until > NOW() "
+                        + "AND suppress_actions LIKE '%NO_DISPATCH%'",
+                Integer.class, eventId);
+        if (muted != null && muted > 0) {
+            throw new BusinessException("EVENT_IN_SUPPRESS_WINDOW",
+                    "该事件处于静默时段（抑制截止时间未到），按规则不自动派单");
+        }
         Suggestion suggestion = suggest(eventId);
         if (suggestion.recommendedUserId() == null) {
             throw new BusinessException("SMART_DISPATCH_NO_CANDIDATE",

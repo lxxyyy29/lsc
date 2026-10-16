@@ -397,7 +397,7 @@ public class EventServiceImpl implements EventService {
     @Override
     public PagedResult<Map<String, Object>> querySectionEvents(String section, int page, int size,
             String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String searchKey, String startDate, String endDate,
-            boolean excludeHidden) {
+            boolean excludeHidden, boolean suppressOnly) {
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(size, 100));
 
@@ -430,9 +430,14 @@ public class EventServiceImpl implements EventService {
                 where.add("COALESCE(e.archived, 0) = 0");
             }
         }
-        // 「排除隐藏事件」开关：勾选后不返回 hidden=1 的事件，便于处置列表聚焦未隐藏工单
-        if (excludeHidden) {
+        // 「排除隐藏事件」开关：勾选后不返回 hidden=1 的事件，便于处置列表聚焦未隐藏工单。
+        // 例外：勾选「只看夜间抑制」时必须能看到 hidden=1 的抑制事件，否则该筛选永远为空
+        if (excludeHidden && !suppressOnly) {
             where.add("COALESCE(e.hidden, 0) = 0");
+        }
+        // 「只看夜间抑制」：曾被时段抑制过的事件（含已到点自动恢复的，便于白天复盘）
+        if (suppressOnly) {
+            where.add("COALESCE(e.suppress_rule_id, 0) <> 0");
         }
         if (status != null && !status.isBlank()) {
             where.add("e.status = ?");
@@ -480,6 +485,8 @@ public class EventServiceImpl implements EventService {
         String selectSql = "SELECT e.id, e.event_code AS eventCode, e.title, e.status, e.urgency_level AS urgencyLevel, e.source_system AS sourceSystem, "
                 + "e.report_source AS reportSource, e.report_user_name AS reportUserName, "
                 + "e.occurred_at AS occurredAt, e.created_at AS createdAt, e.archived, e.hidden, e.deleted, e.deleted_reason AS deletedReason, "
+                + "e.suppress_until AS suppressUntil, e.suppress_rule_id AS suppressRuleId, e.suppress_actions AS suppressActions, "
+                + "e.suppress_manual AS suppressManual, e.suppress_released_at AS suppressReleasedAt, "
                 + "(SELECT wo.id FROM biz_work_order wo WHERE wo.source_event_id = e.id ORDER BY wo.id DESC LIMIT 1) AS workOrderId, "
                 + "(SELECT wo.work_order_no FROM biz_work_order wo WHERE wo.source_event_id = e.id ORDER BY wo.id DESC LIMIT 1) AS workOrderNo, "
                 + "(SELECT wo.status FROM biz_work_order wo WHERE wo.source_event_id = e.id ORDER BY wo.id DESC LIMIT 1) AS workOrderStatus, "
@@ -1578,6 +1585,40 @@ public class EventServiceImpl implements EventService {
         // 列表与大屏数据源自 MongoDB，同步更新文档标记
         if (StringUtils.hasText(entity.getExternalEventId())) {
             alarmEventMongoService.setHidden(entity.getExternalEventId(), hidden);
+        }
+        return true;
+    }
+
+    /**
+     * 时段抑制（夜间静默）「强制放出 / 收回」：
+     * - manual=true：立即放出该条（suppress_manual=1、hidden=0、记 released_at、同步 Mongo），同批其他事件仍被抑制；
+     * - manual=false：收回人工放出。若抑制窗口还没结束（suppress_until > NOW()）则重新隐藏，等窗口结束再自动恢复。
+     */
+    @Override
+    public boolean setSuppressManual(Long eventId, boolean manual) {
+        EventEntity entity = eventMapper.selectDetailById(eventId);
+        if (entity == null) {
+            throw new BusinessException("EVENT_NOT_FOUND", "事件不存在");
+        }
+        boolean stillInWindow = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM biz_event WHERE id = ? AND suppress_until IS NOT NULL AND suppress_until > NOW()",
+                Integer.class, eventId) > 0;
+        if (manual) {
+            jdbcTemplate.update(
+                    "UPDATE biz_event SET suppress_manual = 1, hidden = 0, suppress_released_at = NOW() WHERE id = ?", eventId);
+        } else if (stillInWindow) {
+            jdbcTemplate.update(
+                    "UPDATE biz_event SET suppress_manual = 0, hidden = 1, suppress_released_at = NULL WHERE id = ?", eventId);
+        } else {
+            jdbcTemplate.update("UPDATE biz_event SET suppress_manual = 0, hidden = 0 WHERE id = ?", eventId);
+        }
+        boolean hiddenNow = manual ? false : stillInWindow;
+        if (StringUtils.hasText(entity.getExternalEventId())) {
+            try {
+                alarmEventMongoService.setHidden(entity.getExternalEventId(), hiddenNow);
+            } catch (Exception e) {
+                log.warn("[suppress] 强制放出同步 Mongo 失败 eventId={} err={}", eventId, e.getMessage());
+            }
         }
         return true;
     }

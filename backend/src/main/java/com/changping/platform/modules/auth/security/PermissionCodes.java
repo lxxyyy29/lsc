@@ -30,6 +30,10 @@ public final class PermissionCodes {
     public static final String API_EVENT_LIST = "api:event:list";
     /** 忽略事件接口权限 */
     public static final String API_EVENT_IGNORE = "api:event:ignore";
+    /** 事件强制放出（夜间抑制单条放行）接口权限 */
+    public static final String API_EVENTS_SUPPRESS_MANUAL = "api:events:suppress-manual";
+    /** 时段抑制规则管理接口权限（增删改查，见 SuppressWindowController） */
+    public static final String API_SYSTEM_SUPPRESS_MANAGE = "api:system:suppress:update";
     /** 事件误报菜单权限 */
     public static final String MENU_EVENT_FALSE_ALARM = "menu:event:false-alarm";
     /** 发起审核接口权限 */

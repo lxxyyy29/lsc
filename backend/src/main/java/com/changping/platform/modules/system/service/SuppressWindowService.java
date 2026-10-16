@@ -136,6 +136,86 @@ public class SuppressWindowService {
         return rows.get(0);
     }
 
+    // ==================== 总开关（sys_config）====================
+
+    /**
+     * 读取总开关与时区（页面顶部开关用）。
+     * 总开关关掉后所有规则立即失效，用于应急。
+     */
+    public Map<String, Object> globalSwitch() {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("enabled", isGloballyEnabled());
+        result.put("timezone", zone().getId());
+        return result;
+    }
+
+    /**
+     * 更新总开关/时区。body: { enabled: true/false/'0'/'1', timezone: 'Asia/Shanghai' }
+     */
+    public Map<String, Object> updateGlobalSwitch(Map<String, Object> body) {
+        if (body != null && body.get("enabled") != null) {
+            putConfig(ENABLED_KEY, truthy(body.get("enabled")) ? "1" : "0");
+        }
+        if (body != null && body.get("timezone") != null) {
+            String tz = String.valueOf(body.get("timezone")).trim();
+            if (!tz.isEmpty()) {
+                try {
+                    ZoneId.of(tz);
+                } catch (Exception e) {
+                    throw new BusinessException("VALIDATION_ERROR", "时区不合法（如 Asia/Shanghai）: " + tz);
+                }
+                putConfig(TZ_KEY, tz);
+            }
+        }
+        return globalSwitch();
+    }
+
+    /**
+     * 抑制概况：当前仍在抑制中的条数 + 近 12 小时自动恢复的条数（白天提示「昨夜抑制 N 条」用）。
+     * 自动恢复只恢复显示，抑制痕迹保留在 suppress_until/rule_id/released_at 上，所以可以统计。
+     */
+    public Map<String, Object> summary() {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("enabled", isGloballyEnabled());
+        try {
+            Long now = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM biz_event WHERE suppress_until IS NOT NULL AND suppress_until > NOW() "
+                            + "AND COALESCE(suppress_manual, 0) = 0 AND COALESCE(deleted, 0) = 0", Long.class);
+            Long released = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM biz_event WHERE suppress_released_at IS NOT NULL "
+                            + "AND suppress_released_at >= DATE_SUB(NOW(), INTERVAL 12 HOUR) AND COALESCE(deleted, 0) = 0",
+                    Long.class);
+            result.put("suppressedNow", now == null ? 0L : now);
+            result.put("releasedRecently", released == null ? 0L : released);
+            result.put("recentHours", 12);
+        } catch (Exception e) {
+            log.warn("[suppress] 抑制概况统计失败: {}", e.getMessage());
+            result.put("suppressedNow", 0L);
+            result.put("releasedRecently", 0L);
+            result.put("recentHours", 12);
+        }
+        result.put("windowRules", enabledRules().size());
+        return result;
+    }
+
+    private void putConfig(String key, String value) {
+        jdbcTemplate.update(
+                "INSERT INTO sys_config (config_key, config_value, updated_at) VALUES (?, ?, NOW()) "
+                        + "ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW()",
+                key, value);
+    }
+
+    private boolean truthy(Object v) {
+        if (v == null) {
+            return true;
+        }
+        if (v instanceof Boolean b) {
+            return b;
+        }
+        String s = String.valueOf(v).trim();
+        return !("0".equals(s) || "false".equalsIgnoreCase(s) || "off".equalsIgnoreCase(s) || s.isEmpty());
+    }
+
     // ==================== 命中判定 ====================
 
     /**

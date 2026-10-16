@@ -101,7 +101,7 @@ public interface EventService {
      */
     PagedResult<Map<String, Object>> querySectionEvents(String section, int page, int size,
             String status, String workOrderStatus, String urgencyLevel, String sourceSystem, String searchKey, String startDate, String endDate,
-            boolean excludeHidden);
+            boolean excludeHidden, boolean suppressOnly);
 
     /**
      * @Description //设置事件展示隐藏：隐藏后仅事件闭环/工单中心可见，大屏/GIS 面板不再展示
@@ -109,6 +109,14 @@ public interface EventService {
      * @return boolean 操作是否成功
      */
     boolean setEventHidden(Long eventId, boolean hidden);
+
+    /**
+     * @Description //时段抑制（夜间静默）强制放出/收回：manual=true 立即放出该条（同批其他事件仍被抑制），
+     *               manual=false 收回，若抑制窗口未结束则重新隐藏
+     * @Param [eventId 事件主键ID, manual 是否人工强制放出]
+     * @return boolean 操作是否成功
+     */
+    boolean setSuppressManual(Long eventId, boolean manual);
 
     /**
      * @Author lxy

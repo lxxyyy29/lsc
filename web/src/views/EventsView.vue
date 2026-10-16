@@ -14,6 +14,19 @@
     </div>
 
     <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column;margin-bottom:0;">
+      <!-- 夜间抑制提示：白天显示「近 12 小时有多少条夜间抑制事件已自动恢复」，避免漏处理 -->
+      <div v-if="suppressSummary.suppressedNow || suppressSummary.releasedRecently"
+           style="flex-shrink:0;margin-bottom:10px;padding:8px 12px;border-radius:8px;background:#fff7ed;border:1px solid #fdba74;font-size:13px;color:#9a3412;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <i class="fas fa-moon"></i>
+        <span>
+          夜间抑制：当前 <b>{{ suppressSummary.suppressedNow }}</b> 条仍在抑制中；
+          近 {{ suppressSummary.recentHours }} 小时 <b>{{ suppressSummary.releasedRecently }}</b> 条已到点自动恢复显示
+        </span>
+        <button type="button" @click="filters.suppressOnly = !filters.suppressOnly; page = 1; loadData()"
+                style="padding:2px 10px;border:1px solid #fdba74;border-radius:4px;background:#fff;color:#9a3412;font-size:12px;cursor:pointer;">
+          {{ filters.suppressOnly ? '取消只看夜间抑制' : '只看夜间抑制' }}
+        </button>
+      </div>
       <!-- 筛选栏 -->
       <div class="filter-bar" style="flex-shrink:0;">
         <input v-model="filters.searchKey" class="filter-input" style="width:220px;"
@@ -48,6 +61,11 @@
         <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#374151;cursor:pointer;white-space:nowrap;">
           <input type="checkbox" v-model="filters.excludeHidden" @change="page = 1; loadData()" />
           排除隐藏事件
+        </label>
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#9a3412;cursor:pointer;white-space:nowrap;"
+               title="被时段抑制的事件默认为隐藏状态，勾选后一并列出（含已到点自动恢复的，便于白天复盘）">
+          <input type="checkbox" v-model="filters.suppressOnly" @change="onToggleSuppressOnly" />
+          只看夜间抑制
         </label>
         <button @click="page = 1; loadData()" class="filter-action"><i class="fas fa-search"></i> 查询</button>
       </div>
@@ -95,7 +113,19 @@
                 <div style="display:flex;align-items:center;gap:6px;">
                   <span>{{ e.title }}</span>
                   <span v-if="e.archived" class="tag" style="background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;font-size:11px;">已归档</span>
-                  <span v-if="e.hidden" class="tag" style="background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;font-size:11px;">已隐藏</span>
+                  <span v-if="isSuppressed(e)"
+                        class="tag"
+                        style="background:#fff7ed;color:#9a3412;border:1px solid #fdba74;font-size:11px;cursor:help;"
+                        :title="`夜间抑制至 ${formatTime(e.suppressUntil)}${e.suppressActions ? '（' + suppressActionLabel(e.suppressActions) + '）' : ''}`">
+                    夜间抑制
+                  </span>
+                  <span v-else-if="e.suppressReleasedAt"
+                        class="tag"
+                        style="background:#f0fdf4;color:#166534;border:1px solid #86efac;font-size:11px;cursor:help;"
+                        :title="`${formatTime(e.suppressReleasedAt)} 已恢复显示${Number(e.suppressManual) === 1 ? '（人工强制放出）' : '（到点自动恢复）'}`">
+                    夜间抑制·已恢复
+                  </span>
+                  <span v-if="e.hidden && !isSuppressed(e)" class="tag" style="background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;font-size:11px;">已隐藏</span>
                 </div>
               </td>
               <td>
@@ -183,6 +213,16 @@
         </div>
         <div style="flex-shrink:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;padding-top:12px;border-top:1px solid #e5e7eb;">
           <span style="margin-right:auto;font-size:12px;color:#9ca3af;">当前状态：{{ statusLabel(actionRow.status) }}</span>
+          <!-- 夜间抑制：单条强制放出（同批其他事件仍按规则抑制） -->
+          <button v-if="isSuppressed(actionRow)" @click="toggleSuppressManual(actionRow, true)" type="button"
+                  class="btn" style="border:1px solid #fdba74;background:#fff;color:#9a3412;"
+                  :title="`该事件处于夜间抑制中（抑制至 ${formatTime(actionRow.suppressUntil)}），点击立即放出本条`">
+            强制放出（夜间抑制）
+          </button>
+          <button v-else-if="Number(actionRow.suppressManual) === 1 && isInSuppressWindow(actionRow)" @click="toggleSuppressManual(actionRow, false)" type="button"
+                  class="btn btn-default" title="已人工强制放出；点击收回，等抑制窗口结束后再自动恢复">
+            收回强制放出
+          </button>
           <button v-if="['PENDING_AUDIT', 'IN_AUDIT'].includes(actionRow.status)" @click="handleAudit(actionRow, 'pass')" type="button" class="btn" style="background:#52c41a;color:#fff;">通过</button>
           <button v-if="['PENDING_AUDIT', 'IN_AUDIT'].includes(actionRow.status)" @click="handleAudit(actionRow, 'reject')" type="button" class="btn" style="background:#ff4d4f;color:#fff;">驳回</button>
           <button v-if="actionRow.status === 'WAITING_DISPATCH'" @click="openDispatch(actionRow)" type="button" class="btn btn-primary">派单</button>
@@ -345,7 +385,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { getEventSectionEvents, getEventDetail, auditEvent, setEventHidden, deleteEvents, getDictItems, dispatchEvent, getLeaderDispatchInfo, leaderDispatch, getDispatchCandidates, updateEventUrgency, closeEvent, reopenEvent } from '../api'
+import { getEventSectionEvents, getEventDetail, auditEvent, setEventHidden, deleteEvents, getDictItems, dispatchEvent, getLeaderDispatchInfo, leaderDispatch, getDispatchCandidates, updateEventUrgency, closeEvent, reopenEvent, setEventSuppressManual, getSuppressSummary } from '../api'
 import EventCreateView from './EventCreateView.vue'
 import EventDetailView from './EventDetailView.vue'
 import { showMessage } from '../utils/message'
@@ -419,7 +459,62 @@ const filters = reactive({
   endDate: '',
   // 默认排除已隐藏事件；取消勾选可把已隐藏事件一并列出
   excludeHidden: true,
+  // 只看夜间抑制：抑制事件默认为隐藏状态，勾选后连同已恢复的一并列出（白天复盘）
+  suppressOnly: false,
 })
+
+// 夜间抑制概况（当前仍在抑制中 / 近 12 小时自动恢复）
+const suppressSummary = ref<{ suppressedNow: number; releasedRecently: number; recentHours: number }>({
+  suppressedNow: 0,
+  releasedRecently: 0,
+  recentHours: 12,
+})
+
+/** 是否处于抑制中（未到点、未人工放出） */
+function isInSuppressWindow(e: any) {
+  if (!e?.suppressUntil) return false
+  const at = new Date(String(e.suppressUntil).replace(' ', 'T')).getTime()
+  return !isNaN(at) && at > Date.now()
+}
+function isSuppressed(e: any) {
+  return isInSuppressWindow(e) && !e?.suppressReleasedAt && Number(e?.suppressManual) !== 1
+}
+function suppressActionLabel(actions: string) {
+  const map: Record<string, string> = { HIDE: '不显示', NO_DISPATCH: '不派单', NO_NOTIFY: '不通知' }
+  return String(actions).split(',').map(a => map[a.trim()] || a.trim()).filter(Boolean).join('、')
+}
+
+async function loadSuppressSummary() {
+  try {
+    suppressSummary.value = await getSuppressSummary() || suppressSummary.value
+  } catch (e) { /* 概况接口不可用不影响列表 */ }
+}
+
+/** 「只看夜间抑制」：抑制事件是隐藏状态，必须同时放开「排除隐藏事件」否则查不到 */
+function onToggleSuppressOnly() {
+  if (filters.suppressOnly) filters.excludeHidden = false
+  page.value = 1
+  loadData()
+}
+
+/** 单条强制放出 / 收回 */
+async function toggleSuppressManual(row: any, manual: boolean) {
+  const ok = await confirmDialog({
+    title: manual ? '强制放出（夜间抑制）' : '收回强制放出',
+    message: manual
+      ? `确定把「${row.title}」立即放出吗？仅本条生效，同批其他事件仍按规则抑制。`
+      : `确定收回「${row.title}」的强制放出吗？若抑制窗口未结束，将重新隐藏，等窗口结束再自动恢复。`,
+    okText: manual ? '放出' : '收回',
+  })
+  if (!ok) return
+  try {
+    await setEventSuppressManual(row.id, manual)
+    showMessage(manual ? '已强制放出该条事件' : '已收回强制放出', 'success')
+    await Promise.all([loadData(), loadSuppressSummary()])
+  } catch (e: any) {
+    showMessage('操作失败：' + (e?.message || e), 'error')
+  }
+}
 
 const dateRange = ref<[string, string] | null>(null)
 
@@ -820,6 +915,7 @@ async function loadData() {
     if (filters.sourceSystem) params.sourceSystem = filters.sourceSystem
     if (filters.searchKey) params.searchKey = filters.searchKey.trim()
     params.excludeHidden = filters.excludeHidden
+    if (filters.suppressOnly) params.suppressOnly = true
     if (dateRange.value && dateRange.value.length === 2) {
       if (dateRange.value[0]) params.startDate = dateRange.value[0]
       if (dateRange.value[1]) params.endDate = dateRange.value[1]
@@ -839,7 +935,7 @@ watch(() => filters.status, () => { page.value = 1; loadData() })
 watch(() => filters.urgencyLevel, () => { page.value = 1; loadData() })
 
 onMounted(async () => {
-  await Promise.all([loadData(), loadReportSources()])
+  await Promise.all([loadData(), loadReportSources(), loadSuppressSummary()])
 })
 </script>
 

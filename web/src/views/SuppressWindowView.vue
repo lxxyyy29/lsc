@@ -18,6 +18,13 @@
       <button class="btn btn-default" @click="fetchList">刷新</button>
     </div>
 
+    <div class="summary-bar">
+      <span>判定时区：<b>{{ timezone }}</b></span>
+      <span>当前仍在抑制中：<b>{{ summary.suppressedNow }}</b> 条</span>
+      <span>近 {{ summary.recentHours }} 小时自动恢复：<b>{{ summary.releasedRecently }}</b> 条</span>
+      <span class="muted">抑制只打标记、不删数据；时段结束自动恢复显示，期间可在「事件中心」按「夜间抑制」筛选查看</span>
+    </div>
+
     <div v-if="loading" class="empty">加载中...</div>
     <div v-else-if="!list.length" class="empty">暂无规则，点击「新增规则」创建，例如 22:00–07:00 夜间静默</div>
 
@@ -177,6 +184,8 @@ const list = ref<any[]>([])
 const loading = ref(false)
 const saving = ref(false)
 const globalEnabled = ref(true)
+const timezone = ref('Asia/Shanghai')
+const summary = ref<any>({ suppressedNow: 0, releasedRecently: 0, recentHours: 12 })
 
 const showForm = ref(false)
 const showTest = ref(false)
@@ -229,19 +238,28 @@ async function fetchList() {
 
 async function fetchGlobalSwitch() {
   try {
-    const rows: any = await http.get('/system/configs')
-    const item = (rows || []).find((r: any) => r.configKey === 'suppress.enabled')
-    if (item) globalEnabled.value = String(item.configValue) !== '0'
-  } catch (e) { /* 配置接口不可用时忽略，不影响规则管理 */ }
+    const data: any = await http.get('/system/suppress-windows/global')
+    if (data) {
+      globalEnabled.value = String(data.enabled) !== 'false'
+      timezone.value = data.timezone || 'Asia/Shanghai'
+    }
+  } catch (e) { /* 总开关接口不可用时忽略，不影响规则管理 */ }
 }
 
 async function saveGlobalSwitch() {
   try {
-    await http.put('/system/configs/suppress.enabled', { configValue: globalEnabled.value ? '1' : '0' })
+    await http.put('/system/suppress-windows/global', { enabled: globalEnabled.value })
     alert(globalEnabled.value ? '已启用时段抑制' : '已全局关闭时段抑制（所有规则立即失效）')
   } catch (e: any) {
     alert('保存失败：' + (e?.message || e))
+    globalEnabled.value = !globalEnabled.value
   }
+}
+
+async function fetchSummary() {
+  try {
+    summary.value = await http.get('/system/suppress-windows/summary') || summary.value
+  } catch (e) { /* 概况统计失败不影响规则管理 */ }
 }
 
 function openCreate() {
@@ -345,6 +363,7 @@ async function runTest() {
 onMounted(() => {
   fetchList()
   fetchGlobalSwitch()
+  fetchSummary()
 })
 </script>
 
@@ -355,6 +374,7 @@ onMounted(() => {
 .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .toolbar .spacer { flex: 1; }
 .global-switch { font-size: 13px; color: #374151; display: flex; align-items: center; gap: 6px; }
+.summary-bar { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 12px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 12px; color: #4b5563; }
 .empty { padding: 30px; text-align: center; color: #9ca3af; background: #f9fafb; border-radius: 8px; }
 .table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; }
 .table th, .table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: left; vertical-align: middle; }

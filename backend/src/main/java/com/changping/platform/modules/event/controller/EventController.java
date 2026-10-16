@@ -246,9 +246,10 @@ public class EventController {
             @RequestParam(required = false) String searchKey,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate,
-            @RequestParam(defaultValue = "false") boolean excludeHidden) {
+            @RequestParam(defaultValue = "false") boolean excludeHidden,
+            @RequestParam(defaultValue = "false") boolean suppressOnly) {
         permissionGuard.require(PermissionCodes.API_EVENT_LIST);
-        return ApiResponse.ok(eventService.querySectionEvents(section, page, size, status, workOrderStatus, urgencyLevel, sourceSystem, searchKey, startDate, endDate, excludeHidden));
+        return ApiResponse.ok(eventService.querySectionEvents(section, page, size, status, workOrderStatus, urgencyLevel, sourceSystem, searchKey, startDate, endDate, excludeHidden, suppressOnly));
     }
 
     /**
@@ -261,6 +262,22 @@ public class EventController {
         permissionGuard.require(PermissionCodes.API_EVENT_CREATE);
         boolean hidden = Boolean.TRUE.equals(body.get("hidden"));
         return ApiResponse.ok(eventService.setEventHidden(id, hidden));
+    }
+
+    /**
+     * @Description //时段抑制（夜间静默）强制放出/收回：
+     *               body manual=true 立即放出该条（同批其他事件仍被抑制），manual=false 收回
+     * @Param [id 事件主键ID]
+     * @return ApiResponse<Boolean> 操作结果
+     */
+    @PutMapping("/{id}/suppress-manual")
+    public ApiResponse<Boolean> setSuppressManual(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_EVENTS_SUPPRESS_MANUAL);
+        Object raw = body == null ? null : body.get("manual");
+        boolean manual = raw == null || "1".equals(String.valueOf(raw)) || Boolean.TRUE.equals(raw)
+                || "true".equalsIgnoreCase(String.valueOf(raw));
+        return ApiResponse.ok(eventService.setSuppressManual(id, manual));
     }
 
     /**
