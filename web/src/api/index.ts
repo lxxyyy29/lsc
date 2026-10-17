@@ -234,12 +234,17 @@ export async function setEventHidden(id: number | string, hidden: boolean) {
   return http.put(`/events/${id}/hidden`, { hidden })
 }
 
-// 时段抑制（夜间静默）单条强制放出/收回：manual=true 立即放出该条，false 收回
+// 时段抑制（夜间静默）单条放出/收回：manual=true 放出该条，false 收回（重新隐藏）
 export async function setEventSuppressManual(id: number | string, manual: boolean) {
   return http.put(`/events/${id}/suppress-manual`, { manual })
 }
 
-// 时段抑制概况：当前仍在抑制中 / 近 12 小时自动恢复的条数（白天「昨夜抑制 N 条」提示）
+// 批量放出「待放行」的夜间抑制事件（窗口已结束、仍隐藏、未人工放出）：一夜累积后一次放出
+export async function releasePendingSuppress(limit?: number) {
+  return http.put('/events/suppress-manual/release-pending', limit ? { limit } : {})
+}
+
+// 时段抑制概况：抑制中 / 待放行 / 近 12 小时已放出（白天「昨夜抑制 N 条待放行」提示）
 export async function getSuppressSummary() {
   return http.get('/system/suppress-windows/summary')
 }

@@ -119,6 +119,13 @@ public interface EventService {
     boolean setSuppressManual(Long eventId, boolean manual);
 
     /**
+     * @Description //批量放出「待放行」的夜间抑制事件（窗口已结束、仍隐藏、未人工放出）
+     * @Param [limit 单次最多条数，空则默认 200（上限 500）]
+     * @return int 实际放出条数
+     */
+    int releasePendingSuppress(Integer limit);
+
+    /**
      * @Author lxy
      * @Description //软删除事件：标记 deleted=1 并记录删除原因，保留工单/审核/生命周期记录供异常工单查询与详情展示
      * @Date 2026/04/18 10:00

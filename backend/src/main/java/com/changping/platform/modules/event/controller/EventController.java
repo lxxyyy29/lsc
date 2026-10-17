@@ -281,6 +281,30 @@ public class EventController {
     }
 
     /**
+     * @Description //批量放出「待放行」的夜间抑制事件（一夜累积后一次放出，避免逐条点击）：
+     *               仅处理窗口已结束(suppress_until <= NOW())、仍隐藏、未被人工放出的事件
+     * @Param [body limit 单次最多条数，默认 200、上限 500]
+     * @return ApiResponse<Integer> 实际放出条数
+     */
+    @PutMapping("/suppress-manual/release-pending")
+    public ApiResponse<Integer> releasePendingSuppress(@RequestBody(required = false) Map<String, Object> body) {
+        currentUserService.requireClientType(AuthService.ClientType.WEB);
+        permissionGuard.require(PermissionCodes.API_EVENTS_SUPPRESS_MANUAL);
+        Integer limit = null;
+        Object raw = body == null ? null : body.get("limit");
+        if (raw instanceof Number number) {
+            limit = number.intValue();
+        } else if (raw != null && !String.valueOf(raw).isBlank()) {
+            try {
+                limit = Integer.valueOf(String.valueOf(raw).trim());
+            } catch (NumberFormatException ignored) {
+                // 非法数字按默认处理
+            }
+        }
+        return ApiResponse.ok(eventService.releasePendingSuppress(limit));
+    }
+
+    /**
      * @Author lxy
      * @Description //将事件派单给工单处理接口，仅限Web端用户操作
      * @Date 2026/04/18 10:00

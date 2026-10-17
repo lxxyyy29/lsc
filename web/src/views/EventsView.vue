@@ -14,17 +14,22 @@
     </div>
 
     <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column;margin-bottom:0;">
-      <!-- 夜间抑制提示：白天显示「近 12 小时有多少条夜间抑制事件已自动恢复」，避免漏处理 -->
-      <div v-if="suppressSummary.suppressedNow || suppressSummary.releasedRecently"
+      <!-- 夜间抑制提示：抑制事件白天也保持隐藏，这里提示「待放行 N 条」并提供批量放出入口 -->
+      <div v-if="suppressSummary.suppressedNow || suppressSummary.pendingRelease"
            style="flex-shrink:0;margin-bottom:10px;padding:8px 12px;border-radius:8px;background:#fff7ed;border:1px solid #fdba74;font-size:13px;color:#9a3412;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <i class="fas fa-moon"></i>
         <span>
-          夜间抑制：当前 <b>{{ suppressSummary.suppressedNow }}</b> 条仍在抑制中；
-          近 {{ suppressSummary.recentHours }} 小时 <b>{{ suppressSummary.releasedRecently }}</b> 条已到点自动恢复显示
+          夜间抑制：<b>{{ suppressSummary.suppressedNow }}</b> 条仍在抑制时段内；
+          <b>{{ suppressSummary.pendingRelease }}</b> 条已到点、仍隐藏待放行
+          <span v-if="suppressSummary.releasedRecently">（近 {{ suppressSummary.recentHours }} 小时已放出 {{ suppressSummary.releasedRecently }} 条）</span>
         </span>
         <button type="button" @click="filters.suppressOnly = !filters.suppressOnly; page = 1; loadData()"
                 style="padding:2px 10px;border:1px solid #fdba74;border-radius:4px;background:#fff;color:#9a3412;font-size:12px;cursor:pointer;">
           {{ filters.suppressOnly ? '取消只看夜间抑制' : '只看夜间抑制' }}
+        </button>
+        <button v-if="suppressSummary.pendingRelease" type="button" @click="handleReleasePending"
+                style="padding:2px 10px;border:1px solid #9a3412;border-radius:4px;background:#9a3412;color:#fff;font-size:12px;cursor:pointer;">
+          放出待放行 {{ suppressSummary.pendingRelease }} 条
         </button>
       </div>
       <!-- 筛选栏 -->
@@ -63,7 +68,7 @@
           排除隐藏事件
         </label>
         <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#9a3412;cursor:pointer;white-space:nowrap;"
-               title="被时段抑制的事件默认为隐藏状态，勾选后一并列出（含已到点自动恢复的，便于白天复盘）">
+               title="被时段抑制的事件白天也保持隐藏，勾选后一并列出（含已到点待放行的，便于白天批量放出）">
           <input type="checkbox" v-model="filters.suppressOnly" @change="onToggleSuppressOnly" />
           只看夜间抑制
         </label>
@@ -116,14 +121,14 @@
                   <span v-if="isSuppressed(e)"
                         class="tag"
                         style="background:#fff7ed;color:#9a3412;border:1px solid #fdba74;font-size:11px;cursor:help;"
-                        :title="`夜间抑制至 ${formatTime(e.suppressUntil)}${e.suppressActions ? '（' + suppressActionLabel(e.suppressActions) + '）' : ''}`">
-                    夜间抑制
+                        :title="`${isInSuppressWindow(e) ? '夜间抑制时段内（至 ' + formatTime(e.suppressUntil) + '）' : '夜间抑制已到点，等待人工放行'}${e.suppressActions ? '（' + suppressActionLabel(e.suppressActions) + '）' : ''}`">
+                    夜间抑制{{ isInSuppressWindow(e) ? '' : '·待放行' }}
                   </span>
-                  <span v-else-if="e.suppressReleasedAt"
+                  <span v-else-if="Number(e.suppressManual) === 1"
                         class="tag"
                         style="background:#f0fdf4;color:#166534;border:1px solid #86efac;font-size:11px;cursor:help;"
-                        :title="`${formatTime(e.suppressReleasedAt)} 已恢复显示${Number(e.suppressManual) === 1 ? '（人工强制放出）' : '（到点自动恢复）'}`">
-                    夜间抑制·已恢复
+                        :title="`${formatTime(e.suppressReleasedAt)} 已人工放出`">
+                    夜间抑制·已放出
                   </span>
                   <span v-if="e.hidden && !isSuppressed(e)" class="tag" style="background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;font-size:11px;">已隐藏</span>
                 </div>
@@ -213,15 +218,15 @@
         </div>
         <div style="flex-shrink:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;padding-top:12px;border-top:1px solid #e5e7eb;">
           <span style="margin-right:auto;font-size:12px;color:#9ca3af;">当前状态：{{ statusLabel(actionRow.status) }}</span>
-          <!-- 夜间抑制：单条强制放出（同批其他事件仍按规则抑制） -->
+          <!-- 夜间抑制：单条放出（其余夜间事件继续保持隐藏） -->
           <button v-if="isSuppressed(actionRow)" @click="toggleSuppressManual(actionRow, true)" type="button"
                   class="btn" style="border:1px solid #fdba74;background:#fff;color:#9a3412;"
-                  :title="`该事件处于夜间抑制中（抑制至 ${formatTime(actionRow.suppressUntil)}），点击立即放出本条`">
-            强制放出（夜间抑制）
+                  :title="`该事件被夜间抑制隐藏${isInSuppressWindow(actionRow) ? '（时段内，至 ' + formatTime(actionRow.suppressUntil) + '）' : '（已到点，待放行）'}，点击放出本条`">
+            放出（夜间抑制）
           </button>
-          <button v-else-if="Number(actionRow.suppressManual) === 1 && isInSuppressWindow(actionRow)" @click="toggleSuppressManual(actionRow, false)" type="button"
-                  class="btn btn-default" title="已人工强制放出；点击收回，等抑制窗口结束后再自动恢复">
-            收回强制放出
+          <button v-else-if="Number(actionRow.suppressManual) === 1" @click="toggleSuppressManual(actionRow, false)" type="button"
+                  class="btn btn-default" title="已放出；点击收回会重新隐藏">
+            收回放出
           </button>
           <button v-if="['PENDING_AUDIT', 'IN_AUDIT'].includes(actionRow.status)" @click="handleAudit(actionRow, 'pass')" type="button" class="btn" style="background:#52c41a;color:#fff;">通过</button>
           <button v-if="['PENDING_AUDIT', 'IN_AUDIT'].includes(actionRow.status)" @click="handleAudit(actionRow, 'reject')" type="button" class="btn" style="background:#ff4d4f;color:#fff;">驳回</button>
@@ -385,7 +390,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { getEventSectionEvents, getEventDetail, auditEvent, setEventHidden, deleteEvents, getDictItems, dispatchEvent, getLeaderDispatchInfo, leaderDispatch, getDispatchCandidates, updateEventUrgency, closeEvent, reopenEvent, setEventSuppressManual, getSuppressSummary } from '../api'
+import { getEventSectionEvents, getEventDetail, auditEvent, setEventHidden, deleteEvents, getDictItems, dispatchEvent, getLeaderDispatchInfo, leaderDispatch, getDispatchCandidates, updateEventUrgency, closeEvent, reopenEvent, setEventSuppressManual, releasePendingSuppress, getSuppressSummary } from '../api'
 import EventCreateView from './EventCreateView.vue'
 import EventDetailView from './EventDetailView.vue'
 import { showMessage } from '../utils/message'
@@ -463,21 +468,26 @@ const filters = reactive({
   suppressOnly: false,
 })
 
-// 夜间抑制概况（当前仍在抑制中 / 近 12 小时自动恢复）
-const suppressSummary = ref<{ suppressedNow: number; releasedRecently: number; recentHours: number }>({
+// 夜间抑制概况（抑制中 / 待放行 / 近 12 小时已放出）
+const suppressSummary = ref<{ suppressedNow: number; pendingRelease: number; releasedRecently: number; recentHours: number }>({
   suppressedNow: 0,
+  pendingRelease: 0,
   releasedRecently: 0,
   recentHours: 12,
 })
 
-/** 是否处于抑制中（未到点、未人工放出） */
+/** 是否仍在抑制时段内（未到点） */
 function isInSuppressWindow(e: any) {
   if (!e?.suppressUntil) return false
   const at = new Date(String(e.suppressUntil).replace(' ', 'T')).getTime()
   return !isNaN(at) && at > Date.now()
 }
+/**
+ * 是否仍被夜间抑制挡住（= 不可见）。
+ * 2026-10-17 起抑制不再到点自动恢复：只要没人工放出（suppressManual!=1），就一直是隐藏状态。
+ */
 function isSuppressed(e: any) {
-  return isInSuppressWindow(e) && !e?.suppressReleasedAt && Number(e?.suppressManual) !== 1
+  return !!e?.suppressRuleId && Number(e?.suppressManual) !== 1
 }
 function suppressActionLabel(actions: string) {
   const map: Record<string, string> = { HIDE: '不显示', NO_DISPATCH: '不派单', NO_NOTIFY: '不通知' }
@@ -497,22 +507,42 @@ function onToggleSuppressOnly() {
   loadData()
 }
 
-/** 单条强制放出 / 收回 */
+/** 单条放出 / 收回（夜间抑制） */
 async function toggleSuppressManual(row: any, manual: boolean) {
   const ok = await confirmDialog({
-    title: manual ? '强制放出（夜间抑制）' : '收回强制放出',
+    title: manual ? '放出夜间抑制事件' : '收回放出',
     message: manual
-      ? `确定把「${row.title}」立即放出吗？仅本条生效，同批其他事件仍按规则抑制。`
-      : `确定收回「${row.title}」的强制放出吗？若抑制窗口未结束，将重新隐藏，等窗口结束再自动恢复。`,
+      ? `确定把「${row.title}」放出吗？仅本条生效，其余夜间事件继续保持隐藏。`
+      : `确定收回「${row.title}」的放出吗？收回后将重新隐藏，需要时再放出。`,
     okText: manual ? '放出' : '收回',
   })
   if (!ok) return
   try {
     await setEventSuppressManual(row.id, manual)
-    showMessage(manual ? '已强制放出该条事件' : '已收回强制放出', 'success')
+    showMessage(manual ? '已放出该条事件' : '已收回放出', 'success')
     await Promise.all([loadData(), loadSuppressSummary()])
   } catch (e: any) {
     showMessage('操作失败：' + (e?.message || e), 'error')
+  }
+}
+
+/** 批量放出全部「待放行」的夜间抑制事件（窗口已结束、仍隐藏、未放出） */
+async function handleReleasePending() {
+  const n = Number(suppressSummary.value.pendingRelease || 0)
+  if (!n) { showMessage('当前没有待放行的夜间抑制事件'); return }
+  const ok = await confirmDialog({
+    title: '批量放出待放行的夜间抑制事件',
+    message: `将一次性放出 ${n} 条「夜间抑制已到点、仍隐藏」的事件（单次上限 500 条）。\n`
+      + `放出后它们会重新出现在列表/大屏，并按正常流程派单与通知。`,
+    okText: '全部放出',
+  })
+  if (!ok) return
+  try {
+    const released: any = await releasePendingSuppress(500)
+    showMessage(`已放出 ${released ?? 0} 条夜间抑制事件`, 'success')
+    await Promise.all([loadData(), loadSuppressSummary()])
+  } catch (e: any) {
+    showMessage('批量放出失败：' + (e?.message || e), 'error')
   }
 }
 

@@ -20,9 +20,10 @@
 
     <div class="summary-bar">
       <span>判定时区：<b>{{ timezone }}</b></span>
-      <span>当前仍在抑制中：<b>{{ summary.suppressedNow }}</b> 条</span>
-      <span>近 {{ summary.recentHours }} 小时自动恢复：<b>{{ summary.releasedRecently }}</b> 条</span>
-      <span class="muted">抑制只打标记、不删数据；时段结束自动恢复显示，期间可在「事件中心」按「夜间抑制」筛选查看</span>
+      <span>抑制时段内：<b>{{ summary.suppressedNow }}</b> 条</span>
+      <span>已到点待放行：<b>{{ summary.pendingRelease }}</b> 条</span>
+      <span>近 {{ summary.recentHours }} 小时已放出：<b>{{ summary.releasedRecently }}</b> 条</span>
+      <span class="muted">抑制只打标记、不删数据；夜间事件白天也保持隐藏，需在「事件闭环处置」勾选「只看夜间抑制」后逐条或批量放出</span>
     </div>
 
     <div v-if="loading" class="empty">加载中...</div>
@@ -185,7 +186,7 @@ const loading = ref(false)
 const saving = ref(false)
 const globalEnabled = ref(true)
 const timezone = ref('Asia/Shanghai')
-const summary = ref<any>({ suppressedNow: 0, releasedRecently: 0, recentHours: 12 })
+const summary = ref<any>({ suppressedNow: 0, pendingRelease: 0, releasedRecently: 0, recentHours: 12 })
 
 const showForm = ref(false)
 const showTest = ref(false)

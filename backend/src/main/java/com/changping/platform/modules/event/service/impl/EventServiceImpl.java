@@ -1590,9 +1590,9 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * 时段抑制（夜间静默）「强制放出 / 收回」：
-     * - manual=true：立即放出该条（suppress_manual=1、hidden=0、记 released_at、同步 Mongo），同批其他事件仍被抑制；
-     * - manual=false：收回人工放出。若抑制窗口还没结束（suppress_until > NOW()）则重新隐藏，等窗口结束再自动恢复。
+     * 时段抑制（夜间静默）「放出 / 收回」：
+     * - manual=true：放出该条（suppress_manual=1、hidden=0、记 released_at、同步 Mongo），同批其他事件仍保持隐藏；
+     * - manual=false：收回放出，重新置 hidden=1（2026-10-17 起「白天也保持隐藏」，不再有到点自动恢复）。
      */
     @Override
     public boolean setSuppressManual(Long eventId, boolean manual) {
@@ -1600,27 +1600,74 @@ public class EventServiceImpl implements EventService {
         if (entity == null) {
             throw new BusinessException("EVENT_NOT_FOUND", "事件不存在");
         }
-        boolean stillInWindow = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM biz_event WHERE id = ? AND suppress_until IS NOT NULL AND suppress_until > NOW()",
-                Integer.class, eventId) > 0;
         if (manual) {
             jdbcTemplate.update(
                     "UPDATE biz_event SET suppress_manual = 1, hidden = 0, suppress_released_at = NOW() WHERE id = ?", eventId);
-        } else if (stillInWindow) {
+        } else {
             jdbcTemplate.update(
                     "UPDATE biz_event SET suppress_manual = 0, hidden = 1, suppress_released_at = NULL WHERE id = ?", eventId);
-        } else {
-            jdbcTemplate.update("UPDATE biz_event SET suppress_manual = 0, hidden = 0 WHERE id = ?", eventId);
         }
-        boolean hiddenNow = manual ? false : stillInWindow;
         if (StringUtils.hasText(entity.getExternalEventId())) {
             try {
-                alarmEventMongoService.setHidden(entity.getExternalEventId(), hiddenNow);
+                alarmEventMongoService.setHidden(entity.getExternalEventId(), !manual);
             } catch (Exception e) {
                 log.warn("[suppress] 强制放出同步 Mongo 失败 eventId={} err={}", eventId, e.getMessage());
             }
         }
         return true;
+    }
+
+    /**
+     * 批量放出「待放行」的夜间抑制事件：窗口已结束、仍隐藏、未被人工放出。
+     *
+     * <p>2026-10-17 起夜间抑制不再到点自动恢复显示（业务要求白天也不显示），
+     * 因此需要一个「一夜累积后一次性放出」的入口，避免逐条点击上百次。
+     *
+     * @param limit 单次最多放出条数（防止误操作一次放出过多），为空时默认 200
+     * @return int 实际放出的条数
+     */
+    @Override
+    public int releasePendingSuppress(Integer limit) {
+        int safeLimit = limit == null || limit <= 0 ? 200 : Math.min(limit, 500);
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT id, external_event_id FROM biz_event "
+                        + "WHERE suppress_rule_id IS NOT NULL AND COALESCE(suppress_manual, 0) = 0 "
+                        + "AND COALESCE(deleted, 0) = 0 AND COALESCE(hidden, 0) = 1 "
+                        + "AND suppress_until IS NOT NULL AND suppress_until <= NOW() "
+                        + "ORDER BY suppress_until LIMIT " + safeLimit);
+        if (rows == null || rows.isEmpty()) {
+            return 0;
+        }
+        List<Long> ids = new ArrayList<>();
+        List<String> externalIds = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            Object id = row.get("id");
+            if (id instanceof Number number) {
+                ids.add(number.longValue());
+            }
+            Object ext = row.get("external_event_id");
+            if (ext != null && StringUtils.hasText(String.valueOf(ext))) {
+                externalIds.add(String.valueOf(ext));
+            }
+        }
+        if (ids.isEmpty()) {
+            return 0;
+        }
+        String inClause = String.join(",", java.util.Collections.nCopies(ids.size(), "?"));
+        int updated = jdbcTemplate.update(
+                "UPDATE biz_event SET suppress_manual = 1, hidden = 0, suppress_released_at = NOW() "
+                        + "WHERE id IN (" + inClause + ")",
+                ids.toArray());
+        // 列表/大屏数据源是 MongoDB，逐条同步；失败只记日志，SQL 侧已放出（可再次点击自愈）
+        for (String externalId : externalIds) {
+            try {
+                alarmEventMongoService.setHidden(externalId, false);
+            } catch (Exception e) {
+                log.warn("[suppress] 批量放出同步 Mongo 失败 externalEventId={} err={}", externalId, e.getMessage());
+            }
+        }
+        log.info("[suppress] 批量放出夜间抑制事件 {} 条（SQL 更新 {} 条）", ids.size(), updated);
+        return updated;
     }
 
     public List<Map<String, Object>> getHeatmapData(String startDate, String endDate, String eventType) {

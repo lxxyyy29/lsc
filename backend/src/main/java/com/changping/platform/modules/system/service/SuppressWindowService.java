@@ -171,8 +171,10 @@ public class SuppressWindowService {
     }
 
     /**
-     * 抑制概况：当前仍在抑制中的条数 + 近 12 小时自动恢复的条数（白天提示「昨夜抑制 N 条」用）。
-     * 自动恢复只恢复显示，抑制痕迹保留在 suppress_until/rule_id/released_at 上，所以可以统计。
+     * 抑制概况：当前仍在抑制中的条数 + 待人工放出的条数 + 近 12 小时人工放出的条数。
+     *
+     * <p>2026-10-17 起「夜间抑制」白天也保持隐藏（不再到点自动恢复），
+     * 因此 pendingRelease（窗口已结束、仍隐藏、未放出）才是白天要提示的主指标。
      */
     public Map<String, Object> summary() {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -181,16 +183,23 @@ public class SuppressWindowService {
             Long now = jdbcTemplate.queryForObject(
                     "SELECT COUNT(*) FROM biz_event WHERE suppress_until IS NOT NULL AND suppress_until > NOW() "
                             + "AND COALESCE(suppress_manual, 0) = 0 AND COALESCE(deleted, 0) = 0", Long.class);
+            Long pending = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM biz_event WHERE suppress_rule_id IS NOT NULL "
+                            + "AND COALESCE(suppress_manual, 0) = 0 AND COALESCE(deleted, 0) = 0 "
+                            + "AND COALESCE(hidden, 0) = 1 AND suppress_until IS NOT NULL AND suppress_until <= NOW()",
+                    Long.class);
             Long released = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM biz_event WHERE suppress_released_at IS NOT NULL "
+                    "SELECT COUNT(*) FROM biz_event WHERE suppress_manual = 1 AND suppress_released_at IS NOT NULL "
                             + "AND suppress_released_at >= DATE_SUB(NOW(), INTERVAL 12 HOUR) AND COALESCE(deleted, 0) = 0",
                     Long.class);
             result.put("suppressedNow", now == null ? 0L : now);
+            result.put("pendingRelease", pending == null ? 0L : pending);
             result.put("releasedRecently", released == null ? 0L : released);
             result.put("recentHours", 12);
         } catch (Exception e) {
             log.warn("[suppress] 抑制概况统计失败: {}", e.getMessage());
             result.put("suppressedNow", 0L);
+            result.put("pendingRelease", 0L);
             result.put("releasedRecently", 0L);
             result.put("recentHours", 12);
         }
