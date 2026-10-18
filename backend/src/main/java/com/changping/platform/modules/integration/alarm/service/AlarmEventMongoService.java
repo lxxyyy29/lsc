@@ -32,6 +32,9 @@ import org.springframework.util.StringUtils;
 @Service
 public class AlarmEventMongoService {
 
+    /** 所属网格文本最大长度（与 biz_event.grid_name VARCHAR(60)、回调协议一致） */
+    private static final int GRID_NAME_MAX_LENGTH = 60;
+
     private final AlarmEventRepository alarmEventRepository;
     private final AlarmIntegrationProperties properties;
     private final MongoTemplate mongoTemplate;
@@ -88,6 +91,8 @@ public class AlarmEventMongoService {
         document.setCreatedAt(LocalDateTime.now());
         document.setUpdatedAt(LocalDateTime.now());
         document.setUrgencyLevel(resolveUrgencyLevel(normalizedEvent.normalizedPayload(), normalizedEvent.rawPayload()));
+        // 所属网格：仅存文本（补充协议 2026-10-18），不做网格实体绑定
+        document.setGridName(normalizedEvent.gridName());
         try {
             return alarmEventRepository.save(document);
         } catch (DuplicateKeyException exception) {
@@ -670,10 +675,27 @@ public class AlarmEventMongoService {
             }
         }
 
+        // 所属网格（回调补充协议 2026-10-18）：上游板端可选字段 gridName，人工填写的文本，
+        // 去首尾空白、最多 60 字；缺失或空白视为未提供（兼容未填写网格的旧摄像头配置）。
+        // 仅按文本保存，不做网格实体匹配/绑定（不推导 grid_id）。
+        String gridName = firstNonBlank(
+                stringValue(rawPayload.get("gridName")),
+                stringValue(rawPayload.get("grid_name")));
+        if (gridName != null) {
+            gridName = gridName.trim();
+            if (gridName.length() > GRID_NAME_MAX_LENGTH) {
+                gridName = gridName.substring(0, GRID_NAME_MAX_LENGTH);
+            }
+            if (gridName.isEmpty()) {
+                gridName = null;
+            }
+        }
+
         Map<String, Object> normalizedPayload = new LinkedHashMap<>();
         normalizedPayload.put("taskNo", taskNo);
         normalizedPayload.put("alarmId", alarmId);
         normalizedPayload.put("externalEventId", externalEventId);
+        normalizedPayload.put("gridName", gridName);
         return new NormalizedAlarmEvent(
                 externalEventId,
                 dedupKey,
@@ -685,6 +707,7 @@ public class AlarmEventMongoService {
                 "WAITING_DISPATCH",
                 occurredAt,
                 address,
+                gridName,
                 parseDecimal(firstNonNull(rawPayload.get("longitude"), nestedValue(rawPayload, "location", "longitude"))),
                 parseDecimal(firstNonNull(rawPayload.get("latitude"), nestedValue(rawPayload, "location", "latitude"))),
                 evidenceReferences,

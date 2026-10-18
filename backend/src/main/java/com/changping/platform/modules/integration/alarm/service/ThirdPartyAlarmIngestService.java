@@ -71,8 +71,8 @@ public class ThirdPartyAlarmIngestService {
         boolean duplicate = document.getWorkflowStatus() != null && document.getWorkflowStatus().getSqlEventId() != null;
         EventEntity projection = eventProjectionBridgeService.createOrReuseProjection(normalizedEvent);
 
-        // 时段抑制（夜间静默）：命中规则则打标记；查询层按 suppress_until 统一过滤 → 时段内"不显示"，
-        // 时段结束后自动恢复可见（无需定时任务）。标记写入失败不影响告警入库。
+        // 时段抑制（夜间静默）：命中规则则打标记（hidden=1 + suppress_*）；命中后白天也保持隐藏，
+        // 需人工放出（2026-10-17 起的语义）。标记写入失败不影响告警入库。
         try {
             Object extRaw = rawPayload.get("externalEventId");
             String externalEventId = extRaw == null ? null : String.valueOf(extRaw);
@@ -90,7 +90,7 @@ public class ThirdPartyAlarmIngestService {
                             "UPDATE biz_event SET suppress_until = ?, suppress_rule_id = ?, suppress_actions = ? WHERE external_event_id = ?",
                             java.sql.Timestamp.valueOf(h.until()), h.ruleId(), actions, externalEventId);
                     // 「不显示」复用 hidden 开关：现有事件列表/大屏/统计/地图（SQL 与 MongoDB）均已按 hidden 过滤，
-                    // 因此无需逐个改动查询；由 SuppressReleaseTask 在 suppress_until 到点后自动恢复显示。
+                    // 因此无需逐个改动查询。2026-10-17 起到点**不自动恢复**，需人工放出（见 SuppressReleaseTask 注释）。
                     if (h.actions().contains("HIDE")) {
                         jdbcTemplate.update("UPDATE biz_event SET hidden = 1 WHERE external_event_id = ?", externalEventId);
                         try {

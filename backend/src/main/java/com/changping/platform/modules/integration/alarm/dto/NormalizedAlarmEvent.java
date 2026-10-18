@@ -22,6 +22,8 @@ public record NormalizedAlarmEvent(
         String status,
         LocalDateTime occurredAt,
         String address,
+        /** 所属网格（上游回调 gridName 文本，已去首尾空白并截断到 60 字；缺失为 null，不做网格实体匹配） */
+        String gridName,
         BigDecimal longitude,
         BigDecimal latitude,
         List<String> evidenceReferences,

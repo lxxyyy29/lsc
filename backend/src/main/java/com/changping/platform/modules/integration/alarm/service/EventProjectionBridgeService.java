@@ -72,6 +72,8 @@ public class EventProjectionBridgeService {
         entity.setLocation(normalizedEvent.address());
         entity.setLongitude(normalizedEvent.longitude());
         entity.setLatitude(normalizedEvent.latitude());
+        // 所属网格：上游回调 gridName 文本（可空），仅保存文本，不做网格实体匹配（不写 grid_id）
+        entity.setGridName(normalizedEvent.gridName());
         entity.setStatus(EventStatus.WAITING_DISPATCH.name());
         eventMapper.insert(entity);
 

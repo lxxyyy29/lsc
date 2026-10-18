@@ -60,6 +60,11 @@ public class EventEntity {
     private String areaName;
     /** 所属网格ID */
     private Long gridId;
+    /**
+     * 所属网格名称（文本）：上游回调 gridName 原样保存（去除首尾空白、≤60 字），
+     * 不做网格实体匹配/绑定；仅在未绑定 grid_id 时用于事件基本信息「所属网格」展示。
+     */
+    private String gridName;
     /** 紧急程度: GREEN=一般 YELLOW=重点 RED=紧急险情 */
     private String urgencyLevel;
     /** 事件来源: GRID_MEMBER=网格员 RESIDENT=居民 12345=12345转办 PROPERTY=物业 AI_CAMERA=AI监控 */

@@ -58,6 +58,12 @@ public class AlarmEventDocument {
     /** 紧急程度：GREEN/YELLOW/RED，用于列表按紧急程度筛选 */
     private String urgencyLevel;
 
+    /**
+     * 所属网格（文本）：上游回调 gridName 原样保存（去首尾空白、≤60 字），
+     * 仅用于事件基本信息展示，不参与网格实体匹配。
+     */
+    private String gridName;
+
     /** 是否已归档：true=归档留存（默认列表不展示），null/false=活跃 */
     private Boolean archived;
 
@@ -103,6 +109,8 @@ public class AlarmEventDocument {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public Boolean getHidden() { return hidden; }
     public void setHidden(Boolean hidden) { this.hidden = hidden; }
+    public String getGridName() { return gridName; }
+    public void setGridName(String gridName) { this.gridName = gridName; }
 
     public static class Location {
         private String address;
