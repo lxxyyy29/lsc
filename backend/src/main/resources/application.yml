@@ -30,6 +30,9 @@ spring:
   data:
     mongodb:
       uri: mongodb://${MONGODB_HOST:127.0.0.1}:${MONGODB_PORT:27017}/${MONGODB_DATABASE:alarm_dgcp}
+      # 必须为 true：AlarmEventDocument 上声明的唯一索引（externalEventId、ingestion.dedupKey）
+      # 只有开启自动建索引才会真正创建，否则回调重试会插入重复文档（此前线上只有 _id_ 索引）
+      auto-index-creation: ${MONGODB_AUTO_INDEX_CREATION:true}
     redis:
       enabled: true
       host: ${REDIS_HOST:127.0.0.1}

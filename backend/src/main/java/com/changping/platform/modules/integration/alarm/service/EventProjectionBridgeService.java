@@ -8,6 +8,8 @@ import com.changping.platform.modules.event.mapper.EventMapper;
 import com.changping.platform.modules.integration.alarm.dto.NormalizedAlarmEvent;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,8 @@ import org.springframework.util.StringUtils;
  */
 @Service
 public class EventProjectionBridgeService {
+
+    private static final Logger log = LoggerFactory.getLogger(EventProjectionBridgeService.class);
 
     private static final String EVENT_INTAKE = "EVENT_INTAKE";
 
@@ -56,6 +60,21 @@ public class EventProjectionBridgeService {
     public EventEntity createOrReuseProjection(NormalizedAlarmEvent normalizedEvent) {
         EventEntity existing = eventMapper.selectByExternalEventId(normalizedEvent.externalEventId());
         if (existing != null) {
+            // 重复回调（同一 externalEventId）不覆盖已有事件；但若该事件此前经其它通道入库、
+            // 没带过所属网格，而本次回调带了 gridName，则补全这个空字段（已有值不动，符合"原事件不变"）。
+            String incomingGridName = normalizedEvent.gridName();
+            if (StringUtils.hasText(incomingGridName) && !StringUtils.hasText(existing.getGridName())) {
+                jdbcTemplate.update(
+                        "UPDATE biz_event SET grid_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND (grid_name IS NULL OR grid_name = '')",
+                        incomingGridName, existing.getId());
+                try {
+                    alarmEventMongoService.fillGridNameIfAbsent(existing.getExternalEventId(), incomingGridName);
+                } catch (Exception e) {
+                    log.warn("[alarm] 重复回调补写 gridName 到 Mongo 失败 externalEventId={} err={}",
+                            existing.getExternalEventId(), e.getMessage());
+                }
+                existing.setGridName(incomingGridName);
+            }
             syncWorkflowSnapshot(existing.getExternalEventId(), existing.getId(), existing.getStatus());
             return existing;
         }

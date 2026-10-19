@@ -466,6 +466,24 @@ public class AlarmEventMongoService {
     }
 
     /**
+     * 补写所属网格文本：仅当文档尚未保存过该值（null/空串）时才写入，已有值不覆盖——
+     * 用于「同一告警先经其它通道入库、随后板端回调带 gridName」的场景补全缺失字段。
+     *
+     * @param externalEventId 外部事件ID
+     * @param gridName        所属网格文本
+     * @return boolean 是否命中并更新了文档
+     */
+    public boolean fillGridNameIfAbsent(String externalEventId, String gridName) {
+        if (!StringUtils.hasText(externalEventId) || !StringUtils.hasText(gridName)) {
+            return false;
+        }
+        Query query = new Query(Criteria.where("externalEventId").is(externalEventId.trim())
+                .orOperator(Criteria.where("gridName").is(null), Criteria.where("gridName").is("")));
+        Update update = new Update().set("gridName", gridName).set("updatedAt", LocalDateTime.now());
+        return mongoTemplate.updateFirst(query, update, AlarmEventDocument.class).getModifiedCount() > 0;
+    }
+
+    /**
      * @Description //更新MongoDB文档的紧急程度（与MySQL同步）
      * @Param [externalEventId 外部事件ID, urgencyLevel 紧急程度(GREEN/YELLOW/RED)]
      * @return boolean 是否命中并更新了文档
@@ -602,7 +620,11 @@ public class AlarmEventMongoService {
         if (!StringUtils.hasText(externalEventId)) {
             return;
         }
-        alarmEventRepository.findByExternalEventId(externalEventId).ifPresent(document -> {
+        // 用 findOne（取第一条）而非仓库的 findByExternalEventId：后者在某次重试产生重复文档时
+        // 会抛 IncorrectResultSizeDataAccessException（表现为回调 500，板端继续重试、越滚越多）。
+        AlarmEventDocument document = mongoTemplate.findOne(
+                new Query(Criteria.where("externalEventId").is(externalEventId.trim())), AlarmEventDocument.class);
+        if (document != null) {
             AlarmEventDocument.WorkflowStatus workflowStatus = document.getWorkflowStatus() == null ? new AlarmEventDocument.WorkflowStatus() : document.getWorkflowStatus();
             workflowStatus.setSqlEventId(sqlEventId);
             workflowStatus.setCurrentStatus(currentStatus);
@@ -614,7 +636,7 @@ public class AlarmEventMongoService {
             document.setLifecycle(lifecycle);
             document.setUpdatedAt(LocalDateTime.now());
             alarmEventRepository.save(document);
-        });
+        }
     }
 
     /**
