@@ -1199,9 +1199,14 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public void autoEscalateUrgency() {
-        // 获取所有活跃事件（未关闭且未归档的）；created_at 允许为空，避免单条脏数据 NPE 中断整轮扫描
+        // 获取所有活跃事件（未关闭且未归档的）；created_at 允许为空，避免单条脏数据 NPE 中断整轮扫描。
+        // 排除「仍被夜间抑制隐藏」的事件：这类事件业务上暂不处置，若按超期继续升级会出现
+        // 「夜间抓拍被静默 → 从没派单 → 24h 升黄、48h 升红」的假紧急（2026-10-19 发现 118 条），
+        // 而规则默认豁免 RED，又会与「不显示」语义冲突。
         List<EventEntity> activeEvents = jdbcTemplate.query(
-            "SELECT id, urgency_level, created_at, external_event_id FROM biz_event WHERE COALESCE(archived, 0) = 0 AND COALESCE(deleted, 0) = 0 AND status NOT IN ('CLOSED', 'COMPLETED')",
+            "SELECT id, urgency_level, created_at, external_event_id FROM biz_event "
+                + "WHERE COALESCE(archived, 0) = 0 AND COALESCE(deleted, 0) = 0 AND status NOT IN ('CLOSED', 'COMPLETED') "
+                + "AND NOT (suppress_rule_id IS NOT NULL AND COALESCE(suppress_manual, 0) = 0 AND COALESCE(hidden, 0) = 1)",
             (rs, rowNum) -> {
                 EventEntity e = new EventEntity();
                 e.setId(rs.getLong("id"));
